@@ -1,0 +1,126 @@
+YÊU CẦU CHẤT LƯỢNG VÀ KỊCH BẢN ĐỐI CHIẾU NGUỒN
+Trích đầy đủ nội dung chữ trang 67–69 của báo cáo nguồn đã đọc ngày 24/10/2026.
+Các KT là đầu vào kiểm thử tương lai, không phải kết quả đã chạy. KT23/NFR10 về đánh giá dự báo áp dụng khi bổ sung mô hình dự báo, không biến LLM thành mô hình xác suất.
+
+TRANG 67
+12 Yêu cầu chất lượng và kiểm tra chức năng
+12 1 Yêu cầu phi chức năng
+Các ngưỡng hiệu năng và tệp dưới đây là mục tiêu đề xuất để nhóm dùng khi triển khai và kiểm tra, cần điều
+chỉnh theo hạ tầng thực tế. Chúng không phải kết quả đo đã có.
+    Mã      Yêu cầu                 Tiêu chí kiểm tra
+                                    Mỗi chức năng và mỗi lần mở chi tiết đều kiểm tra vai trò, phạm vi. Yêu cầu
+  NFR01     Kiểm soát truy cập
+                                    ngoài quyền không trả nội dung hoặc số liệu tổng hợp bị hạn chế.
+                                    Mật khẩu không lưu ở dạng đọc được; kết nối có bảo vệ; phiên có thời hạn;
+  NFR02     Bảo vệ tài khoản
+                                    khóa tài khoản thu hồi quyền truy cập; giới hạn thử sai được cấu hình.
+                                    Không tạo hai phân công hiện tại, hai quyết định cho một lần nộp hay hai báo
+  NFR03     Tính nhất quán
+                                    cáo cùng khóa nghiệp vụ; gửi lại cùng yêu cầu không tạo dữ liệu trùng.
+                                    Mục tiêu thử nghiệm: thao tác tra cứu hoặc lưu thông thường không quá 3
+  NFR04     Phản hồi nghiệp vụ      giây trong 95 phần trăm yêu cầu trên bộ dữ liệu và số người dùng được mô tả
+                                    khi đo.
+                                    Mục tiêu thử nghiệm: bảng tổng quan không quá 5 giây; tác vụ phân tích lâu
+  NFR05     Tổng quan và AI
+                                    có trạng thái đang xử lý. Không chặn giao việc hay nghiệm thu vì chờ AI.
+                                    Cấu hình ban đầu đề xuất tối đa 10 MB mỗi tệp; chỉ cho loại tệp trong danh
+  NFR06     Minh chứng kết quả      sách được phép; kiểm tra nội dung và quyền trước khi mở. Số lượng tệp được
+                                    quy định khi triển khai.
+                                    Có lịch sử cho thao tác quan trọng; có sao lưu và kiểm tra phục hồi. Thời hạn
+  NFR07     Lịch sử và khôi phục    lưu, chu kỳ sao lưu và mức mất dữ liệu chấp nhận được phải được nhóm xác
+                                    lập trước vận hành.
+                                    Tên trạng thái, vai trò và đơn vị thời gian thống nhất; báo lỗi tại thông tin cần
+  NFR08     Dễ hiểu và dễ dùng
+                                    sửa; giữ dữ liệu nhập khi thao tác chưa lưu được.
+                                    Chỉ số và nhận định có mốc dữ liệu; kết quả phân tích nêu phương pháp, bằng
+  NFR09     Độ mới và giải thích
+                                    chứng và dữ liệu thiếu; kết quả cũ có nhãn rõ.
+            Khả năng lặp lại đánh   Lưu phiên bản phương pháp, khoảng thời gian, cách chia dữ liệu, cấu hình
+  NFR10
+            giá                     ngưỡng và số lượng mẫu để đối chiếu được kết quả thử nghiệm.
+
+
+
+
+                                                      67
+
+TRANG 68
+12 2 Kịch bản đối chiếu nghiệp vụ
+Các kịch bản sau là căn cứ rà soát yêu cầu và xây dựng kiểm thử. Cột kết quả mô tả điều phải đạt, không
+khẳng định phần mềm đã được xây dựng hoặc đã chạy thử thành công.
+   Mã      Tình huống                                       Kết quả mong đợi
+  KT01     Tạo công việc hợp lệ chưa giao                   Công việc Mới tạo, chưa có người nhận; có lịch sử.
+  KT02     Giao cho người ngoài dự án                       Từ chối; không thay trạng thái hoặc người nhận.
+                                                            Chỉ thay đổi hợp lệ đầu tiên có hiệu lực; tối đa một người
+  KT03     Hai người cùng phân công lại từ dữ liệu cũ
+                                                            nhận hiện tại.
+  KT04     Nhân viên tự yêu cầu Hoàn thành                  Từ chối; phải nộp và được nghiệm thu.
+                                                            Từ chối vì vượt 1440 phút trên toàn bộ công việc trong
+  KT05     Đã có 1400 phút trong ngày và nhập thêm 120
+                                                            ngày.
+  KT06     Nộp khi tệp chưa tải xong                        Không tạo lần nộp; giữ Đang thực hiện.
+  KT07     Gửi lại cùng yêu cầu nộp                         Trả lần nộp đã lưu, không tạo bản mới.
+  KT08     Yêu cầu sửa nhưng thiếu lý do                    Không lưu quyết định; vẫn Chờ nghiệm thu.
+                                                            Giữ hai lần nộp, bản cũ có quyết định yêu cầu sửa; bản
+  KT09     Yêu cầu sửa rồi nộp lại
+                                                            mới chờ xét.
+                                                            Nộp đúng hạn; hoàn tất muộn; 70 phút chờ không cộng
+  KT10     Nộp 16 giờ 50 hạn 17 giờ duyệt 18 giờ
+                                                            giờ công.
+  KT11     Gửi hai báo cáo cùng người dự án loại và kỳ      Chỉ có một báo cáo; không ghi đè bản đã gửi.
+                                                            Báo cáo giữ số liệu cũ; chi tiết hiện tại được hiển thị
+  KT12     Công việc đổi sau khi báo cáo gửi
+                                                            riêng.
+           Xem nháp người khác hoặc dữ liệu ngoài
+  KT13                                                      Từ chối; không lộ chi tiết hoặc tổng hợp bị hạn chế.
+           quyền
+  KT14     Nộp đúng thời điểm hạn                           Không tính nộp muộn; chỉ muộn khi lớn hơn hạn.
+                                                            Từ chối; giữ dữ liệu hiện có và ghi dấu vết theo chính
+  KT15     Tạo tài khoản trùng hoặc tự nâng quyền
+                                                            sách.
+  KT16     Loại người phụ trách cuối cùng                   Từ chối đến khi có người đủ điều kiện thay thế.
+  KT17     Kết thúc dự án còn công việc mở                  Từ chối; nêu danh sách điều kiện chưa đáp ứng.
+                                                            Thu hồi truy cập ngay; giữ lịch sử và chuyển trách nhiệm
+  KT18     Khóa khẩn cấp nhân viên còn công việc
+                                                            xử lý tồn đọng cho quản lý.
+  KT19     Bảng tổng quan không có công việc                Hiển thị Chưa có dữ liệu cho tỷ lệ có mẫu số bằng 0.
+  KT20     Thiếu lịch hoặc giờ còn lại khi phân tích tải    Chỉ hiển thị thông tin có căn cứ, không dựng tỷ lệ tải.
+                                                            Cập nhật cảnh báo cũ và bằng chứng, không sinh thông
+  KT21     Phân tích lại cùng dấu hiệu đang tồn tại
+                                                            báo trùng liên tục.
+                                                            Nghiệp vụ chính tiếp tục; bảng tổng quan ghi AI lỗi và
+  KT22     Bộ phân tích ngừng hoạt động
+                                                            thời điểm kết quả cũ nếu dùng.
+  KT23     Lấy dữ liệu sau thời điểm dự báo để đánh giá     Loại dữ liệu tương lai; tách lại giai đoạn học và kiểm tra.
+                                                            Không dùng đầu ra đó; hiển thị bản theo mẫu hoặc yêu
+  KT24     Bản tổng hợp AI chứa số không có nguồn
+                                                            cầu kiểm tra.
+
+
+
+
+                                                           68
+
+TRANG 69
+Mã      Tình huống                                 Kết quả mong đợi
+                                                      Tổng theo người vẫn thuộc tác giả nhật ký; không dồn
+  KT25     Giờ của người cũ sau khi bàn giao
+                                                      sang người nhận mới.
+                                                      Cờ hiện tại dùng hạn mới; lần nộp cũ và lịch sử vẫn dùng
+  KT26     Gia hạn sau một lần nộp
+                                                      hạn đã lưu tại sự kiện.
+
+12 3 Điều kiện chấp nhận tài liệu và chức năng
+Nội dung được xem là thống nhất khi các mã yêu cầu dẫn đến đúng Use Case; tác nhân và quyền khớp giữa
+bảng và sơ đồ; mọi chuyển trạng thái có điều kiện rõ; công thức chỉ số sử dụng đúng mốc thời gian; dữ liệu
+cần để kiểm tra đều được xác định. Các lựa chọn nghiệp vụ và ngưỡng đề xuất phải được nhóm xác nhận
+trước khi coi là yêu cầu triển khai chính thức.
+Khi nghiệm thu phần mềm, phải đối chiếu cả luồng thành công, luồng thay thế và ngoại lệ. Phân tích AI cần
+có dữ liệu kiểm tra cùng kết quả đánh giá riêng; tài liệu đặc tả không thay thế bằng chứng mô hình đã hoạt
+động tốt. Các tình huống minh họa chỉ dùng làm đầu vào kiểm tra, không được trình bày như số liệu khảo sát
+hoặc vận hành.
+
+
+
+
+                                                    69

@@ -1,0 +1,2335 @@
+{
+  "users": [
+    {
+      "id": "u-admin",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "username": "admin",
+      "displayName": "Quản trị hệ thống",
+      "email": "admin@example.test",
+      "unitId": "unit-product",
+      "systemRole": "ADMIN",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "u-pm",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "username": "minh",
+      "displayName": "Nguyễn Minh",
+      "email": "minh@example.test",
+      "unitId": "unit-product",
+      "systemRole": "MANAGER",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "u-lan",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "username": "lan",
+      "displayName": "Trần Lan",
+      "email": "lan@example.test",
+      "unitId": "unit-product",
+      "systemRole": "EMPLOYEE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "u-huy",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "username": "huy",
+      "displayName": "Nguyễn Huy",
+      "email": "huy@example.test",
+      "unitId": "unit-product",
+      "systemRole": "EMPLOYEE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "u-other",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "username": "other",
+      "displayName": "Người dùng dự án khác",
+      "email": "other@example.test",
+      "unitId": "unit-tech",
+      "systemRole": "EMPLOYEE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "u-locked",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "username": "locked",
+      "displayName": "Tài khoản đã khóa",
+      "email": "locked@example.test",
+      "unitId": "unit-product",
+      "systemRole": "EMPLOYEE",
+      "status": "LOCKED"
+    }
+  ],
+  "units": [
+    {
+      "id": "unit-product",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "name": "Phòng sản phẩm",
+      "parentId": null,
+      "managerId": "u-pm",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "unit-tech",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "name": "Phòng kỹ thuật",
+      "parentId": null,
+      "managerId": "u-other",
+      "status": "ACTIVE"
+    }
+  ],
+  "teams": [
+    {
+      "id": "team-main",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "name": "Nhóm phát triển",
+      "unitId": "unit-product",
+      "memberIds": ["u-lan", "u-huy"],
+      "status": "ACTIVE"
+    }
+  ],
+  "projects": [
+    {
+      "id": "p-main",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "code": "MAIN",
+      "name": "Cổng quản lý nội bộ",
+      "objective": "Thống nhất quy trình công việc",
+      "unitId": "unit-product",
+      "ownerId": "u-pm",
+      "startDate": "2026-10-01",
+      "dueAt": "2026-11-30T10:00:00.000Z",
+      "status": "ACTIVE",
+      "completedAt": null,
+      "cancelledAt": null
+    },
+    {
+      "id": "p-other",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "code": "OTHER",
+      "name": "Dự án ngoài phạm vi",
+      "objective": "Kiểm tra giới hạn truy cập",
+      "unitId": "unit-tech",
+      "ownerId": "u-other",
+      "startDate": "2026-10-01",
+      "dueAt": "2026-12-30T10:00:00.000Z",
+      "status": "ACTIVE",
+      "completedAt": null,
+      "cancelledAt": null
+    }
+  ],
+  "members": [
+    {
+      "id": "m-pm",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "projectId": "p-main",
+      "userId": "u-pm",
+      "projectRole": "OWNER",
+      "permissions": [
+        "PROJECT_MANAGE",
+        "MEMBERS_MANAGE",
+        "TASKS_MANAGE",
+        "TASKS_REVIEW",
+        "ANALYTICS_VIEW",
+        "ALERTS_MANAGE"
+      ],
+      "joinedAt": "2026-10-01T02:00:00.000Z",
+      "endedAt": null
+    },
+    {
+      "id": "m-lan",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "projectId": "p-main",
+      "userId": "u-lan",
+      "projectRole": "MEMBER",
+      "permissions": [],
+      "joinedAt": "2026-10-01T02:00:00.000Z",
+      "endedAt": null
+    },
+    {
+      "id": "m-huy",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "projectId": "p-main",
+      "userId": "u-huy",
+      "projectRole": "MEMBER",
+      "permissions": [],
+      "joinedAt": "2026-10-01T02:00:00.000Z",
+      "endedAt": null
+    },
+    {
+      "id": "m-other",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "projectId": "p-other",
+      "userId": "u-other",
+      "projectRole": "OWNER",
+      "permissions": [
+        "PROJECT_MANAGE",
+        "MEMBERS_MANAGE",
+        "TASKS_MANAGE",
+        "TASKS_REVIEW",
+        "ANALYTICS_VIEW",
+        "ALERTS_MANAGE"
+      ],
+      "joinedAt": "2026-10-01T02:00:00.000Z",
+      "endedAt": null
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t-1",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "projectId": "p-main",
+      "title": "Công việc mới",
+      "description": "Dữ liệu minh họa cho phát triển FE",
+      "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
+      "priority": "NORMAL",
+      "dueAt": "2026-10-26T10:00:00.000Z",
+      "originalDueAt": "2026-10-26T10:00:00.000Z",
+      "estimatedMinutes": 480,
+      "originalEstimatedMinutes": 480,
+      "remainingMinutes": null,
+      "assigneeId": null,
+      "status": "NEW",
+      "statusChangedAt": "2026-10-01T02:00:00.000Z",
+      "firstStartedAt": null,
+      "completedAt": null,
+      "cancelledAt": null,
+      "actualMinutes": 0,
+      "latestSubmissionId": null,
+      "isOverdue": false
+    },
+    {
+      "id": "t-2",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-22T02:00:00.000Z",
+      "projectId": "p-main",
+      "title": "Kiểm tra phân quyền",
+      "description": "Dữ liệu minh họa cho phát triển FE",
+      "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
+      "priority": "NORMAL",
+      "dueAt": "2026-10-26T10:00:00.000Z",
+      "originalDueAt": "2026-10-26T10:00:00.000Z",
+      "estimatedMinutes": 480,
+      "originalEstimatedMinutes": 480,
+      "remainingMinutes": null,
+      "assigneeId": "u-lan",
+      "status": "TODO",
+      "statusChangedAt": "2026-10-22T02:00:00.000Z",
+      "firstStartedAt": null,
+      "completedAt": null,
+      "cancelledAt": null,
+      "actualMinutes": 0,
+      "latestSubmissionId": null,
+      "isOverdue": false
+    },
+    {
+      "id": "t-3",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-23T09:00:00.000Z",
+      "projectId": "p-main",
+      "title": "Thiết kế luồng giao việc",
+      "description": "Dữ liệu minh họa cho phát triển FE",
+      "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
+      "priority": "NORMAL",
+      "dueAt": "2026-10-26T10:00:00.000Z",
+      "originalDueAt": "2026-10-26T10:00:00.000Z",
+      "estimatedMinutes": 480,
+      "originalEstimatedMinutes": 480,
+      "remainingMinutes": 300,
+      "assigneeId": "u-lan",
+      "status": "IN_PROGRESS",
+      "statusChangedAt": "2026-10-22T02:00:00.000Z",
+      "firstStartedAt": "2026-10-22T02:00:00.000Z",
+      "completedAt": null,
+      "cancelledAt": null,
+      "actualMinutes": 180,
+      "latestSubmissionId": null,
+      "isOverdue": false
+    },
+    {
+      "id": "t-4",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-22T09:00:00.000Z",
+      "projectId": "p-main",
+      "title": "API báo cáo tuần",
+      "description": "Dữ liệu minh họa cho phát triển FE",
+      "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
+      "priority": "NORMAL",
+      "dueAt": "2026-10-22T10:00:00.000Z",
+      "originalDueAt": "2026-10-26T10:00:00.000Z",
+      "estimatedMinutes": 480,
+      "originalEstimatedMinutes": 480,
+      "remainingMinutes": null,
+      "assigneeId": "u-huy",
+      "status": "PENDING_REVIEW",
+      "statusChangedAt": "2026-10-22T09:00:00.000Z",
+      "firstStartedAt": "2026-10-22T02:00:00.000Z",
+      "completedAt": null,
+      "cancelledAt": null,
+      "actualMinutes": 120,
+      "latestSubmissionId": "s-pending",
+      "isOverdue": true
+    },
+    {
+      "id": "t-5",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-22T09:00:00.000Z",
+      "projectId": "p-main",
+      "title": "Chuẩn hóa biểu mẫu",
+      "description": "Dữ liệu minh họa cho phát triển FE",
+      "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
+      "priority": "NORMAL",
+      "dueAt": "2026-10-26T10:00:00.000Z",
+      "originalDueAt": "2026-10-26T10:00:00.000Z",
+      "estimatedMinutes": 480,
+      "originalEstimatedMinutes": 480,
+      "remainingMinutes": null,
+      "assigneeId": "u-lan",
+      "status": "COMPLETED",
+      "statusChangedAt": "2026-10-22T09:00:00.000Z",
+      "firstStartedAt": "2026-10-22T02:00:00.000Z",
+      "completedAt": "2026-10-22T09:00:00.000Z",
+      "cancelledAt": null,
+      "actualMinutes": 60,
+      "latestSubmissionId": "s-accepted",
+      "isOverdue": false
+    },
+    {
+      "id": "t-6",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-22T09:00:00.000Z",
+      "projectId": "p-main",
+      "title": "Phương án đã dừng",
+      "description": "Dữ liệu minh họa cho phát triển FE",
+      "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
+      "priority": "NORMAL",
+      "dueAt": "2026-10-26T10:00:00.000Z",
+      "originalDueAt": "2026-10-26T10:00:00.000Z",
+      "estimatedMinutes": 480,
+      "originalEstimatedMinutes": 480,
+      "remainingMinutes": null,
+      "assigneeId": "u-lan",
+      "status": "CANCELLED",
+      "statusChangedAt": "2026-10-22T09:00:00.000Z",
+      "firstStartedAt": null,
+      "completedAt": null,
+      "cancelledAt": "2026-10-22T09:00:00.000Z",
+      "actualMinutes": 0,
+      "latestSubmissionId": null,
+      "isOverdue": false
+    },
+    {
+      "id": "t-other",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-22T02:00:00.000Z",
+      "projectId": "p-other",
+      "title": "Công việc ngoài phạm vi",
+      "description": "Dữ liệu minh họa cho phát triển FE",
+      "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
+      "priority": "NORMAL",
+      "dueAt": "2026-10-26T10:00:00.000Z",
+      "originalDueAt": "2026-10-26T10:00:00.000Z",
+      "estimatedMinutes": 480,
+      "originalEstimatedMinutes": 480,
+      "remainingMinutes": null,
+      "assigneeId": "u-other",
+      "status": "TODO",
+      "statusChangedAt": "2026-10-22T02:00:00.000Z",
+      "firstStartedAt": null,
+      "completedAt": null,
+      "cancelledAt": null,
+      "actualMinutes": 0,
+      "latestSubmissionId": null,
+      "isOverdue": false
+    }
+  ],
+  "timeLogs": [
+    {
+      "id": "tl-1",
+      "version": 1,
+      "createdAt": "2026-10-23T09:00:00.000Z",
+      "updatedAt": "2026-10-23T09:00:00.000Z",
+      "taskId": "t-3",
+      "userId": "u-lan",
+      "workDate": "2026-10-23",
+      "minutes": 180,
+      "description": "Thiết kế luồng thao tác",
+      "status": "ACTIVE",
+      "voidReason": null
+    },
+    {
+      "id": "tl-2",
+      "version": 1,
+      "createdAt": "2026-10-22T08:30:00.000Z",
+      "updatedAt": "2026-10-22T08:30:00.000Z",
+      "taskId": "t-4",
+      "userId": "u-huy",
+      "workDate": "2026-10-22",
+      "minutes": 120,
+      "description": "Xây dựng API báo cáo",
+      "status": "ACTIVE",
+      "voidReason": null
+    },
+    {
+      "id": "tl-3",
+      "version": 1,
+      "createdAt": "2026-10-22T07:30:00.000Z",
+      "updatedAt": "2026-10-22T07:30:00.000Z",
+      "taskId": "t-5",
+      "userId": "u-lan",
+      "workDate": "2026-10-22",
+      "minutes": 60,
+      "description": "Chuẩn hóa biểu mẫu",
+      "status": "ACTIVE",
+      "voidReason": null
+    }
+  ],
+  "submissions": [
+    {
+      "id": "s-pending",
+      "version": 1,
+      "createdAt": "2026-10-22T09:00:00.000Z",
+      "updatedAt": "2026-10-22T09:00:00.000Z",
+      "taskId": "t-4",
+      "sequence": 1,
+      "submittedBy": "u-huy",
+      "submittedAt": "2026-10-22T09:00:00.000Z",
+      "summary": "Đã hoàn thiện API báo cáo",
+      "links": [],
+      "attachmentIds": [],
+      "dueAtSnapshot": "2026-10-22T10:00:00.000Z",
+      "actualMinutesSnapshot": 120,
+      "status": "PENDING",
+      "reviewedBy": null,
+      "reviewedAt": null,
+      "reviewComment": null,
+      "requestedChanges": null
+    },
+    {
+      "id": "s-accepted",
+      "version": 1,
+      "createdAt": "2026-10-22T08:00:00.000Z",
+      "updatedAt": "2026-10-22T09:00:00.000Z",
+      "taskId": "t-5",
+      "sequence": 1,
+      "submittedBy": "u-lan",
+      "submittedAt": "2026-10-22T08:00:00.000Z",
+      "summary": "Đã chuẩn hóa biểu mẫu",
+      "links": [],
+      "attachmentIds": [],
+      "dueAtSnapshot": "2026-10-26T10:00:00.000Z",
+      "actualMinutesSnapshot": 60,
+      "status": "ACCEPTED",
+      "reviewedBy": "u-pm",
+      "reviewedAt": "2026-10-22T09:00:00.000Z",
+      "reviewComment": "Đạt yêu cầu",
+      "requestedChanges": null
+    }
+  ],
+  "alerts": [
+    {
+      "id": "alert-1",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "projectId": "p-main",
+      "taskId": "t-4",
+      "type": "BOTTLENECK",
+      "severity": "HIGH",
+      "status": "UNREAD",
+      "conditionActive": true,
+      "evidence": ["Kết quả đang chờ nghiệm thu"],
+      "dataAsOf": "2026-10-23T10:00:00.000Z",
+      "methodVersion": "rules-v1",
+      "resolutionNote": null,
+      "handledBy": null,
+      "handledAt": null
+    }
+  ],
+  "assignments": [
+    {
+      "id": "as-0",
+      "taskId": "t-2",
+      "userId": "u-lan",
+      "startedAt": "2026-10-22T02:00:00.000Z",
+      "endedAt": null,
+      "reason": null
+    },
+    {
+      "id": "as-1",
+      "taskId": "t-3",
+      "userId": "u-lan",
+      "startedAt": "2026-10-01T02:00:00.000Z",
+      "endedAt": null,
+      "reason": null
+    },
+    {
+      "id": "as-2",
+      "taskId": "t-4",
+      "userId": "u-huy",
+      "startedAt": "2026-10-01T02:00:00.000Z",
+      "endedAt": null,
+      "reason": null
+    },
+    {
+      "id": "as-3",
+      "taskId": "t-5",
+      "userId": "u-lan",
+      "startedAt": "2026-10-01T02:00:00.000Z",
+      "endedAt": "2026-10-22T09:00:00.000Z",
+      "reason": null
+    },
+    {
+      "id": "as-4",
+      "taskId": "t-6",
+      "userId": "u-lan",
+      "startedAt": "2026-10-01T02:00:00.000Z",
+      "endedAt": "2026-10-22T09:00:00.000Z",
+      "reason": null
+    },
+    {
+      "id": "as-5",
+      "taskId": "t-other",
+      "userId": "u-other",
+      "startedAt": "2026-10-22T02:00:00.000Z",
+      "endedAt": null,
+      "reason": null
+    }
+  ],
+  "planned": {
+    "id": "p-planned",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-01T02:00:00.000Z",
+    "code": "PLAN",
+    "name": "Dự án kế tiếp",
+    "objective": "Chuẩn bị kế hoạch và thành viên trước khi triển khai.",
+    "unitId": "unit-product",
+    "ownerId": "u-pm",
+    "startDate": "2026-11-01",
+    "dueAt": "2026-12-31T10:00:00.000Z",
+    "status": "PLANNED",
+    "completedAt": null,
+    "cancelledAt": null
+  },
+  "analysis": {
+    "mockClock": "2026-10-23T10:05:00.000Z",
+    "analysisSnapshots": [
+      {
+        "id": "snap-risk-t4-001",
+        "analysisId": "an-risk-t4-001",
+        "sourceRevision": "p-main-src-20261023-v1",
+        "analysisType": "RISK",
+        "title": "API báo cáo tuần",
+        "subject": {
+          "kind": "TASK",
+          "taskId": "t-4"
+        },
+        "scope": {
+          "projectId": "p-main",
+          "from": "2026-10-01",
+          "to": "2026-10-23"
+        },
+        "dataAsOf": "2026-10-23T10:00:00.000Z",
+        "createdAt": "2026-10-23T10:00:00.000Z",
+        "expiresAt": "2026-10-30T10:00:00.000Z",
+        "calculationVersion": "business-rules-v2",
+        "quality": {
+          "status": "SUFFICIENT",
+          "missingFields": [],
+          "scopeLimited": false
+        },
+        "metrics": [
+          {
+            "id": "m-overdue",
+            "code": "OVERDUE_MINUTES",
+            "label": "Thời gian quá hạn",
+            "value": 1440,
+            "unit": "MINUTE",
+            "basis": "CURRENT",
+            "formula": "Thời điểm dữ liệu trừ hạn hoàn thành của công việc còn mở.",
+            "evidenceIds": ["e-task"],
+            "missingFields": []
+          },
+          {
+            "id": "m-wait",
+            "code": "REVIEW_WAIT_MINUTES",
+            "label": "Chờ nghiệm thu",
+            "value": 1500,
+            "unit": "MINUTE",
+            "basis": "CURRENT",
+            "formula": "Thời điểm dữ liệu trừ thời điểm nộp kết quả đang chờ.",
+            "evidenceIds": ["e-submission"],
+            "missingFields": []
+          },
+          {
+            "id": "m-actual",
+            "code": "ACTUAL_MINUTES",
+            "label": "Giờ công đã ghi",
+            "value": 120,
+            "unit": "MINUTE",
+            "basis": "CURRENT",
+            "formula": "Tổng số phút của các nhật ký còn hiệu lực.",
+            "evidenceIds": ["e-log"],
+            "missingFields": []
+          },
+          {
+            "id": "m-revisions",
+            "code": "REVISION_COUNT",
+            "label": "Số lần yêu cầu sửa",
+            "value": 0,
+            "unit": "COUNT",
+            "basis": "CURRENT",
+            "formula": "Đếm các lần đã được yêu cầu chỉnh sửa.",
+            "evidenceIds": ["e-submission"],
+            "missingFields": []
+          }
+        ],
+        "context": [
+          {
+            "key": "assignee",
+            "label": "Người thực hiện",
+            "value": "Nguyễn Huy",
+            "valueType": "TEXT"
+          },
+          {
+            "key": "status",
+            "label": "Trạng thái",
+            "value": "Chờ nghiệm thu",
+            "valueType": "TEXT"
+          },
+          {
+            "key": "dueAt",
+            "label": "Hạn hoàn thành",
+            "value": "2026-10-22T10:00:00.000Z",
+            "valueType": "UTC"
+          },
+          {
+            "key": "submittedAt",
+            "label": "Nộp kết quả",
+            "value": "2026-10-22T09:00:00.000Z",
+            "valueType": "UTC"
+          }
+        ],
+        "series": [],
+        "evidence": [
+          {
+            "id": "e-task",
+            "sourceType": "TASK",
+            "sourceId": "t-4",
+            "label": "Hạn hoàn thành 22/10/2026, 17:00",
+            "observedAt": "2026-10-23T10:00:00.000Z",
+            "action": {
+              "target": "TASK_DETAIL",
+              "taskId": "t-4",
+              "submissionId": null,
+              "reportId": null
+            }
+          },
+          {
+            "id": "e-submission",
+            "sourceType": "SUBMISSION",
+            "sourceId": "s-pending",
+            "label": "Huy nộp lần 1 lúc 22/10, 16:00; đang chờ nghiệm thu.",
+            "observedAt": "2026-10-22T09:00:00.000Z",
+            "action": {
+              "target": "SUBMISSION_REVIEW",
+              "taskId": "t-4",
+              "submissionId": "s-pending",
+              "reportId": null
+            }
+          },
+          {
+            "id": "e-log",
+            "sourceType": "TIME_LOG",
+            "sourceId": "tl-2",
+            "label": "Nhật ký hợp lệ 120 phút ngày 22/10/2026.",
+            "observedAt": "2026-10-22T08:30:00.000Z",
+            "action": {
+              "target": "TASK_DETAIL",
+              "taskId": "t-4",
+              "submissionId": null,
+              "reportId": null
+            }
+          }
+        ]
+      },
+      {
+        "id": "snap-workload-lan-001",
+        "analysisId": "an-workload-lan-001",
+        "sourceRevision": "p-main-src-20261023-v1",
+        "analysisType": "WORKLOAD",
+        "title": "Khối lượng của Trần Lan",
+        "subject": {
+          "kind": "PERSON",
+          "userId": "u-lan"
+        },
+        "scope": {
+          "projectId": "p-main",
+          "from": "2026-10-01",
+          "to": "2026-10-23"
+        },
+        "dataAsOf": "2026-10-23T10:00:00.000Z",
+        "createdAt": "2026-10-23T10:00:00.000Z",
+        "expiresAt": "2026-10-30T10:00:00.000Z",
+        "calculationVersion": "business-rules-v2",
+        "quality": {
+          "status": "PARTIAL",
+          "missingFields": ["remainingMinutes:t-2", "capacityCalendar:u-lan"],
+          "scopeLimited": false
+        },
+        "metrics": [
+          {
+            "id": "m-open",
+            "code": "OPEN_TASKS",
+            "label": "Công việc đang nhận",
+            "value": 2,
+            "unit": "TASK",
+            "basis": "CURRENT",
+            "formula": "Số TODO/IN_PROGRESS hiện giao cho Lan.",
+            "evidenceIds": ["e-task2", "e-task3"],
+            "missingFields": []
+          },
+          {
+            "id": "m-estimate",
+            "code": "CURRENT_ESTIMATE",
+            "label": "Dự kiến hiện tại",
+            "value": 960,
+            "unit": "MINUTE",
+            "basis": "CURRENT",
+            "formula": "480 + 480 phút của hai công việc mở.",
+            "evidenceIds": ["e-task2", "e-task3"],
+            "missingFields": []
+          },
+          {
+            "id": "m-remaining",
+            "code": "REMAINING",
+            "label": "Tổng thời gian còn lại",
+            "value": null,
+            "unit": "MINUTE",
+            "basis": "CURRENT",
+            "formula": "Chỉ cộng tổng khi mọi việc trong phạm vi đã được cập nhật thời gian còn lại.",
+            "evidenceIds": ["e-task2", "e-task3"],
+            "missingFields": ["remainingMinutes:t-2"]
+          },
+          {
+            "id": "m-capacity",
+            "code": "CAPACITY",
+            "label": "Thời gian khả dụng",
+            "value": null,
+            "unit": "MINUTE",
+            "basis": "PERIOD",
+            "formula": "Lịch làm việc trừ nghỉ và nghĩa vụ đã dành trong cùng kỳ.",
+            "evidenceIds": [],
+            "missingFields": ["capacityCalendar:u-lan"]
+          }
+        ],
+        "context": [
+          {
+            "key": "person",
+            "label": "Nhân viên",
+            "value": "Trần Lan",
+            "valueType": "TEXT"
+          },
+          {
+            "key": "unit",
+            "label": "Đơn vị",
+            "value": "Phòng sản phẩm",
+            "valueType": "TEXT"
+          }
+        ],
+        "series": [],
+        "evidence": [
+          {
+            "id": "e-task2",
+            "sourceType": "TASK",
+            "sourceId": "t-2",
+            "label": "Kiểm tra phân quyền: dự kiến 480 phút, chưa cập nhật còn lại.",
+            "observedAt": "2026-10-23T10:00:00.000Z",
+            "action": {
+              "target": "TASK_DETAIL",
+              "taskId": "t-2",
+              "submissionId": null,
+              "reportId": null
+            }
+          },
+          {
+            "id": "e-task3",
+            "sourceType": "TASK",
+            "sourceId": "t-3",
+            "label": "Thiết kế luồng giao việc: dự kiến 480 phút, còn lại 300 phút.",
+            "observedAt": "2026-10-23T10:00:00.000Z",
+            "action": {
+              "target": "TASK_DETAIL",
+              "taskId": "t-3",
+              "submissionId": null,
+              "reportId": null
+            }
+          }
+        ]
+      },
+      {
+        "id": "snap-bottleneck-t4-001",
+        "analysisId": "an-bottleneck-t4-001",
+        "sourceRevision": "p-main-src-20261023-v1",
+        "analysisType": "BOTTLENECK",
+        "title": "Điểm chờ tại khâu nghiệm thu",
+        "subject": {
+          "kind": "TASK",
+          "taskId": "t-4"
+        },
+        "scope": {
+          "projectId": "p-main",
+          "from": "2026-10-01",
+          "to": "2026-10-23"
+        },
+        "dataAsOf": "2026-10-23T10:00:00.000Z",
+        "createdAt": "2026-10-23T10:00:00.000Z",
+        "expiresAt": "2026-10-30T10:00:00.000Z",
+        "calculationVersion": "business-rules-v2",
+        "quality": {
+          "status": "SUFFICIENT",
+          "missingFields": [],
+          "scopeLimited": false
+        },
+        "metrics": [
+          {
+            "id": "m-stage",
+            "code": "STAGE_MINUTES",
+            "label": "Đã chờ nghiệm thu",
+            "value": 1500,
+            "unit": "MINUTE",
+            "basis": "CURRENT",
+            "formula": "Thời điểm dữ liệu trừ thời điểm gần nhất chuyển sang chờ nghiệm thu.",
+            "evidenceIds": ["e-stage"],
+            "missingFields": []
+          },
+          {
+            "id": "m-limit",
+            "code": "THRESHOLD_MINUTES",
+            "label": "Ngưỡng theo dõi",
+            "value": 1440,
+            "unit": "MINUTE",
+            "basis": "CURRENT",
+            "formula": "Ngưỡng thử nghiệm được BE cấu hình: 24 giờ liên tục.",
+            "evidenceIds": ["e-rule"],
+            "missingFields": []
+          },
+          {
+            "id": "m-excess",
+            "code": "EXCESS_MINUTES",
+            "label": "Vượt ngưỡng",
+            "value": 60,
+            "unit": "MINUTE",
+            "basis": "CURRENT",
+            "formula": "max(0, 1500 − 1440).",
+            "evidenceIds": ["e-stage", "e-rule"],
+            "missingFields": []
+          },
+          {
+            "id": "m-revisions",
+            "code": "REVISION_COUNT",
+            "label": "Vòng yêu cầu sửa",
+            "value": 0,
+            "unit": "COUNT",
+            "basis": "CURRENT",
+            "formula": "Đếm các quyết định yêu cầu sửa đã ghi.",
+            "evidenceIds": ["e-stage"],
+            "missingFields": []
+          }
+        ],
+        "context": [
+          {
+            "key": "stage",
+            "label": "Công đoạn",
+            "value": "Chờ nghiệm thu",
+            "valueType": "TEXT"
+          },
+          {
+            "key": "calendar",
+            "label": "Cách tính thời gian",
+            "value": "Liên tục, gồm cả ngoài giờ làm việc",
+            "valueType": "TEXT"
+          }
+        ],
+        "series": [],
+        "evidence": [
+          {
+            "id": "e-stage",
+            "sourceType": "SUBMISSION",
+            "sourceId": "s-pending",
+            "label": "Lần nộp 1 đang chờ từ 22/10, 16:00.",
+            "observedAt": "2026-10-22T09:00:00.000Z",
+            "action": {
+              "target": "SUBMISSION_REVIEW",
+              "taskId": "t-4",
+              "submissionId": "s-pending",
+              "reportId": null
+            }
+          },
+          {
+            "id": "e-rule",
+            "sourceType": "AGGREGATE",
+            "sourceId": null,
+            "label": "Ngưỡng minh họa 24 giờ liên tục; không phải giờ công.",
+            "observedAt": null,
+            "action": null
+          }
+        ]
+      },
+      {
+        "id": "snap-summary-main-001",
+        "analysisId": "an-summary-main-001",
+        "sourceRevision": "p-main-src-20261023-v1",
+        "analysisType": "SUMMARY",
+        "title": "Tổng quan dự án Cổng quản lý nội bộ",
+        "subject": {
+          "kind": "PROJECT",
+          "projectId": "p-main"
+        },
+        "scope": {
+          "projectId": "p-main",
+          "from": "2026-10-01",
+          "to": "2026-10-23"
+        },
+        "dataAsOf": "2026-10-23T10:00:00.000Z",
+        "createdAt": "2026-10-23T10:00:00.000Z",
+        "expiresAt": "2026-10-30T10:00:00.000Z",
+        "calculationVersion": "business-rules-v2",
+        "quality": {
+          "status": "PARTIAL",
+          "missingFields": ["capacityCalendar"],
+          "scopeLimited": false
+        },
+        "metrics": [
+          {
+            "id": "m-valid",
+            "code": "K01",
+            "label": "Công việc được tính",
+            "value": 5,
+            "unit": "TASK",
+            "basis": "CURRENT",
+            "formula": "6 công việc − 1 đã hủy.",
+            "evidenceIds": ["e-tasks"],
+            "missingFields": []
+          },
+          {
+            "id": "m-completed",
+            "code": "K02_CURRENT",
+            "label": "Đã hoàn thành",
+            "value": 1,
+            "unit": "TASK",
+            "basis": "CURRENT",
+            "formula": "Số công việc COMPLETED tại dataAsOf.",
+            "evidenceIds": ["e-tasks"],
+            "missingFields": []
+          },
+          {
+            "id": "m-completion",
+            "code": "K03",
+            "label": "Tỷ lệ hoàn thành",
+            "value": 20,
+            "unit": "PERCENT",
+            "basis": "CURRENT",
+            "formula": "1 / 5 × 100.",
+            "evidenceIds": ["e-tasks"],
+            "missingFields": []
+          },
+          {
+            "id": "m-overdue",
+            "code": "K04",
+            "label": "Công việc quá hạn",
+            "value": 1,
+            "unit": "TASK",
+            "basis": "CURRENT",
+            "formula": "Việc mở và dataAsOf > dueAt.",
+            "evidenceIds": ["e-tasks"],
+            "missingFields": []
+          },
+          {
+            "id": "m-hours",
+            "code": "K06",
+            "label": "Giờ công trong kỳ",
+            "value": 6,
+            "unit": "HOUR",
+            "basis": "PERIOD",
+            "formula": "(180 + 120 + 60) / 60.",
+            "evidenceIds": ["e-logs"],
+            "missingFields": []
+          },
+          {
+            "id": "m-pending",
+            "code": "PENDING_REVIEW_COUNT",
+            "label": "Chờ nghiệm thu",
+            "value": 1,
+            "unit": "TASK",
+            "basis": "CURRENT",
+            "formula": "Giá trị từ dữ liệu nguồn đã lọc quyền.",
+            "evidenceIds": ["e-tasks"],
+            "missingFields": []
+          }
+        ],
+        "context": [
+          {
+            "key": "project",
+            "label": "Dự án",
+            "value": "Cổng quản lý nội bộ",
+            "valueType": "TEXT"
+          }
+        ],
+        "series": [],
+        "evidence": [
+          {
+            "id": "e-tasks",
+            "sourceType": "AGGREGATE",
+            "sourceId": null,
+            "label": "6 công việc: mỗi trạng thái có 1; t-4 chờ nghiệm thu quá hạn.",
+            "observedAt": "2026-10-23T10:00:00.000Z",
+            "action": null
+          },
+          {
+            "id": "e-logs",
+            "sourceType": "AGGREGATE",
+            "sourceId": null,
+            "label": "3 nhật ký ACTIVE: 180, 120 và 60 phút trong kỳ.",
+            "observedAt": "2026-10-23T10:00:00.000Z",
+            "action": null
+          }
+        ]
+      },
+      {
+        "id": "snap-metric-k06-001",
+        "analysisId": "an-metric-k06-001",
+        "sourceRevision": "p-main-src-20261023-v1",
+        "analysisType": "METRIC",
+        "title": "Chi tiết giờ công trong kỳ",
+        "subject": {
+          "kind": "METRIC",
+          "metricCode": "K06"
+        },
+        "scope": {
+          "projectId": "p-main",
+          "from": "2026-10-01",
+          "to": "2026-10-23"
+        },
+        "dataAsOf": "2026-10-23T10:00:00.000Z",
+        "createdAt": "2026-10-23T10:00:00.000Z",
+        "expiresAt": "2026-10-30T10:00:00.000Z",
+        "calculationVersion": "business-rules-v2",
+        "quality": {
+          "status": "SUFFICIENT",
+          "missingFields": [],
+          "scopeLimited": false
+        },
+        "metrics": [
+          {
+            "id": "m-hours",
+            "code": "K06",
+            "label": "Tổng giờ công",
+            "value": 6,
+            "unit": "HOUR",
+            "basis": "PERIOD",
+            "formula": "Tổng phút nhật ký ACTIVE / 60.",
+            "evidenceIds": ["e-tl1", "e-tl2", "e-tl3"],
+            "missingFields": []
+          },
+          {
+            "id": "m-minutes",
+            "code": "ACTUAL_MINUTES",
+            "label": "Phút đã ghi",
+            "value": 360,
+            "unit": "MINUTE",
+            "basis": "PERIOD",
+            "formula": "180 + 120 + 60.",
+            "evidenceIds": ["e-tl1", "e-tl2", "e-tl3"],
+            "missingFields": []
+          },
+          {
+            "id": "m-logs",
+            "code": "LOG_COUNT",
+            "label": "Nhật ký hợp lệ",
+            "value": 3,
+            "unit": "COUNT",
+            "basis": "PERIOD",
+            "formula": "Đếm 3 nhật ký ACTIVE.",
+            "evidenceIds": ["e-tl1", "e-tl2", "e-tl3"],
+            "missingFields": []
+          },
+          {
+            "id": "m-people",
+            "code": "PEOPLE_COUNT",
+            "label": "Người đã ghi giờ",
+            "value": 2,
+            "unit": "COUNT",
+            "basis": "PERIOD",
+            "formula": "Đếm những người khác nhau đã ghi nhật ký.",
+            "evidenceIds": ["e-tl1", "e-tl2", "e-tl3"],
+            "missingFields": []
+          }
+        ],
+        "context": [
+          {
+            "key": "period",
+            "label": "Kỳ dữ liệu",
+            "value": "01/10–23/10/2026",
+            "valueType": "TEXT"
+          },
+          {
+            "key": "basis",
+            "label": "Nguồn tính",
+            "value": "Nhật ký còn hiệu lực, theo người ghi",
+            "valueType": "TEXT"
+          }
+        ],
+        "series": [
+          {
+            "id": "s-hours",
+            "label": "Giờ công theo ngày có nhật ký",
+            "unit": "HOUR",
+            "points": [
+              {
+                "date": "2026-10-22",
+                "value": 3
+              },
+              {
+                "date": "2026-10-23",
+                "value": 3
+              }
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e-tl1",
+            "sourceType": "TIME_LOG",
+            "sourceId": "tl-1",
+            "label": "Lan: 180 phút ngày 23/10.",
+            "observedAt": "2026-10-23T09:00:00.000Z",
+            "action": {
+              "target": "TASK_DETAIL",
+              "taskId": "t-3",
+              "submissionId": null,
+              "reportId": null
+            }
+          },
+          {
+            "id": "e-tl2",
+            "sourceType": "TIME_LOG",
+            "sourceId": "tl-2",
+            "label": "Huy: 120 phút ngày 22/10.",
+            "observedAt": "2026-10-22T08:30:00.000Z",
+            "action": {
+              "target": "TASK_DETAIL",
+              "taskId": "t-4",
+              "submissionId": null,
+              "reportId": null
+            }
+          },
+          {
+            "id": "e-tl3",
+            "sourceType": "TIME_LOG",
+            "sourceId": "tl-3",
+            "label": "Lan: 60 phút ngày 22/10.",
+            "observedAt": "2026-10-22T07:30:00.000Z",
+            "action": {
+              "target": "TASK_DETAIL",
+              "taskId": "t-5",
+              "submissionId": null,
+              "reportId": null
+            }
+          }
+        ]
+      }
+    ],
+    "llmExplanations": [
+      {
+        "id": "exp-risk-t4-001",
+        "analysisId": "an-risk-t4-001",
+        "snapshotId": "snap-risk-t4-001",
+        "locale": "vi-VN",
+        "generatedAt": "2026-10-23T10:01:00.000Z",
+        "modelDisplayName": "LLM cấu hình sẵn",
+        "promptVersion": "analysis-vi-v1",
+        "summary": "Kết quả đã nộp đúng hạn; điểm cần chú ý hiện tại là thời gian chờ nghiệm thu.",
+        "findings": [
+          {
+            "id": "f-1",
+            "title": "Đã nộp trước hạn",
+            "text": "Huy đã nộp trước hạn một giờ. Công việc hiện vẫn chờ xét kết quả nên đã quá hạn theo thời điểm dữ liệu.",
+            "metricIds": ["m-overdue", "m-wait"],
+            "evidenceIds": ["e-task", "e-submission"]
+          },
+          {
+            "id": "f-2",
+            "title": "Ưu tiên xử lý hàng chờ",
+            "text": "Thời gian chờ nghiệm thu là 25 giờ. Cần xem xét kết quả và phản hồi để tránh kéo dài khâu chốt công việc.",
+            "metricIds": ["m-wait"],
+            "evidenceIds": ["e-submission"]
+          }
+        ],
+        "recommendations": [
+          {
+            "id": "r-1",
+            "title": "Xem kết quả đang chờ",
+            "text": "Người có quyền nghiệm thu đối chiếu tiêu chí với lần nộp mới nhất.",
+            "priority": "HIGH",
+            "evidenceIds": ["e-submission"],
+            "action": {
+              "target": "SUBMISSION_REVIEW",
+              "taskId": "t-4",
+              "submissionId": "s-pending",
+              "reportId": null
+            }
+          }
+        ],
+        "limitations": [
+          "Chưa có lịch làm việc để đổi thời gian chờ thành giờ làm việc. Không kết luận năng lực cá nhân từ thời gian chờ."
+        ]
+      },
+      {
+        "id": "exp-workload-lan-001",
+        "analysisId": "an-workload-lan-001",
+        "snapshotId": "snap-workload-lan-001",
+        "locale": "vi-VN",
+        "generatedAt": "2026-10-23T10:01:00.000Z",
+        "modelDisplayName": "LLM cấu hình sẵn",
+        "promptVersion": "analysis-vi-v1",
+        "summary": "Lan đang nhận hai công việc; dữ liệu hiện chưa đủ để kết luận có quá tải.",
+        "findings": [
+          {
+            "id": "f-1",
+            "title": "Cần cập nhật phần việc còn lại",
+            "text": "Một trong hai công việc chưa có thời gian còn lại; tổng dự kiến hiện tại không thay thế tổng còn lại.",
+            "metricIds": ["m-open", "m-estimate", "m-remaining"],
+            "evidenceIds": ["e-task2", "e-task3"]
+          },
+          {
+            "id": "f-2",
+            "title": "Chưa có mẫu số khả dụng",
+            "text": "Chưa có lịch khả dụng trong kỳ nên chưa tính tỷ lệ tải hoặc kết luận vượt sức chứa.",
+            "metricIds": ["m-capacity"],
+            "evidenceIds": ["e-task2", "e-task3"]
+          }
+        ],
+        "recommendations": [
+          {
+            "id": "r-1",
+            "title": "Cập nhật ước lượng còn lại",
+            "text": "Rà soát công việc Kiểm tra phân quyền trước khi đánh giá phân bổ.",
+            "priority": "NORMAL",
+            "evidenceIds": ["e-task2"],
+            "action": {
+              "target": "TASK_DETAIL",
+              "taskId": "t-2",
+              "submissionId": null,
+              "reportId": null
+            }
+          }
+        ],
+        "limitations": [
+          "Chưa có ước lượng còn lại của việc Kiểm tra phân quyền và lịch khả dụng của Lan. Không suy còn lại bằng dự kiến trừ giờ đã làm."
+        ]
+      },
+      {
+        "id": "exp-bottleneck-t4-001",
+        "analysisId": "an-bottleneck-t4-001",
+        "snapshotId": "snap-bottleneck-t4-001",
+        "locale": "vi-VN",
+        "generatedAt": "2026-10-23T10:01:00.000Z",
+        "modelDisplayName": "LLM cấu hình sẵn",
+        "promptVersion": "analysis-vi-v1",
+        "summary": "Khâu chờ nghiệm thu đang vượt ngưỡng theo dõi minh họa; nên ưu tiên đối chiếu kết quả đã nộp.",
+        "findings": [
+          {
+            "id": "f-1",
+            "title": "Chờ lâu hơn ngưỡng",
+            "text": "Thời gian ở bước chờ là 25 giờ liên tục, cao hơn ngưỡng theo dõi 24 giờ một giờ.",
+            "metricIds": ["m-stage", "m-limit", "m-excess"],
+            "evidenceIds": ["e-stage", "e-rule"]
+          }
+        ],
+        "recommendations": [
+          {
+            "id": "r-1",
+            "title": "Kiểm tra hàng chờ xét kết quả",
+            "text": "Đối chiếu lần nộp và phân công người phản hồi trong thẩm quyền.",
+            "priority": "HIGH",
+            "evidenceIds": ["e-stage"],
+            "action": {
+              "target": "REVIEW_QUEUE",
+              "taskId": null,
+              "submissionId": null,
+              "reportId": null
+            }
+          }
+        ],
+        "limitations": [
+          "Ngưỡng 24 giờ là giá trị thử nghiệm cần BE cấu hình. Thời gian liên tục không phải giờ công."
+        ]
+      },
+      {
+        "id": "exp-summary-main-001",
+        "analysisId": "an-summary-main-001",
+        "snapshotId": "snap-summary-main-001",
+        "locale": "vi-VN",
+        "generatedAt": "2026-10-23T10:01:00.000Z",
+        "modelDisplayName": "LLM cấu hình sẵn",
+        "promptVersion": "analysis-vi-v1",
+        "summary": "Dự án có một công việc hoàn thành trong năm việc được tính; khâu nghiệm thu là điểm nên xem trước.",
+        "findings": [
+          {
+            "id": "f-1",
+            "title": "Tiến độ hiện tại",
+            "text": "Tỷ lệ hoàn thành hiện là 20%. Một công việc quá hạn đang nằm ở bước chờ nghiệm thu.",
+            "metricIds": ["m-completion", "m-overdue", "m-pending"],
+            "evidenceIds": ["e-tasks"]
+          },
+          {
+            "id": "f-2",
+            "title": "Giờ công có nguồn đối chiếu",
+            "text": "Trong kỳ có 6 giờ công hợp lệ từ ba nhật ký; số giờ không được cộng thêm từ báo cáo.",
+            "metricIds": ["m-hours"],
+            "evidenceIds": ["e-logs"]
+          }
+        ],
+        "recommendations": [
+          {
+            "id": "r-1",
+            "title": "Ưu tiên xem kết quả chờ",
+            "text": "Xử lý hàng chờ trước khi điều chỉnh kế hoạch hoặc người thực hiện.",
+            "priority": "HIGH",
+            "evidenceIds": ["e-tasks"],
+            "action": {
+              "target": "REVIEW_QUEUE",
+              "taskId": null,
+              "submissionId": null,
+              "reportId": null
+            }
+          }
+        ],
+        "limitations": [
+          "Thiếu lịch khả dụng nên chưa kết luận tải nhân sự. Quy mô dữ liệu mẫu nhỏ, không dùng để dự báo xác suất trễ."
+        ]
+      },
+      {
+        "id": "exp-metric-k06-001",
+        "analysisId": "an-metric-k06-001",
+        "snapshotId": "snap-metric-k06-001",
+        "locale": "vi-VN",
+        "generatedAt": "2026-10-23T10:01:00.000Z",
+        "modelDisplayName": "LLM cấu hình sẵn",
+        "promptVersion": "analysis-vi-v1",
+        "summary": "Sáu giờ công trong kỳ được đối chiếu với ba nhật ký hợp lệ của hai người.",
+        "findings": [
+          {
+            "id": "f-1",
+            "title": "Phân bổ theo người ghi",
+            "text": "Lan ghi tổng 240 phút và Huy ghi 120 phút. Giờ lịch sử vẫn thuộc người đã ghi kể cả sau bàn giao công việc.",
+            "metricIds": ["m-hours", "m-minutes", "m-logs", "m-people"],
+            "evidenceIds": ["e-tl1", "e-tl2", "e-tl3"]
+          }
+        ],
+        "recommendations": [
+          {
+            "id": "r-1",
+            "title": "Mở công việc để xem nhật ký",
+            "text": "Kiểm tra nhật ký nguồn khi cần giải thích số giờ đã ghi.",
+            "priority": "NORMAL",
+            "evidenceIds": ["e-tl1"],
+            "action": {
+              "target": "TASK_DETAIL",
+              "taskId": "t-3",
+              "submissionId": null,
+              "reportId": null
+            }
+          }
+        ],
+        "limitations": [
+          "Giờ đã ghi không tự thể hiện mức độ hoàn thành hoặc năng lực. Chỉ thống kê các nhật ký còn hiệu lực trong phạm vi."
+        ]
+      }
+    ],
+    "analysisDetails": [
+      {
+        "snapshot": {
+          "id": "snap-risk-t4-001",
+          "analysisId": "an-risk-t4-001",
+          "sourceRevision": "p-main-src-20261023-v1",
+          "analysisType": "RISK",
+          "title": "API báo cáo tuần",
+          "subject": {
+            "kind": "TASK",
+            "taskId": "t-4"
+          },
+          "scope": {
+            "projectId": "p-main",
+            "from": "2026-10-01",
+            "to": "2026-10-23"
+          },
+          "dataAsOf": "2026-10-23T10:00:00.000Z",
+          "createdAt": "2026-10-23T10:00:00.000Z",
+          "expiresAt": "2026-10-30T10:00:00.000Z",
+          "calculationVersion": "business-rules-v2",
+          "quality": {
+            "status": "SUFFICIENT",
+            "missingFields": [],
+            "scopeLimited": false
+          },
+          "metrics": [
+            {
+              "id": "m-overdue",
+              "code": "OVERDUE_MINUTES",
+              "label": "Thời gian quá hạn",
+              "value": 1440,
+              "unit": "MINUTE",
+              "basis": "CURRENT",
+              "formula": "Thời điểm dữ liệu trừ hạn hoàn thành của công việc còn mở.",
+              "evidenceIds": ["e-task"],
+              "missingFields": []
+            },
+            {
+              "id": "m-wait",
+              "code": "REVIEW_WAIT_MINUTES",
+              "label": "Chờ nghiệm thu",
+              "value": 1500,
+              "unit": "MINUTE",
+              "basis": "CURRENT",
+              "formula": "Thời điểm dữ liệu trừ thời điểm nộp kết quả đang chờ.",
+              "evidenceIds": ["e-submission"],
+              "missingFields": []
+            },
+            {
+              "id": "m-actual",
+              "code": "ACTUAL_MINUTES",
+              "label": "Giờ công đã ghi",
+              "value": 120,
+              "unit": "MINUTE",
+              "basis": "CURRENT",
+              "formula": "Tổng số phút của các nhật ký còn hiệu lực.",
+              "evidenceIds": ["e-log"],
+              "missingFields": []
+            },
+            {
+              "id": "m-revisions",
+              "code": "REVISION_COUNT",
+              "label": "Số lần yêu cầu sửa",
+              "value": 0,
+              "unit": "COUNT",
+              "basis": "CURRENT",
+              "formula": "Đếm các lần đã được yêu cầu chỉnh sửa.",
+              "evidenceIds": ["e-submission"],
+              "missingFields": []
+            }
+          ],
+          "context": [
+            {
+              "key": "assignee",
+              "label": "Người thực hiện",
+              "value": "Nguyễn Huy",
+              "valueType": "TEXT"
+            },
+            {
+              "key": "status",
+              "label": "Trạng thái",
+              "value": "Chờ nghiệm thu",
+              "valueType": "TEXT"
+            },
+            {
+              "key": "dueAt",
+              "label": "Hạn hoàn thành",
+              "value": "2026-10-22T10:00:00.000Z",
+              "valueType": "UTC"
+            },
+            {
+              "key": "submittedAt",
+              "label": "Nộp kết quả",
+              "value": "2026-10-22T09:00:00.000Z",
+              "valueType": "UTC"
+            }
+          ],
+          "series": [],
+          "evidence": [
+            {
+              "id": "e-task",
+              "sourceType": "TASK",
+              "sourceId": "t-4",
+              "label": "Hạn hoàn thành 22/10/2026, 17:00",
+              "observedAt": "2026-10-23T10:00:00.000Z",
+              "action": {
+                "target": "TASK_DETAIL",
+                "taskId": "t-4",
+                "submissionId": null,
+                "reportId": null
+              }
+            },
+            {
+              "id": "e-submission",
+              "sourceType": "SUBMISSION",
+              "sourceId": "s-pending",
+              "label": "Huy nộp lần 1 lúc 22/10, 16:00; đang chờ nghiệm thu.",
+              "observedAt": "2026-10-22T09:00:00.000Z",
+              "action": {
+                "target": "SUBMISSION_REVIEW",
+                "taskId": "t-4",
+                "submissionId": "s-pending",
+                "reportId": null
+              }
+            },
+            {
+              "id": "e-log",
+              "sourceType": "TIME_LOG",
+              "sourceId": "tl-2",
+              "label": "Nhật ký hợp lệ 120 phút ngày 22/10/2026.",
+              "observedAt": "2026-10-22T08:30:00.000Z",
+              "action": {
+                "target": "TASK_DETAIL",
+                "taskId": "t-4",
+                "submissionId": null,
+                "reportId": null
+              }
+            }
+          ]
+        },
+        "freshness": {
+          "status": "CURRENT",
+          "checkedAt": "2026-10-23T10:05:00.000Z",
+          "latestAnalysisId": null
+        },
+        "explanation": {
+          "status": "READY",
+          "lastSuccess": {
+            "id": "exp-risk-t4-001",
+            "analysisId": "an-risk-t4-001",
+            "snapshotId": "snap-risk-t4-001",
+            "locale": "vi-VN",
+            "generatedAt": "2026-10-23T10:01:00.000Z",
+            "modelDisplayName": "LLM cấu hình sẵn",
+            "promptVersion": "analysis-vi-v1",
+            "summary": "Kết quả đã nộp đúng hạn; điểm cần chú ý hiện tại là thời gian chờ nghiệm thu.",
+            "findings": [
+              {
+                "id": "f-1",
+                "title": "Đã nộp trước hạn",
+                "text": "Huy đã nộp trước hạn một giờ. Công việc hiện vẫn chờ xét kết quả nên đã quá hạn theo thời điểm dữ liệu.",
+                "metricIds": ["m-overdue", "m-wait"],
+                "evidenceIds": ["e-task", "e-submission"]
+              },
+              {
+                "id": "f-2",
+                "title": "Ưu tiên xử lý hàng chờ",
+                "text": "Thời gian chờ nghiệm thu là 25 giờ. Cần xem xét kết quả và phản hồi để tránh kéo dài khâu chốt công việc.",
+                "metricIds": ["m-wait"],
+                "evidenceIds": ["e-submission"]
+              }
+            ],
+            "recommendations": [
+              {
+                "id": "r-1",
+                "title": "Xem kết quả đang chờ",
+                "text": "Người có quyền nghiệm thu đối chiếu tiêu chí với lần nộp mới nhất.",
+                "priority": "HIGH",
+                "evidenceIds": ["e-submission"],
+                "action": {
+                  "target": "SUBMISSION_REVIEW",
+                  "taskId": "t-4",
+                  "submissionId": "s-pending",
+                  "reportId": null
+                }
+              }
+            ],
+            "limitations": [
+              "Chưa có lịch làm việc để đổi thời gian chờ thành giờ làm việc. Không kết luận năng lực cá nhân từ thời gian chờ."
+            ]
+          },
+          "activeJobId": null,
+          "error": null
+        },
+        "generation": {
+          "allowed": true,
+          "blockedReason": null,
+          "retryAfterSeconds": null
+        },
+        "systemSummary": "Công việc đang chờ nghiệm thu, quá hạn 24 giờ tại mốc dữ liệu. Kết quả được nộp trước hạn một giờ; đã ghi 120 phút.",
+        "feedback": {
+          "latest": null,
+          "canSubmit": false
+        }
+      },
+      {
+        "snapshot": {
+          "id": "snap-workload-lan-001",
+          "analysisId": "an-workload-lan-001",
+          "sourceRevision": "p-main-src-20261023-v1",
+          "analysisType": "WORKLOAD",
+          "title": "Khối lượng của Trần Lan",
+          "subject": {
+            "kind": "PERSON",
+            "userId": "u-lan"
+          },
+          "scope": {
+            "projectId": "p-main",
+            "from": "2026-10-01",
+            "to": "2026-10-23"
+          },
+          "dataAsOf": "2026-10-23T10:00:00.000Z",
+          "createdAt": "2026-10-23T10:00:00.000Z",
+          "expiresAt": "2026-10-30T10:00:00.000Z",
+          "calculationVersion": "business-rules-v2",
+          "quality": {
+            "status": "PARTIAL",
+            "missingFields": ["remainingMinutes:t-2", "capacityCalendar:u-lan"],
+            "scopeLimited": false
+          },
+          "metrics": [
+            {
+              "id": "m-open",
+              "code": "OPEN_TASKS",
+              "label": "Công việc đang nhận",
+              "value": 2,
+              "unit": "TASK",
+              "basis": "CURRENT",
+              "formula": "Số TODO/IN_PROGRESS hiện giao cho Lan.",
+              "evidenceIds": ["e-task2", "e-task3"],
+              "missingFields": []
+            },
+            {
+              "id": "m-estimate",
+              "code": "CURRENT_ESTIMATE",
+              "label": "Dự kiến hiện tại",
+              "value": 960,
+              "unit": "MINUTE",
+              "basis": "CURRENT",
+              "formula": "480 + 480 phút của hai công việc mở.",
+              "evidenceIds": ["e-task2", "e-task3"],
+              "missingFields": []
+            },
+            {
+              "id": "m-remaining",
+              "code": "REMAINING",
+              "label": "Tổng thời gian còn lại",
+              "value": null,
+              "unit": "MINUTE",
+              "basis": "CURRENT",
+              "formula": "Chỉ cộng tổng khi mọi việc trong phạm vi đã được cập nhật thời gian còn lại.",
+              "evidenceIds": ["e-task2", "e-task3"],
+              "missingFields": ["remainingMinutes:t-2"]
+            },
+            {
+              "id": "m-capacity",
+              "code": "CAPACITY",
+              "label": "Thời gian khả dụng",
+              "value": null,
+              "unit": "MINUTE",
+              "basis": "PERIOD",
+              "formula": "Lịch làm việc trừ nghỉ và nghĩa vụ đã dành trong cùng kỳ.",
+              "evidenceIds": [],
+              "missingFields": ["capacityCalendar:u-lan"]
+            }
+          ],
+          "context": [
+            {
+              "key": "person",
+              "label": "Nhân viên",
+              "value": "Trần Lan",
+              "valueType": "TEXT"
+            },
+            {
+              "key": "unit",
+              "label": "Đơn vị",
+              "value": "Phòng sản phẩm",
+              "valueType": "TEXT"
+            }
+          ],
+          "series": [],
+          "evidence": [
+            {
+              "id": "e-task2",
+              "sourceType": "TASK",
+              "sourceId": "t-2",
+              "label": "Kiểm tra phân quyền: dự kiến 480 phút, chưa cập nhật còn lại.",
+              "observedAt": "2026-10-23T10:00:00.000Z",
+              "action": {
+                "target": "TASK_DETAIL",
+                "taskId": "t-2",
+                "submissionId": null,
+                "reportId": null
+              }
+            },
+            {
+              "id": "e-task3",
+              "sourceType": "TASK",
+              "sourceId": "t-3",
+              "label": "Thiết kế luồng giao việc: dự kiến 480 phút, còn lại 300 phút.",
+              "observedAt": "2026-10-23T10:00:00.000Z",
+              "action": {
+                "target": "TASK_DETAIL",
+                "taskId": "t-3",
+                "submissionId": null,
+                "reportId": null
+              }
+            }
+          ]
+        },
+        "freshness": {
+          "status": "CURRENT",
+          "checkedAt": "2026-10-23T10:05:00.000Z",
+          "latestAnalysisId": null
+        },
+        "explanation": {
+          "status": "READY",
+          "lastSuccess": {
+            "id": "exp-workload-lan-001",
+            "analysisId": "an-workload-lan-001",
+            "snapshotId": "snap-workload-lan-001",
+            "locale": "vi-VN",
+            "generatedAt": "2026-10-23T10:01:00.000Z",
+            "modelDisplayName": "LLM cấu hình sẵn",
+            "promptVersion": "analysis-vi-v1",
+            "summary": "Lan đang nhận hai công việc; dữ liệu hiện chưa đủ để kết luận có quá tải.",
+            "findings": [
+              {
+                "id": "f-1",
+                "title": "Cần cập nhật phần việc còn lại",
+                "text": "Một trong hai công việc chưa có thời gian còn lại; tổng dự kiến hiện tại không thay thế tổng còn lại.",
+                "metricIds": ["m-open", "m-estimate", "m-remaining"],
+                "evidenceIds": ["e-task2", "e-task3"]
+              },
+              {
+                "id": "f-2",
+                "title": "Chưa có mẫu số khả dụng",
+                "text": "Chưa có lịch khả dụng trong kỳ nên chưa tính tỷ lệ tải hoặc kết luận vượt sức chứa.",
+                "metricIds": ["m-capacity"],
+                "evidenceIds": ["e-task2", "e-task3"]
+              }
+            ],
+            "recommendations": [
+              {
+                "id": "r-1",
+                "title": "Cập nhật ước lượng còn lại",
+                "text": "Rà soát công việc Kiểm tra phân quyền trước khi đánh giá phân bổ.",
+                "priority": "NORMAL",
+                "evidenceIds": ["e-task2"],
+                "action": {
+                  "target": "TASK_DETAIL",
+                  "taskId": "t-2",
+                  "submissionId": null,
+                  "reportId": null
+                }
+              }
+            ],
+            "limitations": [
+              "Chưa có ước lượng còn lại của việc Kiểm tra phân quyền và lịch khả dụng của Lan. Không suy còn lại bằng dự kiến trừ giờ đã làm."
+            ]
+          },
+          "activeJobId": null,
+          "error": null
+        },
+        "generation": {
+          "allowed": true,
+          "blockedReason": null,
+          "retryAfterSeconds": null
+        },
+        "systemSummary": "Trần Lan đang nhận 2 công việc TODO/IN_PROGRESS, tổng dự kiến 960 phút. Chưa đủ thời gian còn lại và lịch khả dụng để tính tỷ lệ tải.",
+        "feedback": {
+          "latest": null,
+          "canSubmit": false
+        }
+      },
+      {
+        "snapshot": {
+          "id": "snap-bottleneck-t4-001",
+          "analysisId": "an-bottleneck-t4-001",
+          "sourceRevision": "p-main-src-20261023-v1",
+          "analysisType": "BOTTLENECK",
+          "title": "Điểm chờ tại khâu nghiệm thu",
+          "subject": {
+            "kind": "TASK",
+            "taskId": "t-4"
+          },
+          "scope": {
+            "projectId": "p-main",
+            "from": "2026-10-01",
+            "to": "2026-10-23"
+          },
+          "dataAsOf": "2026-10-23T10:00:00.000Z",
+          "createdAt": "2026-10-23T10:00:00.000Z",
+          "expiresAt": "2026-10-30T10:00:00.000Z",
+          "calculationVersion": "business-rules-v2",
+          "quality": {
+            "status": "SUFFICIENT",
+            "missingFields": [],
+            "scopeLimited": false
+          },
+          "metrics": [
+            {
+              "id": "m-stage",
+              "code": "STAGE_MINUTES",
+              "label": "Đã chờ nghiệm thu",
+              "value": 1500,
+              "unit": "MINUTE",
+              "basis": "CURRENT",
+              "formula": "Thời điểm dữ liệu trừ thời điểm gần nhất chuyển sang chờ nghiệm thu.",
+              "evidenceIds": ["e-stage"],
+              "missingFields": []
+            },
+            {
+              "id": "m-limit",
+              "code": "THRESHOLD_MINUTES",
+              "label": "Ngưỡng theo dõi",
+              "value": 1440,
+              "unit": "MINUTE",
+              "basis": "CURRENT",
+              "formula": "Ngưỡng thử nghiệm được BE cấu hình: 24 giờ liên tục.",
+              "evidenceIds": ["e-rule"],
+              "missingFields": []
+            },
+            {
+              "id": "m-excess",
+              "code": "EXCESS_MINUTES",
+              "label": "Vượt ngưỡng",
+              "value": 60,
+              "unit": "MINUTE",
+              "basis": "CURRENT",
+              "formula": "max(0, 1500 − 1440).",
+              "evidenceIds": ["e-stage", "e-rule"],
+              "missingFields": []
+            },
+            {
+              "id": "m-revisions",
+              "code": "REVISION_COUNT",
+              "label": "Vòng yêu cầu sửa",
+              "value": 0,
+              "unit": "COUNT",
+              "basis": "CURRENT",
+              "formula": "Đếm các quyết định yêu cầu sửa đã ghi.",
+              "evidenceIds": ["e-stage"],
+              "missingFields": []
+            }
+          ],
+          "context": [
+            {
+              "key": "stage",
+              "label": "Công đoạn",
+              "value": "Chờ nghiệm thu",
+              "valueType": "TEXT"
+            },
+            {
+              "key": "calendar",
+              "label": "Cách tính thời gian",
+              "value": "Liên tục, gồm cả ngoài giờ làm việc",
+              "valueType": "TEXT"
+            }
+          ],
+          "series": [],
+          "evidence": [
+            {
+              "id": "e-stage",
+              "sourceType": "SUBMISSION",
+              "sourceId": "s-pending",
+              "label": "Lần nộp 1 đang chờ từ 22/10, 16:00.",
+              "observedAt": "2026-10-22T09:00:00.000Z",
+              "action": {
+                "target": "SUBMISSION_REVIEW",
+                "taskId": "t-4",
+                "submissionId": "s-pending",
+                "reportId": null
+              }
+            },
+            {
+              "id": "e-rule",
+              "sourceType": "AGGREGATE",
+              "sourceId": null,
+              "label": "Ngưỡng minh họa 24 giờ liên tục; không phải giờ công.",
+              "observedAt": null,
+              "action": null
+            }
+          ]
+        },
+        "freshness": {
+          "status": "CURRENT",
+          "checkedAt": "2026-10-23T10:05:00.000Z",
+          "latestAnalysisId": null
+        },
+        "explanation": {
+          "status": "READY",
+          "lastSuccess": {
+            "id": "exp-bottleneck-t4-001",
+            "analysisId": "an-bottleneck-t4-001",
+            "snapshotId": "snap-bottleneck-t4-001",
+            "locale": "vi-VN",
+            "generatedAt": "2026-10-23T10:01:00.000Z",
+            "modelDisplayName": "LLM cấu hình sẵn",
+            "promptVersion": "analysis-vi-v1",
+            "summary": "Khâu chờ nghiệm thu đang vượt ngưỡng theo dõi minh họa; nên ưu tiên đối chiếu kết quả đã nộp.",
+            "findings": [
+              {
+                "id": "f-1",
+                "title": "Chờ lâu hơn ngưỡng",
+                "text": "Thời gian ở bước chờ là 25 giờ liên tục, cao hơn ngưỡng theo dõi 24 giờ một giờ.",
+                "metricIds": ["m-stage", "m-limit", "m-excess"],
+                "evidenceIds": ["e-stage", "e-rule"]
+              }
+            ],
+            "recommendations": [
+              {
+                "id": "r-1",
+                "title": "Kiểm tra hàng chờ xét kết quả",
+                "text": "Đối chiếu lần nộp và phân công người phản hồi trong thẩm quyền.",
+                "priority": "HIGH",
+                "evidenceIds": ["e-stage"],
+                "action": {
+                  "target": "REVIEW_QUEUE",
+                  "taskId": null,
+                  "submissionId": null,
+                  "reportId": null
+                }
+              }
+            ],
+            "limitations": [
+              "Ngưỡng 24 giờ là giá trị thử nghiệm cần BE cấu hình. Thời gian liên tục không phải giờ công."
+            ]
+          },
+          "activeJobId": null,
+          "error": null
+        },
+        "generation": {
+          "allowed": true,
+          "blockedReason": null,
+          "retryAfterSeconds": null
+        },
+        "systemSummary": "Kết quả đang chờ nghiệm thu 1.500 phút liên tục, vượt ngưỡng thử nghiệm 1.440 phút là 60 phút; chưa có vòng yêu cầu sửa.",
+        "feedback": {
+          "latest": null,
+          "canSubmit": true
+        }
+      },
+      {
+        "snapshot": {
+          "id": "snap-summary-main-001",
+          "analysisId": "an-summary-main-001",
+          "sourceRevision": "p-main-src-20261023-v1",
+          "analysisType": "SUMMARY",
+          "title": "Tổng quan dự án Cổng quản lý nội bộ",
+          "subject": {
+            "kind": "PROJECT",
+            "projectId": "p-main"
+          },
+          "scope": {
+            "projectId": "p-main",
+            "from": "2026-10-01",
+            "to": "2026-10-23"
+          },
+          "dataAsOf": "2026-10-23T10:00:00.000Z",
+          "createdAt": "2026-10-23T10:00:00.000Z",
+          "expiresAt": "2026-10-30T10:00:00.000Z",
+          "calculationVersion": "business-rules-v2",
+          "quality": {
+            "status": "PARTIAL",
+            "missingFields": ["capacityCalendar"],
+            "scopeLimited": false
+          },
+          "metrics": [
+            {
+              "id": "m-valid",
+              "code": "K01",
+              "label": "Công việc được tính",
+              "value": 5,
+              "unit": "TASK",
+              "basis": "CURRENT",
+              "formula": "6 công việc − 1 đã hủy.",
+              "evidenceIds": ["e-tasks"],
+              "missingFields": []
+            },
+            {
+              "id": "m-completed",
+              "code": "K02_CURRENT",
+              "label": "Đã hoàn thành",
+              "value": 1,
+              "unit": "TASK",
+              "basis": "CURRENT",
+              "formula": "Số công việc COMPLETED tại dataAsOf.",
+              "evidenceIds": ["e-tasks"],
+              "missingFields": []
+            },
+            {
+              "id": "m-completion",
+              "code": "K03",
+              "label": "Tỷ lệ hoàn thành",
+              "value": 20,
+              "unit": "PERCENT",
+              "basis": "CURRENT",
+              "formula": "1 / 5 × 100.",
+              "evidenceIds": ["e-tasks"],
+              "missingFields": []
+            },
+            {
+              "id": "m-overdue",
+              "code": "K04",
+              "label": "Công việc quá hạn",
+              "value": 1,
+              "unit": "TASK",
+              "basis": "CURRENT",
+              "formula": "Việc mở và dataAsOf > dueAt.",
+              "evidenceIds": ["e-tasks"],
+              "missingFields": []
+            },
+            {
+              "id": "m-hours",
+              "code": "K06",
+              "label": "Giờ công trong kỳ",
+              "value": 6,
+              "unit": "HOUR",
+              "basis": "PERIOD",
+              "formula": "(180 + 120 + 60) / 60.",
+              "evidenceIds": ["e-logs"],
+              "missingFields": []
+            },
+            {
+              "id": "m-pending",
+              "code": "PENDING_REVIEW_COUNT",
+              "label": "Chờ nghiệm thu",
+              "value": 1,
+              "unit": "TASK",
+              "basis": "CURRENT",
+              "formula": "Giá trị từ dữ liệu nguồn đã lọc quyền.",
+              "evidenceIds": ["e-tasks"],
+              "missingFields": []
+            }
+          ],
+          "context": [
+            {
+              "key": "project",
+              "label": "Dự án",
+              "value": "Cổng quản lý nội bộ",
+              "valueType": "TEXT"
+            }
+          ],
+          "series": [],
+          "evidence": [
+            {
+              "id": "e-tasks",
+              "sourceType": "AGGREGATE",
+              "sourceId": null,
+              "label": "6 công việc: mỗi trạng thái có 1; t-4 chờ nghiệm thu quá hạn.",
+              "observedAt": "2026-10-23T10:00:00.000Z",
+              "action": null
+            },
+            {
+              "id": "e-logs",
+              "sourceType": "AGGREGATE",
+              "sourceId": null,
+              "label": "3 nhật ký ACTIVE: 180, 120 và 60 phút trong kỳ.",
+              "observedAt": "2026-10-23T10:00:00.000Z",
+              "action": null
+            }
+          ]
+        },
+        "freshness": {
+          "status": "CURRENT",
+          "checkedAt": "2026-10-23T10:05:00.000Z",
+          "latestAnalysisId": null
+        },
+        "explanation": {
+          "status": "READY",
+          "lastSuccess": {
+            "id": "exp-summary-main-001",
+            "analysisId": "an-summary-main-001",
+            "snapshotId": "snap-summary-main-001",
+            "locale": "vi-VN",
+            "generatedAt": "2026-10-23T10:01:00.000Z",
+            "modelDisplayName": "LLM cấu hình sẵn",
+            "promptVersion": "analysis-vi-v1",
+            "summary": "Dự án có một công việc hoàn thành trong năm việc được tính; khâu nghiệm thu là điểm nên xem trước.",
+            "findings": [
+              {
+                "id": "f-1",
+                "title": "Tiến độ hiện tại",
+                "text": "Tỷ lệ hoàn thành hiện là 20%. Một công việc quá hạn đang nằm ở bước chờ nghiệm thu.",
+                "metricIds": ["m-completion", "m-overdue", "m-pending"],
+                "evidenceIds": ["e-tasks"]
+              },
+              {
+                "id": "f-2",
+                "title": "Giờ công có nguồn đối chiếu",
+                "text": "Trong kỳ có 6 giờ công hợp lệ từ ba nhật ký; số giờ không được cộng thêm từ báo cáo.",
+                "metricIds": ["m-hours"],
+                "evidenceIds": ["e-logs"]
+              }
+            ],
+            "recommendations": [
+              {
+                "id": "r-1",
+                "title": "Ưu tiên xem kết quả chờ",
+                "text": "Xử lý hàng chờ trước khi điều chỉnh kế hoạch hoặc người thực hiện.",
+                "priority": "HIGH",
+                "evidenceIds": ["e-tasks"],
+                "action": {
+                  "target": "REVIEW_QUEUE",
+                  "taskId": null,
+                  "submissionId": null,
+                  "reportId": null
+                }
+              }
+            ],
+            "limitations": [
+              "Thiếu lịch khả dụng nên chưa kết luận tải nhân sự. Quy mô dữ liệu mẫu nhỏ, không dùng để dự báo xác suất trễ."
+            ]
+          },
+          "activeJobId": null,
+          "error": null
+        },
+        "generation": {
+          "allowed": true,
+          "blockedReason": null,
+          "retryAfterSeconds": null
+        },
+        "systemSummary": "Dự án có 5 công việc không hủy, 1 công việc hoàn thành (20%), 1 việc đang quá hạn và 360 phút giờ công trong kỳ.",
+        "feedback": {
+          "latest": null,
+          "canSubmit": false
+        }
+      },
+      {
+        "snapshot": {
+          "id": "snap-metric-k06-001",
+          "analysisId": "an-metric-k06-001",
+          "sourceRevision": "p-main-src-20261023-v1",
+          "analysisType": "METRIC",
+          "title": "Chi tiết giờ công trong kỳ",
+          "subject": {
+            "kind": "METRIC",
+            "metricCode": "K06"
+          },
+          "scope": {
+            "projectId": "p-main",
+            "from": "2026-10-01",
+            "to": "2026-10-23"
+          },
+          "dataAsOf": "2026-10-23T10:00:00.000Z",
+          "createdAt": "2026-10-23T10:00:00.000Z",
+          "expiresAt": "2026-10-30T10:00:00.000Z",
+          "calculationVersion": "business-rules-v2",
+          "quality": {
+            "status": "SUFFICIENT",
+            "missingFields": [],
+            "scopeLimited": false
+          },
+          "metrics": [
+            {
+              "id": "m-hours",
+              "code": "K06",
+              "label": "Tổng giờ công",
+              "value": 6,
+              "unit": "HOUR",
+              "basis": "PERIOD",
+              "formula": "Tổng phút nhật ký ACTIVE / 60.",
+              "evidenceIds": ["e-tl1", "e-tl2", "e-tl3"],
+              "missingFields": []
+            },
+            {
+              "id": "m-minutes",
+              "code": "ACTUAL_MINUTES",
+              "label": "Phút đã ghi",
+              "value": 360,
+              "unit": "MINUTE",
+              "basis": "PERIOD",
+              "formula": "180 + 120 + 60.",
+              "evidenceIds": ["e-tl1", "e-tl2", "e-tl3"],
+              "missingFields": []
+            },
+            {
+              "id": "m-logs",
+              "code": "LOG_COUNT",
+              "label": "Nhật ký hợp lệ",
+              "value": 3,
+              "unit": "COUNT",
+              "basis": "PERIOD",
+              "formula": "Đếm 3 nhật ký ACTIVE.",
+              "evidenceIds": ["e-tl1", "e-tl2", "e-tl3"],
+              "missingFields": []
+            },
+            {
+              "id": "m-people",
+              "code": "PEOPLE_COUNT",
+              "label": "Người đã ghi giờ",
+              "value": 2,
+              "unit": "COUNT",
+              "basis": "PERIOD",
+              "formula": "Đếm những người khác nhau đã ghi nhật ký.",
+              "evidenceIds": ["e-tl1", "e-tl2", "e-tl3"],
+              "missingFields": []
+            }
+          ],
+          "context": [
+            {
+              "key": "period",
+              "label": "Kỳ dữ liệu",
+              "value": "01/10–23/10/2026",
+              "valueType": "TEXT"
+            },
+            {
+              "key": "basis",
+              "label": "Nguồn tính",
+              "value": "Nhật ký còn hiệu lực, theo người ghi",
+              "valueType": "TEXT"
+            }
+          ],
+          "series": [
+            {
+              "id": "s-hours",
+              "label": "Giờ công theo ngày có nhật ký",
+              "unit": "HOUR",
+              "points": [
+                {
+                  "date": "2026-10-22",
+                  "value": 3
+                },
+                {
+                  "date": "2026-10-23",
+                  "value": 3
+                }
+              ]
+            }
+          ],
+          "evidence": [
+            {
+              "id": "e-tl1",
+              "sourceType": "TIME_LOG",
+              "sourceId": "tl-1",
+              "label": "Lan: 180 phút ngày 23/10.",
+              "observedAt": "2026-10-23T09:00:00.000Z",
+              "action": {
+                "target": "TASK_DETAIL",
+                "taskId": "t-3",
+                "submissionId": null,
+                "reportId": null
+              }
+            },
+            {
+              "id": "e-tl2",
+              "sourceType": "TIME_LOG",
+              "sourceId": "tl-2",
+              "label": "Huy: 120 phút ngày 22/10.",
+              "observedAt": "2026-10-22T08:30:00.000Z",
+              "action": {
+                "target": "TASK_DETAIL",
+                "taskId": "t-4",
+                "submissionId": null,
+                "reportId": null
+              }
+            },
+            {
+              "id": "e-tl3",
+              "sourceType": "TIME_LOG",
+              "sourceId": "tl-3",
+              "label": "Lan: 60 phút ngày 22/10.",
+              "observedAt": "2026-10-22T07:30:00.000Z",
+              "action": {
+                "target": "TASK_DETAIL",
+                "taskId": "t-5",
+                "submissionId": null,
+                "reportId": null
+              }
+            }
+          ]
+        },
+        "freshness": {
+          "status": "CURRENT",
+          "checkedAt": "2026-10-23T10:05:00.000Z",
+          "latestAnalysisId": null
+        },
+        "explanation": {
+          "status": "READY",
+          "lastSuccess": {
+            "id": "exp-metric-k06-001",
+            "analysisId": "an-metric-k06-001",
+            "snapshotId": "snap-metric-k06-001",
+            "locale": "vi-VN",
+            "generatedAt": "2026-10-23T10:01:00.000Z",
+            "modelDisplayName": "LLM cấu hình sẵn",
+            "promptVersion": "analysis-vi-v1",
+            "summary": "Sáu giờ công trong kỳ được đối chiếu với ba nhật ký hợp lệ của hai người.",
+            "findings": [
+              {
+                "id": "f-1",
+                "title": "Phân bổ theo người ghi",
+                "text": "Lan ghi tổng 240 phút và Huy ghi 120 phút. Giờ lịch sử vẫn thuộc người đã ghi kể cả sau bàn giao công việc.",
+                "metricIds": ["m-hours", "m-minutes", "m-logs", "m-people"],
+                "evidenceIds": ["e-tl1", "e-tl2", "e-tl3"]
+              }
+            ],
+            "recommendations": [
+              {
+                "id": "r-1",
+                "title": "Mở công việc để xem nhật ký",
+                "text": "Kiểm tra nhật ký nguồn khi cần giải thích số giờ đã ghi.",
+                "priority": "NORMAL",
+                "evidenceIds": ["e-tl1"],
+                "action": {
+                  "target": "TASK_DETAIL",
+                  "taskId": "t-3",
+                  "submissionId": null,
+                  "reportId": null
+                }
+              }
+            ],
+            "limitations": [
+              "Giờ đã ghi không tự thể hiện mức độ hoàn thành hoặc năng lực. Chỉ thống kê các nhật ký còn hiệu lực trong phạm vi."
+            ]
+          },
+          "activeJobId": null,
+          "error": null
+        },
+        "generation": {
+          "allowed": true,
+          "blockedReason": null,
+          "retryAfterSeconds": null
+        },
+        "systemSummary": "Tổng giờ công trong kỳ là 6 giờ, từ 360 phút của 3 nhật ký còn hiệu lực, do 2 người ghi.",
+        "feedback": {
+          "latest": null,
+          "canSubmit": false
+        }
+      }
+    ]
+  }
+}

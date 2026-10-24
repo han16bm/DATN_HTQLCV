@@ -1,0 +1,39 @@
+# Dependencies and framework output
+node_modules/
+.next/
+out/
+dist/
+build/
+.turbo/
+.cache/
+*.tsbuildinfo
+next-env.d.ts
+
+# Tests and runtime logs
+coverage/
+test-results/
+playwright-report/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment secrets; retain only the checked public FE mock configuration
+.env
+.env.*
+!.env.example
+!FE/.env.development
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local editor and operating system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.tmp
+*.swp

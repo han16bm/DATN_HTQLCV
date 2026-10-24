@@ -1,0 +1,315 @@
+SITE MAP – ĐIỀU HƯỚNG, ROUTE VÀ QUYỀN
+Tài liệu 0.4 · Contract đề xuất 0.3.0 · 24/10/2026
+43 màn/biểu mẫu/hộp thoại được đặc tả. Chỉ 24 màn chính có ảnh; bỏ ảnh không có nghĩa bỏ chức năng.
+
+1. ĐIỂM VÀO VÀ MENU
+Chưa có phiên: S01 /login. Đăng nhập thành công: S02 /workspace, menu theo quyền thực tế.
+Nhân viên: Không gian làm việc, Dự án, Công việc, Báo cáo. Chỉ xem việc hiện tại/từng tham gia khi còn quyền dự án.
+Quản lý dự án/người quản lý: thêm Chờ nghiệm thu, Bảng tổng quan, Phân tích, Cảnh báo theo quyền và scope.
+Quản trị tài khoản/tổ chức: có menu quản trị; không tự có quyền đọc/sửa/nghiệm thu dữ liệu dự án.
+Một người nhiều vai trò dùng hợp các quyền được cấp trong đúng phạm vi, vẫn không được tự nghiệm thu.
+
+2. DANH MỤC THEO FEATURE
+
+AUTH
+S01. Đăng nhập
+  Route: /login
+  Kiểu: Màn chính có PNG; feature=auth.
+  Use Case: UC-A01.
+  API: login, logout, refreshSession.
+  Điểm đi tiếp: Đăng nhập → S02.
+
+WORKSPACE
+S02. Không gian làm việc
+  Route: /workspace
+  Kiểu: Màn chính có PNG; feature=workspace.
+  Use Case: UC-A01, UC-A02, UC-T04, UC-P03.
+  API: logout, refreshSession, getSession, listProjects, listTasks.
+  Điểm đi tiếp: Xem công việc → S15; Lập báo cáo → S30.
+
+USERS
+S03. Tài khoản người dùng
+  Route: /admin/users
+  Kiểu: Màn chính có PNG; feature=users.
+  Use Case: UC-A03, UC-A04.
+  API: listUsers.
+  Điểm đi tiếp: Cấp tài khoản → S04; Xem và chỉnh sửa → S05.
+S04. Cấp tài khoản nội bộ
+  Route: /admin/users/new
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=users.
+  Use Case: UC-A03.
+  API: createUser.
+  Điểm đi tiếp: Tạo tài khoản → S03; Hủy → S03.
+S05. Chi tiết tài khoản
+  Route: /admin/users/[userId]
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=users.
+  Use Case: UC-A04.
+  API: getUser, updateUser, lockUser, unlockUser, resetUserPassword.
+  Điểm đi tiếp: Lưu thông tin → S03; Khóa hoặc mở khóa → S05; Cấp lại mật khẩu → S05.
+
+ORGANIZATION
+S06. Cơ cấu đơn vị
+  Route: /admin/organization
+  Kiểu: Màn chính có PNG; feature=organization.
+  Use Case: UC-A05.
+  API: listUnits, getUnit, createUnit, updateUnit, deactivateUnit.
+  Điểm đi tiếp: Lưu đơn vị → S06; Quản lý nhóm → S07; Ngừng sử dụng đơn vị → S06.
+S07. Nhóm nhân sự
+  Route: /admin/teams
+  Kiểu: Màn chính có PNG; feature=organization.
+  Use Case: UC-A05.
+  API: listTeams, getTeam, createTeam, updateTeam, replaceTeamMembers, deactivateTeam.
+  Điểm đi tiếp: Lưu nhóm → S07; Ngừng sử dụng nhóm → S07.
+
+PROJECTS
+S08. Danh sách dự án
+  Route: /projects
+  Kiểu: Màn chính có PNG; feature=projects.
+  Use Case: UC-P03.
+  API: listProjects.
+  Điểm đi tiếp: Tạo dự án → S09; Mở dự án → S10.
+S09. Tạo dự án
+  Route: /projects/new
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=projects.
+  Use Case: UC-P01.
+  API: createProject.
+  Điểm đi tiếp: Tạo dự án → S10.
+S10. Cổng quản lý nội bộ
+  Route: /projects/[projectId]
+  Kiểu: Màn chính có PNG; feature=projects.
+  Use Case: UC-P02, UC-P03.
+  API: getProject, activateProject, listProjectHistory.
+  Điểm đi tiếp: Chỉnh sửa kế hoạch → S11; Công việc → S15; Thành viên → S12; Kết thúc dự án → S14; Triển khai dự án Dự kiến → S10.
+S11. Điều chỉnh dự án
+  Route: /projects/[projectId]/edit
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=projects.
+  Use Case: UC-P02.
+  API: updateProject.
+  Điểm đi tiếp: Lưu kế hoạch → S10.
+S14. Kết thúc dự án
+  Route: /projects/[projectId]#close
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=projects.
+  Use Case: UC-P02.
+  API: getProjectClosureChecks, completeProject, cancelProject.
+  Điểm đi tiếp: Kiểm tra điều kiện và xác nhận → S10; Quay lại → S10.
+
+PROJECT-MEMBERS
+S12. Thành viên dự án
+  Route: /projects/[projectId]/members
+  Kiểu: Màn chính có PNG; feature=project-members.
+  Use Case: UC-P04.
+  API: listProjectMembers, addProjectMember, endProjectMembership.
+  Điểm đi tiếp: Thêm thành viên → S12; Bàn giao công việc → S20; Phân quyền → S13; Kết thúc thành viên → S12.
+S13. Quyền trên dự án
+  Route: /projects/[projectId]/permissions
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=project-members.
+  Use Case: UC-P05.
+  API: updateProjectMemberPermissions.
+  Điểm đi tiếp: Lưu quyền → S12.
+
+TASKS
+S15. Công việc
+  Route: /tasks
+  Kiểu: Màn chính có PNG; feature=tasks.
+  Use Case: UC-T04.
+  API: listTasks.
+  Điểm đi tiếp: Tạo công việc → S17; Bảng trạng thái → S16; Mở công việc → S18.
+S16. Bảng trạng thái công việc
+  Route: /tasks?view=board
+  Kiểu: Màn chính có PNG; feature=tasks.
+  Use Case: UC-T04.
+  API: listTasks.
+  Điểm đi tiếp: Dạng danh sách → S15; Tạo công việc → S17; Mở công việc → S18.
+S17. Tạo công việc
+  Route: /projects/[projectId]/tasks/new
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=tasks.
+  Use Case: UC-T01.
+  API: createTask.
+  Điểm đi tiếp: Tạo công việc → S18.
+S18. Chi tiết công việc
+  Route: /tasks/[taskId]
+  Kiểu: Màn chính có PNG; feature=tasks.
+  Use Case: UC-T04, UC-D03.
+  API: getTask, updateRemainingEstimate.
+  Điểm đi tiếp: Nộp kết quả → S24; Ghi giờ công → S23; Giờ công → S22; Các lần nộp → S25; Lịch sử → S28; Lưu phút còn lại → S18.
+S19. Điều chỉnh công việc
+  Route: /tasks/[taskId]/edit
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=tasks.
+  Use Case: UC-T03.
+  API: updateTask.
+  Điểm đi tiếp: Lưu thay đổi → S18.
+S20. Giao hoặc bàn giao công việc
+  Route: /tasks/[taskId]#assignment
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=tasks.
+  Use Case: UC-T02.
+  API: assignTask.
+  Điểm đi tiếp: Xác nhận phân công → S18; Quay lại → S18.
+S21. Thực hiện hoặc dừng công việc
+  Route: /tasks/[taskId]#execution
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=tasks.
+  Use Case: UC-T03, UC-T05.
+  API: startTask, pauseTask, cancelTask.
+  Điểm đi tiếp: Xác nhận → S18; Quay lại → S18.
+S28. Lịch sử công việc
+  Route: /tasks/[taskId]/history
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=tasks.
+  Use Case: UC-T11.
+  API: listTaskHistory.
+  Điểm đi tiếp: Theo nội dung đặc tả màn.
+
+TIME-LOGS
+S22. Nhật ký giờ công
+  Route: /tasks/[taskId]/time-logs
+  Kiểu: Màn chính có PNG; feature=time-logs.
+  Use Case: UC-T06.
+  API: listTimeLogs.
+  Điểm đi tiếp: Ghi thời gian → S23; Sửa nhật ký → S23; Lịch sử → S28.
+S23. Ghi hoặc chỉnh giờ công
+  Route: /tasks/[taskId]#time-log
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=time-logs.
+  Use Case: UC-T06.
+  API: createTimeLog, updateTimeLog, voidTimeLog.
+  Điểm đi tiếp: Lưu nhật ký → S22; Loại nhật ký đã chọn khỏi tổng → S22.
+
+SUBMISSIONS
+S24. Nộp kết quả công việc
+  Route: /tasks/[taskId]#submit
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=submissions.
+  Use Case: UC-T07.
+  API: createSubmission, getAttachment.
+  Điểm đi tiếp: Tải minh chứng → S41; Xác nhận nộp → S25.
+S25. Các lần nộp kết quả
+  Route: /tasks/[taskId]/submissions
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=submissions.
+  Use Case: UC-T07, UC-T08, UC-T09.
+  API: listSubmissions.
+  Điểm đi tiếp: Xem kết quả mới nhất → S27; Xem lịch sử → S28.
+S26. Kết quả chờ nghiệm thu
+  Route: /reviews
+  Kiểu: Màn chính có PNG; feature=submissions.
+  Use Case: UC-T08, UC-T09.
+  API: listTasks, listReviewQueue.
+  Điểm đi tiếp: Mở kết quả → S27.
+S27. Đối chiếu và nghiệm thu
+  Route: /tasks/[taskId]/submissions/[submissionId]
+  Kiểu: Màn chính có PNG; feature=submissions.
+  Use Case: UC-T08, UC-T09.
+  API: getSubmission, approveSubmission, requestSubmissionRevision, getAttachment, downloadAttachment.
+  Điểm đi tiếp: Xác nhận quyết định → S18; Quay lại danh sách → S26.
+
+REPORTS
+S29. Báo cáo công việc
+  Route: /reports
+  Kiểu: Màn chính có PNG; feature=reports.
+  Use Case: UC-T10, UC-T11.
+  API: listReports.
+  Điểm đi tiếp: Lập báo cáo → S30; Mở bản nháp → S31; Xem bản đã gửi → S32.
+S30. Chọn kỳ báo cáo
+  Route: /reports/new
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=reports.
+  Use Case: UC-T10.
+  API: getReportPreview, createReportDraft.
+  Điểm đi tiếp: Lấy dữ liệu và mở bản nháp → S31.
+S31. Soạn báo cáo nháp
+  Route: /reports/[reportId]/edit
+  Kiểu: Màn chính có PNG; feature=reports.
+  Use Case: UC-T10.
+  API: getReportPreview, getReport, updateReportDraft, refreshReportDraft, submitReport.
+  Điểm đi tiếp: Làm mới số liệu → S31; Lưu nháp → S31; Gửi báo cáo → S32.
+S32. Báo cáo đã gửi
+  Route: /reports/[reportId]
+  Kiểu: Màn chính có PNG; feature=reports.
+  Use Case: UC-T11.
+  API: getReport.
+  Điểm đi tiếp: Mở công việc hiện tại → S18; Danh sách báo cáo → S29.
+
+ANALYTICS
+S33. Bảng tổng quan
+  Route: /dashboard
+  Kiểu: Màn chính có PNG; feature=analytics.
+  Use Case: UC-D01.
+  API: getDashboard, listAnalyticsFilterOptions.
+  Điểm đi tiếp: Xem chi tiết phân tích → S43; Nguy cơ trễ hạn → S34; Khối lượng → S35; Điểm nghẽn → S36; Cảnh báo → S37; Tổng hợp phân tích → S39.
+S34. Nguy cơ trễ hạn
+  Route: /analytics/risks
+  Kiểu: Màn chính có PNG; feature=analytics.
+  Use Case: UC-D02.
+  API: getDeadlineRisks, listAnalyticsFilterOptions.
+  Điểm đi tiếp: Xem chi tiết phân tích → S43; Xem tổng quan → S33.
+S35. Khối lượng công việc
+  Route: /analytics/workload
+  Kiểu: Màn chính có PNG; feature=analytics.
+  Use Case: UC-D03.
+  API: getWorkload, listAnalyticsFilterOptions.
+  Điểm đi tiếp: Xem chi tiết nhân viên → S43; Xem công việc → S15.
+S36. Điểm nghẽn quy trình
+  Route: /analytics/bottlenecks
+  Kiểu: Màn chính có PNG; feature=analytics.
+  Use Case: UC-D04.
+  API: getBottlenecks, listAnalyticsFilterOptions.
+  Điểm đi tiếp: Xem chi tiết điểm chờ → S43; Hàng chờ nghiệm thu → S26.
+S39. Tổng hợp phân tích và đề xuất
+  Route: /analytics/summary
+  Kiểu: Màn chính có PNG; feature=analytics.
+  Use Case: UC-D06.
+  API: getAnalysisSummary, listAnalyticsFilterOptions.
+  Điểm đi tiếp: Mở phân tích tổng quan → S43; Xem chi tiết điểm cần chú ý → S43.
+S40. Tiến trình AI phân tích
+  Route: /analytics/jobs/[jobId]
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=analytics.
+  Use Case: UC-D02, UC-D03, UC-D04, UC-D06.
+  API: createAnalysisJob, getAnalysisJob.
+  Điểm đi tiếp: Xem thông số và lời phân tích → S43; Quay lại tổng quan → S33.
+S43. Chi tiết phân tích
+  Route: /analytics/details/[analysisId]
+  Kiểu: Màn chính có PNG; feature=analytics.
+  Use Case: UC-D01, UC-D02, UC-D03, UC-D04, UC-D05, UC-D06.
+  API: createAnalysisJob, getAnalysisJob, getAnalysisDetail, createAnalysisFeedback.
+  Điểm đi tiếp: Phân tích lại → S40; Mở dữ liệu căn cứ → S27; Quay lại → S34.
+
+ALERTS
+S37. Cảnh báo
+  Route: /alerts
+  Kiểu: Màn chính có PNG; feature=alerts.
+  Use Case: UC-D05.
+  API: listAlerts.
+  Điểm đi tiếp: Xem và xử lý → S38.
+S38. Chi tiết và xử lý cảnh báo
+  Route: /alerts/[alertId]
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=alerts.
+  Use Case: UC-D04, UC-D05.
+  API: getAlert, updateAlert.
+  Điểm đi tiếp: Xem phân tích AI → S43; Mở công việc → S18; Lưu xử lý → S37.
+
+ATTACHMENTS
+S41. Tải tệp minh chứng
+  Route: /tasks/[taskId]#attachment
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=attachments.
+  Use Case: UC-T07.
+  API: getUploadPolicy, uploadAttachment, getAttachment.
+  Điểm đi tiếp: Tải tệp → S41; Chọn tệp đã hoàn tất → S24.
+
+SYSTEM
+S42. Không thể mở nội dung
+  Route: /403 · /404 · error boundary
+  Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=system.
+  Use Case: UC-A01, UC-T04.
+  API: Không có API riêng; dùng tài nguyên của route..
+  Điểm đi tiếp: Về không gian làm việc → S02; Thử tải lại → S42.
+
+3. LUỒNG XUYÊN PHÂN HỆ
+Tài khoản/tổ chức: S03 → S04/S05; S06 ↔ S07. Nhóm/tổ chức không tự cấp quyền dự án.
+Dự án: S08 → S09 → S10; từ chi tiết mở S11/S12/S13/S14. Thao tác kết thúc theo BUSINESS_STATES.txt.
+Công việc: S15 ↔ S16 → S18; S17 tạo mới, S19 sửa; S20/S21 là dialog từ S18.
+Giờ công/kết quả: S18 → S22/S23/S24/S25/S28/S41. Người xét đi S26 → S27, kiểm tra người nộp và lần mới nhất.
+Báo cáo: S29 → S30 → S31 → S32; duplicate mở bản hiện có theo existingReportId, không ghi đè bản gửi.
+Phân tích: S33/S34/S35/S36/S37/S38/S39 → S43 bằng analysisRef; job S40 là trang theo dõi phụ.
+S43 BOTTLENECK có phản hồi xác nhận/bác bỏ khi canSubmit; các loại khác chỉ xem số liệu/lời AI và đề xuất.
+Đề xuất mở màn nghiệp vụ qua DomainAction, không tự chạy mutation. Back giữ filter nguồn phù hợp.
+S42 xử lý 403/404/error boundary, không tạo thêm chức năng kinh doanh.
+
+4. ROUTE, FILTER VÀ KHẢ NĂNG QUAY LẠI
+Dấu # biểu diễn dialog trên trang gốc, không tạo page mới. Dialog đóng trả focus về trigger; có dữ liệu chưa lưu phải xử lý trước khi thoát.
+Filter chia sẻ được giữ trên URL. ID opaque, không parse ID để suy quyền hoặc service. Đổi filter cha reset lựa chọn con không còn hợp lệ.
+Mất quyền giữa lúc xem/thao tác: hủy request đọc, bỏ cache nhạy cảm và xử lý 403. URL cũ không đảm bảo còn quyền.
+Điều kiện field/action/quyền chi tiết nằm ở SCREEN_SPECIFICATIONS.md, AGENTS.md và API_CATALOG.md.

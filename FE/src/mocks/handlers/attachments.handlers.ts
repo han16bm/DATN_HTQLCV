@@ -5,13 +5,8 @@ import {
 } from "@/features/attachments/schemas/attachments.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { http, HttpResponse } from "msw";
-import { attachmentsDb } from "../db/attachments.db";
-import {
-  authenticatedUser,
-  mockCommand,
-  mockHandler,
-  mockJson,
-} from "../utils/handler";
+import { attachmentsDb } from "../db";
+import { authenticatedUser, mockCommand, mockHandler, mockJson } from "./http";
 export const attachmentHandlers = [
   http.get(
     "*/api/v1/attachments/policy",

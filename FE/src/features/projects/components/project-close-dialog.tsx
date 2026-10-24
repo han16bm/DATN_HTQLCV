@@ -14,14 +14,16 @@ import {
   useCancelProjectMutation,
   useCompleteProjectMutation,
 } from "../hooks/use-projects-mutations";
-import {
-  useGetProjectClosureChecksQuery,
-  useGetProjectQuery,
-} from "../hooks/use-projects-queries";
+import { useGetProjectClosureChecksQuery } from "../hooks/use-projects-queries";
 
-export function ProjectCloseDialog({ project }: { project: ProjectDto }) {
+export function ProjectCloseDialog({
+  project,
+  reload,
+}: {
+  project: ProjectDto;
+  reload: () => Promise<{ data?: ProjectDto }>;
+}) {
   const dialog = useHashDialog();
-  const query = useGetProjectQuery(project.id);
   const checks = useGetProjectClosureChecksQuery(project.id, {
     enabled: dialog.name === "close",
   });
@@ -83,7 +85,7 @@ export function ProjectCloseDialog({ project }: { project: ProjectDto }) {
               <div className="section-gap">
                 <VersionedSchemaForm
                   initial={project}
-                  reload={() => query.refetch()}
+                  reload={reload}
                   key={action}
                   schema={action === "COMPLETE" ? emptySchema : reasonSchema}
                   fields={

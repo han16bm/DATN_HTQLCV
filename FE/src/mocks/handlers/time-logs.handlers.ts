@@ -8,14 +8,14 @@ import {
 import { page, reasonSchema } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { http } from "msw";
-import { timeLogsDb } from "../db/time-logs.db";
+import { timeLogsDb } from "../db";
 import {
   authenticatedUser,
   mockCommand,
   mockHandler,
   mockJson,
   parseQuery,
-} from "../utils/handler";
+} from "./http";
 export const timeLogHandlers = [
   http.get(
     "*/api/v1/tasks/:taskId/time-logs",

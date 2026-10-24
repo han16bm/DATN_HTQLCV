@@ -35,11 +35,7 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
   const priority = prioritySchema.safeParse(filters.get("priority"));
   const projectId = filters.get("projectId");
   const projects = useListProjectsQuery({ pageSize: 100 });
-  const members = useListProjectMembersQuery(
-    projectId,
-    { pageSize: 100 },
-    { enabled: Boolean(projectId) },
-  );
+  const members = useListProjectMembersQuery(projectId, { pageSize: 100 });
   const query = useListTasksQuery({
     q: filters.get("q") || undefined,
     projectId: projectId || undefined,
@@ -264,9 +260,8 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
             },
           ]}
           onSubmit={async (values) => {
-            const selected = z.string().parse(values.projectId);
             dialog.close();
-            router.push(`/projects/${selected}/tasks/new`);
+            router.push(`/projects/${values.projectId}/tasks/new`);
           }}
           submitLabel="Mở biểu mẫu"
         />

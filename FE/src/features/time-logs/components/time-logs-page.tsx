@@ -21,9 +21,7 @@ export function TimeLogsPage({ taskId }: { taskId: string }) {
   const filters = useUrlFilters();
   const query = useListTimeLogsQuery(taskId, { page: filters.page });
   const task = useGetTaskQuery(taskId);
-  const project = useGetProjectQuery(task.data?.projectId ?? "", {
-    enabled: Boolean(task.data),
-  });
+  const project = useGetProjectQuery(task.data?.projectId ?? "");
   const { session } = useSession();
   const editable =
     task.data?.assigneeId === session?.user.id &&

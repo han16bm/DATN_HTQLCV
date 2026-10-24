@@ -2,16 +2,19 @@ import type {
   approveSchema,
   createSubmissionSchema,
   reviewQueueQuerySchema,
+  reviewRowSchema,
   revisionSchema,
   submissionQuerySchema,
   submissionResultSchema,
+  submissionRowSchema,
   submissionSchema,
 } from "@/features/submissions/schemas/submissions.schema";
 import { type Page } from "@/types/common";
 import { type z } from "zod";
 export type SubmissionDto = z.output<typeof submissionSchema>;
 export type SubmissionQuery = z.input<typeof submissionQuerySchema>;
-export type SubmissionList = Page<SubmissionDto>;
+export type SubmissionRow = z.output<typeof submissionRowSchema>;
+export type SubmissionList = Page<SubmissionRow>;
 export type CreateSubmissionInput = z.input<typeof createSubmissionSchema>;
 export type SubmissionResult = z.output<typeof submissionResultSchema>;
 export type CreateSubmissionArgs = {
@@ -34,4 +37,5 @@ export type RequestSubmissionRevisionArgs = {
   version: number;
 };
 export type ReviewQueueQuery = z.input<typeof reviewQueueQuerySchema>;
-export type ReviewQueueList = Page<SubmissionDto>;
+export type ReviewRow = z.output<typeof reviewRowSchema>;
+export type ReviewQueueList = Page<ReviewRow>;

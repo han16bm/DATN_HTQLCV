@@ -150,7 +150,7 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
               defaults={{ projectRole: "MEMBER" }}
               onSubmit={async (values) => {
                 await add.mutateAsync({
-                  projectId: projectId,
+                  projectId,
                   payload: addMemberSchema.parse({
                     ...values,
                     permissions: [],
@@ -181,7 +181,7 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
                   ]}
                   onSubmit={async (values) => {
                     await end.mutateAsync({
-                      projectId: projectId,
+                      projectId,
                       membershipId: ending.id,
                       payload: values,
                       version: ending.version,

@@ -1,11 +1,7 @@
 "use client";
 import { type SessionDto } from "@/features/auth/types/auth.types";
 import { Session } from "@/lib/auth/session-context";
-import {
-  refreshSingleFlight,
-  registerRefresh,
-  token,
-} from "@/services/auth-session";
+import { refreshAuth, registerRefresh, token } from "@/services/api-client";
 import { useUI } from "@/stores/ui-store";
 import { ApiError } from "@/types/api/error";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -46,7 +42,7 @@ export function AuthObserver({ children }: { children: ReactNode }) {
         throw error;
       }
     });
-    void refreshSingleFlight()
+    void refreshAuth()
       .catch(() => {})
       .finally(() => setRestoring(false));
     return () => registerRefresh(null);
@@ -55,7 +51,7 @@ export function AuthObserver({ children }: { children: ReactNode }) {
     queryKey: authKeys.getSession(viewerId ?? "anonymous"),
     queryFn: ({ signal }) =>
       authService.getSession({
-        signal: signal,
+        signal,
       }),
     enabled: Boolean(viewerId),
     staleTime: 0,

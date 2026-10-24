@@ -10,7 +10,7 @@ import {
 import { hasPermission, useSession } from "@/lib/auth/session-context";
 import type { QueryOptions } from "@/lib/query/use-query-access";
 import { useQueryAccess } from "@/lib/query/use-query-access";
-import { idSchema } from "@/lib/validation/request.schema";
+import { queryIdSchema } from "@/lib/validation/request.schema";
 import { useQuery } from "@tanstack/react-query";
 import { projectsKeys } from "../api/projects.keys";
 import { projectsService } from "../api/projects.service";
@@ -41,17 +41,12 @@ export function useGetProjectQuery(
   projectId: string,
   options: QueryOptions = {},
 ) {
+  const id = queryIdSchema.parse(projectId);
   const { session } = useSession();
   const result = useQuery({
-    queryKey: projectsKeys.getProject(
-      session?.user.id ?? "anonymous",
-      projectId,
-    ),
-    queryFn: ({ signal }) => projectsService.getProject(projectId, { signal }),
-    enabled:
-      options.enabled !== false &&
-      Boolean(session) &&
-      idSchema.safeParse(projectId).success,
+    queryKey: projectsKeys.getProject(session?.user.id ?? "anonymous", id),
+    queryFn: ({ signal }) => projectsService.getProject(id, { signal }),
+    enabled: options.enabled !== false && Boolean(session) && Boolean(id),
     staleTime: 10000,
   });
   return useQueryAccess(result, "projects");
@@ -60,19 +55,19 @@ export function useGetProjectClosureChecksQuery(
   projectId: string,
   options: QueryOptions = {},
 ) {
+  const id = queryIdSchema.parse(projectId);
   const { session } = useSession();
   const result = useQuery({
     queryKey: projectsKeys.getProjectClosureChecks(
       session?.user.id ?? "anonymous",
-      projectId,
+      id,
     ),
     queryFn: ({ signal }) =>
-      projectsService.getProjectClosureChecks(projectId, { signal }),
+      projectsService.getProjectClosureChecks(id, { signal }),
     enabled:
       options.enabled !== false &&
-      Boolean(session) &&
-      idSchema.safeParse(projectId).success &&
-      hasPermission(session, "PROJECT_MANAGE", projectId),
+      Boolean(id) &&
+      hasPermission(session, "PROJECT_MANAGE", id),
     staleTime: 0,
   });
   return useQueryAccess(result, "projects");
@@ -82,6 +77,7 @@ export function useListProjectHistoryQuery(
   query: ProjectHistoryQuery = {},
   options: QueryOptions = {},
 ) {
+  const id = queryIdSchema.parse(projectId);
   const { session } = useSession();
   const parsed = projectHistoryQuerySchema.safeParse(query);
   const filters = parsed.success ? parsed.data : query;
@@ -89,7 +85,7 @@ export function useListProjectHistoryQuery(
     queryKey: parsed.success
       ? projectsKeys.listProjectHistory(
           session?.user.id ?? "anonymous",
-          projectId,
+          id,
           filters,
         )
       : [
@@ -99,12 +95,12 @@ export function useListProjectHistoryQuery(
           "invalid-query",
         ],
     queryFn: ({ signal }) =>
-      projectsService.listProjectHistory(projectId, filters, { signal }),
+      projectsService.listProjectHistory(id, filters, { signal }),
     enabled:
       options.enabled !== false &&
       Boolean(session) &&
       parsed.success &&
-      idSchema.safeParse(projectId).success,
+      Boolean(id),
     staleTime: 30000,
   });
   return useQueryAccess(result, "projects");

@@ -4,7 +4,7 @@ import { type AlertQuery } from "@/features/alerts/types/alerts.types";
 import { hasPermission, useSession } from "@/lib/auth/session-context";
 import type { QueryOptions } from "@/lib/query/use-query-access";
 import { useQueryAccess } from "@/lib/query/use-query-access";
-import { idSchema } from "@/lib/validation/request.schema";
+import { queryIdSchema } from "@/lib/validation/request.schema";
 import { useQuery } from "@tanstack/react-query";
 import { alertsKeys } from "../api/alerts.keys";
 import { alertsService } from "../api/alerts.service";
@@ -28,7 +28,6 @@ export function useListAlertsQuery(
     queryFn: ({ signal }) => alertsService.listAlerts(filters, { signal }),
     enabled:
       options.enabled !== false &&
-      Boolean(session) &&
       parsed.success &&
       hasPermission(session, "ANALYTICS_VIEW", filters.projectId),
     staleTime: 30000,
@@ -36,14 +35,14 @@ export function useListAlertsQuery(
   return useQueryAccess(result, "alerts");
 }
 export function useGetAlertQuery(alertId: string, options: QueryOptions = {}) {
+  const id = queryIdSchema.parse(alertId);
   const { session } = useSession();
   const result = useQuery({
-    queryKey: alertsKeys.getAlert(session?.user.id ?? "anonymous", alertId),
-    queryFn: ({ signal }) => alertsService.getAlert(alertId, { signal }),
+    queryKey: alertsKeys.getAlert(session?.user.id ?? "anonymous", id),
+    queryFn: ({ signal }) => alertsService.getAlert(id, { signal }),
     enabled:
       options.enabled !== false &&
-      Boolean(session) &&
-      idSchema.safeParse(alertId).success &&
+      Boolean(id) &&
       hasPermission(session, "ANALYTICS_VIEW"),
     staleTime: 10000,
   });

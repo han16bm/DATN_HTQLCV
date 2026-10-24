@@ -2,18 +2,15 @@ import { attachmentsService } from "@/features/attachments/api/attachments.servi
 import { authService } from "@/features/auth/api/auth.service";
 import { reportsService } from "@/features/reports/api/reports.service";
 import { submissionsService } from "@/features/submissions/api/submissions.service";
-import { db } from "@/mocks/db/database";
-import { server } from "@/mocks/node";
-import { resetMockState } from "@/mocks/reset";
-import { registerRefresh, token } from "@/services/auth-session";
+import { db } from "@/mocks/db";
+import { resetMockState, server } from "@/mocks/node";
+import { registerRefresh, token } from "@/services/api-client";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 beforeAll(() => {
-  process.env.NEXT_PUBLIC_API_ORIGIN = "http://gateway.test";
   server.listen({ onUnhandledRequest: "error" });
 });
 afterAll(() => {
   server.close();
-  delete process.env.NEXT_PUBLIC_API_ORIGIN;
 });
 beforeEach(() => {
   server.resetHandlers();
@@ -43,7 +40,6 @@ describe("reports and evidence through HTTP", () => {
     expect(item).toMatchObject({
       filename: "proof.txt",
       status: "READY",
-      uploadedBy: "u-lan",
     });
     expect(
       (
@@ -91,6 +87,14 @@ describe("reports and evidence through HTTP", () => {
     await expect(
       attachmentsService.getAttachment("a-criteria"),
     ).rejects.toMatchObject({ status: 403 });
+    await expect(
+      attachmentsService.downloadAttachment("a-criteria"),
+    ).rejects.toMatchObject({ status: 403, code: "FORBIDDEN" });
+    await expect(
+      attachmentsService.downloadAttachment("a-criteria", {
+        scenario: "rate-limit",
+      }),
+    ).rejects.toMatchObject({ status: 429, code: "RATE_LIMITED" });
   });
   it("keeps drafts private and exposes an existing report ID for the same period", async () => {
     await login("lan");
@@ -125,15 +129,48 @@ describe("reports and evidence through HTTP", () => {
           key: crypto.randomUUID(),
         }),
       ).rejects.toMatchObject({ status: 422 });
-    expect(
-      (
-        await reportsService.getReportPreview({
-          ...period,
-          periodType: "WEEKLY",
-          periodStart: "2026-10-19",
-        })
-      ).periodEndExclusive,
-    ).toBe("2026-10-25T17:00:00.000Z");
+    const preview = await reportsService.getReportPreview({
+      ...period,
+      periodType: "WEEKLY",
+      periodStart: "2026-10-19",
+    });
+    expect(preview.partialPeriod).toBe(true);
+    expect(preview.totalMinutes).toBe(
+      db.timeLogs
+        .filter(
+          (l) =>
+            l.userId === "u-lan" &&
+            l.status === "ACTIVE" &&
+            l.workDate >= "2026-10-19" &&
+            l.workDate < "2026-10-26" &&
+            db.tasks.some(
+              (t) => t.id === l.taskId && t.projectId === period.projectId,
+            ),
+        )
+        .reduce((sum, l) => sum + l.minutes, 0),
+    );
+  });
+  it("includes Monday through Sunday and excludes the adjacent days from weekly previews", async () => {
+    await login("lan");
+    const log = db.timeLogs.find(
+      (item) => item.userId === "u-lan" && item.taskId === "t-3",
+    )!;
+    db.timeLogs = ["2026-10-18", "2026-10-19", "2026-10-25", "2026-10-26"].map(
+      (workDate, index) => ({
+        ...log,
+        id: `boundary-${index}`,
+        workDate,
+        minutes: 15 * 2 ** index,
+        status: "ACTIVE",
+      }),
+    );
+    const preview = await reportsService.getReportPreview({
+      ...period,
+      periodType: "WEEKLY",
+      periodStart: "2026-10-19",
+    });
+    expect(preview.totalMinutes).toBe(90);
+    expect(preview.items).toMatchObject([{ taskId: "t-3", minutes: 90 }]);
   });
   it("requires content and a zero-time explanation, then freezes a submitted snapshot", async () => {
     await login("lan");

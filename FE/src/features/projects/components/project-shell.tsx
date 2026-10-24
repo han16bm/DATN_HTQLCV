@@ -56,7 +56,7 @@ export function ProjectShell({
                     primary
                     onAction={async () => {
                       await activate.mutateAsync({
-                        projectId: projectId,
+                        projectId,
                         version: project.version,
                       });
                       toast.success("Đã triển khai dự án.");
@@ -98,7 +98,9 @@ export function ProjectShell({
         ]}
       />
       {children}
-      {manage && editable && <ProjectCloseDialog project={project} />}
+      {manage && editable && (
+        <ProjectCloseDialog project={project} reload={query.refetch} />
+      )}
     </>
   );
 }

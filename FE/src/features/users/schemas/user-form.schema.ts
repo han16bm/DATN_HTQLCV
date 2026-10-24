@@ -1,4 +1,5 @@
 import { systemRoleSchema } from "@/features/users/schemas/user.schema";
+import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 export const resetPasswordSchema = z
   .object({
@@ -27,11 +28,7 @@ export const createUserSchema = z
       .min(1, "Vui lòng nhập thông tin bắt buộc")
       .max(255),
     email: z.string().trim().toLowerCase().email(),
-    unitId: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(100),
+    unitId: idSchema,
     systemRole: systemRoleSchema,
     initialPassword: z
       .string()
@@ -58,12 +55,7 @@ export const updateUserSchema = z
       .max(255)
       .optional(),
     email: z.string().trim().toLowerCase().email().optional(),
-    unitId: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(100)
-      .optional(),
+    unitId: idSchema.optional(),
     systemRole: systemRoleSchema.optional(),
     reason: z
       .string()

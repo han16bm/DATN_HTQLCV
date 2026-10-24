@@ -24,8 +24,10 @@ describe("Feature organization and HTTP boundaries", () => {
       );
       expect(contract).toMatch(/export interface \w+Api/);
       expect(contract).not.toMatch(/endpoint\(|ContractRequest|invalidates:/);
-      expect(service).toMatch(/apiClient\.(get|post|patch|put|download)\(/);
-      expect(service).not.toMatch(/apiClient\.request|@\/mocks\//);
+      expect(service).toMatch(
+        /apiClient\s*\.(get|post|patch|put)(?:<[^>]+>)?\(/,
+      );
+      expect(service).not.toMatch(/apiClient\s*\.request|@\/mocks\//);
       expect(service).not.toMatch(/\w+Schema\.(?:parse|safeParse)\(/);
       const keys = readFileSync(
         `src/features/${feature}/api/${feature}.keys.ts`,
@@ -34,19 +36,25 @@ describe("Feature organization and HTTP boundaries", () => {
       expect(keys).not.toMatch(/\.(?:parse|safeParse)\(/);
     }
   });
-  it("keeps data and business rules in mock DB modules", () => {
+  it("keeps mock data, DB and HTTP handlers in their own places", () => {
+    expect(readdirSync("src/mocks").sort()).toEqual([
+      "browser.ts",
+      "data.json",
+      "db.ts",
+      "handlers",
+      "node.ts",
+    ]);
     for (const file of files("src/mocks/handlers").filter((f) =>
       f.endsWith(".handlers.ts"),
     ))
       expect(readFileSync(file, "utf8"), file).not.toMatch(
         /\bdb\.|\bApiError\b|\/data\/|\.(?:filter|push|find|splice)\(/,
       );
-    for (const file of files("src/mocks/db"))
-      expect(readFileSync(file, "utf8"), file).not.toMatch(
-        /api\/.*\.contract|from\s*["'](?:msw|\.\.\/utils\/handler)["']|:\s*Request\b|\.headers\.get\(/,
-      );
+    expect(readFileSync("src/mocks/db.ts", "utf8")).not.toMatch(
+      /api\/.*\.contract|from\s*["'](?:msw|\.\/handlers)["']|:\s*Request\b|\.headers\.get\(/,
+    );
   });
-  it("registers all 79 HTTP routes from the approved API catalog", () => {
+  it("aligns all 79 service and handler routes with the approved API catalog", () => {
     const catalog = readFileSync("fe-specs/api/API_CATALOG.md", "utf8");
     const expected = [
       ...new Set(
@@ -60,6 +68,26 @@ describe("Feature organization and HTTP boundaries", () => {
       .sort();
     expect(actual).toHaveLength(79);
     expect(actual).toEqual(expected);
+    const services = readdirSync("src/features")
+      .flatMap((feature) => {
+        const source = readFileSync(
+          `src/features/${feature}/api/${feature}.service.ts`,
+          "utf8",
+        );
+        return [
+          ...source.matchAll(
+            /\.(get|post|patch|put)<[^>]+>\(\s*([`"])([\s\S]*?)\2/g,
+          ),
+        ].map((match) => {
+          const path = match[3].replace(
+            /\$\{encodeURIComponent\((\w+)\)\}/g,
+            ":$1",
+          );
+          return `${match[1].toUpperCase()} /api/v1${path}`;
+        });
+      })
+      .sort();
+    expect(services).toEqual(expected);
   });
   it("keeps runtime mock imports at the browser bootstrap boundary", () => {
     const violations = files("src")
@@ -78,6 +106,12 @@ describe("Feature organization and HTTP boundaries", () => {
     for (const file of files("src/services"))
       expect(readFileSync(file, "utf8")).not.toMatch(
         /from\s*['"]@\/(?:features|mocks)\//,
+      );
+    for (const file of files("src/components/ui").concat(
+      files("src/components/forms"),
+    ))
+      expect(readFileSync(file, "utf8"), file).not.toMatch(
+        /from\s*['"]@\/(?:features\/[^'"]+\/(?:api|hooks)\/|lib\/auth\/)/,
       );
   });
   it("uses normalized filters and separates viewers in query keys", () => {

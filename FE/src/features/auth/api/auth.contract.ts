@@ -3,7 +3,7 @@ import {
   type LogoutResult,
   type SessionDto,
 } from "@/features/auth/types/auth.types";
-import type { RequestOptions } from "@/services/api.types";
+import type { RequestOptions } from "@/services/api-client";
 export interface AuthApi {
   login(payload: LoginInput, options?: RequestOptions): Promise<SessionDto>;
   logout(options?: RequestOptions): Promise<LogoutResult>;

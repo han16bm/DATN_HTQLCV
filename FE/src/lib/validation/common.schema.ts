@@ -1,13 +1,42 @@
 import { checkAction } from "@/lib/validation/contract-refinements";
+import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
+export const metaSchema = z.object({
+  requestId: z.string().min(1),
+  serverTime: z.iso.datetime(),
+});
+export const permissionSchema = z.enum([
+  "USERS_MANAGE",
+  "ORGANIZATION_MANAGE",
+  "PROJECT_CREATE",
+  "PROJECT_MANAGE",
+  "MEMBERS_MANAGE",
+  "TASKS_MANAGE",
+  "TASKS_REVIEW",
+  "ANALYTICS_VIEW",
+  "ALERTS_MANAGE",
+]);
+export const paginationSchema = z.object({
+  page: z.number().int().safe().min(1),
+  pageSize: z.number().int().safe().min(1).max(100),
+  total: z.number().int().safe().min(0),
+});
+export const listQuerySchema = z
+  .object({
+    page: paginationSchema.shape.page.default(1),
+    pageSize: paginationSchema.shape.pageSize.default(20),
+    q: z
+      .string()
+      .trim()
+      .max(255)
+      .optional()
+      .transform((value) => value || undefined),
+  })
+  .strict();
 export const page = <T extends z.ZodType>(item: T) =>
   z.object({
     items: z.array(item),
-    pagination: z.object({
-      page: z.number().int().min(1),
-      pageSize: z.number().int().min(1).max(100),
-      total: z.number().int().min(0),
-    }),
+    pagination: paginationSchema,
   });
 export const reasonSchema = z
   .object({
@@ -19,18 +48,16 @@ export const reasonSchema = z
   })
   .strict();
 export const entityLabelSchema = z.object({
-  id: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
+  id: idSchema,
   name: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
 });
 export const personRefSchema = z.object({
-  id: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
+  id: idSchema,
   displayName: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
 });
 export const auditSchema = z.object({
-  id: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
-  entityType: z.string(),
-  entityId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
-  actorId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
+  id: idSchema,
+  actorId: idSchema,
   action: z.string(),
   at: z.iso.datetime(),
   before: z.json().nullable(),
@@ -38,22 +65,18 @@ export const auditSchema = z.object({
   reason: z.string().nullable(),
 });
 export const analysisSubjectSchema = z.discriminatedUnion("kind", [
-  z
-    .object({ kind: z.literal("TASK"), taskId: z.string().min(1).max(100) })
-    .strict(),
-  z
-    .object({ kind: z.literal("PERSON"), userId: z.string().min(1).max(100) })
-    .strict(),
+  z.object({ kind: z.literal("TASK"), taskId: idSchema }).strict(),
+  z.object({ kind: z.literal("PERSON"), userId: idSchema }).strict(),
   z
     .object({
       kind: z.literal("PROJECT"),
-      projectId: z.string().min(1).max(100),
+      projectId: idSchema,
     })
     .strict(),
   z
     .object({
       kind: z.literal("PROCESS"),
-      projectId: z.string().min(1).max(100),
+      projectId: idSchema,
       stage: z.enum(["TODO", "IN_PROGRESS", "PENDING_REVIEW"]),
     })
     .strict(),
@@ -63,25 +86,10 @@ export const analysisSubjectSchema = z.discriminatedUnion("kind", [
       metricCode: z.string().min(1).max(100),
     })
     .strict(),
-  z
-    .object({ kind: z.literal("UNIT"), unitId: z.string().min(1).max(100) })
-    .strict(),
+  z.object({ kind: z.literal("UNIT"), unitId: idSchema }).strict(),
 ]);
 export const analysisRefSchema = z.object({
-  analysisId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
-  snapshotId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
-  analysisType: z.enum(["RISK", "WORKLOAD", "BOTTLENECK", "SUMMARY", "METRIC"]),
-  subject: analysisSubjectSchema,
-  title: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
-  dataAsOf: z.iso.datetime(),
-  explanationStatus: z.enum([
-    "NOT_REQUESTED",
-    "QUEUED",
-    "RUNNING",
-    "READY",
-    "FAILED",
-    "UNAVAILABLE",
-  ]),
+  analysisId: idSchema,
 });
 export const domainActionSchema = z
   .object({
@@ -93,8 +101,8 @@ export const domainActionSchema = z
       "REVIEW_QUEUE",
       "REPORT_DETAIL",
     ]),
-    taskId: z.string().nullable(),
-    submissionId: z.string().nullable(),
-    reportId: z.string().nullable(),
+    taskId: idSchema.nullable(),
+    submissionId: idSchema.nullable(),
+    reportId: idSchema.nullable(),
   })
   .superRefine(checkAction);

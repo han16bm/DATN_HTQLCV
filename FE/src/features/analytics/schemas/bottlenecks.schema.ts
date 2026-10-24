@@ -3,12 +3,13 @@ import {
   analysisRefSchema,
   personRefSchema,
 } from "@/lib/validation/common.schema";
+import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 export const bottlenecksSchema = z.object({
   metadata: analysisMetaSchema,
   items: z.array(
     z.object({
-      taskId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
+      taskId: idSchema,
       stage: z.enum(["TODO", "IN_PROGRESS", "PENDING_REVIEW"]),
       elapsedMinutes: z.number().finite().min(0),
       revisionCount: z.number().int().safe().min(0),

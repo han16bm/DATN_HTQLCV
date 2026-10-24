@@ -7,6 +7,7 @@ import type {
 import type {
   taskHistoryQuerySchema,
   taskQuerySchema,
+  taskRowSchema,
   taskSchema,
 } from "@/features/tasks/schemas/task.schema";
 import type { reasonSchema } from "@/lib/validation/common.schema";
@@ -14,7 +15,8 @@ import { type AuditDto, type Page } from "@/types/common";
 import { type z } from "zod";
 export type TaskDto = z.output<typeof taskSchema>;
 export type TaskQuery = z.input<typeof taskQuerySchema>;
-export type TaskList = Page<TaskDto>;
+export type TaskRow = z.output<typeof taskRowSchema>;
+export type TaskList = Page<TaskRow>;
 export type CreateTaskInput = z.input<typeof createTaskSchema>;
 export type CreateTaskArgs = {
   projectId: string;

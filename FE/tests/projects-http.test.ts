@@ -3,18 +3,15 @@ import { projectMembersService } from "@/features/project-members/api/project-me
 import { projectsService } from "@/features/projects/api/projects.service";
 import { tasksService } from "@/features/tasks/api/tasks.service";
 import { usersService } from "@/features/users/api/users.service";
-import { db } from "@/mocks/db/database";
-import { server } from "@/mocks/node";
-import { resetMockState } from "@/mocks/reset";
-import { registerRefresh, token } from "@/services/auth-session";
+import { db } from "@/mocks/db";
+import { resetMockState, server } from "@/mocks/node";
+import { registerRefresh, token } from "@/services/api-client";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 beforeAll(() => {
-  process.env.NEXT_PUBLIC_API_ORIGIN = "http://gateway.test";
   server.listen({ onUnhandledRequest: "error" });
 });
 afterAll(() => {
   server.close();
-  delete process.env.NEXT_PUBLIC_API_ORIGIN;
 });
 beforeEach(async () => {
   server.resetHandlers();

@@ -18,7 +18,6 @@ export function useAnalysisTracking(jobId: string | null) {
     return () => clearTimeout(timer);
   }, [jobId, round]);
   const query = useGetAnalysisJobQuery(jobId ?? "", {
-    enabled: Boolean(jobId),
     poll: paused ? false : 2000,
   });
   const terminal =

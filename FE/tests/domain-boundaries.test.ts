@@ -3,18 +3,15 @@ import { authService } from "@/features/auth/api/auth.service";
 import { submissionsService } from "@/features/submissions/api/submissions.service";
 import { tasksService } from "@/features/tasks/api/tasks.service";
 import { timeLogsService } from "@/features/time-logs/api/time-logs.service";
-import { db, setClock } from "@/mocks/db/database";
-import { server } from "@/mocks/node";
-import { resetMockState } from "@/mocks/reset";
-import { registerRefresh, token } from "@/services/auth-session";
+import { db, setClock } from "@/mocks/db";
+import { resetMockState, server } from "@/mocks/node";
+import { registerRefresh, token } from "@/services/api-client";
 import { afterAll, beforeAll, beforeEach, expect, it } from "vitest";
 beforeAll(() => {
-  process.env.NEXT_PUBLIC_API_ORIGIN = "http://gateway.test";
   server.listen({ onUnhandledRequest: "error" });
 });
 afterAll(() => {
   server.close();
-  delete process.env.NEXT_PUBLIC_API_ORIGIN;
 });
 beforeEach(() => {
   resetMockState();

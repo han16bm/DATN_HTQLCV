@@ -57,7 +57,7 @@ export function DashboardPage() {
                       ? "Hiện trạng tại mốc dữ liệu"
                       : "Theo kỳ đã chọn"}
                     {m.denominator !== null
-                      ? ` · Mẫu scopeố ${number(m.denominator)}`
+                      ? ` · Mẫu số ${number(m.denominator)}`
                       : ""}
                   </p>
                   <AnalysisLink value={m.analysisRef} />
@@ -103,7 +103,7 @@ export function DashboardPage() {
                 {query.data.totalTasks} công việc; nhóm đã hủy thể hiện riêng.
               </p>
               <details>
-                <summary>Xem scopeố liệu trạng thái</summary>
+                <summary>Xem số liệu trạng thái</summary>
                 <DataTable
                   headers={["Trạng thái", "Số việc"]}
                   rows={query.data.byStatus.map((row) => [
@@ -120,7 +120,7 @@ export function DashboardPage() {
               <div
                 className="chart"
                 role="img"
-                aria-label="Xu hướng hoàn thành và scopeố lần nộp"
+                aria-label="Xu hướng hoàn thành và số lần nộp"
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={query.data.trend}>
@@ -153,7 +153,7 @@ export function DashboardPage() {
               </div>
             </Panel>
           </div>
-          <Panel title="So scopeánh dự án">
+          <Panel title="So sánh dự án">
             <DataTable
               headers={[
                 "Dự án",
@@ -215,7 +215,7 @@ export function DashboardPage() {
               lịch yêu cầu báo cáo nên chưa tính tỷ lệ gửi đủ.
             </p>
           </Panel>
-          <Panel title="Các chỉ scopeố khác">
+          <Panel title="Các chỉ số khác">
             <div className="metric-grid compact">
               {query.data.metrics
                 .filter((m) => !["K03", "K04", "K06", "K12"].includes(m.code))
@@ -230,7 +230,7 @@ export function DashboardPage() {
                     <p className="small muted">
                       {m.basis === "CURRENT" ? "Hiện trạng" : "Trong kỳ"}
                       {m.denominator !== null
-                        ? ` · Mẫu scopeố ${m.denominator}`
+                        ? ` · Mẫu số ${m.denominator}`
                         : ""}
                     </p>
                     <AnalysisLink value={m.analysisRef} />

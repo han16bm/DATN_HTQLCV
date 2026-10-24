@@ -1,4 +1,5 @@
 "use client";
+import { PermissionGate } from "@/components/layout/permission-gate";
 import { ActionButton } from "@/components/ui/action-button";
 import {
   Badge,
@@ -6,7 +7,6 @@ import {
   Loading,
   PageHeader,
   Panel,
-  PermissionGate,
 } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { dateTime } from "@/lib/format";
@@ -25,9 +25,7 @@ export function AnalysisJobPage({ jobId }: { jobId: string }) {
 function JobContent({ jobId }: { jobId: string }) {
   const tracking = useAnalysisTracking(jobId);
   const job = tracking.query.data;
-  const detail = useGetAnalysisDetailQuery(job?.analysisId ?? "", {
-    enabled: Boolean(job),
-  });
+  const detail = useGetAnalysisDetailQuery(job?.analysisId ?? "");
   const create = useCreateAnalysisJobMutation();
   const router = useRouter();
   if (tracking.query.isError)

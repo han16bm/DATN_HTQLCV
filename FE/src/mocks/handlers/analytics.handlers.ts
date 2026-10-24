@@ -9,7 +9,7 @@ import {
 } from "@/features/analytics/schemas/analysis-job.schema";
 import {
   analyticsQuerySchema,
-  filterQuerySchema,
+  filterOptionsQuerySchema,
 } from "@/features/analytics/schemas/analytics-query.schema";
 import { bottlenecksSchema } from "@/features/analytics/schemas/bottlenecks.schema";
 import { dashboardSchema } from "@/features/analytics/schemas/dashboard.schema";
@@ -18,7 +18,7 @@ import { summarySchema } from "@/features/analytics/schemas/summary.schema";
 import { workloadSchema } from "@/features/analytics/schemas/workload.schema";
 import { entityLabelSchema, page } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
-import { analyticsDb } from "@/mocks/db/analytics.db";
+import { analyticsDb } from "@/mocks/db";
 import { http } from "msw";
 import {
   authenticatedUser,
@@ -26,7 +26,7 @@ import {
   mockHandler,
   mockJson,
   parseQuery,
-} from "../utils/handler";
+} from "./http";
 export const analyticsHandlers = [
   http.get(
     "*/api/v1/dashboard",
@@ -181,7 +181,7 @@ export const analyticsHandlers = [
     "*/api/v1/analytics/filter-options",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
-      const query = parseQuery(request, filterQuerySchema);
+      const query = parseQuery(request, filterOptionsQuerySchema);
       return mockJson(
         request,
         analyticsDb.listAnalyticsFilterOptions(viewer, query),

@@ -11,75 +11,74 @@ import {
   type AnalyticsQuery,
   type CreateJobInput,
   type FeedbackInput,
-  type FilterQuery,
+  type FilterOptionsQuery,
 } from "@/features/analytics/types/analytics.types";
 import { entityLabelSchema, page } from "@/lib/validation/common.schema";
-import { apiClient } from "@/services/api-client";
-import type { MutationOptions, RequestOptions } from "@/services/api.types";
+import type { MutationOptions, RequestOptions } from "@/services/api-client";
+import { apiClient, parseResponse } from "@/services/api-client";
 export const analyticsService: AnalyticsApi = {
   getDashboard(query: AnalyticsQuery, options: RequestOptions = {}) {
-    return apiClient.get(`/dashboard`, dashboardSchema, {
-      ...options,
-      query,
-    });
+    return apiClient
+      .get<unknown>("/dashboard", { ...options, params: query })
+      .then(parseResponse(dashboardSchema));
   },
   getDeadlineRisks(query: AnalyticsQuery, options: RequestOptions = {}) {
-    return apiClient.get(`/analytics/risks`, risksSchema, {
-      ...options,
-      query,
-    });
+    return apiClient
+      .get<unknown>("/analytics/risks", { ...options, params: query })
+      .then(parseResponse(risksSchema));
   },
   getWorkload(query: AnalyticsQuery, options: RequestOptions = {}) {
-    return apiClient.get(`/analytics/workload`, workloadSchema, {
-      ...options,
-      query,
-    });
+    return apiClient
+      .get<unknown>("/analytics/workload", { ...options, params: query })
+      .then(parseResponse(workloadSchema));
   },
   getBottlenecks(query: AnalyticsQuery, options: RequestOptions = {}) {
-    return apiClient.get(`/analytics/bottlenecks`, bottlenecksSchema, {
-      ...options,
-      query,
-    });
+    return apiClient
+      .get<unknown>("/analytics/bottlenecks", { ...options, params: query })
+      .then(parseResponse(bottlenecksSchema));
   },
   getAnalysisSummary(query: AnalyticsQuery, options: RequestOptions = {}) {
-    return apiClient.get(`/analytics/summary`, summarySchema, {
-      ...options,
-      query,
-    });
+    return apiClient
+      .get<unknown>("/analytics/summary", { ...options, params: query })
+      .then(parseResponse(summarySchema));
   },
   createAnalysisJob(payload: CreateJobInput, options: MutationOptions) {
-    return apiClient.post(`/analytics/jobs`, payload, jobSchema, options);
+    return apiClient
+      .post<unknown>("/analytics/jobs", payload, options)
+      .then(parseResponse(jobSchema));
   },
   getAnalysisJob(jobId: string, options: RequestOptions = {}) {
-    return apiClient.get(
-      `/analytics/jobs/${encodeURIComponent(jobId)}`,
-      jobSchema,
-      options,
-    );
+    return apiClient
+      .get<unknown>(`/analytics/jobs/${encodeURIComponent(jobId)}`, options)
+      .then(parseResponse(jobSchema));
   },
   getAnalysisDetail(analysisId: string, options: RequestOptions = {}) {
-    return apiClient.get(
-      `/analytics/details/${encodeURIComponent(analysisId)}`,
-      analysisSchema,
-      options,
-    );
+    return apiClient
+      .get<unknown>(
+        `/analytics/details/${encodeURIComponent(analysisId)}`,
+        options,
+      )
+      .then(parseResponse(analysisSchema));
   },
   createAnalysisFeedback(
     analysisId: string,
     payload: FeedbackInput,
     options: MutationOptions,
   ) {
-    return apiClient.post(
-      `/analytics/details/${encodeURIComponent(analysisId)}/feedback`,
-      payload,
-      feedbackSchema,
-      options,
-    );
+    return apiClient
+      .post<unknown>(
+        `/analytics/details/${encodeURIComponent(analysisId)}/feedback`,
+        payload,
+        options,
+      )
+      .then(parseResponse(feedbackSchema));
   },
-  listAnalyticsFilterOptions(query: FilterQuery, options: RequestOptions = {}) {
-    return apiClient.get(`/analytics/filter-options`, page(entityLabelSchema), {
-      ...options,
-      query,
-    });
+  listAnalyticsFilterOptions(
+    query: FilterOptionsQuery,
+    options: RequestOptions = {},
+  ) {
+    return apiClient
+      .get<unknown>("/analytics/filter-options", { ...options, params: query })
+      .then(parseResponse(page(entityLabelSchema)));
   },
 };

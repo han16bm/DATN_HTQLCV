@@ -23,7 +23,7 @@ export function AnalysisSummaryPage() {
       ) : (
         <>
           <Metadata value={query.data.metadata} />
-          <Panel title="Tổng hợp theo scopeố liệu">
+          <Panel title="Tổng hợp theo số liệu">
             <p className="preserve-lines">{query.data.summaryText}</p>
             <AnalysisLink
               value={query.data.overviewRef}
@@ -41,9 +41,9 @@ export function AnalysisSummaryPage() {
               ])}
             />
           </Panel>
-          <Panel title="Thông scopeố và dữ liệu cần bổ sung">
+          <Panel title="Thông số và dữ liệu cần bổ sung">
             <DataTable
-              headers={["Chỉ scopeố", "Giá trị", "Cách tính"]}
+              headers={["Chỉ số", "Giá trị", "Cách tính"]}
               rows={query.data.metrics.map((m) => [
                 m.label,
                 metricValue(m.value, m.unit),

@@ -19,11 +19,12 @@ import {
   usePauseTaskMutation,
   useStartTaskMutation,
 } from "../hooks/use-tasks-mutations";
-import { useGetTaskQuery } from "../hooks/use-tasks-queries";
-
-export function TaskAssignmentDialog({ task }: { task: TaskDto }) {
+type TaskDialogProps = {
+  task: TaskDto;
+  reload: () => Promise<{ data?: TaskDto }>;
+};
+export function TaskAssignmentDialog({ task, reload }: TaskDialogProps) {
   const dialog = useHashDialog();
-  const query = useGetTaskQuery(task.id);
   const members = useListProjectMembersQuery(
     task.projectId,
     { pageSize: 100 },
@@ -43,7 +44,7 @@ export function TaskAssignmentDialog({ task }: { task: TaskDto }) {
       ) : (
         <VersionedSchemaForm
           initial={task}
-          reload={() => query.refetch()}
+          reload={reload}
           schema={assignTaskSchema}
           fields={[
             {
@@ -78,9 +79,8 @@ export function TaskAssignmentDialog({ task }: { task: TaskDto }) {
     </HashDialog>
   );
 }
-export function TaskExecutionDialog({ task }: { task: TaskDto }) {
+export function TaskExecutionDialog({ task, reload }: TaskDialogProps) {
   const { session } = useSession();
-  const query = useGetTaskQuery(task.id);
   const dialog = useHashDialog();
   const start = useStartTaskMutation();
   const pause = usePauseTaskMutation();
@@ -121,7 +121,7 @@ export function TaskExecutionDialog({ task }: { task: TaskDto }) {
       <div className="section-gap">
         <VersionedSchemaForm
           initial={task}
-          reload={() => query.refetch()}
+          reload={reload}
           key={action}
           schema={action === "START" ? emptySchema : reasonSchema}
           fields={

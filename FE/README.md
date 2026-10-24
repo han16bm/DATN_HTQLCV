@@ -1,6 +1,6 @@
 # Cổng công việc — Frontend
 
-Next.js App Router, TypeScript strict, Tailwind CSS, React Hook Form, Zod, Zustand và TanStack Query. API qua fetch HTTP; MSW intercept request trong development/test.
+Next.js App Router, TypeScript strict, Tailwind CSS, React Hook Form, Zod, Zustand và TanStack Query. API qua Axios HTTP; MSW intercept request trong development/test.
 
 ```powershell
 cd D:\DATN\FE

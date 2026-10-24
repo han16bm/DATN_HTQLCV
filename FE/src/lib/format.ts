@@ -73,6 +73,10 @@ export const number = (value: number | null | undefined, suffix = "") =>
         value,
       ) + (suffix ? ` ${suffix}` : "");
 export const hours = (minutes: number) => number(minutes / 60, "giờ");
+export function fileSize(bytes: number) {
+  const step = bytes >= 1024 ** 2 ? 2 : bytes >= 1024 ? 1 : 0;
+  return number(bytes / 1024 ** step, ["B", "KiB", "MiB"][step]);
+}
 export const localDateTime = (value: string) =>
   new Date(Date.parse(value) + 7 * 3600_000).toISOString().slice(0, 16);
 export function utcDateTime(value: string) {

@@ -1,36 +1,7 @@
 "use client";
-import { hasPermission, useSession } from "@/lib/auth/session-context";
 import { label } from "@/lib/format";
-import { ApiError } from "@/types/api/error";
 import Link from "next/link";
 import { type ReactNode } from "react";
-import { QueryErrorState } from "./query-error-state";
-
-export function PermissionGate({
-  permission,
-  projectId,
-  children,
-}: {
-  permission: string;
-  projectId?: string;
-  children: ReactNode;
-}) {
-  const { session, loading } = useSession();
-  if (loading) return <Loading />;
-  return hasPermission(session, permission, projectId) ? (
-    children
-  ) : (
-    <QueryErrorState
-      error={
-        new ApiError(
-          403,
-          "FORBIDDEN",
-          "Bạn chưa được cấp quyền truy cập nội dung này.",
-        )
-      }
-    />
-  );
-}
 export function PageHeader({
   title,
   description,

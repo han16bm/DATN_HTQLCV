@@ -1,4 +1,8 @@
-import { analysisRefSchema } from "@/lib/validation/common.schema";
+import {
+  analysisRefSchema,
+  listQuerySchema,
+} from "@/lib/validation/common.schema";
+import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 export const updateAlertSchema = z
   .object({
@@ -20,26 +24,18 @@ export const alertStatusSchema = z.enum([
 ]);
 export const alertQuerySchema = z
   .object({
-    page: z.number().int().safe().min(1).optional().default(1),
-    pageSize: z.number().int().safe().min(1).max(100).optional().default(20),
-    q: z.string().trim().max(255).optional(),
-    projectId: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(100)
-      .optional(),
+    ...listQuerySchema.shape,
+    projectId: idSchema.optional(),
     status: alertStatusSchema.optional(),
     severity: z.enum(["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional(),
   })
   .strict();
 export const alertSchema = z.object({
-  id: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
+  id: idSchema,
   version: z.number().int().safe().positive(),
   createdAt: z.iso.datetime(),
-  updatedAt: z.iso.datetime(),
-  projectId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
-  taskId: z.string().nullable(),
+  projectId: idSchema,
+  taskId: idSchema.nullable(),
   type: z.enum([
     "DEADLINE_RISK",
     "OVERDUE",
@@ -58,4 +54,13 @@ export const alertSchema = z.object({
   handledAt: z.iso.datetime().nullable(),
   taskTitle: z.string().nullable(),
   analysisRef: analysisRefSchema.nullable(),
+});
+
+export const alertRowSchema = z.object(alertSchema.shape).pick({
+  id: true,
+  type: true,
+  taskTitle: true,
+  severity: true,
+  status: true,
+  conditionActive: true,
 });

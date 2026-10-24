@@ -22,9 +22,7 @@ export function ReportPage({
 }) {
   const q = useGetReportQuery(reportId);
   const { session } = useSession();
-  const project = useGetProjectQuery(q.data?.projectId ?? "", {
-    enabled: Boolean(q.data),
-  });
+  const project = useGetProjectQuery(q.data?.projectId ?? "");
   if (q.isError)
     return <QueryErrorState error={q.error} retry={() => void q.refetch()} />;
   if (!q.data) return <Loading />;

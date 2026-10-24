@@ -18,9 +18,7 @@ import {
 export function TaskDetailPage({ taskId }: { taskId: string }) {
   const query = useGetTaskQuery(taskId);
   const history = useListTaskHistoryQuery(taskId, { pageSize: 5 });
-  const project = useGetProjectQuery(query.data?.projectId ?? "", {
-    enabled: Boolean(query.data),
-  });
+  const project = useGetProjectQuery(query.data?.projectId ?? "");
   const { session } = useSession();
   if (query.isError) return <QueryErrorState error={query.error} />;
   if (!query.data) return <Loading />;

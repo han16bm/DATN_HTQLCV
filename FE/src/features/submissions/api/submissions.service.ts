@@ -1,6 +1,8 @@
 import type { SubmissionsApi } from "@/features/submissions/api/submissions.contract";
 import {
+  reviewRowSchema,
   submissionResultSchema,
+  submissionRowSchema,
   submissionSchema,
 } from "@/features/submissions/schemas/submissions.schema";
 import {
@@ -11,42 +13,45 @@ import {
   type SubmissionQuery,
 } from "@/features/submissions/types/submissions.types";
 import { page } from "@/lib/validation/common.schema";
-import { apiClient } from "@/services/api-client";
-import type { RequestOptions, VersionOptions } from "@/services/api.types";
+import type { RequestOptions, VersionOptions } from "@/services/api-client";
+import { apiClient, parseResponse } from "@/services/api-client";
 export const submissionsService: SubmissionsApi = {
   listSubmissions(
     taskId: string,
     query: SubmissionQuery = {},
     options: RequestOptions = {},
   ) {
-    return apiClient.get(
-      `/tasks/${encodeURIComponent(taskId)}/submissions`,
-      page(submissionSchema),
-      { ...options, query },
-    );
+    return apiClient
+      .get<unknown>(`/tasks/${encodeURIComponent(taskId)}/submissions`, {
+        ...options,
+        params: query,
+      })
+      .then(parseResponse(page(submissionRowSchema)));
   },
   getSubmission(
     taskId: string,
     submissionId: string,
     options: RequestOptions = {},
   ) {
-    return apiClient.get(
-      `/tasks/${encodeURIComponent(taskId)}/submissions/${encodeURIComponent(submissionId)}`,
-      submissionSchema,
-      options,
-    );
+    return apiClient
+      .get<unknown>(
+        `/tasks/${encodeURIComponent(taskId)}/submissions/${encodeURIComponent(submissionId)}`,
+        options,
+      )
+      .then(parseResponse(submissionSchema));
   },
   createSubmission(
     taskId: string,
     payload: CreateSubmissionInput,
     options: VersionOptions,
   ) {
-    return apiClient.post(
-      `/tasks/${encodeURIComponent(taskId)}/submissions`,
-      payload,
-      submissionResultSchema,
-      options,
-    );
+    return apiClient
+      .post<unknown>(
+        `/tasks/${encodeURIComponent(taskId)}/submissions`,
+        payload,
+        options,
+      )
+      .then(parseResponse(submissionResultSchema));
   },
   approveSubmission(
     taskId: string,
@@ -54,12 +59,13 @@ export const submissionsService: SubmissionsApi = {
     payload: ApproveSubmissionInput,
     options: VersionOptions,
   ) {
-    return apiClient.post(
-      `/tasks/${encodeURIComponent(taskId)}/submissions/${encodeURIComponent(submissionId)}/approve`,
-      payload,
-      submissionResultSchema,
-      options,
-    );
+    return apiClient
+      .post<unknown>(
+        `/tasks/${encodeURIComponent(taskId)}/submissions/${encodeURIComponent(submissionId)}/approve`,
+        payload,
+        options,
+      )
+      .then(parseResponse(submissionResultSchema));
   },
   requestSubmissionRevision(
     taskId: string,
@@ -67,17 +73,17 @@ export const submissionsService: SubmissionsApi = {
     payload: RequestSubmissionRevisionInput,
     options: VersionOptions,
   ) {
-    return apiClient.post(
-      `/tasks/${encodeURIComponent(taskId)}/submissions/${encodeURIComponent(submissionId)}/request-revision`,
-      payload,
-      submissionResultSchema,
-      options,
-    );
+    return apiClient
+      .post<unknown>(
+        `/tasks/${encodeURIComponent(taskId)}/submissions/${encodeURIComponent(submissionId)}/request-revision`,
+        payload,
+        options,
+      )
+      .then(parseResponse(submissionResultSchema));
   },
   listReviewQueue(query: ReviewQueueQuery = {}, options: RequestOptions = {}) {
-    return apiClient.get(`/review-queue`, page(submissionSchema), {
-      ...options,
-      query,
-    });
+    return apiClient
+      .get<unknown>("/review-queue", { ...options, params: query })
+      .then(parseResponse(page(reviewRowSchema)));
   },
 };

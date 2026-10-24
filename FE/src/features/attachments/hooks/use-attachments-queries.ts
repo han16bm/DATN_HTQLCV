@@ -2,7 +2,7 @@
 import { useSession } from "@/lib/auth/session-context";
 import type { QueryOptions } from "@/lib/query/use-query-access";
 import { useQueryAccess } from "@/lib/query/use-query-access";
-import { idSchema } from "@/lib/validation/request.schema";
+import { queryIdSchema } from "@/lib/validation/request.schema";
 import { useQuery } from "@tanstack/react-query";
 import { attachmentsKeys } from "../api/attachments.keys";
 import { attachmentsService } from "../api/attachments.service";
@@ -21,18 +21,15 @@ export function useGetAttachmentQuery(
   attachmentId: string,
   options: QueryOptions = {},
 ) {
+  const id = queryIdSchema.parse(attachmentId);
   const { session } = useSession();
   const result = useQuery({
     queryKey: attachmentsKeys.getAttachment(
       session?.user.id ?? "anonymous",
-      attachmentId,
+      id,
     ),
-    queryFn: ({ signal }) =>
-      attachmentsService.getAttachment(attachmentId, { signal }),
-    enabled:
-      options.enabled !== false &&
-      Boolean(session) &&
-      idSchema.safeParse(attachmentId).success,
+    queryFn: ({ signal }) => attachmentsService.getAttachment(id, { signal }),
+    enabled: options.enabled !== false && Boolean(session) && Boolean(id),
     staleTime: 10000,
   });
   return useQueryAccess(result, "attachments");

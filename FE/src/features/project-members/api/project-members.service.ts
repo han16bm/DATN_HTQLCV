@@ -7,35 +7,37 @@ import {
   type UpdateProjectMemberPermissionsInput,
 } from "@/features/project-members/types/project-members.types";
 import { page } from "@/lib/validation/common.schema";
-import { apiClient } from "@/services/api-client";
 import type {
   MutationOptions,
   RequestOptions,
   VersionOptions,
-} from "@/services/api.types";
+} from "@/services/api-client";
+import { apiClient, parseResponse } from "@/services/api-client";
 export const projectMembersService: ProjectMembersApi = {
   listProjectMembers(
     projectId: string,
     query: ProjectMemberQuery = {},
     options: RequestOptions = {},
   ) {
-    return apiClient.get(
-      `/projects/${encodeURIComponent(projectId)}/members`,
-      page(membershipSchema),
-      { ...options, query },
-    );
+    return apiClient
+      .get<unknown>(`/projects/${encodeURIComponent(projectId)}/members`, {
+        ...options,
+        params: query,
+      })
+      .then(parseResponse(page(membershipSchema)));
   },
   addProjectMember(
     projectId: string,
     payload: AddProjectMemberInput,
     options: MutationOptions,
   ) {
-    return apiClient.post(
-      `/projects/${encodeURIComponent(projectId)}/members`,
-      payload,
-      membershipSchema,
-      options,
-    );
+    return apiClient
+      .post<unknown>(
+        `/projects/${encodeURIComponent(projectId)}/members`,
+        payload,
+        options,
+      )
+      .then(parseResponse(membershipSchema));
   },
   updateProjectMemberPermissions(
     projectId: string,
@@ -43,12 +45,13 @@ export const projectMembersService: ProjectMembersApi = {
     payload: UpdateProjectMemberPermissionsInput,
     options: VersionOptions,
   ) {
-    return apiClient.patch(
-      `/projects/${encodeURIComponent(projectId)}/members/${encodeURIComponent(membershipId)}`,
-      payload,
-      membershipSchema,
-      options,
-    );
+    return apiClient
+      .patch<unknown>(
+        `/projects/${encodeURIComponent(projectId)}/members/${encodeURIComponent(membershipId)}`,
+        payload,
+        options,
+      )
+      .then(parseResponse(membershipSchema));
   },
   endProjectMembership(
     projectId: string,
@@ -56,11 +59,12 @@ export const projectMembersService: ProjectMembersApi = {
     payload: EndProjectMembershipInput,
     options: VersionOptions,
   ) {
-    return apiClient.post(
-      `/projects/${encodeURIComponent(projectId)}/members/${encodeURIComponent(membershipId)}/end`,
-      payload,
-      membershipSchema,
-      options,
-    );
+    return apiClient
+      .post<unknown>(
+        `/projects/${encodeURIComponent(projectId)}/members/${encodeURIComponent(membershipId)}/end`,
+        payload,
+        options,
+      )
+      .then(parseResponse(membershipSchema));
   },
 };

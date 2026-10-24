@@ -1,40 +1,20 @@
 import { userSchema } from "@/features/users/schemas/user.schema";
+import { permissionSchema } from "@/lib/validation/common.schema";
+import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 export const sessionSchema = z.object({
-  user: userSchema,
-  systemPermissions: z.array(
-    z.enum([
-      "USERS_MANAGE",
-      "ORGANIZATION_MANAGE",
-      "PROJECT_CREATE",
-      "PROJECT_MANAGE",
-      "MEMBERS_MANAGE",
-      "TASKS_MANAGE",
-      "TASKS_REVIEW",
-      "ANALYTICS_VIEW",
-      "ALERTS_MANAGE",
-    ]),
-  ),
+  user: z.object(userSchema.shape).pick({
+    id: true,
+    displayName: true,
+    unitId: true,
+    unit: true,
+    systemRole: true,
+  }),
+  systemPermissions: z.array(permissionSchema),
   projectAccess: z.array(
     z.object({
-      projectId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
-      membershipId: z
-        .string()
-        .min(1, "Vui lòng nhập thông tin bắt buộc")
-        .max(100),
-      permissions: z.array(
-        z.enum([
-          "USERS_MANAGE",
-          "ORGANIZATION_MANAGE",
-          "PROJECT_CREATE",
-          "PROJECT_MANAGE",
-          "MEMBERS_MANAGE",
-          "TASKS_MANAGE",
-          "TASKS_REVIEW",
-          "ANALYTICS_VIEW",
-          "ALERTS_MANAGE",
-        ]),
-      ),
+      projectId: idSchema,
+      permissions: z.array(permissionSchema),
     }),
   ),
 });

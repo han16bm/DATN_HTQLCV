@@ -1,11 +1,11 @@
 "use client";
+import { PermissionGate } from "@/components/layout/permission-gate";
 import {
   Badge,
   ButtonLink,
   Loading,
   PageHeader,
   Panel,
-  PermissionGate,
 } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { AlertForm } from "@/features/alerts/components/alert-form";

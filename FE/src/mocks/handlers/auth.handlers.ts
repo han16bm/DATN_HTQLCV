@@ -6,8 +6,8 @@ import {
 } from "@/features/auth/schemas/session.schema";
 import { emptySchema } from "@/lib/validation/request.schema";
 import { http } from "msw";
-import { authDb } from "../db/auth.db";
-import { mockHandler, mockJson } from "../utils/handler";
+import { authDb } from "../db";
+import { mockHandler, mockJson } from "./http";
 const accessToken = (request: Request) =>
   request.headers.get("Authorization")?.replace(/^Bearer /, "");
 export const authHandlers = [

@@ -3,6 +3,7 @@ import type {
   reportPreviewQuerySchema,
   reportPreviewSchema,
   reportQuerySchema,
+  reportRowSchema,
   reportSchema,
   reportSubmitSchema,
   updateReportSchema,
@@ -12,8 +13,9 @@ import { type z } from "zod";
 export type ReportPreviewDto = z.output<typeof reportPreviewSchema>;
 export type ReportDto = z.output<typeof reportSchema>;
 export type ReportQuery = z.input<typeof reportQuerySchema>;
-export type ReportList = Page<ReportDto>;
-export type GetReportPreviewQuery = z.input<typeof reportPreviewQuerySchema>;
+export type ReportRow = z.output<typeof reportRowSchema>;
+export type ReportList = Page<ReportRow>;
+export type ReportPreviewQuery = z.input<typeof reportPreviewQuerySchema>;
 export type CreateReportDraftInput = z.input<typeof createReportSchema>;
 export type UpdateReportDraftInput = z.input<typeof updateReportSchema>;
 export type UpdateReportDraftArgs = {

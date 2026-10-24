@@ -32,9 +32,7 @@ export function TimeLogDialog({ taskId }: { taskId: string }) {
   const search = useSearchParams();
   const { session } = useSession();
   const task = useGetTaskQuery(taskId);
-  const project = useGetProjectQuery(task.data?.projectId ?? "", {
-    enabled: Boolean(task.data),
-  });
+  const project = useGetProjectQuery(task.data?.projectId ?? "");
   const logId = search.get("timeLogId");
   const page = Math.max(1, Number(search.get("logPage")) || 1);
   const logs = useListTimeLogsQuery(

@@ -10,7 +10,7 @@ import {
 import { useSession } from "@/lib/auth/session-context";
 import type { QueryOptions } from "@/lib/query/use-query-access";
 import { useQueryAccess } from "@/lib/query/use-query-access";
-import { idSchema } from "@/lib/validation/request.schema";
+import { queryIdSchema } from "@/lib/validation/request.schema";
 import { useQuery } from "@tanstack/react-query";
 import { tasksKeys } from "../api/tasks.keys";
 import { tasksService } from "../api/tasks.service";
@@ -38,14 +38,12 @@ export function useListTasksQuery(
   return useQueryAccess(result, "tasks");
 }
 export function useGetTaskQuery(taskId: string, options: QueryOptions = {}) {
+  const id = queryIdSchema.parse(taskId);
   const { session } = useSession();
   const result = useQuery({
-    queryKey: tasksKeys.getTask(session?.user.id ?? "anonymous", taskId),
-    queryFn: ({ signal }) => tasksService.getTask(taskId, { signal }),
-    enabled:
-      options.enabled !== false &&
-      Boolean(session) &&
-      idSchema.safeParse(taskId).success,
+    queryKey: tasksKeys.getTask(session?.user.id ?? "anonymous", id),
+    queryFn: ({ signal }) => tasksService.getTask(id, { signal }),
+    enabled: options.enabled !== false && Boolean(session) && Boolean(id),
     staleTime: 10000,
   });
   return useQueryAccess(result, "tasks");
@@ -55,16 +53,13 @@ export function useListTaskHistoryQuery(
   query: TaskHistoryQuery = {},
   options: QueryOptions = {},
 ) {
+  const id = queryIdSchema.parse(taskId);
   const { session } = useSession();
   const parsed = taskHistoryQuerySchema.safeParse(query);
   const filters = parsed.success ? parsed.data : query;
   const result = useQuery({
     queryKey: parsed.success
-      ? tasksKeys.listTaskHistory(
-          session?.user.id ?? "anonymous",
-          taskId,
-          filters,
-        )
+      ? tasksKeys.listTaskHistory(session?.user.id ?? "anonymous", id, filters)
       : [
           "tasks",
           session?.user.id ?? "anonymous",
@@ -72,12 +67,12 @@ export function useListTaskHistoryQuery(
           "invalid-query",
         ],
     queryFn: ({ signal }) =>
-      tasksService.listTaskHistory(taskId, filters, { signal }),
+      tasksService.listTaskHistory(id, filters, { signal }),
     enabled:
       options.enabled !== false &&
       Boolean(session) &&
       parsed.success &&
-      idSchema.safeParse(taskId).success,
+      Boolean(id),
     staleTime: 30000,
   });
   return useQueryAccess(result, "tasks");

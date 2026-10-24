@@ -39,7 +39,6 @@ export function checkJob(v: JsonObject, ctx: z.RefinementCtx) {
   if (v.status === "QUEUED" || v.status === "RUNNING") {
     if (
       v.completedAt !== null ||
-      v.result !== null ||
       v.error !== null ||
       typeof v.pollAfterMs !== "number" ||
       v.pollAfterMs < 2000 ||
@@ -49,24 +48,13 @@ export function checkJob(v: JsonObject, ctx: z.RefinementCtx) {
   } else {
     if (!v.completedAt || v.pollAfterMs !== 0)
       issue(ctx, "Job kết thúc thiếu thời điểm");
-    if (
-      v.status === "SUCCEEDED" &&
-      (!object(v.result) ||
-        v.error !== null ||
-        v.result.analysisId !== v.analysisId)
-    )
-      issue(ctx, "Job thành công thiếu kết quả phù hợp");
-    if (v.status === "FAILED" && (!v.error || v.result !== null))
-      issue(ctx, "Job lỗi sai cấu trúc");
+    if (v.status === "SUCCEEDED" && v.error !== null)
+      issue(ctx, "SUCCEEDED job has an error");
+    if (v.status === "FAILED" && !v.error) issue(ctx, "Job lỗi sai cấu trúc");
   }
 }
-export function checkAnalysisDetail(v: JsonObject, ctx: z.RefinementCtx) {
-  if (
-    !object(v.snapshot) ||
-    !object(v.explanation) ||
-    !object(v.generation) ||
-    !object(v.freshness)
-  )
+export function checkAnalysisData(v: JsonObject, ctx: z.RefinementCtx) {
+  if (!object(v.snapshot) || !object(v.explanation) || !object(v.generation))
     return;
   const s = v.snapshot;
   const e = v.explanation;
@@ -97,8 +85,6 @@ export function checkAnalysisDetail(v: JsonObject, ctx: z.RefinementCtx) {
     issue(ctx, "Thiếu nguyên nhân lỗi AI");
   if (e.status === "NOT_REQUESTED" && (e.lastSuccess || e.activeJobId))
     issue(ctx, "NOT_REQUESTED có kết quả/job");
-  if (Boolean(v.generation.allowed) === Boolean(v.generation.blockedReason))
-    issue(ctx, "Generation policy mâu thuẫn");
   if (object(e.lastSuccess)) {
     const llm = e.lastSuccess;
     if (llm.analysisId !== s.analysisId || llm.snapshotId !== s.id)
@@ -123,13 +109,11 @@ export function checkAnalysisDetail(v: JsonObject, ctx: z.RefinementCtx) {
         issue(ctx, "Citation căn cứ không tồn tại");
     }
   }
-  if (
-    object(v.feedback) &&
-    object(v.feedback.latest) &&
-    (v.feedback.latest.snapshotId !== s.id ||
-      v.feedback.latest.analysisId !== s.analysisId)
-  )
-    issue(ctx, "Feedback sai snapshot");
+}
+export function checkAnalysisDetail(v: JsonObject, ctx: z.RefinementCtx) {
+  checkAnalysisData(v, ctx);
+  if (!object(v.snapshot) || !object(v.freshness)) return;
+  const s = v.snapshot;
   if (
     v.freshness.status === "OUTDATED" &&
     v.freshness.latestAnalysisId === s.analysisId

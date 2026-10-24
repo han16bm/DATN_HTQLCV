@@ -42,7 +42,7 @@ export function BottlenecksPage() {
                 "Công việc",
                 "Người nhận",
                 "Thời gian tồn đọng",
-                "Số vòng scopeửa",
+                "Số vòng sửa",
                 "Bằng chứng",
               ]}
               rows={query.data.items.map((t) => [

@@ -6,7 +6,7 @@ import { createRequestTickets } from "@/lib/query/mutation-requests";
 import { useMutationAttempt } from "@/lib/query/use-mutation-attempt";
 import { useAccessErrorHandler } from "@/lib/query/use-query-access";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRef } from "react";
+import { useState } from "react";
 import { attachmentsService } from "../api/attachments.service";
 
 export function useUploadAttachmentMutation() {
@@ -15,7 +15,7 @@ export function useUploadAttachmentMutation() {
   const viewerId = session?.user.id ?? "anonymous";
   const handleError = useAccessErrorHandler();
   const attempt = useMutationAttempt();
-  const requests = useRef(
+  const [requests] = useState(() =>
     createRequestTickets(async (input: UploadAttachmentInput) =>
       attachmentsService.uploadAttachment(input, {
         key: await attempt.keyFor(input),
@@ -24,7 +24,7 @@ export function useUploadAttachmentMutation() {
   );
   const mutation = useMutation({
     mutationKey: ["attachments", viewerId, "uploadAttachment"],
-    mutationFn: requests.current.execute,
+    mutationFn: requests.execute,
     retry: false,
     onError: handleError,
     onSuccess: async () => {
@@ -37,9 +37,9 @@ export function useUploadAttachmentMutation() {
   return {
     ...mutation,
     mutateAsync: (payload: UploadAttachmentInput) =>
-      mutation.mutateAsync(requests.current.put(payload)),
+      mutation.mutateAsync(requests.put(payload)),
     mutate: (payload: UploadAttachmentInput) => {
-      void mutation.mutateAsync(requests.current.put(payload)).catch(() => {});
+      void mutation.mutateAsync(requests.put(payload)).catch(() => {});
     },
   };
 }

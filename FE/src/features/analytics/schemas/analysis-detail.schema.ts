@@ -2,24 +2,14 @@ import { explanationStateSchema } from "@/features/analytics/schemas/analysis-ex
 import { feedbackSchema } from "@/features/analytics/schemas/analysis-feedback.schema";
 import { analysisSnapshotSchema } from "@/features/analytics/schemas/analysis-snapshot.schema";
 import { checkAnalysisDetail } from "@/lib/validation/contract-refinements";
+import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 export const freshnessSchema = z.object({
   status: z.enum(["CURRENT", "OUTDATED"]),
-  checkedAt: z.iso.datetime(),
-  latestAnalysisId: z.string().nullable(),
+  latestAnalysisId: idSchema.nullable(),
 });
 export const generationPolicySchema = z.object({
   allowed: z.boolean(),
-  blockedReason: z
-    .enum([
-      "SNAPSHOT_OUTDATED",
-      "INSUFFICIENT_DATA",
-      "LLM_NOT_CONFIGURED",
-      "ACTIVE_JOB",
-      "RATE_LIMITED",
-    ])
-    .nullable(),
-  retryAfterSeconds: z.number().int().safe().nullable(),
 });
 export const analysisSchema = z
   .object({

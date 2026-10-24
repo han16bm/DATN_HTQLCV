@@ -4,6 +4,7 @@ import type {
   auditSchema,
   domainActionSchema,
   entityLabelSchema,
+  paginationSchema,
   personRefSchema,
   reasonSchema,
 } from "@/lib/validation/common.schema";
@@ -15,11 +16,7 @@ export type AuditDto = z.output<typeof auditSchema>;
 export type AnalysisSubjectDto = z.output<typeof analysisSubjectSchema>;
 export type AnalysisRefDto = z.output<typeof analysisRefSchema>;
 export type DomainActionDto = z.output<typeof domainActionSchema>;
-export interface Pagination {
-  page: number;
-  pageSize: number;
-  total: number;
-}
+export type Pagination = z.output<typeof paginationSchema>;
 export interface Page<T> {
   items: T[];
   pagination: Pagination;

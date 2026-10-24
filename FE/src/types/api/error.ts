@@ -1,3 +1,4 @@
+import { metaSchema } from "@/lib/validation/common.schema";
 import { z } from "zod";
 
 export const errorEnvelopeSchema = z.object({
@@ -9,10 +10,7 @@ export const errorEnvelopeSchema = z.object({
       .optional(),
     details: z.json().optional(),
   }),
-  meta: z.object({
-    requestId: z.string().min(1),
-    serverTime: z.iso.datetime(),
-  }),
+  meta: metaSchema,
 });
 export type FieldError = NonNullable<
   z.output<typeof errorEnvelopeSchema>["error"]["fieldErrors"]
@@ -30,9 +28,7 @@ export class ApiError extends Error {
   }
 }
 export class ContractError extends Error {
-  constructor(
-    message = "Dữ liệu API không đúng đặc tả. Vui lòng tải lại để đối chiếu.",
-  ) {
+  constructor(message = "Chưa thể xử lý dữ liệu lúc này. Vui lòng thử lại.") {
     super(message);
     this.name = "ContractError";
   }

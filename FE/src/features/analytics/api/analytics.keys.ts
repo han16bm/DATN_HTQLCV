@@ -1,6 +1,6 @@
 import {
   type AnalyticsQuery,
-  type FilterQuery,
+  type FilterOptionsQuery,
 } from "@/features/analytics/types/analytics.types";
 export const analyticsKeys = {
   all: ["analytics"] as const,
@@ -19,6 +19,6 @@ export const analyticsKeys = {
     ["analytics", viewerId, "getAnalysisJob", jobId] as const,
   getAnalysisDetail: (viewerId: string, analysisId: string) =>
     ["analytics", viewerId, "getAnalysisDetail", analysisId] as const,
-  listAnalyticsFilterOptions: (viewerId: string, query: FilterQuery) =>
+  listAnalyticsFilterOptions: (viewerId: string, query: FilterOptionsQuery) =>
     ["analytics", viewerId, "listAnalyticsFilterOptions", query] as const,
 };

@@ -10,54 +10,58 @@ import {
   type VoidTimeLogInput,
 } from "@/features/time-logs/types/time-logs.types";
 import { page } from "@/lib/validation/common.schema";
-import { apiClient } from "@/services/api-client";
-import type { RequestOptions, VersionOptions } from "@/services/api.types";
+import type { RequestOptions, VersionOptions } from "@/services/api-client";
+import { apiClient, parseResponse } from "@/services/api-client";
 export const timeLogsService: TimeLogsApi = {
   listTimeLogs(
     taskId: string,
     query: TimeLogQuery = {},
     options: RequestOptions = {},
   ) {
-    return apiClient.get(
-      `/tasks/${encodeURIComponent(taskId)}/time-logs`,
-      page(timeLogSchema),
-      { ...options, query },
-    );
+    return apiClient
+      .get<unknown>(`/tasks/${encodeURIComponent(taskId)}/time-logs`, {
+        ...options,
+        params: query,
+      })
+      .then(parseResponse(page(timeLogSchema)));
   },
   createTimeLog(
     taskId: string,
     payload: CreateTimeLogInput,
     options: VersionOptions,
   ) {
-    return apiClient.post(
-      `/tasks/${encodeURIComponent(taskId)}/time-logs`,
-      payload,
-      timeLogChangeResultSchema,
-      options,
-    );
+    return apiClient
+      .post<unknown>(
+        `/tasks/${encodeURIComponent(taskId)}/time-logs`,
+        payload,
+        options,
+      )
+      .then(parseResponse(timeLogChangeResultSchema));
   },
   updateTimeLog(
     timeLogId: string,
     payload: UpdateTimeLogInput,
     options: VersionOptions,
   ) {
-    return apiClient.patch(
-      `/time-logs/${encodeURIComponent(timeLogId)}`,
-      payload,
-      timeLogChangeResultSchema,
-      options,
-    );
+    return apiClient
+      .patch<unknown>(
+        `/time-logs/${encodeURIComponent(timeLogId)}`,
+        payload,
+        options,
+      )
+      .then(parseResponse(timeLogChangeResultSchema));
   },
   voidTimeLog(
     timeLogId: string,
     payload: VoidTimeLogInput,
     options: VersionOptions,
   ) {
-    return apiClient.post(
-      `/time-logs/${encodeURIComponent(timeLogId)}/void`,
-      payload,
-      timeLogChangeResultSchema,
-      options,
-    );
+    return apiClient
+      .post<unknown>(
+        `/time-logs/${encodeURIComponent(timeLogId)}/void`,
+        payload,
+        options,
+      )
+      .then(parseResponse(timeLogChangeResultSchema));
   },
 };

@@ -1,9 +1,7 @@
-import {
-  analysisMetaSchema,
-  qualitySchema,
-} from "@/features/analytics/schemas/analysis-meta.schema";
+import { analysisMetaSchema } from "@/features/analytics/schemas/analysis-meta.schema";
 import { taskStatusSchema } from "@/features/tasks/schemas/task.schema";
 import { analysisRefSchema } from "@/lib/validation/common.schema";
+import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 export const metricSchema = z.object({
   code: z.enum([
@@ -28,20 +26,12 @@ export const metricSchema = z.object({
   value: z.number().finite().nullable(),
   unit: z.enum(["TASK", "COUNT", "PERCENT", "MINUTE", "HOUR", "REPORT"]),
   basis: z.enum(["CURRENT", "PERIOD"]),
-  aggregation: z.enum(["COUNT", "SUM", "MEAN", "RATIO"]),
   denominator: z.number().finite().nullable(),
-  missingFields: z.array(z.string()),
   analysisRef: analysisRefSchema,
 });
 export const dashboardSchema = z.object({
   metadata: analysisMetaSchema,
   totalTasks: z.number().int().safe().min(0),
-  completedTasks: z.number().int().safe().min(0),
-  cancelledTasks: z.number().int().safe().min(0),
-  openTasks: z.number().int().safe().min(0),
-  overdueTasks: z.number().int().safe().min(0),
-  completionRate: z.number().finite().nullable(),
-  actualMinutes: z.number().int().safe().min(0),
   byStatus: z.array(
     z.object({
       status: taskStatusSchema,
@@ -61,34 +51,23 @@ export const dashboardSchema = z.object({
     lateCount: z.number().int().safe().min(0),
     denominator: z.number().int().safe().min(0),
   }),
-  acceptedSubmissionTimeliness: z.object({
-    onTimeCount: z.number().int().safe().min(0),
-    lateCount: z.number().int().safe().min(0),
-    denominator: z.number().int().safe().min(0),
-  }),
   reporting: z.object({
     submittedDaily: z.number().int().safe().min(0),
     submittedWeekly: z.number().int().safe().min(0),
-    expectedCount: z.number().int().safe().nullable(),
-    submissionCoverageRate: z.number().finite().nullable(),
   }),
   trend: z.array(
     z.object({
       date: z.iso.date(),
       completedCount: z.number().int().safe().nullable(),
       submissionCount: z.number().int().safe().nullable(),
-      actualMinutes: z.number().int().safe().nullable(),
-      complete: z.boolean(),
     }),
   ),
   projectComparisons: z.array(
     z.object({
-      projectId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
+      projectId: idSchema,
       validTaskCount: z.number().int().safe().min(0),
       completionRate: z.number().finite().nullable(),
       overdueCount: z.number().int().safe().min(0),
-      activeAlertCount: z.number().int().safe().min(0),
-      quality: qualitySchema,
       analysisRef: analysisRefSchema,
       projectName: z
         .string()

@@ -50,7 +50,7 @@ export function Providers({ children }: { children: ReactNode }) {
   if (error)
     return (
       <div role="alert" className="boot-state">
-        Không khởi động được API mock.{" "}
+        Chưa thể mở không gian làm việc.{" "}
         <button onClick={() => window.location.reload()}>Tải lại</button>
       </div>
     );

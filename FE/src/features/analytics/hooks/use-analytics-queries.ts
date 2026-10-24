@@ -1,13 +1,13 @@
 "use client";
-import { filterQuerySchema } from "@/features/analytics/schemas/analytics-query.schema";
+import { filterOptionsQuerySchema } from "@/features/analytics/schemas/analytics-query.schema";
 import {
   type AnalyticsQuery,
-  type FilterQuery,
+  type FilterOptionsQuery,
 } from "@/features/analytics/types/analytics.types";
 import { hasPermission, useSession } from "@/lib/auth/session-context";
 import type { QueryOptions } from "@/lib/query/use-query-access";
 import { useQueryAccess } from "@/lib/query/use-query-access";
-import { idSchema } from "@/lib/validation/request.schema";
+import { queryIdSchema } from "@/lib/validation/request.schema";
 import { ApiError } from "@/types/api/error";
 import { useQuery } from "@tanstack/react-query";
 import { analyticsKeys } from "../api/analytics.keys";
@@ -26,7 +26,6 @@ export function useGetDashboardQuery(
     queryFn: ({ signal }) => analyticsService.getDashboard(query, { signal }),
     enabled:
       options.enabled !== false &&
-      Boolean(session) &&
       hasPermission(session, "ANALYTICS_VIEW", query.projectId),
     staleTime: 10000,
   });
@@ -46,7 +45,6 @@ export function useGetDeadlineRisksQuery(
       analyticsService.getDeadlineRisks(query, { signal }),
     enabled:
       options.enabled !== false &&
-      Boolean(session) &&
       hasPermission(session, "ANALYTICS_VIEW", query.projectId),
     staleTime: 10000,
   });
@@ -62,7 +60,6 @@ export function useGetWorkloadQuery(
     queryFn: ({ signal }) => analyticsService.getWorkload(query, { signal }),
     enabled:
       options.enabled !== false &&
-      Boolean(session) &&
       hasPermission(session, "ANALYTICS_VIEW", query.projectId),
     staleTime: 10000,
   });
@@ -81,7 +78,6 @@ export function useGetBottlenecksQuery(
     queryFn: ({ signal }) => analyticsService.getBottlenecks(query, { signal }),
     enabled:
       options.enabled !== false &&
-      Boolean(session) &&
       hasPermission(session, "ANALYTICS_VIEW", query.projectId),
     staleTime: 10000,
   });
@@ -101,7 +97,6 @@ export function useGetAnalysisSummaryQuery(
       analyticsService.getAnalysisSummary(query, { signal }),
     enabled:
       options.enabled !== false &&
-      Boolean(session) &&
       hasPermission(session, "ANALYTICS_VIEW", query.projectId),
     staleTime: 10000,
   });
@@ -111,17 +106,14 @@ export function useGetAnalysisJobQuery(
   jobId: string,
   options: QueryOptions & { poll?: number | false } = {},
 ) {
+  const id = queryIdSchema.parse(jobId);
   const { session } = useSession();
   const result = useQuery({
-    queryKey: analyticsKeys.getAnalysisJob(
-      session?.user.id ?? "anonymous",
-      jobId,
-    ),
-    queryFn: ({ signal }) => analyticsService.getAnalysisJob(jobId, { signal }),
+    queryKey: analyticsKeys.getAnalysisJob(session?.user.id ?? "anonymous", id),
+    queryFn: ({ signal }) => analyticsService.getAnalysisJob(id, { signal }),
     enabled:
       options.enabled !== false &&
-      Boolean(session) &&
-      idSchema.safeParse(jobId).success &&
+      Boolean(id) &&
       hasPermission(session, "ANALYTICS_VIEW"),
     staleTime: 10000,
     refetchInterval: (current) => {
@@ -147,29 +139,28 @@ export function useGetAnalysisDetailQuery(
   analysisId: string,
   options: QueryOptions = {},
 ) {
+  const id = queryIdSchema.parse(analysisId);
   const { session } = useSession();
   const result = useQuery({
     queryKey: analyticsKeys.getAnalysisDetail(
       session?.user.id ?? "anonymous",
-      analysisId,
+      id,
     ),
-    queryFn: ({ signal }) =>
-      analyticsService.getAnalysisDetail(analysisId, { signal }),
+    queryFn: ({ signal }) => analyticsService.getAnalysisDetail(id, { signal }),
     enabled:
       options.enabled !== false &&
-      Boolean(session) &&
-      idSchema.safeParse(analysisId).success &&
+      Boolean(id) &&
       hasPermission(session, "ANALYTICS_VIEW"),
     staleTime: 10000,
   });
   return useQueryAccess(result, "analytics");
 }
 export function useListAnalyticsFilterOptionsQuery(
-  query: FilterQuery,
+  query: FilterOptionsQuery,
   options: QueryOptions = {},
 ) {
   const { session } = useSession();
-  const parsed = filterQuerySchema.safeParse(query);
+  const parsed = filterOptionsQuerySchema.safeParse(query);
   const filters = parsed.success ? parsed.data : query;
   const result = useQuery({
     queryKey: parsed.success

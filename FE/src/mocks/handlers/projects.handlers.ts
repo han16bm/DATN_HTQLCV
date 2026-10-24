@@ -3,6 +3,7 @@ import {
   getProjectClosureChecksResultSchema,
   projectHistoryQuerySchema,
   projectQuerySchema,
+  projectRowSchema,
   projectSchema,
   updateProjectSchema,
 } from "@/features/projects/schemas/projects.schema";
@@ -13,14 +14,14 @@ import {
 } from "@/lib/validation/common.schema";
 import { emptySchema, idSchema } from "@/lib/validation/request.schema";
 import { http } from "msw";
-import { projectsDb } from "../db/projects.db";
+import { projectsDb } from "../db";
 import {
   authenticatedUser,
   mockCommand,
   mockHandler,
   mockJson,
   parseQuery,
-} from "../utils/handler";
+} from "./http";
 export const projectHandlers = [
   http.get(
     "*/api/v1/projects",
@@ -30,7 +31,7 @@ export const projectHandlers = [
       return mockJson(
         request,
         projectsDb.listProjects(viewer, query),
-        page(projectSchema),
+        page(projectRowSchema),
         200,
       );
     }),

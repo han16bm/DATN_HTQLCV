@@ -1,6 +1,7 @@
 "use client";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { type AttachmentDto } from "@/features/attachments/types/attachments.types";
+import { fileSize } from "@/lib/format";
 import { useUI } from "@/stores/ui-store";
 import { useEffect, useId, useState } from "react";
 import { useUploadAttachmentMutation } from "../hooks/use-attachments-mutations";
@@ -9,6 +10,14 @@ import {
   useGetUploadPolicyQuery,
 } from "../hooks/use-attachments-queries";
 import { useDownloadAttachment } from "../hooks/use-download-attachment";
+const formats: Record<string, string> = {
+  "application/pdf": "PDF",
+  "image/png": "PNG",
+  "image/jpeg": "JPEG",
+  "text/plain": "TXT",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+    "DOCX",
+};
 
 export function EvidenceUploader({
   taskId,
@@ -31,18 +40,24 @@ export function EvidenceUploader({
   }, [id, items.length, markDirty]);
   return (
     <div className="wide section-gap">
-      <label htmlFor="evidence-file">Tệp minh chứng</label>
-      <p className="small muted">
-        Tối đa {policy.data?.maxAttachments ?? 10} tệp, mỗi tệp 20 MiB. PDF,
-        PNG, JPEG, TXT, DOCX.
-      </p>
+      <label htmlFor={id}>Tệp minh chứng</label>
+      {policy.data && (
+        <p className="small muted">
+          Tối đa {policy.data.maxAttachments} tệp, mỗi tệp{" "}
+          {fileSize(policy.data.maxBytes)}.{" "}
+          {policy.data.allowedMimeTypes
+            .map((type) => formats[type] ?? type)
+            .join(", ")}
+          .
+        </p>
+      )}
       <input
-        id="evidence-file"
+        id={id}
         type="file"
         disabled={
           !policy.data ||
           upload.isPending ||
-          items.length >= (policy.data?.maxAttachments ?? 10)
+          items.length >= policy.data.maxAttachments
         }
         accept={policy.data?.allowedMimeTypes.join(",")}
         onChange={async (e) => {
@@ -111,10 +126,10 @@ export function EvidenceFile({ attachmentId }: { attachmentId: string }) {
       <button
         type="button"
         disabled={pending || item.status !== "READY"}
-        onClick={() => void download(attachmentId, item.filename)}
+        onClick={() => void download(item.id, item.filename)}
       >
         {pending ? "Đang tải…" : `Tải ${item.filename}`} (
-        {Math.ceil(item.sizeBytes / 1024)} KB)
+        {fileSize(item.sizeBytes)})
       </button>
       {error && <QueryErrorState error={error} />}
     </div>

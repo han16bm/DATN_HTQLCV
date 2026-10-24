@@ -7,13 +7,13 @@ import {
   type FeedbackDto,
   type FeedbackInput,
   type FilterList,
-  type FilterQuery,
+  type FilterOptionsQuery,
   type JobDto,
   type RisksDto,
   type SummaryDto,
   type WorkloadDto,
 } from "@/features/analytics/types/analytics.types";
-import type { MutationOptions, RequestOptions } from "@/services/api.types";
+import type { MutationOptions, RequestOptions } from "@/services/api-client";
 export interface AnalyticsApi {
   getDashboard(
     query: AnalyticsQuery,
@@ -50,7 +50,7 @@ export interface AnalyticsApi {
     options: MutationOptions,
   ): Promise<FeedbackDto>;
   listAnalyticsFilterOptions(
-    query: FilterQuery,
+    query: FilterOptionsQuery,
     options?: RequestOptions,
   ): Promise<FilterList>;
 }

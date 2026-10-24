@@ -1,12 +1,9 @@
 import { prioritySchema } from "@/features/tasks/schemas/task.schema";
+import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 export const assignTaskSchema = z
   .object({
-    assigneeId: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(100),
+    assigneeId: idSchema,
     reason: z
       .string()
       .trim()

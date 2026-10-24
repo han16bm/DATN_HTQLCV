@@ -17,9 +17,7 @@ export function SubmissionDetailPage({
 }) {
   const q = useGetSubmissionQuery(taskId, submissionId);
   const task = useGetTaskQuery(taskId);
-  const project = useGetProjectQuery(task.data?.projectId ?? "", {
-    enabled: Boolean(task.data),
-  });
+  const project = useGetProjectQuery(task.data?.projectId ?? "");
   const { session } = useSession();
   if (q.isError)
     return <QueryErrorState error={q.error} retry={() => void q.refetch()} />;

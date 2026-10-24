@@ -1,12 +1,64 @@
 import { fingerprint } from "@/lib/crypto/fingerprint";
-import type { User } from "@/mocks/db/database";
 import { ApiError } from "@/types/api/error";
-import { delay, HttpResponse, type HttpResponseResolver } from "msw";
-import type { z } from "zod";
-import { authorizeReplay } from "../db/access.db";
-import { sessionUser } from "../db/auth.db";
-import { withMockTransaction } from "../db/transaction";
-import { meta, toMockErrorResponse } from "./http-response";
+import { HttpResponse, delay, type HttpResponseResolver } from "msw";
+import { z } from "zod";
+import {
+  authorizeReplay,
+  now,
+  sessionUser,
+  withMockTransaction,
+  type User,
+} from "../db";
+
+// Định dạng response.
+const meta = () => ({
+  requestId: crypto.randomUUID(),
+  serverTime: now(),
+});
+function toMockErrorResponse(error: unknown) {
+  if (error instanceof z.ZodError) {
+    return HttpResponse.json(
+      {
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Thông tin gửi lên không hợp lệ.",
+          fieldErrors: error.issues.map((i) => ({
+            path: i.path.map(String),
+            message: i.message,
+          })),
+        },
+        meta: meta(),
+      },
+      { status: 422 },
+    );
+  }
+  if (error instanceof ApiError)
+    return HttpResponse.json(
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+          ...(error.fields.length ? { fieldErrors: error.fields } : {}),
+          ...(error.details ? { details: error.details } : {}),
+        },
+        meta: meta(),
+      },
+      { status: error.status },
+    );
+  console.error("MSW handler failed", error);
+  return HttpResponse.json(
+    {
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "Chưa thể xử lý yêu cầu. Vui lòng thử lại.",
+      },
+      meta: meta(),
+    },
+    { status: 500 },
+  );
+}
+
+// Xử lý HTTP dùng chung.
 type Receipt = {
   fingerprint: string;
   data: unknown;

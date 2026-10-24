@@ -17,7 +17,7 @@ import type {
   MutationOptions,
   RequestOptions,
   VersionOptions,
-} from "@/services/api.types";
+} from "@/services/api-client";
 export interface OrganizationApi {
   listUnits(query?: UnitQuery, options?: RequestOptions): Promise<UnitList>;
   getUnit(unitId: string, options?: RequestOptions): Promise<UnitDto>;

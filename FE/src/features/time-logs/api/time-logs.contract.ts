@@ -6,7 +6,7 @@ import {
   type UpdateTimeLogInput,
   type VoidTimeLogInput,
 } from "@/features/time-logs/types/time-logs.types";
-import type { RequestOptions, VersionOptions } from "@/services/api.types";
+import type { RequestOptions, VersionOptions } from "@/services/api-client";
 export interface TimeLogsApi {
   listTimeLogs(
     taskId: string,

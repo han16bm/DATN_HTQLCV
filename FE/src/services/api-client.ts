@@ -1,116 +1,105 @@
-import type { HttpOptions, RequestOptions } from "@/services/api.types";
+import { metaSchema } from "@/lib/validation/common.schema";
 import { ContractError } from "@/types/api/error";
+import axios, {
+  type AxiosRequestConfig,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
+} from "axios";
 import { z } from "zod";
-import { canRefresh, refreshSingleFlight, token } from "./auth-session";
-import { normalizeNetworkError, parseHttpError } from "./http-error";
-const metadataSchema = z.object({
-  requestId: z.string().min(1),
-  serverTime: z.iso.datetime(),
-});
-async function fetchResponse(
-  method: string,
-  path: string,
-  payload: unknown,
-  options: HttpOptions,
-  replay = false,
-): Promise<Response> {
-  const search = new URLSearchParams();
-  for (const [key, value] of Object.entries(options.query ?? {}))
-    if (value !== undefined && value !== null) search.set(key, String(value));
-  const origin = (process.env.NEXT_PUBLIC_API_ORIGIN ?? "").replace(/\/$/, "");
-  const url = `${origin}/api/v1${path}${search.size ? `?${search}` : ""}`;
-  const headers = new Headers({ Accept: "application/json" });
-  if (token.get()) headers.set("Authorization", `Bearer ${token.get()}`);
-  if (options.version !== undefined)
-    headers.set("If-Match", `"${options.version}"`);
-  if (options.key) headers.set("Idempotency-Key", options.key);
-  if (options.scenario && process.env.NODE_ENV !== "production")
-    headers.set("X-Mock-Scenario", options.scenario);
-  let body: BodyInit | undefined;
-  if (payload instanceof FormData) body = payload;
-  else if (method !== "GET") {
-    headers.set("Content-Type", "application/json");
-    body = JSON.stringify(payload ?? {});
-  }
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      method,
-      headers,
-      body,
-      credentials: "include",
-      signal: options.signal,
-      cache: "no-store",
-    });
-  } catch (error) {
-    throw normalizeNetworkError(error);
-  }
-  if (
-    response.status === 401 &&
-    !replay &&
-    !options.skipAuthRefresh &&
-    canRefresh()
-  ) {
-    await refreshSingleFlight();
-    return fetchResponse(method, path, payload, options, true);
-  }
-  if (!response.ok) throw await parseHttpError(response);
-  return response;
-}
-async function json<S extends z.ZodType>(
-  method: string,
-  path: string,
-  payload: unknown,
-  schema: S,
-  options: HttpOptions = {},
-): Promise<z.output<S>> {
-  const response = await fetchResponse(method, path, payload, options);
-  const envelope = z
-    .object({ data: z.unknown(), meta: metadataSchema })
-    .safeParse(await response.json().catch(() => null));
-  if (!envelope.success || !Object.hasOwn(envelope.data, "data"))
-    throw new ContractError();
-  const parsed = schema.safeParse(envelope.data.data);
-  if (!parsed.success) throw new ContractError();
-  return parsed.data;
-}
-export const apiClient = {
-  get<S extends z.ZodType>(path: string, schema: S, options: HttpOptions = {}) {
-    return json("GET", path, undefined, schema, options);
-  },
-  post<S extends z.ZodType>(
-    path: string,
-    payload: unknown,
-    schema: S,
-    options: HttpOptions = {},
-  ) {
-    return json("POST", path, payload, schema, options);
-  },
-  patch<S extends z.ZodType>(
-    path: string,
-    payload: unknown,
-    schema: S,
-    options: HttpOptions = {},
-  ) {
-    return json("PATCH", path, payload, schema, options);
-  },
-  put<S extends z.ZodType>(
-    path: string,
-    payload: unknown,
-    schema: S,
-    options: HttpOptions = {},
-  ) {
-    return json("PUT", path, payload, schema, options);
-  },
-  async download(path: string, options: RequestOptions = {}): Promise<Blob> {
-    const response = await fetchResponse("GET", path, undefined, options);
-    const type = response.headers.get("Content-Type");
-    if (
-      !type ||
-      /(?:application\/(?:problem\+)?json|text\/html)/i.test(type) ||
-      !response.headers.get("Content-Disposition")
-    )
-      throw new ContractError("Tệp tải về thiếu metadata.");
-    return response.blob();
+import { normalizeHttpError } from "./http-error";
+
+export type RequestOptions = Pick<AxiosRequestConfig, "signal"> & {
+  scenario?: string;
+  skipAuthRefresh?: boolean;
+};
+export type MutationOptions = RequestOptions & {
+  key: string;
+  version?: number;
+};
+export type VersionOptions = MutationOptions & { version: number };
+type HttpConfig = InternalAxiosRequestConfig<unknown> &
+  Partial<MutationOptions> & {
+    replay?: boolean;
+  };
+export const skipAuthRefreshConfig: RequestOptions = { skipAuthRefresh: true };
+
+let accessToken: string | null = null;
+let refreshHandler: (() => Promise<void>) | null = null;
+let refreshPromise: Promise<void> | null = null;
+export const token = {
+  get: () => accessToken,
+  set: (value: string | null) => {
+    accessToken = value;
   },
 };
+export function registerRefresh(handler: (() => Promise<void>) | null) {
+  refreshHandler = handler;
+}
+export function refreshAuth() {
+  if (!refreshPromise) {
+    if (!refreshHandler)
+      return Promise.reject(new Error("Chưa thiết lập phiên."));
+    refreshPromise = refreshHandler().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
+export const apiClient = axios.create({
+  baseURL: `${(process.env.NEXT_PUBLIC_API_ORIGIN ?? "").replace(/\/$/, "")}/api/v1`,
+  adapter: "fetch",
+  withCredentials: true,
+  timeout: 15000,
+  headers: { Accept: "application/json" },
+  fetchOptions: { cache: "no-store" },
+});
+apiClient.interceptors.request.use((config: HttpConfig) => {
+  config.headers.set(
+    "Authorization",
+    accessToken ? `Bearer ${accessToken}` : undefined,
+  );
+  // Let the runtime generate the multipart boundary in both browser and Node.
+  if (config.data instanceof FormData) config.headers.setContentType(false);
+  if (config.version !== undefined)
+    config.headers.set("If-Match", `"${config.version}"`);
+  if (config.key) config.headers.set("Idempotency-Key", config.key);
+  if (config.scenario && process.env.NODE_ENV !== "production")
+    config.headers.set("X-Mock-Scenario", config.scenario);
+  return config;
+});
+apiClient.interceptors.response.use(undefined, async (error: unknown) => {
+  if (!axios.isAxiosError<unknown, unknown>(error)) throw error;
+  const config: HttpConfig | undefined = error.config;
+  if (
+    error.response?.status === 401 &&
+    config &&
+    !config.replay &&
+    !config.skipAuthRefresh &&
+    refreshHandler
+  ) {
+    config.replay = true;
+    await refreshAuth();
+    return apiClient.request<unknown>(config);
+  }
+  throw await normalizeHttpError(error);
+});
+
+export function parseResponse<T>(schema: z.ZodType<T>) {
+  const envelope = z.object({ data: schema, meta: metaSchema });
+  return (response: AxiosResponse<unknown>): T => {
+    const result = envelope.safeParse(response.data);
+    if (!result.success) throw new ContractError();
+    return result.data.data;
+  };
+}
+export function parseFile(response: AxiosResponse<Blob>): Blob {
+  const type = String(response.headers["content-type"] ?? "");
+  if (
+    !type ||
+    /(?:application\/(?:problem\+)?json|text\/html)/i.test(type) ||
+    !response.headers["content-disposition"]
+  )
+    throw new ContractError("Chưa thể tải tệp lúc này. Vui lòng thử lại.");
+  return response.data;
+}

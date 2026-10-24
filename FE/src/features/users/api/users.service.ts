@@ -1,6 +1,9 @@
 import type { UsersApi } from "@/features/users/api/users.contract";
 import { resetUserPasswordResultSchema } from "@/features/users/schemas/user-form.schema";
-import { userSchema } from "@/features/users/schemas/user.schema";
+import {
+  userRowSchema,
+  userSchema,
+} from "@/features/users/schemas/user.schema";
 import {
   type CreateUserInput,
   type LockUserInput,
@@ -10,71 +13,70 @@ import {
   type UserQuery,
 } from "@/features/users/types/users.types";
 import { page } from "@/lib/validation/common.schema";
-import { apiClient } from "@/services/api-client";
 import type {
   MutationOptions,
   RequestOptions,
   VersionOptions,
-} from "@/services/api.types";
+} from "@/services/api-client";
+import { apiClient, parseResponse } from "@/services/api-client";
 export const usersService: UsersApi = {
   listUsers(query: UserQuery = {}, options: RequestOptions = {}) {
-    return apiClient.get(`/users`, page(userSchema), {
-      ...options,
-      query,
-    });
+    return apiClient
+      .get<unknown>("/users", { ...options, params: query })
+      .then(parseResponse(page(userRowSchema)));
   },
   getUser(userId: string, options: RequestOptions = {}) {
-    return apiClient.get(
-      `/users/${encodeURIComponent(userId)}`,
-      userSchema,
-      options,
-    );
+    return apiClient
+      .get<unknown>(`/users/${encodeURIComponent(userId)}`, options)
+      .then(parseResponse(userSchema));
   },
   createUser(payload: CreateUserInput, options: MutationOptions) {
-    return apiClient.post(`/users`, payload, userSchema, options);
+    return apiClient
+      .post<unknown>("/users", payload, options)
+      .then(parseResponse(userSchema));
   },
   updateUser(
     userId: string,
     payload: UpdateUserInput,
     options: VersionOptions,
   ) {
-    return apiClient.patch(
-      `/users/${encodeURIComponent(userId)}`,
-      payload,
-      userSchema,
-      options,
-    );
+    return apiClient
+      .patch<unknown>(`/users/${encodeURIComponent(userId)}`, payload, options)
+      .then(parseResponse(userSchema));
   },
   lockUser(userId: string, payload: LockUserInput, options: VersionOptions) {
-    return apiClient.post(
-      `/users/${encodeURIComponent(userId)}/lock`,
-      payload,
-      userSchema,
-      options,
-    );
+    return apiClient
+      .post<unknown>(
+        `/users/${encodeURIComponent(userId)}/lock`,
+        payload,
+        options,
+      )
+      .then(parseResponse(userSchema));
   },
   unlockUser(
     userId: string,
     payload: UnlockUserInput,
     options: VersionOptions,
   ) {
-    return apiClient.post(
-      `/users/${encodeURIComponent(userId)}/unlock`,
-      payload,
-      userSchema,
-      options,
-    );
+    return apiClient
+      .post<unknown>(
+        `/users/${encodeURIComponent(userId)}/unlock`,
+        payload,
+        options,
+      )
+      .then(parseResponse(userSchema));
   },
   resetUserPassword(
     userId: string,
     payload: ResetUserPasswordInput,
     options: VersionOptions,
   ) {
-    return apiClient.post(
-      `/users/${encodeURIComponent(userId)}/reset-password`,
-      payload,
-      resetUserPasswordResultSchema,
-      options,
-    );
+    return apiClient
+      .post<unknown>(
+        `/users/${encodeURIComponent(userId)}/reset-password`,
+        payload,
+        options,
+      )
+      .then(parseResponse(resetUserPasswordResultSchema));
   },
 };

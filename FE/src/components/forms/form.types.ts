@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { z } from "zod";
+export type FormOption = { value: string; label: string; parentValue?: string };
 export type FormField = {
   name: string;
   label: string;
@@ -18,7 +19,7 @@ export type FormField = {
   emptyAsUndefined?: boolean;
   hint?: string;
   dependsOn?: string;
-  options?: { value: string; label: string; parentValue?: string }[];
+  options?: FormOption[];
 };
 export type FormValues = Record<string, unknown>;
 export type SchemaFormProps<S extends z.ZodType<FormValues>> = {

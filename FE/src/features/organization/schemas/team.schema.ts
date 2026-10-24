@@ -1,18 +1,16 @@
+import { listQuerySchema } from "@/lib/validation/common.schema";
+import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 export const createTeamSchema = z
   .object({
     name: z.string().trim().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
-    unitId: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(100),
-    memberIds: z.array(z.string().trim()),
+    unitId: idSchema,
+    memberIds: z.array(idSchema),
   })
   .strict();
 export const teamMembersSchema = z
   .object({
-    memberIds: z.array(z.string().trim()),
+    memberIds: z.array(idSchema),
     reason: z
       .string()
       .trim()
@@ -28,12 +26,7 @@ export const updateTeamSchema = z
       .min(1, "Vui lòng nhập thông tin bắt buộc")
       .max(255)
       .optional(),
-    unitId: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(100)
-      .optional(),
+    unitId: idSchema.optional(),
     reason: z
       .string()
       .trim()
@@ -42,25 +35,18 @@ export const updateTeamSchema = z
   })
   .strict();
 export const teamSchema = z.object({
-  id: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
+  id: idSchema,
   version: z.number().int().safe().positive(),
-  createdAt: z.iso.datetime(),
-  updatedAt: z.iso.datetime(),
   name: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
-  unitId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
-  memberIds: z.array(z.string()),
+  unitId: idSchema,
+  memberIds: z.array(idSchema),
   status: z.enum(["ACTIVE", "INACTIVE"]),
 });
 export const teamQuerySchema = z
-  .object({
-    page: z.number().int().safe().min(1).optional().default(1),
-    pageSize: z.number().int().safe().min(1).max(100).optional().default(20),
-    q: z.string().trim().max(255).optional(),
-    unitId: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(100)
-      .optional(),
-  })
+  .object({ ...listQuerySchema.shape, unitId: idSchema.optional() })
   .strict();
+
+export const teamRowSchema = z
+  .object(teamSchema.shape)
+  .pick({ id: true, name: true, unitId: true, status: true })
+  .extend({ memberCount: z.number().int().min(0) });

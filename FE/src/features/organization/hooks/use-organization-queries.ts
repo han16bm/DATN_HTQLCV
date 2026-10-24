@@ -8,7 +8,7 @@ import {
 import { useSession } from "@/lib/auth/session-context";
 import type { QueryOptions } from "@/lib/query/use-query-access";
 import { useQueryAccess } from "@/lib/query/use-query-access";
-import { idSchema } from "@/lib/validation/request.schema";
+import { queryIdSchema } from "@/lib/validation/request.schema";
 import { useQuery } from "@tanstack/react-query";
 import { organizationKeys } from "../api/organization.keys";
 import { organizationService } from "../api/organization.service";
@@ -36,14 +36,12 @@ export function useListUnitsQuery(
   return useQueryAccess(result, "organization");
 }
 export function useGetUnitQuery(unitId: string, options: QueryOptions = {}) {
+  const id = queryIdSchema.parse(unitId);
   const { session } = useSession();
   const result = useQuery({
-    queryKey: organizationKeys.getUnit(session?.user.id ?? "anonymous", unitId),
-    queryFn: ({ signal }) => organizationService.getUnit(unitId, { signal }),
-    enabled:
-      options.enabled !== false &&
-      Boolean(session) &&
-      idSchema.safeParse(unitId).success,
+    queryKey: organizationKeys.getUnit(session?.user.id ?? "anonymous", id),
+    queryFn: ({ signal }) => organizationService.getUnit(id, { signal }),
+    enabled: options.enabled !== false && Boolean(session) && Boolean(id),
     staleTime: 10000,
   });
   return useQueryAccess(result, "organization");
@@ -71,14 +69,12 @@ export function useListTeamsQuery(
   return useQueryAccess(result, "organization");
 }
 export function useGetTeamQuery(teamId: string, options: QueryOptions = {}) {
+  const id = queryIdSchema.parse(teamId);
   const { session } = useSession();
   const result = useQuery({
-    queryKey: organizationKeys.getTeam(session?.user.id ?? "anonymous", teamId),
-    queryFn: ({ signal }) => organizationService.getTeam(teamId, { signal }),
-    enabled:
-      options.enabled !== false &&
-      Boolean(session) &&
-      idSchema.safeParse(teamId).success,
+    queryKey: organizationKeys.getTeam(session?.user.id ?? "anonymous", id),
+    queryFn: ({ signal }) => organizationService.getTeam(id, { signal }),
+    enabled: options.enabled !== false && Boolean(session) && Boolean(id),
     staleTime: 10000,
   });
   return useQueryAccess(result, "organization");

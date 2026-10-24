@@ -4,29 +4,33 @@ import {
   uploadPolicySchema,
 } from "@/features/attachments/schemas/attachments.schema";
 import { type UploadAttachmentInput } from "@/features/attachments/types/attachments.types";
-import { apiClient } from "@/services/api-client";
-import type { MutationOptions, RequestOptions } from "@/services/api.types";
+import type { MutationOptions, RequestOptions } from "@/services/api-client";
+import { apiClient, parseFile, parseResponse } from "@/services/api-client";
 export const attachmentsService: AttachmentsApi = {
   getUploadPolicy(options: RequestOptions = {}) {
-    return apiClient.get(`/attachments/policy`, uploadPolicySchema, options);
+    return apiClient
+      .get<unknown>("/attachments/policy", options)
+      .then(parseResponse(uploadPolicySchema));
   },
   uploadAttachment(payload: UploadAttachmentInput, options: MutationOptions) {
     const form = new FormData();
     form.set("taskId", payload.taskId);
     form.set("file", payload.file);
-    return apiClient.post(`/attachments`, form, attachmentSchema, options);
+    return apiClient
+      .post<unknown>("/attachments", form, options)
+      .then(parseResponse(attachmentSchema));
   },
   getAttachment(attachmentId: string, options: RequestOptions = {}) {
-    return apiClient.get(
-      `/attachments/${encodeURIComponent(attachmentId)}`,
-      attachmentSchema,
-      options,
-    );
+    return apiClient
+      .get<unknown>(`/attachments/${encodeURIComponent(attachmentId)}`, options)
+      .then(parseResponse(attachmentSchema));
   },
   downloadAttachment(attachmentId: string, options: RequestOptions = {}) {
-    return apiClient.download(
-      `/attachments/${encodeURIComponent(attachmentId)}/content`,
-      options,
-    );
+    return apiClient
+      .get<Blob>(`/attachments/${encodeURIComponent(attachmentId)}/content`, {
+        ...options,
+        responseType: "blob",
+      })
+      .then(parseFile);
   },
 };

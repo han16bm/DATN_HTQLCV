@@ -1,6 +1,10 @@
 import { taskSchema } from "@/features/tasks/schemas/task.schema";
-import { personRefSchema } from "@/lib/validation/common.schema";
+import {
+  listQuerySchema,
+  personRefSchema,
+} from "@/lib/validation/common.schema";
 import { checkProjection } from "@/lib/validation/contract-refinements";
+import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 export const createTimeLogSchema = z
   .object({
@@ -32,12 +36,9 @@ export const updateTimeLogSchema = z
   .strict();
 export const timeLogSchema = z
   .object({
-    id: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
+    id: idSchema,
     version: z.number().int().safe().positive(),
-    createdAt: z.iso.datetime(),
-    updatedAt: z.iso.datetime(),
-    taskId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
-    userId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
+    userId: idSchema,
     workDate: z.iso.date(),
     minutes: z.number().int().safe().max(1440).positive(),
     description: z
@@ -50,11 +51,7 @@ export const timeLogSchema = z
   })
   .superRefine(checkProjection);
 export const timeLogQuerySchema = z
-  .object({
-    page: z.number().int().safe().min(1).optional().default(1),
-    pageSize: z.number().int().safe().min(1).max(100).optional().default(20),
-    q: z.string().trim().max(255).optional(),
-  })
+  .object({ ...listQuerySchema.shape })
   .strict();
 export const timeLogChangeResultSchema = z.object({
   timeLog: timeLogSchema,

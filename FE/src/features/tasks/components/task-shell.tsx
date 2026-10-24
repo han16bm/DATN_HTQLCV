@@ -24,9 +24,7 @@ export function TaskShell({
   children: ReactNode;
 }) {
   const query = useGetTaskQuery(taskId);
-  const project = useGetProjectQuery(query.data?.projectId ?? "", {
-    enabled: Boolean(query.data),
-  });
+  const project = useGetProjectQuery(query.data?.projectId ?? "");
   const { session } = useSession();
   const dialog = useHashDialog();
   const path = usePathname();
@@ -111,8 +109,10 @@ export function TaskShell({
         />
       )}{" "}
       {children}
-      {editable && manage && <TaskAssignmentDialog task={task} />}{" "}
-      {editable && <TaskExecutionDialog task={task} />}
+      {editable && manage && (
+        <TaskAssignmentDialog task={task} reload={query.refetch} />
+      )}{" "}
+      {editable && <TaskExecutionDialog task={task} reload={query.refetch} />}
     </>
   );
 }

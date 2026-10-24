@@ -1,19 +1,20 @@
 import {
   alertQuerySchema,
+  alertRowSchema,
   alertSchema,
   updateAlertSchema,
 } from "@/features/alerts/schemas/alerts.schema";
 import { page } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { http } from "msw";
-import { alertsDb } from "../db/alerts.db";
+import { alertsDb } from "../db";
 import {
   authenticatedUser,
   mockCommand,
   mockHandler,
   mockJson,
   parseQuery,
-} from "../utils/handler";
+} from "./http";
 export const alertHandlers = [
   http.get(
     "*/api/v1/alerts",
@@ -23,7 +24,7 @@ export const alertHandlers = [
       return mockJson(
         request,
         alertsDb.listAlerts(viewer, query),
-        page(alertSchema),
+        page(alertRowSchema),
         200,
       );
     }),

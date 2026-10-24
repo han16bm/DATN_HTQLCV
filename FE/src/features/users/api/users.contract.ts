@@ -13,7 +13,7 @@ import type {
   MutationOptions,
   RequestOptions,
   VersionOptions,
-} from "@/services/api.types";
+} from "@/services/api-client";
 export interface UsersApi {
   listUsers(query?: UserQuery, options?: RequestOptions): Promise<UserList>;
   getUser(userId: string, options?: RequestOptions): Promise<UserDto>;

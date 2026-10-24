@@ -1,9 +1,9 @@
 import {
   type CreateReportDraftInput,
-  type GetReportPreviewQuery,
   type ReportDto,
   type ReportList,
   type ReportPreviewDto,
+  type ReportPreviewQuery,
   type ReportQuery,
   type SubmitReportInput,
   type UpdateReportDraftInput,
@@ -12,14 +12,14 @@ import type {
   MutationOptions,
   RequestOptions,
   VersionOptions,
-} from "@/services/api.types";
+} from "@/services/api-client";
 export interface ReportsApi {
   listReports(
     query?: ReportQuery,
     options?: RequestOptions,
   ): Promise<ReportList>;
   getReportPreview(
-    query: GetReportPreviewQuery,
+    query: ReportPreviewQuery,
     options?: RequestOptions,
   ): Promise<ReportPreviewDto>;
   getReport(reportId: string, options?: RequestOptions): Promise<ReportDto>;

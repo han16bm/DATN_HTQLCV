@@ -3,6 +3,7 @@ import type {
   getProjectClosureChecksResultSchema,
   projectHistoryQuerySchema,
   projectQuerySchema,
+  projectRowSchema,
   projectSchema,
   updateProjectSchema,
 } from "@/features/projects/schemas/projects.schema";
@@ -11,7 +12,8 @@ import { type AuditDto, type Page } from "@/types/common";
 import { type z } from "zod";
 export type ProjectDto = z.output<typeof projectSchema>;
 export type ProjectQuery = z.input<typeof projectQuerySchema>;
-export type ProjectList = Page<ProjectDto>;
+export type ProjectRow = z.output<typeof projectRowSchema>;
+export type ProjectList = Page<ProjectRow>;
 export type CreateProjectInput = z.input<typeof createProjectSchema>;
 export type UpdateProjectInput = z.input<typeof updateProjectSchema>;
 export type UpdateProjectArgs = {

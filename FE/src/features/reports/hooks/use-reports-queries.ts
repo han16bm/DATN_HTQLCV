@@ -4,13 +4,13 @@ import {
   reportQuerySchema,
 } from "@/features/reports/schemas/reports.schema";
 import {
-  type GetReportPreviewQuery,
+  type ReportPreviewQuery,
   type ReportQuery,
 } from "@/features/reports/types/reports.types";
 import { useSession } from "@/lib/auth/session-context";
 import type { QueryOptions } from "@/lib/query/use-query-access";
 import { useQueryAccess } from "@/lib/query/use-query-access";
-import { idSchema } from "@/lib/validation/request.schema";
+import { queryIdSchema } from "@/lib/validation/request.schema";
 import { useQuery } from "@tanstack/react-query";
 import { reportsKeys } from "../api/reports.keys";
 import { reportsService } from "../api/reports.service";
@@ -38,7 +38,7 @@ export function useListReportsQuery(
   return useQueryAccess(result, "reports");
 }
 export function useGetReportPreviewQuery(
-  query: GetReportPreviewQuery,
+  query: ReportPreviewQuery,
   options: QueryOptions = {},
 ) {
   const { session } = useSession();
@@ -64,14 +64,12 @@ export function useGetReportQuery(
   reportId: string,
   options: QueryOptions = {},
 ) {
+  const id = queryIdSchema.parse(reportId);
   const { session } = useSession();
   const result = useQuery({
-    queryKey: reportsKeys.getReport(session?.user.id ?? "anonymous", reportId),
-    queryFn: ({ signal }) => reportsService.getReport(reportId, { signal }),
-    enabled:
-      options.enabled !== false &&
-      Boolean(session) &&
-      idSchema.safeParse(reportId).success,
+    queryKey: reportsKeys.getReport(session?.user.id ?? "anonymous", id),
+    queryFn: ({ signal }) => reportsService.getReport(id, { signal }),
+    enabled: options.enabled !== false && Boolean(session) && Boolean(id),
     staleTime: 10000,
   });
   return useQueryAccess(result, "reports");

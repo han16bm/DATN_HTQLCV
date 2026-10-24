@@ -2,22 +2,24 @@ import {
   approveSchema,
   createSubmissionSchema,
   reviewQueueQuerySchema,
+  reviewRowSchema,
   revisionSchema,
   submissionQuerySchema,
   submissionResultSchema,
+  submissionRowSchema,
   submissionSchema,
 } from "@/features/submissions/schemas/submissions.schema";
 import { page } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { http } from "msw";
-import { submissionsDb } from "../db/submissions.db";
+import { submissionsDb } from "../db";
 import {
   authenticatedUser,
   mockCommand,
   mockHandler,
   mockJson,
   parseQuery,
-} from "../utils/handler";
+} from "./http";
 export const submissionHandlers = [
   http.get(
     "*/api/v1/tasks/:taskId/submissions",
@@ -28,7 +30,7 @@ export const submissionHandlers = [
       return mockJson(
         request,
         submissionsDb.listSubmissions(viewer, taskId, query),
-        page(submissionSchema),
+        page(submissionRowSchema),
         200,
       );
     }),
@@ -155,7 +157,7 @@ export const submissionHandlers = [
       return mockJson(
         request,
         submissionsDb.listReviewQueue(viewer, query),
-        page(submissionSchema),
+        page(reviewRowSchema),
         200,
       );
     }),

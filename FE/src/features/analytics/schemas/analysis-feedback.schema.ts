@@ -3,12 +3,8 @@ import { checkProjection } from "@/lib/validation/contract-refinements";
 import { z } from "zod";
 export const feedbackSchema = z
   .object({
-    id: z.string(),
-    analysisId: z.string(),
-    snapshotId: z.string(),
     verdict: z.enum(["CONFIRMED", "REJECTED"]),
     comment: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(2000),
-    actorId: z.string(),
     actor: personRefSchema,
     createdAt: z.iso.datetime(),
   })

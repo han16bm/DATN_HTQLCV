@@ -49,7 +49,6 @@ export function ReportEditor({
               reportId: report.id,
               version: snapshot.base!.version,
             });
-            await preview.refetch();
           }}
         >
           Làm mới số liệu

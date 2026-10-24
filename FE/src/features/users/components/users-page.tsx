@@ -1,4 +1,5 @@
 "use client";
+import { PermissionGate } from "@/components/layout/permission-gate";
 import {
   Badge,
   ButtonLink,
@@ -6,7 +7,6 @@ import {
   Loading,
   PageHeader,
   Pagination,
-  PermissionGate,
 } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListUnitsQuery } from "@/features/organization/hooks/use-organization-queries";

@@ -2,26 +2,28 @@ import {
   createTeamSchema,
   teamMembersSchema,
   teamQuerySchema,
+  teamRowSchema,
   teamSchema,
   updateTeamSchema,
 } from "@/features/organization/schemas/team.schema";
 import {
   createUnitSchema,
   unitQuerySchema,
+  unitRowSchema,
   unitSchema,
   updateUnitSchema,
 } from "@/features/organization/schemas/unit.schema";
 import { page, reasonSchema } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { http } from "msw";
-import { organizationDb } from "../db/organization.db";
+import { organizationDb } from "../db";
 import {
   authenticatedUser,
   mockCommand,
   mockHandler,
   mockJson,
   parseQuery,
-} from "../utils/handler";
+} from "./http";
 export const organizationHandlers = [
   http.get(
     "*/api/v1/units",
@@ -31,7 +33,7 @@ export const organizationHandlers = [
       return mockJson(
         request,
         organizationDb.listUnits(viewer, query),
-        page(unitSchema),
+        page(unitRowSchema),
         200,
       );
     }),
@@ -147,7 +149,7 @@ export const organizationHandlers = [
       return mockJson(
         request,
         organizationDb.listTeams(viewer, query),
-        page(teamSchema),
+        page(teamRowSchema),
         200,
       );
     }),

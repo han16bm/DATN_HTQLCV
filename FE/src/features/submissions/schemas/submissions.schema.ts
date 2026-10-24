@@ -1,6 +1,10 @@
 import { taskSchema } from "@/features/tasks/schemas/task.schema";
-import { personRefSchema } from "@/lib/validation/common.schema";
+import {
+  listQuerySchema,
+  personRefSchema,
+} from "@/lib/validation/common.schema";
 import { checkProjection } from "@/lib/validation/contract-refinements";
+import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 export const approveSchema = z
   .object({
@@ -40,16 +44,14 @@ export const createSubmissionSchema = z
           ),
       )
       .max(10),
-    attachmentIds: z.array(z.string().trim()).max(10),
+    attachmentIds: z.array(idSchema).max(10),
   })
   .strict();
 export const submissionSchema = z
   .object({
-    id: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
+    id: idSchema,
     version: z.number().int().safe().positive(),
-    createdAt: z.iso.datetime(),
-    updatedAt: z.iso.datetime(),
-    taskId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
+    taskId: idSchema,
     sequence: z.number().int().safe().positive(),
     submittedBy: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
     submittedAt: z.iso.datetime(),
@@ -60,11 +62,10 @@ export const submissionSchema = z
         .url()
         .refine((v) => /^https?:\/\//.test(v), "Chỉ nhận liên kết HTTP/HTTPS"),
     ),
-    attachmentIds: z.array(z.string()),
+    attachmentIds: z.array(idSchema),
     dueAtSnapshot: z.iso.datetime(),
     actualMinutesSnapshot: z.number().int().safe().min(0),
     status: z.enum(["PENDING", "ACCEPTED", "REVISION_REQUESTED"]),
-    reviewedBy: z.string().nullable(),
     reviewedAt: z.iso.datetime().nullable(),
     reviewComment: z.string().nullable(),
     requestedChanges: z.string().nullable(),
@@ -73,26 +74,29 @@ export const submissionSchema = z
   })
   .superRefine(checkProjection);
 export const submissionQuerySchema = z
-  .object({
-    page: z.number().int().safe().min(1).optional().default(1),
-    pageSize: z.number().int().safe().min(1).max(100).optional().default(20),
-    q: z.string().trim().max(255).optional(),
-  })
+  .object({ ...listQuerySchema.shape })
   .strict();
 export const submissionResultSchema = z.object({
   submission: submissionSchema,
   task: taskSchema,
 });
 export const reviewQueueQuerySchema = z
-  .object({
-    page: z.number().int().safe().min(1).optional().default(1),
-    pageSize: z.number().int().safe().min(1).max(100).optional().default(20),
-    q: z.string().trim().max(255).optional(),
-    projectId: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(100)
-      .optional(),
-  })
+  .object({ ...listQuerySchema.shape, projectId: idSchema.optional() })
   .strict();
+
+export const submissionRowSchema = z.object(submissionSchema.shape).pick({
+  id: true,
+  sequence: true,
+  submitter: true,
+  submittedAt: true,
+  status: true,
+});
+
+export const reviewRowSchema = z.object(submissionSchema.shape).pick({
+  id: true,
+  taskId: true,
+  sequence: true,
+  submitter: true,
+  submittedAt: true,
+  dueAtSnapshot: true,
+});

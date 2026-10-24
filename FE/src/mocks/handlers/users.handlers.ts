@@ -7,19 +7,20 @@ import {
 } from "@/features/users/schemas/user-form.schema";
 import {
   userQuerySchema,
+  userRowSchema,
   userSchema,
 } from "@/features/users/schemas/user.schema";
 import { page, reasonSchema } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { http } from "msw";
-import { usersDb } from "../db/users.db";
+import { usersDb } from "../db";
 import {
   authenticatedUser,
   mockCommand,
   mockHandler,
   mockJson,
   parseQuery,
-} from "../utils/handler";
+} from "./http";
 export const userHandlers = [
   http.get(
     "*/api/v1/users",
@@ -29,7 +30,7 @@ export const userHandlers = [
       return mockJson(
         request,
         usersDb.listUsers(viewer, query),
-        page(userSchema),
+        page(userRowSchema),
         200,
       );
     }),

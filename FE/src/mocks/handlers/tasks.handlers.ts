@@ -7,6 +7,7 @@ import {
 import {
   taskHistoryQuerySchema,
   taskQuerySchema,
+  taskRowSchema,
   taskSchema,
 } from "@/features/tasks/schemas/task.schema";
 import {
@@ -16,14 +17,14 @@ import {
 } from "@/lib/validation/common.schema";
 import { emptySchema, idSchema } from "@/lib/validation/request.schema";
 import { http } from "msw";
-import { tasksDb } from "../db/tasks.db";
+import { tasksDb } from "../db";
 import {
   authenticatedUser,
   mockCommand,
   mockHandler,
   mockJson,
   parseQuery,
-} from "../utils/handler";
+} from "./http";
 export const taskHandlers = [
   http.get(
     "*/api/v1/tasks",
@@ -33,7 +34,7 @@ export const taskHandlers = [
       return mockJson(
         request,
         tasksDb.listTasks(viewer, query),
-        page(taskSchema),
+        page(taskRowSchema),
         200,
       );
     }),

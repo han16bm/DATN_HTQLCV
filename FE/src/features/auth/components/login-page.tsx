@@ -85,16 +85,6 @@ export function LoginPage() {
         <p className="muted small">
           Quên mật khẩu? Liên hệ người quản lý tài khoản.
         </p>
-        {process.env.NODE_ENV === "development" &&
-          process.env.NEXT_PUBLIC_API_MOCKING === "enabled" && (
-            <aside className="demo-info">
-              Dữ liệu thử nghiệm qua MSW
-              <br />
-              Tài khoản: minh / lan / huy / admin
-              <br />
-              Mật khẩu: Mock@12345
-            </aside>
-          )}
       </section>
     </main>
   );

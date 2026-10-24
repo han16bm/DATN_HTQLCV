@@ -1,4 +1,5 @@
 "use client";
+import { PermissionGate } from "@/components/layout/permission-gate";
 import {
   Badge,
   DataTable,
@@ -6,7 +7,6 @@ import {
   PageHeader,
   Pagination,
   Panel,
-  PermissionGate,
 } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { alertStatusSchema } from "@/features/alerts/schemas/alerts.schema";

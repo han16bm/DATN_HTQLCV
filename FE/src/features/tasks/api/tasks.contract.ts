@@ -15,7 +15,7 @@ import type {
   MutationOptions,
   RequestOptions,
   VersionOptions,
-} from "@/services/api.types";
+} from "@/services/api-client";
 export interface TasksApi {
   listTasks(query?: TaskQuery, options?: RequestOptions): Promise<TaskList>;
   getTask(taskId: string, options?: RequestOptions): Promise<TaskDto>;

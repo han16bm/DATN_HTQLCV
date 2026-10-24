@@ -3,6 +3,7 @@ import {
   reportPreviewQuerySchema,
   reportPreviewSchema,
   reportQuerySchema,
+  reportRowSchema,
   reportSchema,
   reportSubmitSchema,
   updateReportSchema,
@@ -10,14 +11,14 @@ import {
 import { page } from "@/lib/validation/common.schema";
 import { emptySchema, idSchema } from "@/lib/validation/request.schema";
 import { http } from "msw";
-import { reportsDb } from "../db/reports.db";
+import { reportsDb } from "../db";
 import {
   authenticatedUser,
   mockCommand,
   mockHandler,
   mockJson,
   parseQuery,
-} from "../utils/handler";
+} from "./http";
 export const reportHandlers = [
   http.get(
     "*/api/v1/reports",
@@ -27,7 +28,7 @@ export const reportHandlers = [
       return mockJson(
         request,
         reportsDb.listReports(viewer, query),
-        page(reportSchema),
+        page(reportRowSchema),
         200,
       );
     }),

@@ -15,7 +15,7 @@ import { createRequestTickets } from "@/lib/query/mutation-requests";
 import { useMutationAttempt } from "@/lib/query/use-mutation-attempt";
 import { useAccessErrorHandler } from "@/lib/query/use-query-access";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRef } from "react";
+import { useState } from "react";
 import { usersService } from "../api/users.service";
 
 export function useCreateUserMutation() {
@@ -24,7 +24,7 @@ export function useCreateUserMutation() {
   const viewerId = session?.user.id ?? "anonymous";
   const handleError = useAccessErrorHandler();
   const attempt = useMutationAttempt();
-  const requests = useRef(
+  const [requests] = useState(() =>
     createRequestTickets(async (input: CreateUserInput) =>
       usersService.createUser(input, {
         key: await attempt.keyFor(input),
@@ -33,7 +33,7 @@ export function useCreateUserMutation() {
   );
   const mutation = useMutation({
     mutationKey: ["users", viewerId, "createUser"],
-    mutationFn: requests.current.execute,
+    mutationFn: requests.execute,
     retry: false,
     onError: handleError,
     onSuccess: async () => {
@@ -44,9 +44,9 @@ export function useCreateUserMutation() {
   return {
     ...mutation,
     mutateAsync: (payload: CreateUserInput) =>
-      mutation.mutateAsync(requests.current.put(payload)),
+      mutation.mutateAsync(requests.put(payload)),
     mutate: (payload: CreateUserInput) => {
-      void mutation.mutateAsync(requests.current.put(payload)).catch(() => {});
+      void mutation.mutateAsync(requests.put(payload)).catch(() => {});
     },
   };
 }
@@ -135,7 +135,7 @@ export function useResetUserPasswordMutation() {
   const viewerId = session?.user.id ?? "anonymous";
   const handleError = useAccessErrorHandler();
   const attempt = useMutationAttempt();
-  const requests = useRef(
+  const [requests] = useState(() =>
     createRequestTickets(async (input: ResetUserPasswordArgs) =>
       usersService.resetUserPassword(input.userId, input.payload, {
         version: input.version,
@@ -145,7 +145,7 @@ export function useResetUserPasswordMutation() {
   );
   const mutation = useMutation({
     mutationKey: ["users", viewerId, "resetUserPassword"],
-    mutationFn: requests.current.execute,
+    mutationFn: requests.execute,
     retry: false,
     onError: handleError,
     onSuccess: async () => {
@@ -159,9 +159,9 @@ export function useResetUserPasswordMutation() {
   return {
     ...mutation,
     mutateAsync: (payload: ResetUserPasswordArgs) =>
-      mutation.mutateAsync(requests.current.put(payload)),
+      mutation.mutateAsync(requests.put(payload)),
     mutate: (payload: ResetUserPasswordArgs) => {
-      void mutation.mutateAsync(requests.current.put(payload)).catch(() => {});
+      void mutation.mutateAsync(requests.put(payload)).catch(() => {});
     },
   };
 }

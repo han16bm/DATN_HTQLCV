@@ -33,9 +33,7 @@ const formSchema = z
   .strict();
 export function SubmitResultDialog({ taskId }: { taskId: string }) {
   const query = useGetTaskQuery(taskId);
-  const project = useGetProjectQuery(query.data?.projectId ?? "", {
-    enabled: Boolean(query.data),
-  });
+  const project = useGetProjectQuery(query.data?.projectId ?? "");
   const { session } = useSession();
   const dialog = useHashDialog();
   return (
@@ -55,29 +53,19 @@ export function SubmitResultDialog({ taskId }: { taskId: string }) {
       ) : query.data.actualMinutes <= 0 ? (
         <p>Cần ghi nhận giờ công hợp lệ trước khi nộp.</p>
       ) : ["submit", "attachment"].includes(dialog.name) ? (
-        <SubmissionForm
-          key={taskId}
-          taskId={taskId}
-          task={query.data}
-          reload={() => query.refetch()}
-          criteria={query.data.acceptanceCriteria}
-        />
+        <SubmissionForm key={taskId} task={query.data} reload={query.refetch} />
       ) : null}
     </HashDialog>
   );
 }
 function SubmissionForm({
-  taskId,
   task,
   reload,
-  criteria,
 }: {
-  taskId: string;
   task: TaskDto;
   reload: () => Promise<{
     data?: TaskDto;
   }>;
-  criteria: string;
 }) {
   const [ids, setIds] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -87,7 +75,7 @@ function SubmissionForm({
   return (
     <>
       <h3>Tiêu chí nghiệm thu</h3>
-      <p className="preserve-lines">{criteria}</p>
+      <p className="preserve-lines">{task.acceptanceCriteria}</p>
       <VersionedSchemaForm
         initial={task}
         reload={reload}
@@ -112,7 +100,7 @@ function SubmissionForm({
         onSubmit={async (values, base) => {
           if (busy) throw new Error("Vui lòng chờ tệp tải xong.");
           await mutation.mutateAsync({
-            taskId: taskId,
+            taskId: task.id,
             payload: createSubmissionSchema.parse({
               ...values,
               attachmentIds: ids,
@@ -121,11 +109,11 @@ function SubmissionForm({
           });
           dialog.close();
           toast.success("Đã nộp kết quả.");
-          router.push(`/tasks/${taskId}/submissions`);
+          router.push(`/tasks/${task.id}/submissions`);
         }}
       >
         <EvidenceUploader
-          taskId={taskId}
+          taskId={task.id}
           onChange={setIds}
           onBusyChange={setBusy}
         />

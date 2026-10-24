@@ -7,14 +7,14 @@ import {
 import { page, reasonSchema } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { http } from "msw";
-import { projectMembersDb } from "../db/project-members.db";
+import { projectMembersDb } from "../db";
 import {
   authenticatedUser,
   mockCommand,
   mockHandler,
   mockJson,
   parseQuery,
-} from "../utils/handler";
+} from "./http";
 export const projectMemberHandlers = [
   http.get(
     "*/api/v1/projects/:projectId/members",

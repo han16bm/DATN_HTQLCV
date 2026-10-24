@@ -4,7 +4,7 @@ import { type UserQuery } from "@/features/users/types/users.types";
 import { hasPermission, useSession } from "@/lib/auth/session-context";
 import type { QueryOptions } from "@/lib/query/use-query-access";
 import { useQueryAccess } from "@/lib/query/use-query-access";
-import { idSchema } from "@/lib/validation/request.schema";
+import { queryIdSchema } from "@/lib/validation/request.schema";
 import { useQuery } from "@tanstack/react-query";
 import { usersKeys } from "../api/users.keys";
 import { usersService } from "../api/users.service";
@@ -28,7 +28,6 @@ export function useListUsersQuery(
     queryFn: ({ signal }) => usersService.listUsers(filters, { signal }),
     enabled:
       options.enabled !== false &&
-      Boolean(session) &&
       parsed.success &&
       hasPermission(session, "USERS_MANAGE"),
     staleTime: 30000,
@@ -36,14 +35,14 @@ export function useListUsersQuery(
   return useQueryAccess(result, "users");
 }
 export function useGetUserQuery(userId: string, options: QueryOptions = {}) {
+  const id = queryIdSchema.parse(userId);
   const { session } = useSession();
   const result = useQuery({
-    queryKey: usersKeys.getUser(session?.user.id ?? "anonymous", userId),
-    queryFn: ({ signal }) => usersService.getUser(userId, { signal }),
+    queryKey: usersKeys.getUser(session?.user.id ?? "anonymous", id),
+    queryFn: ({ signal }) => usersService.getUser(id, { signal }),
     enabled:
       options.enabled !== false &&
-      Boolean(session) &&
-      idSchema.safeParse(userId).success &&
+      Boolean(id) &&
       hasPermission(session, "USERS_MANAGE"),
     staleTime: 10000,
   });

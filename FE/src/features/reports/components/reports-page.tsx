@@ -21,11 +21,9 @@ import { useListReportsQuery } from "../hooks/use-reports-queries";
 export function ReportsPage() {
   const f = useUrlFilters();
   const projects = useListProjectsQuery({ pageSize: 100 });
-  const members = useListProjectMembersQuery(
-    f.get("projectId"),
-    { pageSize: 100 },
-    { enabled: Boolean(f.get("projectId")) },
-  );
+  const members = useListProjectMembersQuery(f.get("projectId"), {
+    pageSize: 100,
+  });
   const { session } = useSession();
   const period = periodTypeSchema.safeParse(f.get("periodType"));
   const status = z.enum(["DRAFT", "SUBMITTED"]).safeParse(f.get("status"));
@@ -149,7 +147,7 @@ export function ReportsPage() {
                 </p>
               </Link>,
               r.author.displayName,
-              r.snapshot ? hours(r.snapshot.totalMinutes) : "Chưa chốt",
+              r.totalMinutes !== null ? hours(r.totalMinutes) : "Chưa chốt",
               <Badge key="status" value={r.status} />,
             ])}
           />

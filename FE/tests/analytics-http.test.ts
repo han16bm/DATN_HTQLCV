@@ -1,19 +1,15 @@
 import { alertsService } from "@/features/alerts/api/alerts.service";
 import { analyticsService } from "@/features/analytics/api/analytics.service";
 import { authService } from "@/features/auth/api/auth.service";
-import { evaluateAlertRules } from "@/mocks/db/alerts.db";
-import { db, setClock } from "@/mocks/db/database";
-import { server } from "@/mocks/node";
-import { resetMockState } from "@/mocks/reset";
-import { registerRefresh, token } from "@/services/auth-session";
+import { db, evaluateAlertRules, setClock } from "@/mocks/db";
+import { resetMockState, server } from "@/mocks/node";
+import { registerRefresh, token } from "@/services/api-client";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 beforeAll(() => {
-  process.env.NEXT_PUBLIC_API_ORIGIN = "http://gateway.test";
   server.listen({ onUnhandledRequest: "error" });
 });
 afterAll(() => {
   server.close();
-  delete process.env.NEXT_PUBLIC_API_ORIGIN;
 });
 beforeEach(() => {
   server.resetHandlers();
@@ -36,7 +32,6 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
     expect(db.jobs.size).toBe(0);
     expect(a.metrics.find((m) => m.code === "K13")?.value).toBeNull();
     expect(a.metrics.find((m) => m.code === "K14")?.value).toBeNull();
-    expect(a.reporting.submissionCoverageRate).toBeNull();
     const workload = await analyticsService.getWorkload(scope);
     expect(
       workload.items.every(
@@ -52,7 +47,7 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
       ...scope,
       assigneeId: "u-lan",
     });
-    expect(result.actualMinutes).toBe(
+    expect(result.metrics.find((m) => m.code === "K06")!.value! * 60).toBe(
       db.timeLogs
         .filter((l) => l.userId === "u-lan" && l.status === "ACTIVE")
         .reduce((s, l) => s + l.minutes, 0),
@@ -63,7 +58,7 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
       to: "2026-10-23",
     });
     expect(narrow.timeVariance.actualMinutes).toBeGreaterThanOrEqual(
-      narrow.actualMinutes,
+      narrow.metrics.find((m) => m.code === "K06")!.value! * 60,
     );
   });
   it("enforces scope for analytics and lookup without using admin endpoints", async () => {
@@ -158,8 +153,9 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
     await waitJob();
     expect(await analyticsService.getAnalysisJob(job.id)).toMatchObject({
       status: "FAILED",
-      error: { code: "OUTPUT_INVALID" },
+      error: { retryable: true },
     });
+    expect(db.jobs.get(job.id)?.error?.code).toBe("OUTPUT_INVALID");
     const failed = await analyticsService.getAnalysisDetail(id);
     expect(failed.snapshot).toEqual(good.snapshot);
     expect(failed.explanation.status).toBe("FAILED");
@@ -201,8 +197,23 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
     expect(db.tasks).toEqual(tasks);
     expect(db.alerts).toEqual(alerts);
     expect(
-      (await analyticsService.getAnalysisDetail(id)).feedback.latest?.id,
-    ).toBe(one.id);
+      (await analyticsService.getAnalysisDetail(id)).feedback.latest,
+    ).toEqual(one);
+    const stored = db.details.get(id)!;
+    expect(stored).not.toHaveProperty("freshness");
+    expect(stored).not.toHaveProperty("feedback");
+    const member = db.members.find(
+      (item) => item.userId === "u-pm" && item.projectId === "p-main",
+    )!;
+    const permissions = member.permissions;
+    member.permissions = permissions.filter(
+      (value) => value !== "ALERTS_MANAGE",
+    );
+    expect(
+      (await analyticsService.getAnalysisDetail(id)).feedback.canSubmit,
+    ).toBe(false);
+    expect(detail.feedback.canSubmit).toBe(true);
+    member.permissions = permissions;
     db.revision++;
     const stale = await analyticsService.getAnalysisDetail(id);
     expect(stale.snapshot).toEqual(detail.snapshot);

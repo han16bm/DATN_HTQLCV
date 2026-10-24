@@ -1,12 +1,11 @@
 import {
   type AttachmentDto,
-  type DownloadAttachmentResult,
   type UploadAttachmentInput,
-  type UploadPolicy,
+  type UploadPolicyDto,
 } from "@/features/attachments/types/attachments.types";
-import type { MutationOptions, RequestOptions } from "@/services/api.types";
+import type { MutationOptions, RequestOptions } from "@/services/api-client";
 export interface AttachmentsApi {
-  getUploadPolicy(options?: RequestOptions): Promise<UploadPolicy>;
+  getUploadPolicy(options?: RequestOptions): Promise<UploadPolicyDto>;
   uploadAttachment(
     payload: UploadAttachmentInput,
     options: MutationOptions,
@@ -18,5 +17,5 @@ export interface AttachmentsApi {
   downloadAttachment(
     attachmentId: string,
     options?: RequestOptions,
-  ): Promise<DownloadAttachmentResult>;
+  ): Promise<Blob>;
 }

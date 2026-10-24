@@ -10,7 +10,7 @@ import {
 import { hasPermission, useSession } from "@/lib/auth/session-context";
 import type { QueryOptions } from "@/lib/query/use-query-access";
 import { useQueryAccess } from "@/lib/query/use-query-access";
-import { idSchema } from "@/lib/validation/request.schema";
+import { queryIdSchema } from "@/lib/validation/request.schema";
 import { useQuery } from "@tanstack/react-query";
 import { submissionsKeys } from "../api/submissions.keys";
 import { submissionsService } from "../api/submissions.service";
@@ -20,6 +20,7 @@ export function useListSubmissionsQuery(
   query: SubmissionQuery = {},
   options: QueryOptions = {},
 ) {
+  const id = queryIdSchema.parse(taskId);
   const { session } = useSession();
   const parsed = submissionQuerySchema.safeParse(query);
   const filters = parsed.success ? parsed.data : query;
@@ -27,7 +28,7 @@ export function useListSubmissionsQuery(
     queryKey: parsed.success
       ? submissionsKeys.listSubmissions(
           session?.user.id ?? "anonymous",
-          taskId,
+          id,
           filters,
         )
       : [
@@ -37,12 +38,12 @@ export function useListSubmissionsQuery(
           "invalid-query",
         ],
     queryFn: ({ signal }) =>
-      submissionsService.listSubmissions(taskId, filters, { signal }),
+      submissionsService.listSubmissions(id, filters, { signal }),
     enabled:
       options.enabled !== false &&
       Boolean(session) &&
       parsed.success &&
-      idSchema.safeParse(taskId).success,
+      Boolean(id),
     staleTime: 30000,
   });
   return useQueryAccess(result, "submissions");
@@ -52,20 +53,22 @@ export function useGetSubmissionQuery(
   submissionId: string,
   options: QueryOptions = {},
 ) {
+  const parentId = queryIdSchema.parse(taskId);
+  const id = queryIdSchema.parse(submissionId);
   const { session } = useSession();
   const result = useQuery({
     queryKey: submissionsKeys.getSubmission(
       session?.user.id ?? "anonymous",
-      taskId,
-      submissionId,
+      parentId,
+      id,
     ),
     queryFn: ({ signal }) =>
-      submissionsService.getSubmission(taskId, submissionId, { signal }),
+      submissionsService.getSubmission(parentId, id, { signal }),
     enabled:
       options.enabled !== false &&
       Boolean(session) &&
-      idSchema.safeParse(taskId).success &&
-      idSchema.safeParse(submissionId).success,
+      Boolean(parentId) &&
+      Boolean(id),
     staleTime: 10000,
   });
   return useQueryAccess(result, "submissions");
@@ -93,9 +96,8 @@ export function useListReviewQueueQuery(
       submissionsService.listReviewQueue(filters, { signal }),
     enabled:
       options.enabled !== false &&
-      Boolean(session) &&
       parsed.success &&
-      hasPermission(session, "TASKS_REVIEW", query.projectId),
+      hasPermission(session, "TASKS_REVIEW", filters.projectId),
     staleTime: 30000,
   });
   return useQueryAccess(result, "submissions");

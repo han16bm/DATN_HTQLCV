@@ -1,8 +1,10 @@
 import {
   entityLabelSchema,
+  listQuerySchema,
   personRefSchema,
 } from "@/lib/validation/common.schema";
 import { checkProjection } from "@/lib/validation/contract-refinements";
+import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 export const prioritySchema = z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]);
 export const taskStatusSchema = z.enum([
@@ -15,21 +17,9 @@ export const taskStatusSchema = z.enum([
 ]);
 export const taskQuerySchema = z
   .object({
-    page: z.number().int().safe().min(1).optional().default(1),
-    pageSize: z.number().int().safe().min(1).max(100).optional().default(20),
-    q: z.string().trim().max(255).optional(),
-    projectId: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(100)
-      .optional(),
-    assigneeId: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(100)
-      .optional(),
+    ...listQuerySchema.shape,
+    projectId: idSchema.optional(),
+    assigneeId: idSchema.optional(),
     status: taskStatusSchema.optional(),
     priority: prioritySchema.optional(),
     overdue: z.boolean().optional(),
@@ -43,11 +33,9 @@ export const taskQuerySchema = z
   .strict();
 export const taskSchema = z
   .object({
-    id: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
+    id: idSchema,
     version: z.number().int().safe().positive(),
-    createdAt: z.iso.datetime(),
-    updatedAt: z.iso.datetime(),
-    projectId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
+    projectId: idSchema,
     title: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
     description: z.string().nullable(),
     acceptanceCriteria: z
@@ -60,23 +48,26 @@ export const taskSchema = z
     estimatedMinutes: z.number().int().safe().positive(),
     originalEstimatedMinutes: z.number().int().safe().positive(),
     remainingMinutes: z.number().int().safe().nullable(),
-    assigneeId: z.string().nullable(),
+    assigneeId: idSchema.nullable(),
     status: taskStatusSchema,
-    statusChangedAt: z.iso.datetime(),
-    firstStartedAt: z.iso.datetime().nullable(),
-    completedAt: z.iso.datetime().nullable(),
-    cancelledAt: z.iso.datetime().nullable(),
     actualMinutes: z.number().int().safe().min(0),
-    latestSubmissionId: z.string().nullable(),
+    latestSubmissionId: idSchema.nullable(),
     isOverdue: z.boolean(),
     assignee: personRefSchema.nullable(),
     project: entityLabelSchema,
   })
   .superRefine(checkProjection);
 export const taskHistoryQuerySchema = z
-  .object({
-    page: z.number().int().safe().min(1).optional().default(1),
-    pageSize: z.number().int().safe().min(1).max(100).optional().default(20),
-    q: z.string().trim().max(255).optional(),
-  })
+  .object({ ...listQuerySchema.shape })
   .strict();
+
+export const taskRowSchema = z.object(taskSchema.shape).pick({
+  id: true,
+  title: true,
+  status: true,
+  priority: true,
+  dueAt: true,
+  isOverdue: true,
+  project: true,
+  assignee: true,
+});

@@ -2,19 +2,16 @@ import { authService } from "@/features/auth/api/auth.service";
 import { organizationService } from "@/features/organization/api/organization.service";
 import { usersService } from "@/features/users/api/users.service";
 import { createRequestTickets } from "@/lib/query/mutation-requests";
-import { db } from "@/mocks/db/database";
-import { server } from "@/mocks/node";
-import { resetMockState } from "@/mocks/reset";
-import { registerRefresh, token } from "@/services/auth-session";
+import { db } from "@/mocks/db";
+import { resetMockState, server } from "@/mocks/node";
+import { registerRefresh, token } from "@/services/api-client";
 import { QueryClient } from "@tanstack/react-query";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 beforeAll(() => {
-  process.env.NEXT_PUBLIC_API_ORIGIN = "http://gateway.test";
   server.listen({ onUnhandledRequest: "error" });
 });
 afterAll(() => {
   server.close();
-  delete process.env.NEXT_PUBLIC_API_ORIGIN;
 });
 beforeEach(async () => {
   server.resetHandlers();

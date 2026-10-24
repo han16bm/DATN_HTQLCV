@@ -1,5 +1,6 @@
 "use client";
-import { PageHeader, PermissionGate, Tabs } from "@/components/ui/page";
+import { PermissionGate } from "@/components/layout/permission-gate";
+import { PageHeader, Tabs } from "@/components/ui/page";
 import {
   prioritySchema,
   taskStatusSchema,

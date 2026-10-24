@@ -3,7 +3,6 @@ import { measureSchema } from "@/features/analytics/schemas/analysis-snapshot.sc
 import { analysisRefSchema } from "@/lib/validation/common.schema";
 import { z } from "zod";
 export const highlightSchema = z.object({
-  id: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
   title: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
   description: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(2000),
   severity: z.enum(["INFO", "MEDIUM", "HIGH"]),
@@ -12,7 +11,9 @@ export const highlightSchema = z.object({
 export const summarySchema = z.object({
   metadata: analysisMetaSchema,
   overviewRef: analysisRefSchema,
-  metrics: z.array(measureSchema),
+  metrics: z.array(
+    measureSchema.pick({ label: true, value: true, unit: true, formula: true }),
+  ),
   highlights: z.array(highlightSchema),
   summaryText: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(4000),
 });

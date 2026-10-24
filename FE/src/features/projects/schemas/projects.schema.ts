@@ -1,8 +1,10 @@
 import {
   entityLabelSchema,
+  listQuerySchema,
   personRefSchema,
 } from "@/lib/validation/common.schema";
 import { checkProjection } from "@/lib/validation/contract-refinements";
+import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 export const createProjectSchema = z
   .object({
@@ -18,16 +20,8 @@ export const createProjectSchema = z
       .trim()
       .min(1, "Vui lòng nhập thông tin bắt buộc")
       .max(2000),
-    unitId: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(100),
-    ownerId: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(100),
+    unitId: idSchema,
+    ownerId: idSchema,
     startDate: z.iso.date(),
     dueAt: z.iso.datetime(),
   })
@@ -40,15 +34,8 @@ export const projectStatusSchema = z.enum([
 ]);
 export const projectQuerySchema = z
   .object({
-    page: z.number().int().safe().min(1).optional().default(1),
-    pageSize: z.number().int().safe().min(1).max(100).optional().default(20),
-    q: z.string().trim().max(255).optional(),
-    unitId: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(100)
-      .optional(),
+    ...listQuerySchema.shape,
+    unitId: idSchema.optional(),
     status: projectStatusSchema.optional(),
   })
   .strict();
@@ -66,12 +53,7 @@ export const updateProjectSchema = z
       .min(1, "Vui lòng nhập thông tin bắt buộc")
       .max(2000)
       .optional(),
-    ownerId: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(100)
-      .optional(),
+    ownerId: idSchema.optional(),
     startDate: z.iso.date().optional(),
     dueAt: z.iso.datetime().optional(),
     changeReason: z
@@ -83,20 +65,15 @@ export const updateProjectSchema = z
   .strict();
 export const projectSchema = z
   .object({
-    id: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
+    id: idSchema,
     version: z.number().int().safe().positive(),
-    createdAt: z.iso.datetime(),
-    updatedAt: z.iso.datetime(),
     code: z.string().min(1, "Vui lòng nhập thông tin bắt buộc"),
     name: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
     objective: z.string().max(10000),
-    unitId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
-    ownerId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
+    ownerId: idSchema,
     startDate: z.iso.date(),
     dueAt: z.iso.datetime(),
     status: projectStatusSchema,
-    completedAt: z.iso.datetime().nullable(),
-    cancelledAt: z.iso.datetime().nullable(),
     owner: personRefSchema,
     unit: entityLabelSchema,
   })
@@ -108,9 +85,17 @@ export const getProjectClosureChecksResultSchema = z.object({
   canClose: z.boolean(),
 });
 export const projectHistoryQuerySchema = z
-  .object({
-    page: z.number().int().safe().min(1).optional().default(1),
-    pageSize: z.number().int().safe().min(1).max(100).optional().default(20),
-    q: z.string().trim().max(255).optional(),
-  })
+  .object({ ...listQuerySchema.shape })
   .strict();
+
+export const projectRowSchema = z.object(projectSchema.shape).pick({
+  id: true,
+  code: true,
+  name: true,
+  objective: true,
+  startDate: true,
+  dueAt: true,
+  status: true,
+  owner: true,
+  unit: true,
+});

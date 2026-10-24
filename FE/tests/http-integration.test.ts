@@ -1,20 +1,22 @@
+import { analyticsService } from "@/features/analytics/api/analytics.service";
 import { authService } from "@/features/auth/api/auth.service";
+import { projectMembersService } from "@/features/project-members/api/project-members.service";
 import { submissionsService } from "@/features/submissions/api/submissions.service";
 import { tasksService } from "@/features/tasks/api/tasks.service";
 import { timeLogsService } from "@/features/time-logs/api/time-logs.service";
-import { db } from "@/mocks/db/database";
-import { server } from "@/mocks/node";
-import { resetMockState } from "@/mocks/reset";
-import { registerRefresh, token } from "@/services/auth-session";
+import { db, setClock } from "@/mocks/db";
+import { resetMockState, server } from "@/mocks/node";
+import { apiClient, registerRefresh, token } from "@/services/api-client";
+import { shouldRetryQuery } from "@/services/http-error";
 import { ApiError, ContractError } from "@/types/api/error";
+import axios from "axios";
+import { http, HttpResponse } from "msw";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 beforeAll(() => {
-  process.env.NEXT_PUBLIC_API_ORIGIN = "http://gateway.test";
   server.listen({ onUnhandledRequest: "error" });
 });
 afterAll(() => {
   server.close();
-  delete process.env.NEXT_PUBLIC_API_ORIGIN;
 });
 beforeEach(() => {
   server.resetHandlers();
@@ -25,7 +27,317 @@ beforeEach(() => {
 async function signIn(username: string) {
   return authService.login({ username, password: "Mock@12345" });
 }
-describe("Feature service → fetch HTTP → MSW → mock database", () => {
+describe("Feature service → Axios HTTP → MSW → mock database", () => {
+  it("sends compact list rows over HTTP before the client parses the response", async () => {
+    const check = async (path: string, fields: string[]) => {
+      const response = await apiClient.get<{
+        data: { items: Record<string, unknown>[] };
+      }>(path);
+      expect(response.data.data.items.length, path).toBeGreaterThan(0);
+      for (const item of response.data.data.items) {
+        expect(Object.keys(item).sort(), path).toEqual(fields.toSorted());
+      }
+    };
+    await signIn("admin");
+    await check("/users", [
+      "id",
+      "username",
+      "displayName",
+      "email",
+      "unitId",
+      "systemRole",
+      "status",
+      "unit",
+    ]);
+    await check("/units", ["id", "name", "status"]);
+    await check("/teams", ["id", "name", "unitId", "status", "memberCount"]);
+    await signIn("minh");
+    await check("/projects", [
+      "id",
+      "code",
+      "name",
+      "objective",
+      "startDate",
+      "dueAt",
+      "status",
+      "owner",
+      "unit",
+    ]);
+    await check("/tasks", [
+      "id",
+      "title",
+      "status",
+      "priority",
+      "dueAt",
+      "isOverdue",
+      "project",
+      "assignee",
+    ]);
+    await check("/reports", [
+      "id",
+      "projectId",
+      "periodType",
+      "periodStart",
+      "status",
+      "author",
+      "totalMinutes",
+    ]);
+    await check("/tasks/t-4/submissions", [
+      "id",
+      "sequence",
+      "submitter",
+      "submittedAt",
+      "status",
+    ]);
+    await check("/review-queue", [
+      "id",
+      "taskId",
+      "sequence",
+      "submitter",
+      "submittedAt",
+      "dueAtSnapshot",
+    ]);
+    await check("/alerts", [
+      "id",
+      "type",
+      "taskTitle",
+      "severity",
+      "status",
+      "conditionActive",
+    ]);
+  });
+  it("keeps private model facts out of session, attachment and task responses", async () => {
+    await signIn("lan");
+    const session = await apiClient.get<{
+      data: { user: object; projectAccess: object[] };
+    }>("/auth/me");
+    expect(Object.keys(session.data.data.user).sort()).toEqual([
+      "displayName",
+      "id",
+      "systemRole",
+      "unit",
+      "unitId",
+    ]);
+    expect(Object.keys(session.data.data.projectAccess[0]).sort()).toEqual([
+      "permissions",
+      "projectId",
+    ]);
+    const file = await apiClient.get<{ data: object }>(
+      "/attachments/a-criteria",
+    );
+    expect(Object.keys(file.data.data).sort()).toEqual([
+      "filename",
+      "id",
+      "sizeBytes",
+      "status",
+    ]);
+    expect(
+      db.attachments.find((item) => item.id === "a-criteria"),
+    ).toMatchObject({
+      taskId: "t-3",
+      uploadedBy: "u-lan",
+      mimeType: "application/pdf",
+    });
+    const task = await apiClient.get<{ data: Record<string, unknown> }>(
+      "/tasks/t-3",
+    );
+    for (const field of [
+      "createdAt",
+      "updatedAt",
+      "statusChangedAt",
+      "firstStartedAt",
+      "completedAt",
+    ]) {
+      expect(task.data.data).not.toHaveProperty(field);
+      expect(db.tasks.find((item) => item.id === "t-3")).toHaveProperty(field);
+    }
+    expect(task.data.data).toMatchObject({ id: "t-3", version: 1 });
+    await signIn("minh");
+    const scope = {
+      projectId: "p-main",
+      from: "2026-10-01",
+      to: "2026-10-23",
+      assigneeId: "u-lan",
+    };
+    const dashboard = await analyticsService.getDashboard(scope);
+    const snapshot = await apiClient.get<{
+      data: { snapshot: { scope: object } };
+    }>(`/analytics/details/${dashboard.overviewRef.analysisId}`);
+    expect(Object.keys(snapshot.data.data.snapshot.scope).sort()).toEqual([
+      "from",
+      "projectId",
+      "to",
+    ]);
+    const stored = db.details.get(dashboard.overviewRef.analysisId)!;
+    expect(stored.snapshot.scope.assigneeId).toBe("u-lan");
+    for (const field of ["sourceRevision", "subject", "expiresAt"]) {
+      expect(snapshot.data.data.snapshot).not.toHaveProperty(field);
+      expect(stored.snapshot).toHaveProperty(field);
+    }
+  });
+  it("projects current task hours and overdue state without storing duplicate counters", async () => {
+    await signIn("lan");
+    const before = await tasksService.getTask("t-3");
+    const log = db.timeLogs.find(
+      (item) =>
+        item.taskId === before.id &&
+        item.userId === "u-lan" &&
+        item.status === "ACTIVE",
+    )!;
+    const result = await timeLogsService.voidTimeLog(
+      log.id,
+      { reason: "Loại nhật ký ghi trùng" },
+      {
+        version: log.version,
+        key: "projection-void",
+      },
+    );
+    expect(result.task.actualMinutes).toBe(before.actualMinutes - log.minutes);
+    const stored = structuredClone(
+      db.tasks.find((item) => item.id === before.id)!,
+    );
+    expect(stored).not.toHaveProperty("actualMinutes");
+    expect(stored).not.toHaveProperty("isOverdue");
+    setClock(before.dueAt);
+    await signIn("lan");
+    expect((await tasksService.getTask(before.id)).isOverdue).toBe(false);
+    setClock(new Date(Date.parse(before.dueAt) + 1).toISOString());
+    expect((await tasksService.getTask(before.id)).isOverdue).toBe(true);
+    expect(db.tasks.find((item) => item.id === before.id)).toEqual(stored);
+  });
+  it("uses the same paging and query whitelist for collections and subresources", async () => {
+    await signIn("minh");
+    const lists = [
+      (query: { page?: number; pageSize?: number }) =>
+        tasksService.listTasks(query),
+      (query: { page?: number; pageSize?: number }) =>
+        projectMembersService.listProjectMembers("p-main", query),
+      (query: { page?: number; pageSize?: number }) =>
+        analyticsService.listAnalyticsFilterOptions({
+          kind: "PROJECT",
+          ...query,
+        }),
+    ];
+    for (const list of lists) {
+      expect((await list({})).pagination).toMatchObject({
+        page: 1,
+        pageSize: 20,
+      });
+      const result = await list({ page: 2, pageSize: 1 });
+      expect(result.pagination).toMatchObject({ page: 2, pageSize: 1 });
+      expect(result.items.length).toBeLessThanOrEqual(1);
+      for (const query of [{ page: 0 }, { page: 1.5 }, { pageSize: 101 }]) {
+        await expect(list(query)).rejects.toMatchObject({
+          status: 422,
+          code: "VALIDATION_ERROR",
+        });
+      }
+      const unsupported = { page: 1, slug: "p-main" };
+      await expect(list(unsupported)).rejects.toMatchObject({
+        status: 422,
+        code: "VALIDATION_ERROR",
+      });
+    }
+    const people = await analyticsService.listAnalyticsFilterOptions({
+      kind: "PERSON",
+      projectId: "  p-main  ",
+    });
+    expect(people.items.length).toBeGreaterThan(0);
+    for (const projectId of ["   ", "x".repeat(101)]) {
+      await expect(
+        analyticsService.listAnalyticsFilterOptions({
+          kind: "PERSON",
+          projectId,
+        }),
+      ).rejects.toMatchObject({ status: 422, code: "VALIDATION_ERROR" });
+    }
+  });
+  it("refreshes once for concurrent 401 responses and replays with the new bearer", async () => {
+    await signIn("lan");
+    const old = token.get()!;
+    db.sessionExpiry.set(old, "2026-10-01T00:00:00.000Z");
+    let refreshes = 0;
+    const headers: (string | null)[] = [];
+    const observe = ({ request }: { request: Request }) => {
+      if (new URL(request.url).pathname.startsWith("/api/v1/tasks"))
+        headers.push(request.headers.get("Authorization"));
+    };
+    server.events.on("request:start", observe);
+    registerRefresh(async () => {
+      refreshes++;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      await authService.refreshSession();
+    });
+    try {
+      const [first, list, second] = await Promise.all([
+        tasksService.getTask("t-3"),
+        tasksService.listTasks(),
+        tasksService.getTask("t-3"),
+      ]);
+      expect(first.id).toBe(second.id);
+      expect(list.items.length).toBeGreaterThan(0);
+      expect(refreshes).toBe(1);
+      expect(token.get()).not.toBe(old);
+      expect(
+        headers.filter((header) => header === `Bearer ${old}`),
+      ).toHaveLength(3);
+      expect(
+        headers.filter((header) => header === `Bearer ${token.get()}`),
+      ).toHaveLength(3);
+    } finally {
+      server.events.removeListener("request:start", observe);
+    }
+  });
+  it("stops after one refresh when the replay is still unauthorized", async () => {
+    await signIn("lan");
+    db.revoked.add(token.get()!);
+    let refreshes = 0;
+    registerRefresh(async () => {
+      refreshes++;
+      token.set("invalid-token");
+    });
+    await expect(tasksService.getTask("t-3")).rejects.toMatchObject({
+      status: 401,
+      code: "UNAUTHORIZED",
+    });
+    expect(refreshes).toBe(1);
+  });
+  it("preserves cancellation without classifying it as a retryable network error", async () => {
+    await signIn("lan");
+    const controller = new AbortController();
+    let begin = () => {};
+    const started = new Promise<void>((resolve) => {
+      begin = resolve;
+    });
+    const observe = ({ request }: { request: Request }) => {
+      if (new URL(request.url).pathname === "/api/v1/tasks") begin();
+    };
+    server.events.on("request:start", observe);
+    try {
+      const request = tasksService
+        .listTasks({}, { scenario: "slow", signal: controller.signal })
+        .catch((error: unknown) => error);
+      await started;
+      controller.abort();
+      const error = await request;
+      expect(axios.isCancel(error)).toBe(true);
+      expect(error).not.toHaveProperty("config");
+      expect(error).not.toHaveProperty("request");
+      expect(shouldRetryQuery(0, error)).toBe(false);
+    } finally {
+      server.events.removeListener("request:start", observe);
+    }
+  });
+  it("normalizes transport failures for the query retry policy", async () => {
+    await signIn("lan");
+    server.use(http.get("*/api/v1/tasks/t-3", () => HttpResponse.error()));
+    const error = await tasksService
+      .getTask("t-3")
+      .catch((error: unknown) => error);
+    expect(error).toMatchObject({ status: 0, code: "NETWORK_ERROR" });
+    expect(shouldRetryQuery(0, error)).toBe(true);
+    expect(shouldRetryQuery(1, error)).toBe(false);
+  });
   it("rejects extra payload fields at the HTTP boundary without writing mock data", async () => {
     await signIn("minh");
     const count = db.tasks.length;
@@ -118,11 +430,27 @@ describe("Feature service → fetch HTTP → MSW → mock database", () => {
   });
   it("validates response JSON before it reaches a Query cache", async () => {
     await signIn("lan");
+    const task = await tasksService.getTask("t-3");
     await expect(
       tasksService.getTask("t-3", {
         scenario: "invalid-response",
       }),
     ).rejects.toBeInstanceOf(ContractError);
+    const meta = {
+      requestId: "contract-test",
+      serverTime: "2026-10-24T00:00:00.000Z",
+    };
+    for (const body of [
+      { data: task },
+      { meta },
+      { data: { ...task, version: 0 }, meta },
+      { data: task, meta: { ...meta, serverTime: "invalid" } },
+    ]) {
+      server.use(http.get("*/api/v1/tasks/t-3", () => HttpResponse.json(body)));
+      await expect(tasksService.getTask("t-3")).rejects.toBeInstanceOf(
+        ContractError,
+      );
+    }
   });
   it("rejects stale versions over HTTP without changing the task", async () => {
     await signIn("lan");

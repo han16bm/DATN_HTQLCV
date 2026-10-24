@@ -3,27 +3,36 @@ import {
   ContractError,
   errorEnvelopeSchema,
 } from "@/types/api/error";
-export async function parseHttpError(response: Response) {
-  const parsed = errorEnvelopeSchema.safeParse(
-    await response.json().catch(() => null),
-  );
-  if (!parsed.success)
-    return new ContractError("API trả lỗi không đúng định dạng.");
-  const { error } = parsed.data;
+import axios, { type AxiosError } from "axios";
+
+export async function normalizeHttpError(
+  error: AxiosError<unknown>,
+): Promise<Error> {
+  if (axios.isCancel(error)) return new axios.CanceledError(error.message);
+  if (!error.response)
+    return new ApiError(
+      0,
+      "NETWORK_ERROR",
+      "Không kết nối được máy chủ. Dữ liệu nhập vẫn được giữ.",
+    );
+  let data = error.response.data;
+  if (data instanceof Blob) data = await data.text();
+  if (typeof data === "string") {
+    try {
+      data = JSON.parse(data);
+    } catch {
+      data = null;
+    }
+  }
+  const parsed = errorEnvelopeSchema.safeParse(data);
+  if (!parsed.success) return new ContractError();
+  const body = parsed.data.error;
   return new ApiError(
-    response.status,
-    error.code,
-    error.message,
-    error.fieldErrors,
-    error.details,
-  );
-}
-export function normalizeNetworkError(error: unknown): Error {
-  if (error instanceof Error && error.name === "AbortError") return error;
-  return new ApiError(
-    0,
-    "NETWORK_ERROR",
-    "Không kết nối được máy chủ. Dữ liệu nhập vẫn được giữ.",
+    error.response.status,
+    body.code,
+    body.message,
+    body.fieldErrors,
+    body.details,
   );
 }
 export function shouldRetryQuery(count: number, error: unknown) {

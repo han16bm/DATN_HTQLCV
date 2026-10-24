@@ -1,5 +1,5 @@
 import {
-  type GetReportPreviewQuery,
+  type ReportPreviewQuery,
   type ReportQuery,
 } from "@/features/reports/types/reports.types";
 export const reportsKeys = {
@@ -7,7 +7,7 @@ export const reportsKeys = {
   viewer: (viewerId: string) => ["reports", viewerId] as const,
   listReports: (viewerId: string, query: ReportQuery) =>
     ["reports", viewerId, "listReports", query] as const,
-  getReportPreview: (viewerId: string, query: GetReportPreviewQuery) =>
+  getReportPreview: (viewerId: string, query: ReportPreviewQuery) =>
     ["reports", viewerId, "getReportPreview", query] as const,
   getReport: (viewerId: string, reportId: string) =>
     ["reports", viewerId, "getReport", reportId] as const,

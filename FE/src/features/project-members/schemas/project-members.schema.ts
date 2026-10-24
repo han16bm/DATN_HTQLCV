@@ -1,45 +1,22 @@
-import { personRefSchema } from "@/lib/validation/common.schema";
+import {
+  listQuerySchema,
+  permissionSchema,
+  personRefSchema,
+} from "@/lib/validation/common.schema";
 import { checkProjection } from "@/lib/validation/contract-refinements";
+import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 export const addMemberSchema = z
   .object({
-    userId: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(100),
+    userId: idSchema,
     projectRole: z.enum(["MANAGER", "MEMBER"]),
-    permissions: z.array(
-      z.enum([
-        "USERS_MANAGE",
-        "ORGANIZATION_MANAGE",
-        "PROJECT_CREATE",
-        "PROJECT_MANAGE",
-        "MEMBERS_MANAGE",
-        "TASKS_MANAGE",
-        "TASKS_REVIEW",
-        "ANALYTICS_VIEW",
-        "ALERTS_MANAGE",
-      ]),
-    ),
+    permissions: z.array(permissionSchema),
   })
   .strict();
 export const memberPermissionsSchema = z
   .object({
     projectRole: z.enum(["MANAGER", "MEMBER"]),
-    permissions: z.array(
-      z.enum([
-        "USERS_MANAGE",
-        "ORGANIZATION_MANAGE",
-        "PROJECT_CREATE",
-        "PROJECT_MANAGE",
-        "MEMBERS_MANAGE",
-        "TASKS_MANAGE",
-        "TASKS_REVIEW",
-        "ANALYTICS_VIEW",
-        "ALERTS_MANAGE",
-      ]),
-    ),
+    permissions: z.array(permissionSchema),
     reason: z
       .string()
       .trim()
@@ -49,35 +26,15 @@ export const memberPermissionsSchema = z
   .strict();
 export const membershipSchema = z
   .object({
-    id: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
+    id: idSchema,
     version: z.number().int().safe().positive(),
-    createdAt: z.iso.datetime(),
-    updatedAt: z.iso.datetime(),
-    projectId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
-    userId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
+    userId: idSchema,
     projectRole: z.enum(["OWNER", "MANAGER", "MEMBER"]),
-    permissions: z.array(
-      z.enum([
-        "USERS_MANAGE",
-        "ORGANIZATION_MANAGE",
-        "PROJECT_CREATE",
-        "PROJECT_MANAGE",
-        "MEMBERS_MANAGE",
-        "TASKS_MANAGE",
-        "TASKS_REVIEW",
-        "ANALYTICS_VIEW",
-        "ALERTS_MANAGE",
-      ]),
-    ),
-    joinedAt: z.iso.datetime(),
+    permissions: z.array(permissionSchema),
     endedAt: z.iso.datetime().nullable(),
     user: personRefSchema,
   })
   .superRefine(checkProjection);
 export const projectMemberQuerySchema = z
-  .object({
-    page: z.number().int().safe().min(1).optional().default(1),
-    pageSize: z.number().int().safe().min(1).max(100).optional().default(20),
-    q: z.string().trim().max(255).optional(),
-  })
+  .object({ ...listQuerySchema.shape })
   .strict();

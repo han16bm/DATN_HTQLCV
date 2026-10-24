@@ -13,7 +13,7 @@ import type {
   MutationOptions,
   RequestOptions,
   VersionOptions,
-} from "@/services/api.types";
+} from "@/services/api-client";
 export interface ProjectsApi {
   listProjects(
     query?: ProjectQuery,

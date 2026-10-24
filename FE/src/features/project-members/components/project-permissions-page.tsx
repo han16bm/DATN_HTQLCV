@@ -1,12 +1,7 @@
 "use client";
 import { SchemaForm } from "@/components/forms/schema-form";
-import {
-  Empty,
-  Loading,
-  PageHeader,
-  Panel,
-  PermissionGate,
-} from "@/components/ui/page";
+import { PermissionGate } from "@/components/layout/permission-gate";
+import { Empty, Loading, PageHeader, Panel } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { memberPermissionsSchema } from "@/features/project-members/schemas/project-members.schema";
 import { type MembershipDto } from "@/features/project-members/types/project-members.types";
@@ -175,7 +170,7 @@ function PermissionsForm({
         onConflictAccept={snapshot.accept}
         onSubmit={async (values) => {
           await mutation.mutateAsync({
-            projectId: projectId,
+            projectId,
             membershipId: member.id,
             payload: values,
             version: snapshot.base.version,

@@ -9,7 +9,7 @@ import {
   type SubmissionQuery,
   type SubmissionResult,
 } from "@/features/submissions/types/submissions.types";
-import type { RequestOptions, VersionOptions } from "@/services/api.types";
+import type { RequestOptions, VersionOptions } from "@/services/api-client";
 export interface SubmissionsApi {
   listSubmissions(
     taskId: string,

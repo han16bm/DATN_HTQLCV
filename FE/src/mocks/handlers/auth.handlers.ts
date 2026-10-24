@@ -1,56 +1,53 @@
+import { loginSchema } from "@/features/auth/schemas/login.schema";
 import {
-  loginContract,
-  logoutContract,
-  refreshSessionContract,
-  getSessionContract,
-} from "@/features/auth";
-import { ApiError } from "@/types/api/error";
-import { db, now, sessionDTO } from "../db/database";
-import { createHandler, authenticatedUser } from "../utils/handler";
-import { MockReply } from "../utils/http-response";
-
-function issueSession(user: (typeof db.users)[number]) {
-  const accessToken = `mock-${user.id}`;
-  db.revoked.delete(accessToken);
-  return new MockReply(
-    {
-      session: sessionDTO(user),
-      accessToken,
-      expiresAt: new Date(Date.parse(now()) + 3600_000).toISOString(),
-    },
-    200,
-    { "Set-Cookie": `mock_refresh=${user.id}; Path=/; SameSite=Lax` },
-  );
-}
+  loginResponseSchema,
+  logoutResultSchema,
+  sessionSchema,
+} from "@/features/auth/schemas/session.schema";
+import { emptySchema } from "@/lib/validation/request.schema";
+import { http } from "msw";
+import { authDb } from "../db/auth.db";
+import { mockHandler, mockJson } from "../utils/handler";
+const accessToken = (request: Request) =>
+  request.headers.get("Authorization")?.replace(/^Bearer /, "");
 export const authHandlers = [
-  createHandler(loginContract, ({ body }) => {
-    const user = db.users.find((u) => u.username === body.username);
-    if (!user || db.passwords.get(user.id) !== body.password)
-      throw new ApiError(
-        401,
-        "INVALID_CREDENTIALS",
-        "Tên đăng nhập hoặc mật khẩu chưa đúng.",
-      );
-    if (user.status === "LOCKED")
-      throw new ApiError(403, "ACCOUNT_LOCKED", "Tài khoản đang bị khóa.");
-    return issueSession(user);
-  }),
-  createHandler(refreshSessionContract, ({ cookies }) => {
-    const user = db.users.find(
-      (u) => u.id === cookies.mock_refresh && u.status === "ACTIVE",
-    );
-    if (!user || db.revoked.has(`mock-${user.id}`))
-      throw new ApiError(401, "UNAUTHORIZED", "Phiên đăng nhập đã hết hạn.");
-    return issueSession(user);
-  }),
-  createHandler(getSessionContract, ({ request }) =>
-    sessionDTO(authenticatedUser(request)),
+  http.post(
+    "*/api/v1/auth/login",
+    mockHandler(async ({ request }) => {
+      const payload = loginSchema.parse(await request.json());
+      const result = authDb.login(payload);
+      return mockJson(request, result, loginResponseSchema, 200, {
+        "Set-Cookie": `mock_refresh=${result.session.user.id}; Path=/; SameSite=Lax`,
+      });
+    }),
   ),
-  createHandler(logoutContract, ({ request }) => {
-    const user = authenticatedUser(request);
-    db.revoked.add(`mock-${user.id}`);
-    return new MockReply({ ok: true }, 200, {
-      "Set-Cookie": "mock_refresh=; Path=/; Max-Age=0; SameSite=Lax",
-    });
-  }),
+  http.post(
+    "*/api/v1/auth/refresh",
+    mockHandler(async ({ request, cookies }) => {
+      emptySchema.parse(await request.json());
+      const result = authDb.refresh(cookies.mock_refresh);
+      return mockJson(request, result, loginResponseSchema, 200, {
+        "Set-Cookie": `mock_refresh=${result.session.user.id}; Path=/; SameSite=Lax`,
+      });
+    }),
+  ),
+  http.get(
+    "*/api/v1/auth/me",
+    mockHandler(({ request }) =>
+      mockJson(request, authDb.getSession(accessToken(request)), sessionSchema),
+    ),
+  ),
+  http.post(
+    "*/api/v1/auth/logout",
+    mockHandler(async ({ request }) => {
+      emptySchema.parse(await request.json());
+      return mockJson(
+        request,
+        authDb.logout(accessToken(request)),
+        logoutResultSchema,
+        200,
+        { "Set-Cookie": "mock_refresh=; Path=/; Max-Age=0; SameSite=Lax" },
+      );
+    }),
+  ),
 ];

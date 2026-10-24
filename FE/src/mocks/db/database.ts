@@ -1,26 +1,43 @@
+import { alertSchema } from "@/features/alerts/schemas/alerts.schema";
+import { analysisSchema } from "@/features/analytics/schemas/analysis-detail.schema";
+import {
+  type AnalysisDto,
+  type FeedbackDto,
+  type JobDto,
+} from "@/features/analytics/types/analytics.types";
+import { attachmentSchema } from "@/features/attachments/schemas/attachments.schema";
+import { type SessionDto } from "@/features/auth/types/auth.types";
+import { teamSchema } from "@/features/organization/schemas/team.schema";
+import { unitSchema } from "@/features/organization/schemas/unit.schema";
+import { membershipSchema } from "@/features/project-members/schemas/project-members.schema";
+import { projectSchema } from "@/features/projects/schemas/projects.schema";
+import { reportSchema } from "@/features/reports/schemas/reports.schema";
+import { type ReportPreviewDto } from "@/features/reports/types/reports.types";
+import { submissionSchema } from "@/features/submissions/schemas/submissions.schema";
+import { taskSchema } from "@/features/tasks/schemas/task.schema";
+import { timeLogSchema } from "@/features/time-logs/schemas/time-logs.schema";
+import { userSchema } from "@/features/users/schemas/user.schema";
+import { auditSchema } from "@/lib/validation/common.schema";
+import { type AuditDto } from "@/types/common";
 import { z } from "zod";
+import { createSeedData } from "../data/bootstrap.mock";
+import { samplePDF } from "../data/evidence.mock";
 import seed from "../data/seed.mock.json";
-import * as d from "./model-contracts";
-
-const userDomain = z.object(d.UsersUserSchema.shape).omit({ unit: true });
+const userDomain = z.object(userSchema.shape).omit({ unit: true });
 const projectDomain = z
-  .object(d.ProjectsProjectSchema.shape)
+  .object(projectSchema.shape)
   .omit({ owner: true, unit: true });
-const memberDomain = z
-  .object(d.MembersMembershipSchema.shape)
-  .omit({ user: true });
+const memberDomain = z.object(membershipSchema.shape).omit({ user: true });
 const taskDomain = z
-  .object(d.TasksTaskSchema.shape)
+  .object(taskSchema.shape)
   .omit({ assignee: true, project: true });
-const logDomain = z.object(d.LogsTimeLogSchema.shape).omit({ user: true });
+const logDomain = z.object(timeLogSchema.shape).omit({ user: true });
 const submissionDomain = z
-  .object(d.SubmissionsSubmissionSchema.shape)
+  .object(submissionSchema.shape)
   .omit({ submitter: true, reviewer: true });
-const reportDomain = z
-  .object(d.ReportsReportSchema.shape)
-  .omit({ author: true });
+const reportDomain = z.object(reportSchema.shape).omit({ author: true });
 const alertDomain = z
-  .object(d.AlertsAlertSchema.shape)
+  .object(alertSchema.shape)
   .omit({ taskTitle: true, analysisRef: true });
 export type Task = z.output<typeof taskDomain>;
 export type Report = z.output<typeof reportDomain>;
@@ -45,149 +62,32 @@ export const projectPermissions = [
   "ALERTS_MANAGE",
 ] as const;
 function createDatabase() {
-  const units = z.array(d.OrganizationUnitSchema).parse(seed.units);
+  const units = z.array(unitSchema).parse(seed.units);
   const users = z.array(userDomain).parse(seed.users);
   const projects = z
     .array(projectDomain)
     .parse([...seed.projects, seed.planned]);
-  const members = z.array(memberDomain).parse(seed.members);
-  members.push(
-    memberDomain.parse({
-      ...entity("m-pm-planned"),
-      projectId: "p-planned",
-      userId: "u-pm",
-      projectRole: "OWNER",
-      permissions: [...projectPermissions],
-      joinedAt: now(),
-      endedAt: null,
-    }),
-  );
   const tasks = z.array(taskDomain).parse(seed.tasks);
+  const fixtures = createSeedData(entity, now, tasks, projectPermissions);
+  const members = z
+    .array(memberDomain)
+    .parse([...seed.members, fixtures.plannedOwner]);
   const timeLogs = z.array(logDomain).parse(seed.timeLogs);
-  const submissions = z.array(submissionDomain).parse(seed.submissions);
-  const reports = z.array(reportDomain).parse([
-    {
-      ...entity("r-draft"),
-      projectId: "p-main",
-      authorId: "u-lan",
-      periodType: "DAILY",
-      periodStart: "2026-10-23",
-      achievements: "Hoàn thiện luồng giao việc và các trạng thái xử lý.",
-      blockers: "",
-      nextPlan: "Đối chiếu tiêu chí nghiệm thu và nộp kết quả.",
-      selectedTaskIds: ["t-3"],
-      status: "DRAFT",
-      zeroTimeReason: null,
-      snapshot: null,
-      submittedAt: null,
-    },
-    {
-      ...entity("r-submitted"),
-      projectId: "p-main",
-      authorId: "u-lan",
-      periodType: "DAILY",
-      periodStart: "2026-10-22",
-      achievements: "Hoàn thành chuẩn hóa biểu mẫu.",
-      blockers: "",
-      nextPlan: "Tiếp tục thiết kế luồng giao việc.",
-      selectedTaskIds: ["t-5"],
-      status: "SUBMITTED",
-      zeroTimeReason: null,
-      submittedAt: "2026-10-22T10:00:00.000Z",
-      snapshot: {
-        projectId: "p-main",
-        periodType: "DAILY",
-        periodStart: "2026-10-22",
-        periodEndExclusive: "2026-10-22T17:00:00.000Z",
-        dataAsOf: "2026-10-22T10:00:00.000Z",
-        totalMinutes: 60,
-        items: [
-          {
-            taskId: "t-5",
-            title: "Chuẩn hóa biểu mẫu",
-            status: "COMPLETED",
-            minutes: 60,
-          },
-        ],
-        partialPeriod: false,
-      },
-    },
-  ]);
-  const attachments = z.array(d.AttachmentsAttachmentSchema).parse([
-    {
-      ...entity("a-flow"),
-      taskId: "t-4",
-      uploadedBy: "u-huy",
-      filename: "flow.pdf",
-      mimeType: "application/pdf",
-      sizeBytes: 590,
-      status: "READY",
-    },
-    {
-      ...entity("a-criteria"),
-      taskId: "t-3",
-      uploadedBy: "u-lan",
-      filename: "criteria.pdf",
-      mimeType: "application/pdf",
-      sizeBytes: 590,
-      status: "READY",
-    },
-  ]);
-  const pending = submissions.find((s) => s.id === "s-pending");
-  if (pending) pending.attachmentIds = ["a-flow"];
-  const details = new Map<string, d.AnalyticsAnalysisDetailDTO>();
-  for (const item of seed.analysis.analysisDetails) {
-    const detail = d.AnalyticsAnalysisDetailSchema.parse({
-      ...item,
-      systemSummary:
-        "Số liệu được tổng hợp từ công việc, nhật ký và các lần nộp trong phạm vi đã chọn.",
-      feedback: {
-        latest: null,
-        canSubmit: item.snapshot.analysisType === "BOTTLENECK",
-      },
-    });
+  const submissions = z.array(submissionDomain).parse(fixtures.submissions);
+  const reports = z.array(reportDomain).parse(fixtures.reports);
+  const attachments = z.array(attachmentSchema).parse(fixtures.attachments);
+  const audits = z.array(auditSchema).parse(fixtures.audits);
+  const files = new Map<string, Blob>();
+  for (const attachment of attachments) {
+    const file = samplePDF();
+    files.set(attachment.id, file);
+    attachment.sizeBytes = file.size;
+  }
+  const details = new Map<string, AnalysisDto>();
+  for (const item of fixtures.analysisDetails) {
+    const detail = analysisSchema.parse(item);
     details.set(detail.snapshot.analysisId, detail);
   }
-  const audits: d.TasksAuditDTO[] = tasks
-    .filter((t) => t.projectId === "p-main")
-    .map((t) => ({
-      id: `audit-${t.id}`,
-      entityType: "TASK",
-      entityId: t.id,
-      actorId: "u-pm",
-      action: "Tạo công việc",
-      at: t.createdAt,
-      before: null,
-      after: { title: t.title },
-      reason: null,
-    }));
-  for (const [action, at] of [
-    ["Phân công cho Trần Lan", "2026-10-22T01:00:00.000Z"],
-    ["Bắt đầu thực hiện", "2026-10-22T02:00:00.000Z"],
-    ["Ghi nhận 180 phút", "2026-10-23T09:00:00.000Z"],
-  ])
-    audits.push({
-      id: crypto.randomUUID(),
-      entityType: "TASK",
-      entityId: "t-3",
-      actorId: action.includes("Phân") ? "u-pm" : "u-lan",
-      action,
-      at,
-      before: null,
-      after: null,
-      reason: null,
-    });
-  audits.push({
-    id: "audit-p-main",
-    entityType: "PROJECT",
-    entityId: "p-main",
-    actorId: "u-pm",
-    action: "Triển khai dự án",
-    at: "2026-10-01T02:00:00.000Z",
-    before: { status: "PLANNED" },
-    after: { status: "ACTIVE" },
-    reason: null,
-  });
   return {
     users,
     units,
@@ -199,7 +99,7 @@ function createDatabase() {
     reports,
     attachments,
     audits,
-    teams: z.array(d.OrganizationTeamSchema).parse(seed.teams),
+    teams: z.array(teamSchema).parse(seed.teams),
     alerts: z.array(alertDomain).parse(seed.alerts),
     assignments: z
       .array(
@@ -214,8 +114,10 @@ function createDatabase() {
       )
       .parse(seed.assignments),
     details,
-    jobs: new Map<string, d.AnalyticsAnalysisJobDTO>(),
-    feedback: [] as d.AnalyticsAnalysisFeedbackDTO[],
+    snapshotIndex: new Map<string, string>(),
+    snapshotProjects: new Map<string, string[]>(),
+    jobs: new Map<string, JobDto>(),
+    feedback: [] as FeedbackDto[],
     outbox: [] as {
       id: string;
       eventId: string;
@@ -223,10 +125,13 @@ function createDatabase() {
       status: "PENDING" | "SENT" | "FAILED";
       attemptCount: number;
     }[],
-    passwords: new Map(users.map((u) => [u.id, "Mock@12345"])),
+    passwords: new Map(users.map((u) => [u.id, fixtures.defaultPassword])),
     revoked: new Set<string>(),
-    files: new Map<string, Blob>(),
+    sessions: new Map<string, string>(),
+    sessionExpiry: new Map<string, string>(),
+    files,
     revision: 1,
+    requiredReports: new Map<string, number>(),
   };
 }
 export let db = createDatabase();
@@ -261,7 +166,7 @@ export const person = (id: string) => {
   return { id, displayName: u.displayName };
 };
 export const userDTO = (u: User) =>
-  d.UsersUserSchema.parse({
+  userSchema.parse({
     ...u,
     unit: {
       id: u.unitId,
@@ -269,7 +174,7 @@ export const userDTO = (u: User) =>
     },
   });
 export const projectDTO = (p: (typeof db.projects)[number]) =>
-  d.ProjectsProjectSchema.parse({
+  projectSchema.parse({
     ...p,
     owner: person(p.ownerId),
     unit: {
@@ -278,9 +183,9 @@ export const projectDTO = (p: (typeof db.projects)[number]) =>
     },
   });
 export const memberDTO = (m: (typeof db.members)[number]) =>
-  d.MembersMembershipSchema.parse({ ...m, user: person(m.userId) });
+  membershipSchema.parse({ ...m, user: person(m.userId) });
 export const taskDTO = (t: Task) =>
-  d.TasksTaskSchema.parse({
+  taskSchema.parse({
     ...t,
     actualMinutes: db.timeLogs
       .filter((l) => l.taskId === t.id && l.status === "ACTIVE")
@@ -294,16 +199,16 @@ export const taskDTO = (t: Task) =>
     },
   });
 export const logDTO = (l: (typeof db.timeLogs)[number]) =>
-  d.LogsTimeLogSchema.parse({ ...l, user: person(l.userId) });
+  timeLogSchema.parse({ ...l, user: person(l.userId) });
 export const submissionDTO = (s: (typeof db.submissions)[number]) =>
-  d.SubmissionsSubmissionSchema.parse({
+  submissionSchema.parse({
     ...s,
     submitter: person(s.submittedBy),
     reviewer: s.reviewedBy ? person(s.reviewedBy) : null,
   });
 export const reportDTO = (r: Report) =>
-  d.ReportsReportSchema.parse({ ...r, author: person(r.authorId) });
-export function sessionDTO(u: User): d.AuthSessionDTO {
+  reportSchema.parse({ ...r, author: person(r.authorId) });
+export function sessionDTO(u: User): SessionDto {
   return {
     user: userDTO(u),
     systemPermissions:
@@ -350,8 +255,8 @@ export function audit(
   entityType: string,
   entityId: string,
   action: string,
-  before: d.TasksAuditDTO["before"],
-  after: d.TasksAuditDTO["after"],
+  before: AuditDto["before"],
+  after: AuditDto["after"],
   reason: string | null = null,
 ) {
   db.audits.push({
@@ -377,7 +282,7 @@ export function notify(recipientId: string) {
 }
 export function reportPreview(
   r: Pick<Report, "projectId" | "periodType" | "periodStart" | "authorId">,
-): d.ReportsReportPreviewDTO {
+): ReportPreviewDto {
   const end = new Date(`${r.periodStart}T00:00:00+07:00`);
   end.setUTCDate(end.getUTCDate() + (r.periodType === "DAILY" ? 1 : 7));
   const logs = db.timeLogs.filter(

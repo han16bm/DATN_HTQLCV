@@ -1,8 +1,10 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
-import { z } from "zod";
+import {
+  entityLabelSchema,
+  personRefSchema,
+} from "@/lib/validation/common.schema";
 import { checkProjection } from "@/lib/validation/contract-refinements";
-import { SharedPersonRefSchema, SharedEntityLabelSchema } from "@/types/common";
-export const ProjectsProjectCreateSchema = z
+import { z } from "zod";
+export const createProjectSchema = z
   .object({
     code: z
       .string()
@@ -30,21 +32,13 @@ export const ProjectsProjectCreateSchema = z
     dueAt: z.iso.datetime(),
   })
   .strict();
-export type ProjectsProjectCreateDTO = z.output<
-  typeof ProjectsProjectCreateSchema
->;
-
-export const ProjectsProjectStatusSchema = z.enum([
+export const projectStatusSchema = z.enum([
   "PLANNED",
   "ACTIVE",
   "COMPLETED",
   "CANCELLED",
 ]);
-export type ProjectsProjectStatusDTO = z.output<
-  typeof ProjectsProjectStatusSchema
->;
-
-export const ProjectsProjectListQuerySchema = z
+export const projectQuerySchema = z
   .object({
     page: z.number().int().safe().min(1).optional().default(1),
     pageSize: z.number().int().safe().min(1).max(100).optional().default(20),
@@ -55,14 +49,10 @@ export const ProjectsProjectListQuerySchema = z
       .min(1, "Vui lòng nhập thông tin bắt buộc")
       .max(100)
       .optional(),
-    status: ProjectsProjectStatusSchema.optional(),
+    status: projectStatusSchema.optional(),
   })
   .strict();
-export type ProjectsProjectListQueryDTO = z.output<
-  typeof ProjectsProjectListQuerySchema
->;
-
-export const ProjectsProjectPatchSchema = z
+export const updateProjectSchema = z
   .object({
     name: z
       .string()
@@ -91,11 +81,7 @@ export const ProjectsProjectPatchSchema = z
       .max(2000),
   })
   .strict();
-export type ProjectsProjectPatchDTO = z.output<
-  typeof ProjectsProjectPatchSchema
->;
-
-export const ProjectsProjectSchema = z
+export const projectSchema = z
   .object({
     id: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
     version: z.number().int().safe().positive(),
@@ -108,11 +94,23 @@ export const ProjectsProjectSchema = z
     ownerId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
     startDate: z.iso.date(),
     dueAt: z.iso.datetime(),
-    status: ProjectsProjectStatusSchema,
+    status: projectStatusSchema,
     completedAt: z.iso.datetime().nullable(),
     cancelledAt: z.iso.datetime().nullable(),
-    owner: SharedPersonRefSchema,
-    unit: SharedEntityLabelSchema,
+    owner: personRefSchema,
+    unit: entityLabelSchema,
   })
   .superRefine(checkProjection);
-export type ProjectsProjectDTO = z.output<typeof ProjectsProjectSchema>;
+export const getProjectClosureChecksResultSchema = z.object({
+  openTaskCount: z.number().int().safe().min(0),
+  pendingReviewCount: z.number().int().safe().min(0),
+  pendingReportCount: z.number().int().safe().min(0),
+  canClose: z.boolean(),
+});
+export const projectHistoryQuerySchema = z
+  .object({
+    page: z.number().int().safe().min(1).optional().default(1),
+    pageSize: z.number().int().safe().min(1).max(100).optional().default(20),
+    q: z.string().trim().max(255).optional(),
+  })
+  .strict();

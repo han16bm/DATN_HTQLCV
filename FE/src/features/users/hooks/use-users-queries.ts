@@ -1,34 +1,51 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
 "use client";
-import {
-  useFeatureQuery,
-  type FeatureQueryOptions,
-} from "@/lib/query/use-feature-query";
-import type { ContractRequest } from "@/services/api-contract";
-import * as contracts from "../api/users.contract";
-import { usersService } from "../api/users.service";
+import { userQuerySchema } from "@/features/users/schemas/user.schema";
+import { type UserQuery } from "@/features/users/types/users.types";
+import { hasPermission, useSession } from "@/lib/auth/session-context";
+import type { QueryOptions } from "@/lib/query/use-query-access";
+import { useQueryAccess } from "@/lib/query/use-query-access";
+import { idSchema } from "@/lib/validation/request.schema";
+import { useQuery } from "@tanstack/react-query";
 import { usersKeys } from "../api/users.keys";
+import { usersService } from "../api/users.service";
+
 export function useListUsersQuery(
-  request: ContractRequest<typeof contracts.listUsersContract>,
-  options: FeatureQueryOptions = {},
+  query: UserQuery = {},
+  options: QueryOptions = {},
 ) {
-  return useFeatureQuery(
-    contracts.listUsersContract,
-    request,
-    usersService.listUsers,
-    usersKeys.listUsers,
-    options,
-  );
+  const { session } = useSession();
+  const parsed = userQuerySchema.safeParse(query);
+  const filters = parsed.success ? parsed.data : query;
+  const result = useQuery({
+    queryKey: parsed.success
+      ? usersKeys.listUsers(session?.user.id ?? "anonymous", filters)
+      : [
+          "users",
+          session?.user.id ?? "anonymous",
+          "listUsers",
+          "invalid-query",
+        ],
+    queryFn: ({ signal }) => usersService.listUsers(filters, { signal }),
+    enabled:
+      options.enabled !== false &&
+      Boolean(session) &&
+      parsed.success &&
+      hasPermission(session, "USERS_MANAGE"),
+    staleTime: 30000,
+  });
+  return useQueryAccess(result, "users");
 }
-export function useGetUserQuery(
-  request: ContractRequest<typeof contracts.getUserContract>,
-  options: FeatureQueryOptions = {},
-) {
-  return useFeatureQuery(
-    contracts.getUserContract,
-    request,
-    usersService.getUser,
-    usersKeys.getUser,
-    options,
-  );
+export function useGetUserQuery(userId: string, options: QueryOptions = {}) {
+  const { session } = useSession();
+  const result = useQuery({
+    queryKey: usersKeys.getUser(session?.user.id ?? "anonymous", userId),
+    queryFn: ({ signal }) => usersService.getUser(userId, { signal }),
+    enabled:
+      options.enabled !== false &&
+      Boolean(session) &&
+      idSchema.safeParse(userId).success &&
+      hasPermission(session, "USERS_MANAGE"),
+    staleTime: 10000,
+  });
+  return useQueryAccess(result, "users");
 }

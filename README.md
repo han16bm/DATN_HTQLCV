@@ -21,4 +21,4 @@ Mở `http://localhost:3000`. Hướng dẫn tài khoản development, cấu hì
 - [Rà soát đặc tả](FE/docs/SPEC_REVIEW.md)
 - [Trạng thái triển khai và phần còn lại](FE/docs/IMPLEMENTATION_STATUS.md)
 
-Repository hiện chứa nền frontend và một số luồng HTTP/MSW; toàn bộ 43 màn vẫn đang được triển khai.
+Đã triển khai các luồng chính S01–S43 và 79 API mock qua HTTP/MSW. AI hiện là diễn giải mô phỏng; browser QA và tích hợp BE thật được theo dõi trong tài liệu trạng thái.

@@ -1,16 +1,32 @@
 "use client";
-import Link from "next/link";
-import { useEffect, type ReactNode } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { useSession } from "@/lib/auth/session-context";
+import { hasPermission, useSession } from "@/lib/auth/session-context";
 import { useUI } from "@/stores/ui-store";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { Suspense, useEffect, type ReactNode } from "react";
+import { DirtyNavigationGuard } from "./dirty-navigation-guard";
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
-  const { session, loading, signOut } = useSession(),
-    router = useRouter(),
-    pathname = usePathname();
-  const sidebar = useUI((s) => s.sidebarOpen),
-    setSidebar = useUI((s) => s.setSidebar);
+  const { session, loading, signOut } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
+  const sidebar = useUI((s) => s.sidebarOpen);
+  const setSidebar = useUI((s) => s.setSidebar);
+  const section = pathname.startsWith("/admin")
+    ? "Quản trị"
+    : pathname.startsWith("/projects")
+      ? "Dự án"
+      : pathname.startsWith("/tasks")
+        ? "Công việc"
+        : pathname.startsWith("/reports")
+          ? "Báo cáo"
+          : pathname.startsWith("/reviews")
+            ? "Nghiệm thu"
+            : pathname.startsWith("/alerts")
+              ? "Cảnh báo"
+              : pathname.startsWith("/analytics") || pathname === "/dashboard"
+                ? "Phân tích"
+                : "Tổng quan";
   useEffect(() => {
     if (!loading && !session) router.replace("/login");
   }, [loading, session, router]);
@@ -22,6 +38,9 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     );
   return (
     <div className="workspace">
+      <Suspense>
+        <DirtyNavigationGuard />
+      </Suspense>
       <aside className={`sidebar ${sidebar ? "open" : ""}`}>
         <Link href="/workspace" className="brand">
           Cổng công việc
@@ -35,7 +54,9 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         <nav>
           {[
             ["/workspace", "Tổng quan cá nhân"],
+            ["/projects", "Dự án"],
             ["/tasks", "Công việc"],
+            ["/reports", "Báo cáo công việc"],
           ].map(([href, title]) => (
             <Link
               key={href}
@@ -47,6 +68,78 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             </Link>
           ))}
         </nav>
+        {hasPermission(session, "TASKS_REVIEW") && (
+          <nav>
+            <Link
+              href="/reviews"
+              className={pathname === "/reviews" ? "active" : ""}
+            >
+              Chờ nghiệm thu
+            </Link>
+          </nav>
+        )}
+        {(hasPermission(session, "USERS_MANAGE") ||
+          hasPermission(session, "ORGANIZATION_MANAGE")) && (
+          <>
+            <div className="sidebar-label">QUẢN TRỊ</div>
+            <nav>
+              {hasPermission(session, "USERS_MANAGE") && (
+                <Link
+                  href="/admin/users"
+                  className={
+                    pathname.startsWith("/admin/users") ? "active" : ""
+                  }
+                >
+                  Tài khoản người dùng
+                </Link>
+              )}
+              {hasPermission(session, "ORGANIZATION_MANAGE") && (
+                <>
+                  <Link
+                    href="/admin/organization"
+                    className={
+                      pathname === "/admin/organization" ? "active" : ""
+                    }
+                  >
+                    Cơ cấu đơn vị
+                  </Link>
+                  <Link
+                    href="/admin/teams"
+                    className={pathname === "/admin/teams" ? "active" : ""}
+                  >
+                    Nhóm nhân sự
+                  </Link>
+                </>
+              )}
+            </nav>
+          </>
+        )}
+        {hasPermission(session, "ANALYTICS_VIEW") && (
+          <>
+            <div className="sidebar-label">THEO DÕI & PHÂN TÍCH</div>
+            <nav>
+              {[
+                ["/dashboard", "Bảng tổng quan"],
+                ["/analytics/risks", "Phân tích & AI"],
+                ["/alerts", "Cảnh báo"],
+              ].map(([href, title]) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className={
+                    pathname === href ||
+                    (href === "/analytics/risks" &&
+                      pathname.startsWith("/analytics/"))
+                      ? "active"
+                      : ""
+                  }
+                >
+                  {title}
+                </Link>
+              ))}
+            </nav>
+          </>
+        )}
         <div className="sidebar-bottom">
           <p className="small muted">Theo phạm vi được cấp quyền</p>
           <button
@@ -77,7 +170,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           </button>
           <span className="muted">
             Không gian làm việc <span className="breadcrumb-separator">›</span>{" "}
-            {pathname === "/tasks" ? "Công việc" : "Tổng quan"}
+            {section}
           </span>
           <div className="profile">
             <span className="avatar">

@@ -1,5 +1,4 @@
-import { z } from "zod";
-
+import type { z } from "zod";
 type JsonObject = Record<string, unknown>;
 const object = (v: unknown): v is JsonObject =>
   typeof v === "object" && v !== null && !Array.isArray(v);
@@ -69,8 +68,8 @@ export function checkAnalysisDetail(v: JsonObject, ctx: z.RefinementCtx) {
     !object(v.freshness)
   )
     return;
-  const s = v.snapshot,
-    e = v.explanation;
+  const s = v.snapshot;
+  const e = v.explanation;
   const metrics = Array.isArray(s.metrics) ? s.metrics.filter(object) : [];
   const evidence = Array.isArray(s.evidence) ? s.evidence.filter(object) : [];
   const mids = new Set(metrics.map((m) => m.id));

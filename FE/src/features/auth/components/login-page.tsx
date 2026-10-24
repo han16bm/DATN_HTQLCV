@@ -1,20 +1,20 @@
 "use client";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { loginSchema } from "@/features/auth/schemas/login.schema";
 import { useSession } from "@/lib/auth/session-context";
-import { loginContract } from "../api/auth.contract";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import type { z } from "zod";
 import { useLoginMutation } from "../hooks/use-auth-mutations";
 
-type LoginInput = z.input<typeof loginContract.body>;
+type LoginInput = z.input<typeof loginSchema>;
 export function LoginPage() {
-  const router = useRouter(),
-    { session, signIn, loading } = useSession();
+  const router = useRouter();
+  const { session, signIn, loading } = useSession();
   const mutation = useLoginMutation();
   const form = useForm<LoginInput>({
-    resolver: zodResolver(loginContract.body),
+    resolver: zodResolver(loginSchema),
     defaultValues: { username: "", password: "" },
   });
   useEffect(() => {
@@ -40,7 +40,7 @@ export function LoginPage() {
         <form
           onSubmit={form.handleSubmit(async (body) => {
             try {
-              const result = await mutation.mutateAsync({ body });
+              const result = await mutation.mutateAsync(body);
               await signIn(result);
               router.replace("/workspace");
             } catch {

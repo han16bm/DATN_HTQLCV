@@ -1,11 +1,12 @@
 "use client";
+import { type SessionDto } from "@/features/auth/types/auth.types";
 import { createContext, useContext } from "react";
-import type { AuthSessionDTO } from "@/features/auth/types/auth.types";
+
 export type SessionContext = {
-  session: AuthSessionDTO | null;
+  session: SessionDto | null;
   loading: boolean;
   refresh: () => Promise<unknown>;
-  signIn: (session: AuthSessionDTO) => Promise<void>;
+  signIn: (session: SessionDto) => Promise<void>;
   signOut: () => Promise<void>;
 };
 export const Session = createContext<SessionContext>({
@@ -17,7 +18,7 @@ export const Session = createContext<SessionContext>({
 });
 export const useSession = () => useContext(Session);
 export function hasPermission(
-  session: AuthSessionDTO | null,
+  session: SessionDto | null,
   permission: string,
   projectId?: string,
 ) {

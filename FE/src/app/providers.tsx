@@ -1,9 +1,9 @@
 "use client";
+import { AuthObserver } from "@/features/auth/components/auth-observer";
+import { shouldRetryQuery } from "@/services/http-error";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "sonner";
-import { AuthObserver } from "@/features/auth/client";
-import { shouldRetryQuery } from "@/services/http-error";
 
 const mocking =
   process.env.NODE_ENV === "development" &&
@@ -23,8 +23,8 @@ export function Providers({ children }: { children: ReactNode }) {
         },
       }),
   );
-  const [ready, setReady] = useState(!mocking),
-    [error, setError] = useState(false);
+  const [ready, setReady] = useState(!mocking);
+  const [error, setError] = useState(false);
   useEffect(() => {
     if (!mocking) return;
     let mounted = true;

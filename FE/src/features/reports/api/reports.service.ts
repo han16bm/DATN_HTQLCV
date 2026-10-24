@@ -1,26 +1,75 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
+import type { ReportsApi } from "@/features/reports/api/reports.contract";
+import {
+  reportPreviewSchema,
+  reportSchema,
+} from "@/features/reports/schemas/reports.schema";
+import {
+  type CreateReportDraftInput,
+  type GetReportPreviewQuery,
+  type ReportQuery,
+  type SubmitReportInput,
+  type UpdateReportDraftInput,
+} from "@/features/reports/types/reports.types";
+import { page } from "@/lib/validation/common.schema";
 import { apiClient } from "@/services/api-client";
-import type { ContractRequest } from "@/services/api-contract";
-import * as contracts from "./reports.contract";
-export const reportsService = {
-  listReports: (
-    request: ContractRequest<typeof contracts.listReportsContract>,
-  ) => apiClient.request(contracts.listReportsContract, request),
-  getReportPreview: (
-    request: ContractRequest<typeof contracts.getReportPreviewContract>,
-  ) => apiClient.request(contracts.getReportPreviewContract, request),
-  getReport: (request: ContractRequest<typeof contracts.getReportContract>) =>
-    apiClient.request(contracts.getReportContract, request),
-  createReportDraft: (
-    request: ContractRequest<typeof contracts.createReportDraftContract>,
-  ) => apiClient.request(contracts.createReportDraftContract, request),
-  updateReportDraft: (
-    request: ContractRequest<typeof contracts.updateReportDraftContract>,
-  ) => apiClient.request(contracts.updateReportDraftContract, request),
-  refreshReportDraft: (
-    request: ContractRequest<typeof contracts.refreshReportDraftContract>,
-  ) => apiClient.request(contracts.refreshReportDraftContract, request),
-  submitReport: (
-    request: ContractRequest<typeof contracts.submitReportContract>,
-  ) => apiClient.request(contracts.submitReportContract, request),
+import type {
+  MutationOptions,
+  RequestOptions,
+  VersionOptions,
+} from "@/services/api.types";
+export const reportsService: ReportsApi = {
+  listReports(query: ReportQuery = {}, options: RequestOptions = {}) {
+    return apiClient.get(`/reports`, page(reportSchema), {
+      ...options,
+      query,
+    });
+  },
+  getReportPreview(query: GetReportPreviewQuery, options: RequestOptions = {}) {
+    return apiClient.get(`/report-previews`, reportPreviewSchema, {
+      ...options,
+      query,
+    });
+  },
+  getReport(reportId: string, options: RequestOptions = {}) {
+    return apiClient.get(
+      `/reports/${encodeURIComponent(reportId)}`,
+      reportSchema,
+      options,
+    );
+  },
+  createReportDraft(payload: CreateReportDraftInput, options: MutationOptions) {
+    return apiClient.post(`/reports`, payload, reportSchema, options);
+  },
+  updateReportDraft(
+    reportId: string,
+    payload: UpdateReportDraftInput,
+    options: VersionOptions,
+  ) {
+    return apiClient.patch(
+      `/reports/${encodeURIComponent(reportId)}`,
+      payload,
+      reportSchema,
+      options,
+    );
+  },
+  refreshReportDraft(reportId: string, options: VersionOptions) {
+    return apiClient.post(
+      `/reports/${encodeURIComponent(reportId)}/refresh`,
+      {},
+      reportPreviewSchema,
+      options,
+    );
+  },
+  submitReport(
+    reportId: string,
+    payload: SubmitReportInput,
+    options: VersionOptions,
+  ) {
+    return apiClient.post(
+      `/reports/${encodeURIComponent(reportId)}/submit`,
+      payload,
+      reportSchema,
+      options,
+    );
+  },
 };

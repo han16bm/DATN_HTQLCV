@@ -1,8 +1,10 @@
+import { WorkspaceOverview } from "@/features/projects/components/workspace-overview";
+import { TaskListPage } from "@/features/tasks/components/task-list-page";
 import { Suspense } from "react";
-import { TaskListPage } from "@/features/tasks/client";
 export default function Page() {
   return (
     <Suspense>
+      <WorkspaceOverview />
       <TaskListPage personal />
     </Suspense>
   );

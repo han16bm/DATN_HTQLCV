@@ -1,38 +1,85 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
+import type { AnalyticsApi } from "@/features/analytics/api/analytics.contract";
+import { analysisSchema } from "@/features/analytics/schemas/analysis-detail.schema";
+import { feedbackSchema } from "@/features/analytics/schemas/analysis-feedback.schema";
+import { jobSchema } from "@/features/analytics/schemas/analysis-job.schema";
+import { bottlenecksSchema } from "@/features/analytics/schemas/bottlenecks.schema";
+import { dashboardSchema } from "@/features/analytics/schemas/dashboard.schema";
+import { risksSchema } from "@/features/analytics/schemas/risks.schema";
+import { summarySchema } from "@/features/analytics/schemas/summary.schema";
+import { workloadSchema } from "@/features/analytics/schemas/workload.schema";
+import {
+  type AnalyticsQuery,
+  type CreateJobInput,
+  type FeedbackInput,
+  type FilterQuery,
+} from "@/features/analytics/types/analytics.types";
+import { entityLabelSchema, page } from "@/lib/validation/common.schema";
 import { apiClient } from "@/services/api-client";
-import type { ContractRequest } from "@/services/api-contract";
-import * as contracts from "./analytics.contract";
-export const analyticsService = {
-  getDashboard: (
-    request: ContractRequest<typeof contracts.getDashboardContract>,
-  ) => apiClient.request(contracts.getDashboardContract, request),
-  getDeadlineRisks: (
-    request: ContractRequest<typeof contracts.getDeadlineRisksContract>,
-  ) => apiClient.request(contracts.getDeadlineRisksContract, request),
-  getWorkload: (
-    request: ContractRequest<typeof contracts.getWorkloadContract>,
-  ) => apiClient.request(contracts.getWorkloadContract, request),
-  getBottlenecks: (
-    request: ContractRequest<typeof contracts.getBottlenecksContract>,
-  ) => apiClient.request(contracts.getBottlenecksContract, request),
-  getAnalysisSummary: (
-    request: ContractRequest<typeof contracts.getAnalysisSummaryContract>,
-  ) => apiClient.request(contracts.getAnalysisSummaryContract, request),
-  createAnalysisJob: (
-    request: ContractRequest<typeof contracts.createAnalysisJobContract>,
-  ) => apiClient.request(contracts.createAnalysisJobContract, request),
-  getAnalysisJob: (
-    request: ContractRequest<typeof contracts.getAnalysisJobContract>,
-  ) => apiClient.request(contracts.getAnalysisJobContract, request),
-  getAnalysisDetail: (
-    request: ContractRequest<typeof contracts.getAnalysisDetailContract>,
-  ) => apiClient.request(contracts.getAnalysisDetailContract, request),
-  createAnalysisFeedback: (
-    request: ContractRequest<typeof contracts.createAnalysisFeedbackContract>,
-  ) => apiClient.request(contracts.createAnalysisFeedbackContract, request),
-  listAnalyticsFilterOptions: (
-    request: ContractRequest<
-      typeof contracts.listAnalyticsFilterOptionsContract
-    >,
-  ) => apiClient.request(contracts.listAnalyticsFilterOptionsContract, request),
+import type { MutationOptions, RequestOptions } from "@/services/api.types";
+export const analyticsService: AnalyticsApi = {
+  getDashboard(query: AnalyticsQuery, options: RequestOptions = {}) {
+    return apiClient.get(`/dashboard`, dashboardSchema, {
+      ...options,
+      query,
+    });
+  },
+  getDeadlineRisks(query: AnalyticsQuery, options: RequestOptions = {}) {
+    return apiClient.get(`/analytics/risks`, risksSchema, {
+      ...options,
+      query,
+    });
+  },
+  getWorkload(query: AnalyticsQuery, options: RequestOptions = {}) {
+    return apiClient.get(`/analytics/workload`, workloadSchema, {
+      ...options,
+      query,
+    });
+  },
+  getBottlenecks(query: AnalyticsQuery, options: RequestOptions = {}) {
+    return apiClient.get(`/analytics/bottlenecks`, bottlenecksSchema, {
+      ...options,
+      query,
+    });
+  },
+  getAnalysisSummary(query: AnalyticsQuery, options: RequestOptions = {}) {
+    return apiClient.get(`/analytics/summary`, summarySchema, {
+      ...options,
+      query,
+    });
+  },
+  createAnalysisJob(payload: CreateJobInput, options: MutationOptions) {
+    return apiClient.post(`/analytics/jobs`, payload, jobSchema, options);
+  },
+  getAnalysisJob(jobId: string, options: RequestOptions = {}) {
+    return apiClient.get(
+      `/analytics/jobs/${encodeURIComponent(jobId)}`,
+      jobSchema,
+      options,
+    );
+  },
+  getAnalysisDetail(analysisId: string, options: RequestOptions = {}) {
+    return apiClient.get(
+      `/analytics/details/${encodeURIComponent(analysisId)}`,
+      analysisSchema,
+      options,
+    );
+  },
+  createAnalysisFeedback(
+    analysisId: string,
+    payload: FeedbackInput,
+    options: MutationOptions,
+  ) {
+    return apiClient.post(
+      `/analytics/details/${encodeURIComponent(analysisId)}/feedback`,
+      payload,
+      feedbackSchema,
+      options,
+    );
+  },
+  listAnalyticsFilterOptions(query: FilterQuery, options: RequestOptions = {}) {
+    return apiClient.get(`/analytics/filter-options`, page(entityLabelSchema), {
+      ...options,
+      query,
+    });
+  },
 };

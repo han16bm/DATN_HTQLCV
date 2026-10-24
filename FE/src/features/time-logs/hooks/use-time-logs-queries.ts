@@ -1,22 +1,43 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
 "use client";
-import {
-  useFeatureQuery,
-  type FeatureQueryOptions,
-} from "@/lib/query/use-feature-query";
-import type { ContractRequest } from "@/services/api-contract";
-import * as contracts from "../api/time-logs.contract";
-import { timeLogsService } from "../api/time-logs.service";
+import { timeLogQuerySchema } from "@/features/time-logs/schemas/time-logs.schema";
+import { type TimeLogQuery } from "@/features/time-logs/types/time-logs.types";
+import { useSession } from "@/lib/auth/session-context";
+import type { QueryOptions } from "@/lib/query/use-query-access";
+import { useQueryAccess } from "@/lib/query/use-query-access";
+import { idSchema } from "@/lib/validation/request.schema";
+import { useQuery } from "@tanstack/react-query";
 import { timeLogsKeys } from "../api/time-logs.keys";
+import { timeLogsService } from "../api/time-logs.service";
+
 export function useListTimeLogsQuery(
-  request: ContractRequest<typeof contracts.listTimeLogsContract>,
-  options: FeatureQueryOptions = {},
+  taskId: string,
+  query: TimeLogQuery = {},
+  options: QueryOptions = {},
 ) {
-  return useFeatureQuery(
-    contracts.listTimeLogsContract,
-    request,
-    timeLogsService.listTimeLogs,
-    timeLogsKeys.listTimeLogs,
-    options,
-  );
+  const { session } = useSession();
+  const parsed = timeLogQuerySchema.safeParse(query);
+  const filters = parsed.success ? parsed.data : query;
+  const result = useQuery({
+    queryKey: parsed.success
+      ? timeLogsKeys.listTimeLogs(
+          session?.user.id ?? "anonymous",
+          taskId,
+          filters,
+        )
+      : [
+          "time-logs",
+          session?.user.id ?? "anonymous",
+          "listTimeLogs",
+          "invalid-query",
+        ],
+    queryFn: ({ signal }) =>
+      timeLogsService.listTimeLogs(taskId, filters, { signal }),
+    enabled:
+      options.enabled !== false &&
+      Boolean(session) &&
+      parsed.success &&
+      idSchema.safeParse(taskId).success,
+    staleTime: 30000,
+  });
+  return useQueryAccess(result, "time-logs");
 }

@@ -1,4 +1,3 @@
-// Transport session bridge. Tokens live only in memory and never in Query/Zustand persistence.
 let accessToken: string | null = null;
 let refreshHandler: (() => Promise<void>) | null = null;
 let refreshFlight: Promise<void> | null = null;

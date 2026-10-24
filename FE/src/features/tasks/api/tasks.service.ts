@@ -1,28 +1,121 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
+import type { TasksApi } from "@/features/tasks/api/tasks.contract";
+import { taskSchema } from "@/features/tasks/schemas/task.schema";
+import {
+  type AssignTaskInput,
+  type CancelTaskInput,
+  type CreateTaskInput,
+  type PauseTaskInput,
+  type TaskHistoryQuery,
+  type TaskQuery,
+  type UpdateRemainingEstimateInput,
+  type UpdateTaskInput,
+} from "@/features/tasks/types/tasks.types";
+import { auditSchema, page } from "@/lib/validation/common.schema";
 import { apiClient } from "@/services/api-client";
-import type { ContractRequest } from "@/services/api-contract";
-import * as contracts from "./tasks.contract";
-export const tasksService = {
-  listTasks: (request: ContractRequest<typeof contracts.listTasksContract>) =>
-    apiClient.request(contracts.listTasksContract, request),
-  getTask: (request: ContractRequest<typeof contracts.getTaskContract>) =>
-    apiClient.request(contracts.getTaskContract, request),
-  createTask: (request: ContractRequest<typeof contracts.createTaskContract>) =>
-    apiClient.request(contracts.createTaskContract, request),
-  updateTask: (request: ContractRequest<typeof contracts.updateTaskContract>) =>
-    apiClient.request(contracts.updateTaskContract, request),
-  assignTask: (request: ContractRequest<typeof contracts.assignTaskContract>) =>
-    apiClient.request(contracts.assignTaskContract, request),
-  startTask: (request: ContractRequest<typeof contracts.startTaskContract>) =>
-    apiClient.request(contracts.startTaskContract, request),
-  pauseTask: (request: ContractRequest<typeof contracts.pauseTaskContract>) =>
-    apiClient.request(contracts.pauseTaskContract, request),
-  cancelTask: (request: ContractRequest<typeof contracts.cancelTaskContract>) =>
-    apiClient.request(contracts.cancelTaskContract, request),
-  updateRemainingEstimate: (
-    request: ContractRequest<typeof contracts.updateRemainingEstimateContract>,
-  ) => apiClient.request(contracts.updateRemainingEstimateContract, request),
-  listTaskHistory: (
-    request: ContractRequest<typeof contracts.listTaskHistoryContract>,
-  ) => apiClient.request(contracts.listTaskHistoryContract, request),
+import type {
+  MutationOptions,
+  RequestOptions,
+  VersionOptions,
+} from "@/services/api.types";
+export const tasksService: TasksApi = {
+  listTasks(query: TaskQuery = {}, options: RequestOptions = {}) {
+    return apiClient.get(`/tasks`, page(taskSchema), {
+      ...options,
+      query,
+    });
+  },
+  getTask(taskId: string, options: RequestOptions = {}) {
+    return apiClient.get(
+      `/tasks/${encodeURIComponent(taskId)}`,
+      taskSchema,
+      options,
+    );
+  },
+  createTask(
+    projectId: string,
+    payload: CreateTaskInput,
+    options: MutationOptions,
+  ) {
+    return apiClient.post(
+      `/projects/${encodeURIComponent(projectId)}/tasks`,
+      payload,
+      taskSchema,
+      options,
+    );
+  },
+  updateTask(
+    taskId: string,
+    payload: UpdateTaskInput,
+    options: VersionOptions,
+  ) {
+    return apiClient.patch(
+      `/tasks/${encodeURIComponent(taskId)}`,
+      payload,
+      taskSchema,
+      options,
+    );
+  },
+  assignTask(
+    taskId: string,
+    payload: AssignTaskInput,
+    options: VersionOptions,
+  ) {
+    return apiClient.post(
+      `/tasks/${encodeURIComponent(taskId)}/assignments`,
+      payload,
+      taskSchema,
+      options,
+    );
+  },
+  startTask(taskId: string, options: VersionOptions) {
+    return apiClient.post(
+      `/tasks/${encodeURIComponent(taskId)}/start`,
+      {},
+      taskSchema,
+      options,
+    );
+  },
+  pauseTask(taskId: string, payload: PauseTaskInput, options: VersionOptions) {
+    return apiClient.post(
+      `/tasks/${encodeURIComponent(taskId)}/pause`,
+      payload,
+      taskSchema,
+      options,
+    );
+  },
+  cancelTask(
+    taskId: string,
+    payload: CancelTaskInput,
+    options: VersionOptions,
+  ) {
+    return apiClient.post(
+      `/tasks/${encodeURIComponent(taskId)}/cancel`,
+      payload,
+      taskSchema,
+      options,
+    );
+  },
+  updateRemainingEstimate(
+    taskId: string,
+    payload: UpdateRemainingEstimateInput,
+    options: VersionOptions,
+  ) {
+    return apiClient.patch(
+      `/tasks/${encodeURIComponent(taskId)}/remaining-estimate`,
+      payload,
+      taskSchema,
+      options,
+    );
+  },
+  listTaskHistory(
+    taskId: string,
+    query: TaskHistoryQuery = {},
+    options: RequestOptions = {},
+  ) {
+    return apiClient.get(
+      `/tasks/${encodeURIComponent(taskId)}/history`,
+      page(auditSchema),
+      { ...options, query },
+    );
+  },
 };

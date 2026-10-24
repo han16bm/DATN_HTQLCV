@@ -1,105 +1,24 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
-import { normalizeQuery } from "@/lib/query/normalize-query";
-import * as contracts from "./analytics.contract";
+import {
+  type AnalyticsQuery,
+  type FilterQuery,
+} from "@/features/analytics/types/analytics.types";
 export const analyticsKeys = {
   all: ["analytics"] as const,
   viewer: (viewerId: string) => ["analytics", viewerId] as const,
-  getDashboard: (
-    viewerId: string,
-    params: Record<string, string> = {},
-    query: Record<string, unknown> = {},
-  ) =>
-    [
-      "analytics",
-      viewerId,
-      "getDashboard",
-      params,
-      normalizeQuery(contracts.getDashboardContract.query.parse(query)),
-    ] as const,
-  getDeadlineRisks: (
-    viewerId: string,
-    params: Record<string, string> = {},
-    query: Record<string, unknown> = {},
-  ) =>
-    [
-      "analytics",
-      viewerId,
-      "getDeadlineRisks",
-      params,
-      normalizeQuery(contracts.getDeadlineRisksContract.query.parse(query)),
-    ] as const,
-  getWorkload: (
-    viewerId: string,
-    params: Record<string, string> = {},
-    query: Record<string, unknown> = {},
-  ) =>
-    [
-      "analytics",
-      viewerId,
-      "getWorkload",
-      params,
-      normalizeQuery(contracts.getWorkloadContract.query.parse(query)),
-    ] as const,
-  getBottlenecks: (
-    viewerId: string,
-    params: Record<string, string> = {},
-    query: Record<string, unknown> = {},
-  ) =>
-    [
-      "analytics",
-      viewerId,
-      "getBottlenecks",
-      params,
-      normalizeQuery(contracts.getBottlenecksContract.query.parse(query)),
-    ] as const,
-  getAnalysisSummary: (
-    viewerId: string,
-    params: Record<string, string> = {},
-    query: Record<string, unknown> = {},
-  ) =>
-    [
-      "analytics",
-      viewerId,
-      "getAnalysisSummary",
-      params,
-      normalizeQuery(contracts.getAnalysisSummaryContract.query.parse(query)),
-    ] as const,
-  getAnalysisJob: (
-    viewerId: string,
-    params: Record<string, string> = {},
-    query: Record<string, unknown> = {},
-  ) =>
-    [
-      "analytics",
-      viewerId,
-      "getAnalysisJob",
-      params,
-      normalizeQuery(contracts.getAnalysisJobContract.query.parse(query)),
-    ] as const,
-  getAnalysisDetail: (
-    viewerId: string,
-    params: Record<string, string> = {},
-    query: Record<string, unknown> = {},
-  ) =>
-    [
-      "analytics",
-      viewerId,
-      "getAnalysisDetail",
-      params,
-      normalizeQuery(contracts.getAnalysisDetailContract.query.parse(query)),
-    ] as const,
-  listAnalyticsFilterOptions: (
-    viewerId: string,
-    params: Record<string, string> = {},
-    query: Record<string, unknown> = {},
-  ) =>
-    [
-      "analytics",
-      viewerId,
-      "listAnalyticsFilterOptions",
-      params,
-      normalizeQuery(
-        contracts.listAnalyticsFilterOptionsContract.query.parse(query),
-      ),
-    ] as const,
+  getDashboard: (viewerId: string, query: AnalyticsQuery) =>
+    ["analytics", viewerId, "getDashboard", query] as const,
+  getDeadlineRisks: (viewerId: string, query: AnalyticsQuery) =>
+    ["analytics", viewerId, "getDeadlineRisks", query] as const,
+  getWorkload: (viewerId: string, query: AnalyticsQuery) =>
+    ["analytics", viewerId, "getWorkload", query] as const,
+  getBottlenecks: (viewerId: string, query: AnalyticsQuery) =>
+    ["analytics", viewerId, "getBottlenecks", query] as const,
+  getAnalysisSummary: (viewerId: string, query: AnalyticsQuery) =>
+    ["analytics", viewerId, "getAnalysisSummary", query] as const,
+  getAnalysisJob: (viewerId: string, jobId: string) =>
+    ["analytics", viewerId, "getAnalysisJob", jobId] as const,
+  getAnalysisDetail: (viewerId: string, analysisId: string) =>
+    ["analytics", viewerId, "getAnalysisDetail", analysisId] as const,
+  listAnalyticsFilterOptions: (viewerId: string, query: FilterQuery) =>
+    ["analytics", viewerId, "listAnalyticsFilterOptions", query] as const,
 };

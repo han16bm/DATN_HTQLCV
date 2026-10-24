@@ -1,7 +1,6 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
+import { analysisRefSchema } from "@/lib/validation/common.schema";
 import { z } from "zod";
-import { SharedAnalysisRefSchema } from "@/types/common";
-export const AlertsAlertPatchSchema = z
+export const updateAlertSchema = z
   .object({
     status: z.enum(["READ", "IN_PROGRESS", "RESOLVED", "DISMISSED"]),
     resolutionNote: z
@@ -12,18 +11,14 @@ export const AlertsAlertPatchSchema = z
       .optional(),
   })
   .strict();
-export type AlertsAlertPatchDTO = z.output<typeof AlertsAlertPatchSchema>;
-
-export const AlertsAlertStatusSchema = z.enum([
+export const alertStatusSchema = z.enum([
   "UNREAD",
   "READ",
   "IN_PROGRESS",
   "RESOLVED",
   "DISMISSED",
 ]);
-export type AlertsAlertStatusDTO = z.output<typeof AlertsAlertStatusSchema>;
-
-export const AlertsAlertQuerySchema = z
+export const alertQuerySchema = z
   .object({
     page: z.number().int().safe().min(1).optional().default(1),
     pageSize: z.number().int().safe().min(1).max(100).optional().default(20),
@@ -34,13 +29,11 @@ export const AlertsAlertQuerySchema = z
       .min(1, "Vui lòng nhập thông tin bắt buộc")
       .max(100)
       .optional(),
-    status: AlertsAlertStatusSchema.optional(),
+    status: alertStatusSchema.optional(),
     severity: z.enum(["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional(),
   })
   .strict();
-export type AlertsAlertQueryDTO = z.output<typeof AlertsAlertQuerySchema>;
-
-export const AlertsAlertSchema = z.object({
+export const alertSchema = z.object({
   id: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
   version: z.number().int().safe().positive(),
   createdAt: z.iso.datetime(),
@@ -55,7 +48,7 @@ export const AlertsAlertSchema = z.object({
     "DATA_QUALITY",
   ]),
   severity: z.enum(["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"]),
-  status: AlertsAlertStatusSchema,
+  status: alertStatusSchema,
   conditionActive: z.boolean(),
   evidence: z.array(z.string()),
   dataAsOf: z.iso.datetime(),
@@ -64,6 +57,5 @@ export const AlertsAlertSchema = z.object({
   handledBy: z.string().nullable(),
   handledAt: z.iso.datetime().nullable(),
   taskTitle: z.string().nullable(),
-  analysisRef: SharedAnalysisRefSchema.nullable(),
+  analysisRef: analysisRefSchema.nullable(),
 });
-export type AlertsAlertDTO = z.output<typeof AlertsAlertSchema>;

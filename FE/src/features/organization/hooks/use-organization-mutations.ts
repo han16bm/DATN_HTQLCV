@@ -1,47 +1,176 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
 "use client";
-import { useFeatureMutation } from "@/lib/query/use-feature-mutation";
-import * as contracts from "../api/organization.contract";
+import { organizationKeys } from "@/features/organization/api/organization.keys";
+import {
+  type CreateTeamInput,
+  type CreateUnitInput,
+  type DeactivateTeamArgs,
+  type DeactivateUnitArgs,
+  type ReplaceTeamMembersArgs,
+  type UpdateTeamArgs,
+  type UpdateUnitArgs,
+} from "@/features/organization/types/organization.types";
+import { useSession } from "@/lib/auth/session-context";
+import { useMutationAttempt } from "@/lib/query/use-mutation-attempt";
+import { useAccessErrorHandler } from "@/lib/query/use-query-access";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { organizationService } from "../api/organization.service";
+
 export function useCreateUnitMutation() {
-  return useFeatureMutation(
-    contracts.createUnitContract,
-    organizationService.createUnit,
-  );
+  const client = useQueryClient();
+  const { session } = useSession();
+  const viewerId = session?.user.id ?? "anonymous";
+  const handleError = useAccessErrorHandler();
+  const attempt = useMutationAttempt();
+  return useMutation({
+    mutationKey: ["organization", viewerId, "createUnit"],
+    mutationFn: async (input: CreateUnitInput) =>
+      organizationService.createUnit(input, {
+        key: await attempt.keyFor(input),
+      }),
+    retry: false,
+    onError: handleError,
+    onSuccess: async () => {
+      attempt.reset();
+      await client.invalidateQueries({
+        queryKey: organizationKeys.viewer(viewerId),
+      });
+    },
+  });
 }
 export function useUpdateUnitMutation() {
-  return useFeatureMutation(
-    contracts.updateUnitContract,
-    organizationService.updateUnit,
-  );
+  const client = useQueryClient();
+  const { session } = useSession();
+  const viewerId = session?.user.id ?? "anonymous";
+  const handleError = useAccessErrorHandler();
+  const attempt = useMutationAttempt();
+  return useMutation({
+    mutationKey: ["organization", viewerId, "updateUnit"],
+    mutationFn: async (input: UpdateUnitArgs) =>
+      organizationService.updateUnit(input.unitId, input.payload, {
+        version: input.version,
+        key: await attempt.keyFor(input),
+      }),
+    retry: false,
+    onError: handleError,
+    onSuccess: async () => {
+      attempt.reset();
+      await client.invalidateQueries({
+        queryKey: organizationKeys.viewer(viewerId),
+      });
+    },
+  });
 }
 export function useDeactivateUnitMutation() {
-  return useFeatureMutation(
-    contracts.deactivateUnitContract,
-    organizationService.deactivateUnit,
-  );
+  const client = useQueryClient();
+  const { session } = useSession();
+  const viewerId = session?.user.id ?? "anonymous";
+  const handleError = useAccessErrorHandler();
+  const attempt = useMutationAttempt();
+  return useMutation({
+    mutationKey: ["organization", viewerId, "deactivateUnit"],
+    mutationFn: async (input: DeactivateUnitArgs) =>
+      organizationService.deactivateUnit(input.unitId, input.payload, {
+        version: input.version,
+        key: await attempt.keyFor(input),
+      }),
+    retry: false,
+    onError: handleError,
+    onSuccess: async () => {
+      attempt.reset();
+      await client.invalidateQueries({
+        queryKey: organizationKeys.viewer(viewerId),
+      });
+    },
+  });
 }
 export function useCreateTeamMutation() {
-  return useFeatureMutation(
-    contracts.createTeamContract,
-    organizationService.createTeam,
-  );
+  const client = useQueryClient();
+  const { session } = useSession();
+  const viewerId = session?.user.id ?? "anonymous";
+  const handleError = useAccessErrorHandler();
+  const attempt = useMutationAttempt();
+  return useMutation({
+    mutationKey: ["organization", viewerId, "createTeam"],
+    mutationFn: async (input: CreateTeamInput) =>
+      organizationService.createTeam(input, {
+        key: await attempt.keyFor(input),
+      }),
+    retry: false,
+    onError: handleError,
+    onSuccess: async () => {
+      attempt.reset();
+      await client.invalidateQueries({
+        queryKey: organizationKeys.viewer(viewerId),
+      });
+    },
+  });
 }
 export function useUpdateTeamMutation() {
-  return useFeatureMutation(
-    contracts.updateTeamContract,
-    organizationService.updateTeam,
-  );
+  const client = useQueryClient();
+  const { session } = useSession();
+  const viewerId = session?.user.id ?? "anonymous";
+  const handleError = useAccessErrorHandler();
+  const attempt = useMutationAttempt();
+  return useMutation({
+    mutationKey: ["organization", viewerId, "updateTeam"],
+    mutationFn: async (input: UpdateTeamArgs) =>
+      organizationService.updateTeam(input.teamId, input.payload, {
+        version: input.version,
+        key: await attempt.keyFor(input),
+      }),
+    retry: false,
+    onError: handleError,
+    onSuccess: async () => {
+      attempt.reset();
+      await client.invalidateQueries({
+        queryKey: organizationKeys.viewer(viewerId),
+      });
+    },
+  });
 }
 export function useReplaceTeamMembersMutation() {
-  return useFeatureMutation(
-    contracts.replaceTeamMembersContract,
-    organizationService.replaceTeamMembers,
-  );
+  const client = useQueryClient();
+  const { session } = useSession();
+  const viewerId = session?.user.id ?? "anonymous";
+  const handleError = useAccessErrorHandler();
+  const attempt = useMutationAttempt();
+  return useMutation({
+    mutationKey: ["organization", viewerId, "replaceTeamMembers"],
+    mutationFn: async (input: ReplaceTeamMembersArgs) =>
+      organizationService.replaceTeamMembers(input.teamId, input.payload, {
+        version: input.version,
+        key: await attempt.keyFor(input),
+      }),
+    retry: false,
+    onError: handleError,
+    onSuccess: async () => {
+      attempt.reset();
+      await client.invalidateQueries({
+        queryKey: organizationKeys.viewer(viewerId),
+      });
+    },
+  });
 }
 export function useDeactivateTeamMutation() {
-  return useFeatureMutation(
-    contracts.deactivateTeamContract,
-    organizationService.deactivateTeam,
-  );
+  const client = useQueryClient();
+  const { session } = useSession();
+  const viewerId = session?.user.id ?? "anonymous";
+  const handleError = useAccessErrorHandler();
+  const attempt = useMutationAttempt();
+  return useMutation({
+    mutationKey: ["organization", viewerId, "deactivateTeam"],
+    mutationFn: async (input: DeactivateTeamArgs) =>
+      organizationService.deactivateTeam(input.teamId, input.payload, {
+        version: input.version,
+        key: await attempt.keyFor(input),
+      }),
+    retry: false,
+    onError: handleError,
+    onSuccess: async () => {
+      attempt.reset();
+      await client.invalidateQueries({
+        queryKey: organizationKeys.viewer(viewerId),
+      });
+    },
+  });
 }

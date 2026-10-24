@@ -1,8 +1,8 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
-import { z } from "zod";
+import { taskSchema } from "@/features/tasks/schemas/task.schema";
+import { personRefSchema } from "@/lib/validation/common.schema";
 import { checkProjection } from "@/lib/validation/contract-refinements";
-import { SharedPersonRefSchema } from "@/types/common";
-export const LogsTimeLogCreateSchema = z
+import { z } from "zod";
+export const createTimeLogSchema = z
   .object({
     workDate: z.iso.date(),
     minutes: z.number().int().safe().max(1440).positive(),
@@ -13,9 +13,7 @@ export const LogsTimeLogCreateSchema = z
       .max(2000),
   })
   .strict();
-export type LogsTimeLogCreateDTO = z.output<typeof LogsTimeLogCreateSchema>;
-
-export const LogsTimeLogPatchSchema = z
+export const updateTimeLogSchema = z
   .object({
     workDate: z.iso.date().optional(),
     minutes: z.number().int().safe().max(1440).positive().optional(),
@@ -32,9 +30,7 @@ export const LogsTimeLogPatchSchema = z
       .max(2000),
   })
   .strict();
-export type LogsTimeLogPatchDTO = z.output<typeof LogsTimeLogPatchSchema>;
-
-export const LogsTimeLogSchema = z
+export const timeLogSchema = z
   .object({
     id: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
     version: z.number().int().safe().positive(),
@@ -50,7 +46,17 @@ export const LogsTimeLogSchema = z
       .max(2000),
     status: z.enum(["ACTIVE", "VOID"]),
     voidReason: z.string().nullable(),
-    user: SharedPersonRefSchema,
+    user: personRefSchema,
   })
   .superRefine(checkProjection);
-export type LogsTimeLogDTO = z.output<typeof LogsTimeLogSchema>;
+export const timeLogQuerySchema = z
+  .object({
+    page: z.number().int().safe().min(1).optional().default(1),
+    pageSize: z.number().int().safe().min(1).max(100).optional().default(20),
+    q: z.string().trim().max(255).optional(),
+  })
+  .strict();
+export const timeLogChangeResultSchema = z.object({
+  timeLog: timeLogSchema,
+  task: taskSchema,
+});

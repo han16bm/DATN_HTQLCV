@@ -1,81 +1,84 @@
 # Cấu trúc frontend
 
-Quyết định cập nhật 24/10/2026 theo yêu cầu tham khảo `D:/TTZinza/vietcd/frontend`. Đã đọc API client/error, providers, auth contract/service/key/hooks, novel service/hooks và chuỗi MSW handler → DB → data trong dự án tham khảo. Chỉ sử dụng dự án đó làm nguồn tham khảo; không sửa file ở `vietcd`.
+Cập nhật 24/10/2026, tham khảo cách tổ chức và luồng auth của `D:/TTZinza/vietcd/frontend`. FE dùng Next.js App Router, TypeScript strict, Tailwind CSS, React Hook Form, Zod, Zustand và TanStack Query. Các yêu cầu nghiệp vụ theo bộ đặc tả và API catalog 0.3.0 trong `fe-specs/`.
 
-## Cây thư mục
+## Thư mục và trách nhiệm
 
 ```text
 src/
-  app/                         # App Router, providers, route/layout boundary
+  app/                              # Route, layout, providers, error boundary
   components/
-    layout/                    # Workspace shell, navigation
-    ui/                        # Control và state dùng chung
+    layout/                         # Workspace shell, navigation, dirty guard
+    ui/                             # Control và trạng thái giao diện dùng chung
+    forms/                          # Form RHF, field, resolver, lỗi/xung đột version
   features/<feature>/
     api/
-      <feature>.contract.ts    # Method/path, params/query/body/response schema
-      <feature>.service.ts     # Hàm API cố định, luôn gửi HTTP
-      <feature>.keys.ts        # Query key có viewerId và filter chuẩn hóa
-    schemas/<feature>.schema.ts
-    types/<feature>.types.ts   # Re-export z.output từ schema
-    hooks/use-<feature>-queries.ts
-    hooks/use-<feature>-mutations.ts
-    components/                # Tạo khi đã có UI thực
-    index.ts                   # Public contract/schema/service/key
-    client.ts                  # Public hooks/UI
+      <feature>.contract.ts         # Interface TypeScript mô tả các hàm API
+      <feature>.service.ts          # Gửi input có kiểu qua HTTP, khai báo response schema
+      <feature>.keys.ts             # Query key từ viewer, resource và filter đã chuẩn hóa
+    schemas/                        # Zod validation theo thực thể/nhóm nghiệp vụ
+    types/<feature>.types.ts        # DTO, payload, query, result, mutation variables
+    hooks/
+      use-<feature>-queries.ts      # useQuery + service + query key
+      use-<feature>-mutations.ts    # useMutation + service + invalidation
+    components/                     # Mỗi màn một file; form/dialog chia riêng
   lib/
-    auth/                      # Session context, permission helpers
-    query/                     # Query/mutation mechanics dùng chung
-    validation/                # Refinement thuần, không phụ thuộc feature
-  services/
-    api-contract.ts            # Kiểu contract chung
-    api-client.ts              # Fetch HTTP, headers, Zod boundary, abort/replay
-    http-error.ts              # Chuẩn hóa lỗi HTTP/network
-    auth-session.ts            # Token trong bộ nhớ, refresh single-flight
-  stores/ui-store.ts           # Zustand chỉ giữ UI state
-  types/
-    common.ts                  # Value contract chung, refs, pagination, audit
-    api/error.ts               # Error envelope và lỗi chuẩn
-  contracts/                   # Registry/manifest cho tích hợp, không import vào UI
+    auth/                           # Session context và permission helper
+    crypto/                         # Fingerprint dùng chung cho retry/receipt
+    forms/                          # Snapshot khi chỉnh sửa
+    query/                          # Access error, retry key, cache, URL filters
+    validation/                     # Schema giá trị chung và các refinements
+  services/                         # HTTP transport, lỗi, token/refresh adapter
+  stores/                           # State UI client-only
+  types/                            # Envelope/error, Page<T>, value types chung
   mocks/
-    browser.ts                 # setupWorker
-    node.ts                    # setupServer cho test
-    handlers/<feature>.handlers.ts
-    db/<feature>.db.ts         # Nghiệp vụ mock và state trong bộ nhớ
-    data/seed.mock.json        # Seed deterministic từ fe-specs
-    utils/                     # Validate request, envelope, replay, rollback
-    reset.ts                   # Reset DB/receipt giữa các test
+    handlers/                       # MSW routes, parse HTTP, gọi DB, response/header
+    db/                             # CRUD, scope/quyền, state machine, audit
+      analytics/                    # Scope, KPI, snapshot, risk/workload/bottleneck
+    data/                           # Seed, bootstrap, upload policy, byte tệp mẫu
+    utils/                          # HTTP envelope/scenario/receipt, pagination
+    browser.ts                      # Browser worker
+    node.ts                         # Test server
+tests/                              # Kiểm thử qua HTTP/MSW và component JSDOM
 ```
 
-## Luồng dữ liệu
+Import trực tiếp file cần dùng. Không có barrel `index.ts`, `client.ts`, `hooks.ts` ở gốc feature. Module chỉ phụ thuộc đúng type/schema/hook/component cần thiết; service và shared types không phụ thuộc mock hoặc UI. Schema không export DTO; file types suy ra kiểu từ schema bằng import type để tránh hai nguồn định nghĩa hình dạng dữ liệu.
+
+## Luồng đọc và ghi dữ liệu
 
 ```text
-Route → Feature component → React Query hook → Feature service
-     → services/api-client → fetch HTTP tới Gateway /api/v1/...
-                              ├─ MSW bật: handler → mock DB → HTTP response
-                              └─ MSW tắt: Gateway thật → HTTP response
-     ← Zod validate envelope/DTO ← React Query cache ← UI
+App route → feature component → React Query hook → feature service
+         → fetch HTTP /api/v1/... → MSW handler → mock DB → seed/state
 ```
 
-Service không kiểm tra chế độ mock, không import fixture và không gọi DB. MSW intercept cùng method/path/header/body mà Gateway thật nhận. Không có `Promise.resolve(mockData)` hoặc fake Axios adapter trong service.
+Ví dụ cảnh báo: `alerts-page.tsx` gọi `useListAlertsQuery(query)`. Hook kiểm tra và chuẩn hóa query một lần, truyền cùng `filters` vào `alertsKeys.listAlerts(viewerId, filters)` và `alertsService.listAlerts(filters, { signal })`. Key chỉ tạo mảng định danh; service gửi đúng input được truyền vào. API client thêm base URL/bearer, kiểm tra envelope/response bằng Zod và chuẩn hóa lỗi. `alerts.handlers.ts` là biên HTTP server độc lập: parse query rồi gọi `alertsDb.listAlerts(viewer, query)`. DB kiểm tra nghiệp vụ, lọc dữ liệu và trả DTO; handler tạo envelope `{ data, meta }`.
 
-MSW xử lý request ở browser/test và tự tạo HTTP response; nó không chuyển tiếp request đến một mock server khác. Nhờ đó request vẫn xuất hiện trong Network của browser, còn mock store sống trong bộ nhớ của phiên trang. Reload reset dữ liệu nghiệp vụ; không dùng localStorage làm DB.
+Analytics có `useAnalyticsScope` đọc và kiểm tra bộ lọc URL một lần; màn truyền cùng scope cho khung lọc và query hook. Query hook analytics nhận scope đã kiểm tra nên không parse lại. Không tự viết hàm sắp xếp object cho query key; React Query xử lý key object. Service cũng không thêm default hoặc parse lại query/payload. Khi gọi service trực tiếp, caller truyền tham số cần gửi; handler áp dụng default của API cho trường bị bỏ trống.
 
-## Điểm áp dụng từ vietcd
+Mutation như cập nhật cảnh báo gọi `alertsService.updateAlert(alertId, payload, { version, key })`. HTTP adapter gửi `If-Match` và `Idempotency-Key`. Hook giữ key cho lần thử lại cùng nội dung và invalidate rõ các query liên quan khi thành công. Không dùng endpoint descriptor, generic feature hook, registry/manifest hoặc generator.
 
-Giữ cách chia `services`, `features/*/api`, hooks, `components/ui`, `mocks/handlers`, `mocks/db`, `mocks/data`. Giữ App Router ghép màn và Query quản lý server state.
+Handler không chứa fixture, lọc collection hoặc nghiệp vụ. DB nhận viewer, ID, payload/query và version cần thiết, không nhận `Request`, `Response` hoặc API MSW. `mockCommand` đảm nhận transaction/receipt và chỉ kiểm tra lại quyền khi replay; kiểm tra thao tác mới nằm trong DB. Một triển khai `requireVersion` được dùng chung. Transaction serialize các command và rollback khi thất bại.
 
-Fetch wrapper được giữ theo stack đã chọn ban đầu. Mỗi API vẫn có service cố định như `tasksService.listTasks`, không chọn endpoint động trong component. Schema Zod được phân bổ theo feature; chỉ value object dùng chung nằm ở `types/common.ts`.
+`mocks/db/analytics` tách scope, snapshot và từng nhóm phép tính khỏi các hàm API trong `analytics.db.ts`. Các màn analytics/report/submission/alert được chia file; component dùng chung như số liệu báo cáo hoặc form phản hồi được import trực tiếp và không sao chép logic.
 
-Các điểm riêng theo contract DATN: bearer token trong bộ nhớ, refresh bằng cookie, envelope `{data,meta}`/`{error,meta}`, If-Match, Idempotency-Key, kiểm tra response runtime, scope theo dự án và cấm tự nghiệm thu. Không sao chép contract đăng ký/reset-password công khai hoặc refresh token trong localStorage của ứng dụng tham khảo.
+## State và form
 
-## Phân chia state và phụ thuộc
+- React Query quản lý dữ liệu server và session; query key có viewer để phân tách phiên. Hook xử lý 403/410 qua helper chung, xóa dữ liệu không còn được phép xem.
+- Zustand chỉ giữ menu và dấu form chưa lưu. Bộ lọc có thể chia sẻ nằm trên URL. React Hook Form giữ input và validation theo Zod.
+- Form dùng chung tách phần điều khiển form, field, resolver, lỗi và wrapper version. `onSubmit` nhận kiểu output suy ra từ schema, dùng thẳng dữ liệu đã kiểm tra. Form tạo/sửa chọn schema và callback có kiểu riêng, chia sẻ props hiển thị. Chỉ kiểm tra lại khi dựng payload mới từ nhiều nguồn hoặc lấy phần thay đổi. Form giữ dữ liệu khi 412, cho tải bản mới để đối chiếu rồi xác nhận dùng version mới khi lưu lại.
+- Access token nằm trong transport adapter, chỉ trong bộ nhớ. Auth service tiêu thụ token và trả `AuthSessionDTO`; không đưa token/password vào Query cache, Zustand hoặc localStorage.
+- Login, tạo user, reset mật khẩu và upload dùng ticket tạm để MutationCache không giữ mật khẩu/byte tệp. Các mutation thông thường nhận variables trực tiếp. Download trả Blob cho hook tiêu thụ và thu hồi Object URL.
 
-React Query giữ dữ liệu phiên/quyền và tài nguyên server. Zustand chỉ giữ menu và danh sách form đang dirty. React Hook Form giữ input; filter chia sẻ được nằm trên URL. Token được service auth tiêu thụ vào adapter và không trả vào mutation cache.
+Các yêu cầu riêng của DATN được giữ: quyền theo dự án, state machine, cấm tự nghiệm thu, version, replay có kiểm tra quyền hiện tại, snapshot báo cáo/phân tích bất biến và job AI mô phỏng bất đồng bộ.
 
-Schema của auth đọc User qua public users; reports đọc trạng thái Task qua public tasks; response giờ công/nộp sử dụng Task qua public tasks. Analytics đọc enum Task và value refs chung. Không có phụ thuộc ngược từ tasks/users vào analytics. Registry và `mocks/db/model-contracts.ts` là lớp hợp nhất phục vụ tích hợp/test, không phải đường import cho component sản phẩm.
+## Quy tắc viết code
 
-## Cấu hình API
+Ưu tiên đủ chức năng, gọn và dễ lần theo luồng. Tên dùng đúng ngữ cảnh: `AlertDto`, `TaskQuery`, `CreateTaskInput`, `UpdateTaskArgs`, `alertSchema`, `analyticsQuerySchema`. Không lặp tiền tố feature, không giữ biến chỉ gán lại tham số, không bọc `Promise.all` cho một request, không tạo biến chỉ để return ngay. Chỉ tách helper khi có trách nhiệm độc lập hoặc logic được dùng lại; không tạo factory để che lời gọi service/query.
 
-Development mặc định có `NEXT_PUBLIC_API_MOCKING=enabled` trong `.env.development`. Worker chỉ chạy khi `NODE_ENV=development`; providers đợi `worker.start()` thành công trước khi render feature. Khởi động lỗi giữ state lỗi và cho tải lại, không cho request chạy sớm.
+## Chuyển giữa mock và backend
 
-`NEXT_PUBLIC_API_ORIGIN` là origin Gateway, ví dụ `https://gateway.example.test`; path đã bao gồm `/api/v1`. Để trống origin dùng cùng origin với FE. Khi nối BE, tắt MSW và đặt origin đã chốt; gọi API từ service không thay đổi. Production build không khởi động worker. Cần kiểm thử auth/CORS/cookie với Gateway thật khi có BE.
+Development dùng `NEXT_PUBLIC_API_MOCKING=enabled` trong `.env.development`. Chỉ `app/providers.tsx` dynamic import browser worker khi `NODE_ENV=development` và đợi worker sẵn sàng trước khi render feature. Test dùng MSW Node server và gọi chính feature service qua HTTP.
+
+`NEXT_PUBLIC_API_ORIGIN` là origin Gateway, ví dụ `https://gateway.example.test`; HTTP adapter tự thêm `/api/v1`, service chỉ dùng path như `/tasks`. Để trống biến này sẽ dùng cùng origin với FE. Khi nối BE, tắt MSW và cấu hình origin; component/hook/service tiếp tục dùng cùng luồng HTTP. Production không khởi động worker.
+
+Mock DB tồn tại trong bộ nhớ và reset khi reload. Cần kiểm thử riêng auth/cookie/CORS, scheduler, lưu trữ tệp và LLM khi có Gateway thật. Mức độ hoàn thành và giới hạn QA được ghi trong `IMPLEMENTATION_STATUS.md`.

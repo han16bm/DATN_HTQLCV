@@ -1,58 +1,85 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
 "use client";
+import { teamQuerySchema } from "@/features/organization/schemas/team.schema";
+import { unitQuerySchema } from "@/features/organization/schemas/unit.schema";
 import {
-  useFeatureQuery,
-  type FeatureQueryOptions,
-} from "@/lib/query/use-feature-query";
-import type { ContractRequest } from "@/services/api-contract";
-import * as contracts from "../api/organization.contract";
-import { organizationService } from "../api/organization.service";
+  type TeamQuery,
+  type UnitQuery,
+} from "@/features/organization/types/organization.types";
+import { useSession } from "@/lib/auth/session-context";
+import type { QueryOptions } from "@/lib/query/use-query-access";
+import { useQueryAccess } from "@/lib/query/use-query-access";
+import { idSchema } from "@/lib/validation/request.schema";
+import { useQuery } from "@tanstack/react-query";
 import { organizationKeys } from "../api/organization.keys";
+import { organizationService } from "../api/organization.service";
+
 export function useListUnitsQuery(
-  request: ContractRequest<typeof contracts.listUnitsContract>,
-  options: FeatureQueryOptions = {},
+  query: UnitQuery = {},
+  options: QueryOptions = {},
 ) {
-  return useFeatureQuery(
-    contracts.listUnitsContract,
-    request,
-    organizationService.listUnits,
-    organizationKeys.listUnits,
-    options,
-  );
+  const { session } = useSession();
+  const parsed = unitQuerySchema.safeParse(query);
+  const filters = parsed.success ? parsed.data : query;
+  const result = useQuery({
+    queryKey: parsed.success
+      ? organizationKeys.listUnits(session?.user.id ?? "anonymous", filters)
+      : [
+          "organization",
+          session?.user.id ?? "anonymous",
+          "listUnits",
+          "invalid-query",
+        ],
+    queryFn: ({ signal }) => organizationService.listUnits(filters, { signal }),
+    enabled: options.enabled !== false && Boolean(session) && parsed.success,
+    staleTime: 30000,
+  });
+  return useQueryAccess(result, "organization");
 }
-export function useGetUnitQuery(
-  request: ContractRequest<typeof contracts.getUnitContract>,
-  options: FeatureQueryOptions = {},
-) {
-  return useFeatureQuery(
-    contracts.getUnitContract,
-    request,
-    organizationService.getUnit,
-    organizationKeys.getUnit,
-    options,
-  );
+export function useGetUnitQuery(unitId: string, options: QueryOptions = {}) {
+  const { session } = useSession();
+  const result = useQuery({
+    queryKey: organizationKeys.getUnit(session?.user.id ?? "anonymous", unitId),
+    queryFn: ({ signal }) => organizationService.getUnit(unitId, { signal }),
+    enabled:
+      options.enabled !== false &&
+      Boolean(session) &&
+      idSchema.safeParse(unitId).success,
+    staleTime: 10000,
+  });
+  return useQueryAccess(result, "organization");
 }
 export function useListTeamsQuery(
-  request: ContractRequest<typeof contracts.listTeamsContract>,
-  options: FeatureQueryOptions = {},
+  query: TeamQuery = {},
+  options: QueryOptions = {},
 ) {
-  return useFeatureQuery(
-    contracts.listTeamsContract,
-    request,
-    organizationService.listTeams,
-    organizationKeys.listTeams,
-    options,
-  );
+  const { session } = useSession();
+  const parsed = teamQuerySchema.safeParse(query);
+  const filters = parsed.success ? parsed.data : query;
+  const result = useQuery({
+    queryKey: parsed.success
+      ? organizationKeys.listTeams(session?.user.id ?? "anonymous", filters)
+      : [
+          "organization",
+          session?.user.id ?? "anonymous",
+          "listTeams",
+          "invalid-query",
+        ],
+    queryFn: ({ signal }) => organizationService.listTeams(filters, { signal }),
+    enabled: options.enabled !== false && Boolean(session) && parsed.success,
+    staleTime: 30000,
+  });
+  return useQueryAccess(result, "organization");
 }
-export function useGetTeamQuery(
-  request: ContractRequest<typeof contracts.getTeamContract>,
-  options: FeatureQueryOptions = {},
-) {
-  return useFeatureQuery(
-    contracts.getTeamContract,
-    request,
-    organizationService.getTeam,
-    organizationKeys.getTeam,
-    options,
-  );
+export function useGetTeamQuery(teamId: string, options: QueryOptions = {}) {
+  const { session } = useSession();
+  const result = useQuery({
+    queryKey: organizationKeys.getTeam(session?.user.id ?? "anonymous", teamId),
+    queryFn: ({ signal }) => organizationService.getTeam(teamId, { signal }),
+    enabled:
+      options.enabled !== false &&
+      Boolean(session) &&
+      idSchema.safeParse(teamId).success,
+    staleTime: 10000,
+  });
+  return useQueryAccess(result, "organization");
 }

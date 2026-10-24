@@ -1,15 +1,7 @@
+import { ApiError } from "@/types/api/error";
 import { HttpResponse } from "msw";
 import { z } from "zod";
-import { ApiError } from "@/types/api/error";
 import { now } from "../db/database";
-
-export class MockReply {
-  constructor(
-    public data: unknown,
-    public status = 200,
-    public headers?: HeadersInit,
-  ) {}
-}
 export const meta = () => ({
   requestId: crypto.randomUUID(),
   serverTime: now(),

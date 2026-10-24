@@ -1,19 +1,17 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
-import { normalizeQuery } from "@/lib/query/normalize-query";
-import * as contracts from "./project-members.contract";
+import { type ProjectMemberQuery } from "@/features/project-members/types/project-members.types";
 export const projectMembersKeys = {
   all: ["project-members"] as const,
   viewer: (viewerId: string) => ["project-members", viewerId] as const,
   listProjectMembers: (
     viewerId: string,
-    params: Record<string, string> = {},
-    query: Record<string, unknown> = {},
+    projectId: string,
+    query: ProjectMemberQuery,
   ) =>
     [
       "project-members",
       viewerId,
       "listProjectMembers",
-      params,
-      normalizeQuery(contracts.listProjectMembersContract.query.parse(query)),
+      projectId,
+      query,
     ] as const,
 };

@@ -6,6 +6,7 @@ export default defineConfig([
   ...ts,
   {
     rules: {
+      "@typescript-eslint/consistent-type-imports": "error",
       "react-hooks/set-state-in-effect": "off",
       "react-hooks/refs": "off",
     },

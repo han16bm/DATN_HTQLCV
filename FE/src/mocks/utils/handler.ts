@@ -1,59 +1,48 @@
-import { http, HttpResponse, delay } from "msw";
-import { z } from "zod";
-import type { ContractRequest, Endpoint } from "@/services/api-contract";
+import { fingerprint } from "@/lib/crypto/fingerprint";
+import type { User } from "@/mocks/db/database";
 import { ApiError } from "@/types/api/error";
-import { db, restoreDatabase, type User } from "../db/database";
-import { MockReply, meta, toMockErrorResponse } from "./http-response";
-
-const receipts = new Map<
-  string,
-  { fingerprint: string; data: unknown; status: number; headers?: HeadersInit }
->();
+import { delay, HttpResponse, type HttpResponseResolver } from "msw";
+import type { z } from "zod";
+import { authorizeReplay } from "../db/access.db";
+import { sessionUser } from "../db/auth.db";
+import { withMockTransaction } from "../db/transaction";
+import { meta, toMockErrorResponse } from "./http-response";
+type Receipt = {
+  fingerprint: string;
+  data: unknown;
+  status: number;
+  headers: Headers;
+};
+const receipts = new Map<string, Receipt>();
+const responseData = new WeakMap<Response, unknown>();
 export function resetReceipts() {
   receipts.clear();
 }
-export function authenticatedUser(request: Request): User {
-  const value = request.headers.get("Authorization")?.replace(/^Bearer /, "");
-  const user = db.users.find((u) => value === `mock-${u.id}`);
-  if (!user || db.revoked.has(value ?? ""))
-    throw new ApiError(401, "UNAUTHORIZED", "Phiên đăng nhập đã hết hạn.");
-  if (user.status === "LOCKED")
-    throw new ApiError(403, "ACCOUNT_LOCKED", "Tài khoản đang bị khóa.");
-  return user;
+export function authenticatedUser(request: Request) {
+  return sessionUser(
+    request.headers.get("Authorization")?.replace(/^Bearer /, ""),
+  );
 }
-export function requireVersion(request: Request, entity: { version: number }) {
-  const header = request.headers.get("If-Match");
-  if (!header)
-    throw new ApiError(428, "VERSION_REQUIRED", "Thiếu phiên bản dữ liệu.");
-  if (header !== `"${entity.version}"`)
-    throw new ApiError(
-      412,
-      "VERSION_CONFLICT",
-      "Dữ liệu đã được thay đổi. Giữ bản đang nhập và tải bản mới để đối chiếu.",
-    );
+export function parseQuery<S extends z.ZodType>(
+  request: Request,
+  schema: S,
+): z.output<S> {
+  const query: Record<string, unknown> = Object.fromEntries(
+    new URL(request.url).searchParams,
+  );
+  for (const name of ["page", "pageSize"])
+    if (typeof query[name] === "string" && /^\d+$/.test(query[name]))
+      query[name] = Number(query[name]);
+  if (query.overdue === "true") query.overdue = true;
+  else if (query.overdue === "false") query.overdue = false;
+  return schema.parse(query);
 }
-type HandlerInput<C extends Endpoint> = {
-  params: z.output<C["params"]>;
-  query: z.output<C["query"]>;
-  body: z.output<C["body"]>;
-  request: Request;
-  cookies: Record<string, string>;
-};
-export function createHandler<C extends Endpoint>(
-  contract: C,
-  resolve: (input: HandlerInput<C>) => unknown | Promise<unknown>,
-) {
-  const method = {
-    GET: http.get,
-    POST: http.post,
-    PATCH: http.patch,
-    PUT: http.put,
-  }[contract.method];
-  if (!method) throw new Error(`Unsupported HTTP method ${contract.method}`);
-  return method(`*${contract.path}`, async ({ request, params, cookies }) => {
-    let backup: typeof db | undefined;
+export function mockHandler(
+  resolve: HttpResponseResolver,
+): HttpResponseResolver {
+  return async (context) => {
     try {
-      const scenario = request.headers.get("X-Mock-Scenario");
+      const scenario = context.request.headers.get("X-Mock-Scenario");
       if (scenario === "slow") await delay(1500);
       if (scenario === "server-error")
         throw new ApiError(
@@ -67,113 +56,105 @@ export function createHandler<C extends Endpoint>(
           "RATE_LIMITED",
           "Vui lòng chờ trước khi thử lại.",
         );
-      // MSW exposes the leading origin wildcard as params['0']; it is not a Gateway path field.
-      const pathParams = Object.fromEntries(
-        [...contract.path.matchAll(/:([A-Za-z]\w*)/g)].map((match) => [
-          match[1],
-          params[match[1]],
-        ]),
-      );
-      const parsedParams = contract.params.parse(pathParams);
-      const rawQuery: Record<string, unknown> = Object.fromEntries(
-        new URL(request.url).searchParams,
-      );
-      for (const key of ["page", "pageSize"])
-        if (typeof rawQuery[key] === "string" && /^\d+$/.test(rawQuery[key]))
-          rawQuery[key] = Number(rawQuery[key]);
-      if (rawQuery.overdue === "true") rawQuery.overdue = true;
-      else if (rawQuery.overdue === "false") rawQuery.overdue = false;
-      const parsedQuery = contract.query.parse(rawQuery);
-      let rawBody: unknown = {};
-      if (contract.method !== "GET") {
-        if (contract.name === "uploadAttachment") {
-          const form = await request.formData();
-          rawBody = { taskId: form.get("taskId"), file: form.get("file") };
-        } else rawBody = await request.json().catch(() => ({}));
-      }
-      const parsedBody = contract.body.parse(rawBody);
-      const key = request.headers.get("Idempotency-Key");
-      let receiptKey: string | undefined;
-      const fingerprint = JSON.stringify([
-        parsedParams,
-        parsedQuery,
-        parsedBody,
-      ]);
-      if (contract.idempotency) {
-        if (!key)
-          throw new ApiError(
-            422,
-            "IDEMPOTENCY_REQUIRED",
-            "Thiếu Idempotency-Key.",
-          );
-        const user = authenticatedUser(request);
-        receiptKey = `${user.id}|${contract.name}|${key}`;
-        const previous = receipts.get(receiptKey);
-        if (previous) {
-          if (previous.fingerprint !== fingerprint)
-            throw new ApiError(
-              409,
-              "IDEMPOTENCY_CONFLICT",
-              "Khóa gửi lặp đã dùng cho nội dung khác.",
-            );
-          return HttpResponse.json(
-            { data: previous.data, meta: meta() },
-            { status: previous.status, headers: previous.headers },
-          );
-        }
-      }
-      if (contract.method !== "GET") backup = structuredClone(db);
-      const result = await resolve({
-        params: parsedParams,
-        query: parsedQuery,
-        body: parsedBody,
-        request,
-        cookies,
-      } as HandlerInput<C>);
-      const reply =
-        result instanceof MockReply
-          ? result
-          : new MockReply(
-              result,
-              contract.name.startsWith("create") ||
-                contract.name === "addProjectMember" ||
-                contract.name === "uploadAttachment"
-                ? 201
-                : 200,
-            );
-      const parsed = contract.response.safeParse(reply.data);
-      if (!parsed.success)
-        throw new Error(
-          `Mock response contract ${contract.name}: ${parsed.error.message}`,
-        );
-      if (receiptKey)
-        receipts.set(receiptKey, {
-          fingerprint,
-          data: parsed.data,
-          status: reply.status,
-          headers: reply.headers,
-        });
-      if (scenario === "invalid-response")
-        return HttpResponse.json({ data: { invalid: true }, meta: meta() });
-      const data =
-        scenario === "empty" &&
-        typeof parsed.data === "object" &&
-        parsed.data !== null &&
-        "pagination" in parsed.data
-          ? {
-              ...parsed.data,
-              items: [],
-              pagination: { page: 1, pageSize: 20, total: 0 },
-            }
-          : parsed.data;
-      return HttpResponse.json(
-        { data, meta: meta() },
-        { status: reply.status, headers: reply.headers },
-      );
+      return await resolve(context);
     } catch (error) {
-      if (backup) restoreDatabase(backup);
       return toMockErrorResponse(error);
     }
-  });
+  };
 }
-export type MockRequest<C extends Endpoint> = ContractRequest<C>;
+export function mockJson<S extends z.ZodType>(
+  request: Request,
+  data: unknown,
+  schema: S,
+  status = 200,
+  headers?: HeadersInit,
+) {
+  const parsed = schema.safeParse(data);
+  if (!parsed.success)
+    throw new Error(`Invalid mock response: ${parsed.error.message}`);
+  let result: unknown = parsed.data;
+  const scenario = request.headers.get("X-Mock-Scenario");
+  if (scenario === "invalid-response") result = { invalid: true };
+  else if (
+    scenario === "empty" &&
+    typeof result === "object" &&
+    result !== null &&
+    "pagination" in result
+  )
+    result = {
+      ...result,
+      items: [],
+      pagination: { page: 1, pageSize: 20, total: 0 },
+    };
+  const response = HttpResponse.json(
+    { data: result, meta: meta() },
+    { status, headers },
+  );
+  responseData.set(response, parsed.data);
+  return response;
+}
+type MockCommand = {
+  operation: string;
+  feature: string;
+  viewer: User;
+  permission: string | null;
+  params: Record<string, string>;
+  payload: Record<string, unknown>;
+};
+export async function mockCommand(
+  request: Request,
+  command: MockCommand,
+  execute: () => Response | Promise<Response>,
+) {
+  return withMockTransaction(
+    async (commit) => {
+      const key = request.headers.get("Idempotency-Key");
+      if (!key)
+        throw new ApiError(
+          422,
+          "IDEMPOTENCY_REQUIRED",
+          "Thiếu Idempotency-Key.",
+        );
+      const signature = await fingerprint([
+        command.operation,
+        command.params,
+        command.payload,
+      ]);
+      const receiptKey = `${command.viewer.id}|${command.operation}|${key}`;
+      const previous = receipts.get(receiptKey);
+      if (previous) {
+        authorizeReplay(
+          command.operation,
+          command.permission,
+          command.viewer,
+          command.params,
+          command.payload,
+        );
+        if (previous.fingerprint !== signature)
+          throw new ApiError(
+            409,
+            "IDEMPOTENCY_CONFLICT",
+            "Khóa gửi lặp đã dùng cho nội dung khác.",
+          );
+        return HttpResponse.json(
+          { data: previous.data, meta: meta() },
+          { status: previous.status, headers: previous.headers },
+        );
+      }
+      const response = await execute();
+      const data = responseData.get(response);
+      receipts.set(receiptKey, {
+        fingerprint: signature,
+        data: JSON.parse(JSON.stringify(data)),
+        status: response.status,
+        headers: new Headers(response.headers),
+      });
+      commit();
+      return response;
+    },
+    {
+      feature: command.feature,
+      scenario: request.headers.get("X-Mock-Scenario"),
+    },
+  );
+}

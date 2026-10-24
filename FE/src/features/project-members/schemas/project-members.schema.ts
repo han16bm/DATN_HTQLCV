@@ -1,8 +1,7 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
-import { z } from "zod";
+import { personRefSchema } from "@/lib/validation/common.schema";
 import { checkProjection } from "@/lib/validation/contract-refinements";
-import { SharedPersonRefSchema } from "@/types/common";
-export const MembersMemberCreateSchema = z
+import { z } from "zod";
+export const addMemberSchema = z
   .object({
     userId: z
       .string()
@@ -25,9 +24,7 @@ export const MembersMemberCreateSchema = z
     ),
   })
   .strict();
-export type MembersMemberCreateDTO = z.output<typeof MembersMemberCreateSchema>;
-
-export const MembersMemberPermissionsSchema = z
+export const memberPermissionsSchema = z
   .object({
     projectRole: z.enum(["MANAGER", "MEMBER"]),
     permissions: z.array(
@@ -50,11 +47,7 @@ export const MembersMemberPermissionsSchema = z
       .max(2000),
   })
   .strict();
-export type MembersMemberPermissionsDTO = z.output<
-  typeof MembersMemberPermissionsSchema
->;
-
-export const MembersMembershipSchema = z
+export const membershipSchema = z
   .object({
     id: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
     version: z.number().int().safe().positive(),
@@ -78,7 +71,13 @@ export const MembersMembershipSchema = z
     ),
     joinedAt: z.iso.datetime(),
     endedAt: z.iso.datetime().nullable(),
-    user: SharedPersonRefSchema,
+    user: personRefSchema,
   })
   .superRefine(checkProjection);
-export type MembersMembershipDTO = z.output<typeof MembersMembershipSchema>;
+export const projectMemberQuerySchema = z
+  .object({
+    page: z.number().int().safe().min(1).optional().default(1),
+    pageSize: z.number().int().safe().min(1).max(100).optional().default(20),
+    q: z.string().trim().max(255).optional(),
+  })
+  .strict();

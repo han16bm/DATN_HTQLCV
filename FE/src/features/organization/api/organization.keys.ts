@@ -1,55 +1,16 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
-import { normalizeQuery } from "@/lib/query/normalize-query";
-import * as contracts from "./organization.contract";
+import {
+  type TeamQuery,
+  type UnitQuery,
+} from "@/features/organization/types/organization.types";
 export const organizationKeys = {
   all: ["organization"] as const,
   viewer: (viewerId: string) => ["organization", viewerId] as const,
-  listUnits: (
-    viewerId: string,
-    params: Record<string, string> = {},
-    query: Record<string, unknown> = {},
-  ) =>
-    [
-      "organization",
-      viewerId,
-      "listUnits",
-      params,
-      normalizeQuery(contracts.listUnitsContract.query.parse(query)),
-    ] as const,
-  getUnit: (
-    viewerId: string,
-    params: Record<string, string> = {},
-    query: Record<string, unknown> = {},
-  ) =>
-    [
-      "organization",
-      viewerId,
-      "getUnit",
-      params,
-      normalizeQuery(contracts.getUnitContract.query.parse(query)),
-    ] as const,
-  listTeams: (
-    viewerId: string,
-    params: Record<string, string> = {},
-    query: Record<string, unknown> = {},
-  ) =>
-    [
-      "organization",
-      viewerId,
-      "listTeams",
-      params,
-      normalizeQuery(contracts.listTeamsContract.query.parse(query)),
-    ] as const,
-  getTeam: (
-    viewerId: string,
-    params: Record<string, string> = {},
-    query: Record<string, unknown> = {},
-  ) =>
-    [
-      "organization",
-      viewerId,
-      "getTeam",
-      params,
-      normalizeQuery(contracts.getTeamContract.query.parse(query)),
-    ] as const,
+  listUnits: (viewerId: string, query: UnitQuery) =>
+    ["organization", viewerId, "listUnits", query] as const,
+  getUnit: (viewerId: string, unitId: string) =>
+    ["organization", viewerId, "getUnit", unitId] as const,
+  listTeams: (viewerId: string, query: TeamQuery) =>
+    ["organization", viewerId, "listTeams", query] as const,
+  getTeam: (viewerId: string, teamId: string) =>
+    ["organization", viewerId, "getTeam", teamId] as const,
 };

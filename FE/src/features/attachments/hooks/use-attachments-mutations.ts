@@ -1,17 +1,45 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
 "use client";
-import { useFeatureMutation } from "@/lib/query/use-feature-mutation";
-import * as contracts from "../api/attachments.contract";
+import { attachmentsKeys } from "@/features/attachments/api/attachments.keys";
+import { type UploadAttachmentInput } from "@/features/attachments/types/attachments.types";
+import { useSession } from "@/lib/auth/session-context";
+import { createRequestTickets } from "@/lib/query/mutation-requests";
+import { useMutationAttempt } from "@/lib/query/use-mutation-attempt";
+import { useAccessErrorHandler } from "@/lib/query/use-query-access";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
 import { attachmentsService } from "../api/attachments.service";
+
 export function useUploadAttachmentMutation() {
-  return useFeatureMutation(
-    contracts.uploadAttachmentContract,
-    attachmentsService.uploadAttachment,
+  const client = useQueryClient();
+  const { session } = useSession();
+  const viewerId = session?.user.id ?? "anonymous";
+  const handleError = useAccessErrorHandler();
+  const attempt = useMutationAttempt();
+  const requests = useRef(
+    createRequestTickets(async (input: UploadAttachmentInput) =>
+      attachmentsService.uploadAttachment(input, {
+        key: await attempt.keyFor(input),
+      }),
+    ),
   );
-}
-export function useDownloadAttachmentMutation() {
-  return useFeatureMutation(
-    contracts.downloadAttachmentContract,
-    attachmentsService.downloadAttachment,
-  );
+  const mutation = useMutation({
+    mutationKey: ["attachments", viewerId, "uploadAttachment"],
+    mutationFn: requests.current.execute,
+    retry: false,
+    onError: handleError,
+    onSuccess: async () => {
+      attempt.reset();
+      await client.invalidateQueries({
+        queryKey: attachmentsKeys.viewer(viewerId),
+      });
+    },
+  });
+  return {
+    ...mutation,
+    mutateAsync: (payload: UploadAttachmentInput) =>
+      mutation.mutateAsync(requests.current.put(payload)),
+    mutate: (payload: UploadAttachmentInput) => {
+      void mutation.mutateAsync(requests.current.put(payload)).catch(() => {});
+    },
+  };
 }

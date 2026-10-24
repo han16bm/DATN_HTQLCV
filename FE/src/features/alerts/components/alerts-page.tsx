@@ -1,0 +1,122 @@
+"use client";
+import {
+  Badge,
+  DataTable,
+  Loading,
+  PageHeader,
+  Pagination,
+  Panel,
+  PermissionGate,
+} from "@/components/ui/page";
+import { QueryErrorState } from "@/components/ui/query-error-state";
+import { alertStatusSchema } from "@/features/alerts/schemas/alerts.schema";
+import { useListAnalyticsFilterOptionsQuery } from "@/features/analytics/hooks/use-analytics-queries";
+import { label, options } from "@/lib/format";
+import { useUrlFilters } from "@/lib/query/use-url-filters";
+import Link from "next/link";
+import { z } from "zod";
+import { useListAlertsQuery } from "../hooks/use-alerts-queries";
+export const severity = z.enum(["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"]);
+
+export function AlertsPage() {
+  return (
+    <PermissionGate permission="ANALYTICS_VIEW">
+      <AlertsList />
+    </PermissionGate>
+  );
+}
+
+function AlertsList() {
+  const f = useUrlFilters();
+  const status = alertStatusSchema.safeParse(f.get("status"));
+  const level = severity.safeParse(f.get("severity"));
+  const projects = useListAnalyticsFilterOptionsQuery({
+    kind: "PROJECT",
+    pageSize: 100,
+  });
+  const q = useListAlertsQuery({
+    projectId: f.get("projectId") || undefined,
+    status: status.success ? status.data : undefined,
+    severity: level.success ? level.data : undefined,
+    page: f.page,
+  });
+  return (
+    <>
+      <PageHeader
+        title="Cảnh báo"
+        description="Theo dõi điều kiện phát sinh và tình trạng xử lý riêng biệt."
+      />
+      <section className="panel filters">
+        <label>
+          Dự án
+          <select
+            value={f.get("projectId")}
+            onChange={(e) => f.set("projectId", e.target.value)}
+          >
+            <option value="">Tất cả trong quyền</option>
+            {projects.data?.items.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        {[
+          {
+            name: "status",
+            title: "Trạng thái xử lý",
+            values: alertStatusSchema.options,
+          },
+          { name: "severity", title: "Mức độ", values: severity.options },
+        ].map((config) => (
+          <label key={config.name}>
+            {config.title}
+            <select
+              value={f.get(config.name)}
+              onChange={(e) => f.set(config.name, e.target.value)}
+            >
+              <option value="">Tất cả</option>
+              {options(config.values).map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))}
+      </section>
+      {q.isError ? (
+        <QueryErrorState error={q.error} retry={() => void q.refetch()} />
+      ) : !q.data ? (
+        <Loading />
+      ) : (
+        <Panel>
+          <DataTable
+            headers={[
+              "Vấn đề",
+              "Đối tượng",
+              "Mức độ",
+              "Tình trạng xử lý",
+              "Điều kiện nguồn",
+            ]}
+            rows={q.data.items.map((a) => [
+              <Link className="text-link" key={a.id} href={`/alerts/${a.id}`}>
+                {label(a.type)}
+              </Link>,
+              a.taskTitle ?? "Dự án",
+              <Badge key="severity" value={a.severity} />,
+              <Badge key="status" value={a.status} />,
+              a.conditionActive
+                ? "Còn điều kiện phát sinh"
+                : "Điều kiện đã hết",
+            ])}
+          />
+          <Pagination
+            {...q.data.pagination}
+            onPage={(p) => f.set("page", String(p))}
+          />
+        </Panel>
+      )}
+    </>
+  );
+}

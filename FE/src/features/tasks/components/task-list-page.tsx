@@ -1,91 +1,165 @@
 "use client";
-
-import { useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "@/lib/auth/session-context";
-import { QueryErrorState } from "@/components/ui/query-error-state";
-import { useListTasksQuery } from "../hooks/use-tasks-queries";
+import { SchemaForm } from "@/components/forms/schema-form";
+import { HashDialog } from "@/components/ui/dialog";
 import {
-  TasksTaskStatusSchema,
-  type TasksTaskDTO,
-} from "../schemas/tasks.schema";
-
-const labels: Record<TasksTaskDTO["status"], string> = {
-  NEW: "Mới tạo",
-  TODO: "Chờ thực hiện",
-  IN_PROGRESS: "Đang thực hiện",
-  PENDING_REVIEW: "Chờ nghiệm thu",
-  COMPLETED: "Hoàn thành",
-  CANCELLED: "Đã hủy",
-};
-const dateFormat = new Intl.DateTimeFormat("vi-VN", {
-  dateStyle: "short",
-  timeStyle: "short",
-  timeZone: "Asia/Ho_Chi_Minh",
-});
+  Badge,
+  DataTable,
+  Empty,
+  Loading,
+  PageHeader,
+  Pagination,
+} from "@/components/ui/page";
+import { QueryErrorState } from "@/components/ui/query-error-state";
+import { useListProjectMembersQuery } from "@/features/project-members/hooks/use-project-members-queries";
+import { useListProjectsQuery } from "@/features/projects/hooks/use-projects-queries";
+import {
+  prioritySchema,
+  taskStatusSchema,
+} from "@/features/tasks/schemas/task.schema";
+import { hasPermission, useSession } from "@/lib/auth/session-context";
+import { dateTime, label } from "@/lib/format";
+import { useHashDialog } from "@/lib/forms/use-hash-dialog";
+import { useUrlFilters } from "@/lib/query/use-url-filters";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { z } from "zod";
+import { useListTasksQuery } from "../hooks/use-tasks-queries";
 
 export function TaskListPage({ personal = false }: { personal?: boolean }) {
   const { session } = useSession();
+  const filters = useUrlFilters();
   const search = useSearchParams();
   const router = useRouter();
-  const status = TasksTaskStatusSchema.safeParse(search.get("status"));
-  const page = Number(search.get("page") || 1);
+  const dialog = useHashDialog();
+  const status = taskStatusSchema.safeParse(filters.get("status"));
+  const priority = prioritySchema.safeParse(filters.get("priority"));
+  const projectId = filters.get("projectId");
+  const projects = useListProjectsQuery({ pageSize: 100 });
+  const members = useListProjectMembersQuery(
+    projectId,
+    { pageSize: 100 },
+    { enabled: Boolean(projectId) },
+  );
   const query = useListTasksQuery({
-    query: {
-      q: search.get("q") || undefined,
-      status: status.success ? status.data : undefined,
-      overdue: search.get("overdue") === "true" ? true : undefined,
-      ...(personal ? { assigneeId: session?.user.id } : {}),
-      page: Number.isSafeInteger(page) && page > 0 ? page : 1,
-      pageSize: 20,
-    },
+    q: filters.get("q") || undefined,
+    projectId: projectId || undefined,
+    status: status.success ? status.data : undefined,
+    priority: priority.success ? priority.data : undefined,
+    assigneeId: personal
+      ? session?.user.id
+      : filters.get("assigneeId") || undefined,
+    overdue: filters.get("overdue") === "true" ? true : undefined,
+    page: filters.page,
+    pageSize: 20,
   });
+  const board = filters.get("view") === "board";
+  const manageable =
+    projects.data?.items.filter(
+      (p) =>
+        p.status === "ACTIVE" && hasPermission(session, "TASKS_MANAGE", p.id),
+    ) ?? [];
   const data = query.data;
-
-  function update(key: string, value: string) {
+  const setView = (view: string) => {
     const next = new URLSearchParams(search);
-    if (value) next.set(key, value);
-    else next.delete(key);
-    if (key !== "page") next.delete("page");
+    if (view) next.set("view", view);
+    else next.delete("view");
     router.replace(`?${next}`, { scroll: false });
-  }
-
+  };
   return (
     <>
-      <div className="page-heading">
-        <div>
-          <span className="eyebrow">KHÔNG GIAN LÀM VIỆC</span>
-          <h1>
-            {personal
-              ? `Chào ${session?.user.displayName.split(" ").at(-1) ?? "bạn"},`
-              : "Công việc"}
-          </h1>
-          <p className="muted">
-            {personal
-              ? "Các công việc đang được giao cho bạn."
-              : "Theo dõi công việc trong phạm vi dự án được cấp quyền."}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={personal ? "Công việc của tôi" : "Công việc"}
+        description={
+          personal
+            ? "Các công việc được giao và những việc cần thực hiện."
+            : "Theo dõi công việc trong phạm vi dự án được cấp quyền."
+        }
+        actions={
+          <>
+            <button onClick={() => setView(board ? "" : "board")}>
+              {board ? "Dạng danh sách" : "Bảng trạng thái"}
+            </button>
+            {manageable.length > 0 && (
+              <button
+                className="primary"
+                onClick={() =>
+                  projectId && manageable.some((p) => p.id === projectId)
+                    ? router.push(`/projects/${projectId}/tasks/new`)
+                    : dialog.open("choose-task-project")
+                }
+              >
+                Tạo công việc
+              </button>
+            )}
+          </>
+        }
+      />
       <section className="panel filters">
         <label>
           Tìm công việc
           <input
             type="search"
-            defaultValue={search.get("q") ?? ""}
             placeholder="Nhập tên công việc…"
-            onChange={(e) => update("q", e.target.value)}
+            value={filters.get("q")}
+            onChange={(e) => filters.set("q", e.target.value)}
           />
+        </label>
+        <label>
+          Dự án
+          <select
+            value={projectId}
+            onChange={(e) => {
+              filters.setMany({ projectId: e.target.value, assigneeId: "" });
+            }}
+          >
+            <option value="">Tất cả dự án</option>
+            {projects.data?.items.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
         </label>
         <label>
           Trạng thái
           <select
-            value={search.get("status") ?? ""}
-            onChange={(e) => update("status", e.target.value)}
+            value={filters.get("status")}
+            onChange={(e) => filters.set("status", e.target.value)}
           >
-            <option value="">Tất cả trạng thái</option>
-            {TasksTaskStatusSchema.options.map((v) => (
+            <option value="">Tất cả</option>
+            {taskStatusSchema.options.map((v) => (
               <option key={v} value={v}>
-                {labels[v]}
+                {label(v)}
+              </option>
+            ))}
+          </select>
+        </label>
+        {!personal && projectId && (
+          <label>
+            Người thực hiện
+            <select
+              value={filters.get("assigneeId")}
+              onChange={(e) => filters.set("assigneeId", e.target.value)}
+            >
+              <option value="">Tất cả</option>
+              {members.data?.items.map((m) => (
+                <option key={m.id} value={m.userId}>
+                  {m.user.displayName}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <label>
+          Ưu tiên
+          <select
+            value={filters.get("priority")}
+            onChange={(e) => filters.set("priority", e.target.value)}
+          >
+            <option value="">Tất cả</option>
+            {prioritySchema.options.map((v) => (
+              <option key={v} value={v}>
+                {label(v)}
               </option>
             ))}
           </select>
@@ -93,8 +167,10 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
         <label className="checkbox-label">
           <input
             type="checkbox"
-            checked={search.get("overdue") === "true"}
-            onChange={(e) => update("overdue", e.target.checked ? "true" : "")}
+            checked={filters.get("overdue") === "true"}
+            onChange={(e) =>
+              filters.set("overdue", e.target.checked ? "true" : "")
+            }
           />
           Chỉ việc quá hạn
         </label>
@@ -104,90 +180,97 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
           error={query.error}
           retry={() => void query.refetch()}
         />
-      )}
-      {!data && query.isPending && (
-        <div className="panel skeleton" role="status">
-          Đang tải công việc…
-        </div>
-      )}
-      {data && (
-        <section className="panel table-panel">
-          <div className="table-heading">
-            <h2>{personal ? "Công việc của tôi" : "Danh sách công việc"}</h2>
-            <span className="muted small">
-              {query.isFetching
-                ? "Đang làm mới…"
-                : `${data.pagination.total} công việc`}
-            </span>
-          </div>
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Công việc</th>
-                  <th>Người thực hiện</th>
-                  <th>Trạng thái</th>
-                  <th>Hạn hoàn thành</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((t) => (
-                  <tr key={t.id}>
-                    <td>
-                      <span className="task-title">{t.title}</span>
-                      <div className="muted small">{t.project.name}</div>
-                    </td>
-                    <td>{t.assignee?.displayName ?? "Chưa phân công"}</td>
-                    <td>
-                      <span className={`badge ${t.status.toLowerCase()}`}>
-                        {labels[t.status]}
-                      </span>
-                      {t.isOverdue && (
-                        <span className="badge overdue">Quá hạn</span>
-                      )}
-                    </td>
-                    <td>{dateFormat.format(new Date(t.dueAt))}</td>
-                  </tr>
+      )}{" "}
+      {query.isPending && <Loading />}
+      {data && !query.isError && (
+        <>
+          {board ? (
+            <>
+              <p className="small muted metadata">
+                Phân bố công việc trên trang hiện tại. Mở công việc để thực hiện
+                chuyển trạng thái có kiểm tra điều kiện.
+              </p>
+              <div className="board">
+                {taskStatusSchema.options.map((status) => (
+                  <section key={status} className="board-column">
+                    <h2>
+                      {label(status)} ·{" "}
+                      {data.items.filter((t) => t.status === status).length}
+                    </h2>
+                    {data.items
+                      .filter((t) => t.status === status)
+                      .map((t) => (
+                        <Link
+                          key={t.id}
+                          className="board-card"
+                          href={`/tasks/${t.id}`}
+                        >
+                          <span>{t.title}</span>
+                          <p className="muted">{t.project.name}</p>
+                          <p>{t.assignee?.displayName ?? "Chưa phân công"}</p>
+                          <p className="small">{dateTime(t.dueAt)}</p>
+                          {t.isOverdue && <Badge value="OVERDUE" />}
+                        </Link>
+                      ))}
+                  </section>
                 ))}
-              </tbody>
-            </table>
-            {data.items.length === 0 && (
-              <div className="empty-state">
-                <h2>Chưa có công việc phù hợp</h2>
-                <p className="muted">
-                  Thử thay đổi từ khóa hoặc bộ lọc trong phạm vi được xem.
-                </p>
               </div>
-            )}
-          </div>
-          <footer className="table-footer">
-            <span className="small muted">
-              Quá hạn được hiển thị riêng với trạng thái thực hiện.
-            </span>
-            <div>
-              <button
-                disabled={data.pagination.page <= 1}
-                onClick={() => update("page", String(data.pagination.page - 1))}
-              >
-                Trước
-              </button>
-              <span className="page-number">{data.pagination.page}</span>
-              <button
-                disabled={
-                  data.pagination.page * data.pagination.pageSize >=
-                  data.pagination.total
-                }
-                onClick={() => update("page", String(data.pagination.page + 1))}
-              >
-                Sau
-              </button>
-            </div>
-          </footer>
-        </section>
+              {!data.items.length && <Empty />}
+            </>
+          ) : (
+            <section className="panel">
+              <DataTable
+                headers={[
+                  "Công việc",
+                  "Người thực hiện",
+                  "Trạng thái",
+                  "Hạn hoàn thành",
+                ]}
+                rows={data.items.map((t) => [
+                  <div key="title">
+                    <Link className="text-link" href={`/tasks/${t.id}`}>
+                      {t.title}
+                    </Link>
+                    <div className="small muted">
+                      {t.project.name} · {label(t.priority)}
+                    </div>
+                  </div>,
+                  t.assignee?.displayName ?? "Chưa phân công",
+                  <span key="state">
+                    <Badge value={t.status} />
+                    {t.isOverdue && <Badge value="OVERDUE" />}
+                  </span>,
+                  dateTime(t.dueAt),
+                ])}
+              />
+            </section>
+          )}
+          <Pagination
+            {...data.pagination}
+            onPage={(p) => filters.set("page", String(p))}
+          />
+        </>
       )}
-      <p className="muted small data-note">
-        Ngày làm việc theo giờ Việt Nam · Quyền và dữ liệu được kiểm tra tại API
-      </p>
+      <HashDialog name="choose-task-project" title="Chọn dự án tạo công việc">
+        <SchemaForm
+          schema={z.object({ projectId: z.string().min(1) }).strict()}
+          fields={[
+            {
+              name: "projectId",
+              label: "Dự án đang triển khai",
+              type: "select",
+              options: manageable.map((p) => ({ value: p.id, label: p.name })),
+              required: true,
+            },
+          ]}
+          onSubmit={async (values) => {
+            const selected = z.string().parse(values.projectId);
+            dialog.close();
+            router.push(`/projects/${selected}/tasks/new`);
+          }}
+          submitLabel="Mở biểu mẫu"
+        />
+      </HashDialog>
     </>
   );
 }

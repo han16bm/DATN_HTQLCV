@@ -1,19 +1,16 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
-import { z } from "zod";
+import { taskStatusSchema } from "@/features/tasks/schemas/task.schema";
+import { personRefSchema } from "@/lib/validation/common.schema";
 import { checkProjection } from "@/lib/validation/contract-refinements";
-import { TasksTaskStatusSchema } from "@/features/tasks";
-import { SharedPersonRefSchema } from "@/types/common";
-export const ReportsPeriodTypeSchema = z.enum(["DAILY", "WEEKLY"]);
-export type ReportsPeriodTypeDTO = z.output<typeof ReportsPeriodTypeSchema>;
-
-export const ReportsReportCreateSchema = z
+import { z } from "zod";
+export const periodTypeSchema = z.enum(["DAILY", "WEEKLY"]);
+export const createReportSchema = z
   .object({
     projectId: z
       .string()
       .trim()
       .min(1, "Vui lòng nhập thông tin bắt buộc")
       .max(100),
-    periodType: ReportsPeriodTypeSchema,
+    periodType: periodTypeSchema,
     periodStart: z.iso.date(),
     achievements: z.string().trim().max(10000).optional(),
     blockers: z.string().trim().max(10000).optional(),
@@ -21,17 +18,13 @@ export const ReportsReportCreateSchema = z
     selectedTaskIds: z.array(z.string().trim()).optional(),
   })
   .strict();
-export type ReportsReportCreateDTO = z.output<typeof ReportsReportCreateSchema>;
-
-export const ReportsReportItemSchema = z.object({
+export const reportItemSchema = z.object({
   taskId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
   title: z.string(),
-  status: TasksTaskStatusSchema,
-  minutes: z.number().int().safe().min(0).max(1440),
+  status: taskStatusSchema,
+  minutes: z.number().int().safe().min(0),
 });
-export type ReportsReportItemDTO = z.output<typeof ReportsReportItemSchema>;
-
-export const ReportsReportListQuerySchema = z
+export const reportQuerySchema = z
   .object({
     page: z.number().int().safe().min(1).optional().default(1),
     pageSize: z.number().int().safe().min(1).max(100).optional().default(20),
@@ -48,17 +41,13 @@ export const ReportsReportListQuerySchema = z
       .min(1, "Vui lòng nhập thông tin bắt buộc")
       .max(100)
       .optional(),
-    periodType: ReportsPeriodTypeSchema.optional(),
+    periodType: periodTypeSchema.optional(),
     status: z.enum(["DRAFT", "SUBMITTED"]).optional(),
     from: z.iso.date().optional(),
     to: z.iso.date().optional(),
   })
   .strict();
-export type ReportsReportListQueryDTO = z.output<
-  typeof ReportsReportListQuerySchema
->;
-
-export const ReportsReportPatchSchema = z
+export const updateReportSchema = z
   .object({
     achievements: z.string().trim().max(10000).optional(),
     blockers: z.string().trim().max(10000).optional(),
@@ -67,45 +56,35 @@ export const ReportsReportPatchSchema = z
     zeroTimeReason: z.string().trim().nullable().optional(),
   })
   .strict();
-export type ReportsReportPatchDTO = z.output<typeof ReportsReportPatchSchema>;
-
-export const ReportsReportPreviewQuerySchema = z
+export const reportPreviewQuerySchema = z
   .object({
     projectId: z
       .string()
       .trim()
       .min(1, "Vui lòng nhập thông tin bắt buộc")
       .max(100),
-    periodType: ReportsPeriodTypeSchema,
+    periodType: periodTypeSchema,
     periodStart: z.iso.date(),
   })
   .strict();
-export type ReportsReportPreviewQueryDTO = z.output<
-  typeof ReportsReportPreviewQuerySchema
->;
-
-export const ReportsReportPreviewSchema = z.object({
+export const reportPreviewSchema = z.object({
   projectId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
-  periodType: ReportsPeriodTypeSchema,
+  periodType: periodTypeSchema,
   periodStart: z.iso.date(),
   periodEndExclusive: z.iso.datetime(),
   dataAsOf: z.iso.datetime(),
   totalMinutes: z.number().int().safe().min(0),
-  items: z.array(ReportsReportItemSchema),
+  items: z.array(reportItemSchema),
   partialPeriod: z.boolean(),
 });
-export type ReportsReportPreviewDTO = z.output<
-  typeof ReportsReportPreviewSchema
->;
-
-export const ReportsReportSchema = z
+export const reportSchema = z
   .object({
     id: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
     version: z.number().int().safe().positive(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
     projectId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
-    periodType: ReportsPeriodTypeSchema,
+    periodType: periodTypeSchema,
     periodStart: z.iso.date(),
     authorId: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
     status: z.enum(["DRAFT", "SUBMITTED"]),
@@ -115,13 +94,11 @@ export const ReportsReportSchema = z
     selectedTaskIds: z.array(z.string()),
     zeroTimeReason: z.string().nullable(),
     submittedAt: z.iso.datetime().nullable(),
-    snapshot: ReportsReportPreviewSchema.nullable(),
-    author: SharedPersonRefSchema,
+    snapshot: reportPreviewSchema.nullable(),
+    author: personRefSchema,
   })
   .superRefine(checkProjection);
-export type ReportsReportDTO = z.output<typeof ReportsReportSchema>;
-
-export const ReportsReportSubmitSchema = z
+export const reportSubmitSchema = z
   .object({
     zeroTimeReason: z
       .string()
@@ -131,4 +108,3 @@ export const ReportsReportSubmitSchema = z
       .optional(),
   })
   .strict();
-export type ReportsReportSubmitDTO = z.output<typeof ReportsReportSubmitSchema>;

@@ -1,24 +1,25 @@
 "use client";
-import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { type SessionDto } from "@/features/auth/types/auth.types";
 import { Session } from "@/lib/auth/session-context";
 import {
-  token,
-  registerRefresh,
   refreshSingleFlight,
+  registerRefresh,
+  token,
 } from "@/services/auth-session";
 import { useUI } from "@/stores/ui-store";
+import { ApiError } from "@/types/api/error";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import type { AuthSessionDTO } from "../types/auth.types";
-import { authService } from "../api/auth.service";
 import { authKeys } from "../api/auth.keys";
+import { authService } from "../api/auth.service";
 
 export function AuthObserver({ children }: { children: ReactNode }) {
   const client = useQueryClient();
   const [viewerId, setViewerId] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(true);
   const signIn = useCallback(
-    async (session: AuthSessionDTO) => {
+    async (session: SessionDto) => {
       await client.cancelQueries();
       client.clear();
       useUI.getState().reset();
@@ -37,7 +38,7 @@ export function AuthObserver({ children }: { children: ReactNode }) {
   useEffect(() => {
     registerRefresh(async () => {
       try {
-        const session = await authService.refreshSession({});
+        const session = await authService.refreshSession();
         client.setQueryData(authKeys.getSession(session.user.id), session);
         setViewerId(session.user.id);
       } catch (error) {
@@ -52,14 +53,24 @@ export function AuthObserver({ children }: { children: ReactNode }) {
   }, [client, clear]);
   const query = useQuery({
     queryKey: authKeys.getSession(viewerId ?? "anonymous"),
-    queryFn: ({ signal }) => authService.getSession({ signal }),
+    queryFn: ({ signal }) =>
+      authService.getSession({
+        signal: signal,
+      }),
     enabled: Boolean(viewerId),
     staleTime: 0,
     retry: false,
   });
+  useEffect(() => {
+    if (
+      query.error instanceof ApiError &&
+      [401, 403].includes(query.error.status)
+    )
+      void clear();
+  }, [query.error, clear]);
   const signOut = useCallback(async () => {
     try {
-      await authService.logout({});
+      await authService.logout();
     } catch {
       toast.error(
         "Đã dọn phiên trên máy. Máy chủ chưa xác nhận thu hồi phiên.",

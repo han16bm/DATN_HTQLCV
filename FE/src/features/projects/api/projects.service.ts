@@ -1,32 +1,95 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
+import type { ProjectsApi } from "@/features/projects/api/projects.contract";
+import {
+  getProjectClosureChecksResultSchema,
+  projectSchema,
+} from "@/features/projects/schemas/projects.schema";
+import {
+  type CancelProjectInput,
+  type CreateProjectInput,
+  type ProjectHistoryQuery,
+  type ProjectQuery,
+  type UpdateProjectInput,
+} from "@/features/projects/types/projects.types";
+import { auditSchema, page } from "@/lib/validation/common.schema";
 import { apiClient } from "@/services/api-client";
-import type { ContractRequest } from "@/services/api-contract";
-import * as contracts from "./projects.contract";
-export const projectsService = {
-  listProjects: (
-    request: ContractRequest<typeof contracts.listProjectsContract>,
-  ) => apiClient.request(contracts.listProjectsContract, request),
-  getProject: (request: ContractRequest<typeof contracts.getProjectContract>) =>
-    apiClient.request(contracts.getProjectContract, request),
-  createProject: (
-    request: ContractRequest<typeof contracts.createProjectContract>,
-  ) => apiClient.request(contracts.createProjectContract, request),
-  updateProject: (
-    request: ContractRequest<typeof contracts.updateProjectContract>,
-  ) => apiClient.request(contracts.updateProjectContract, request),
-  activateProject: (
-    request: ContractRequest<typeof contracts.activateProjectContract>,
-  ) => apiClient.request(contracts.activateProjectContract, request),
-  getProjectClosureChecks: (
-    request: ContractRequest<typeof contracts.getProjectClosureChecksContract>,
-  ) => apiClient.request(contracts.getProjectClosureChecksContract, request),
-  completeProject: (
-    request: ContractRequest<typeof contracts.completeProjectContract>,
-  ) => apiClient.request(contracts.completeProjectContract, request),
-  cancelProject: (
-    request: ContractRequest<typeof contracts.cancelProjectContract>,
-  ) => apiClient.request(contracts.cancelProjectContract, request),
-  listProjectHistory: (
-    request: ContractRequest<typeof contracts.listProjectHistoryContract>,
-  ) => apiClient.request(contracts.listProjectHistoryContract, request),
+import type {
+  MutationOptions,
+  RequestOptions,
+  VersionOptions,
+} from "@/services/api.types";
+export const projectsService: ProjectsApi = {
+  listProjects(query: ProjectQuery = {}, options: RequestOptions = {}) {
+    return apiClient.get(`/projects`, page(projectSchema), {
+      ...options,
+      query,
+    });
+  },
+  getProject(projectId: string, options: RequestOptions = {}) {
+    return apiClient.get(
+      `/projects/${encodeURIComponent(projectId)}`,
+      projectSchema,
+      options,
+    );
+  },
+  createProject(payload: CreateProjectInput, options: MutationOptions) {
+    return apiClient.post(`/projects`, payload, projectSchema, options);
+  },
+  updateProject(
+    projectId: string,
+    payload: UpdateProjectInput,
+    options: VersionOptions,
+  ) {
+    return apiClient.patch(
+      `/projects/${encodeURIComponent(projectId)}`,
+      payload,
+      projectSchema,
+      options,
+    );
+  },
+  activateProject(projectId: string, options: VersionOptions) {
+    return apiClient.post(
+      `/projects/${encodeURIComponent(projectId)}/activate`,
+      {},
+      projectSchema,
+      options,
+    );
+  },
+  getProjectClosureChecks(projectId: string, options: RequestOptions = {}) {
+    return apiClient.get(
+      `/projects/${encodeURIComponent(projectId)}/closure-checks`,
+      getProjectClosureChecksResultSchema,
+      options,
+    );
+  },
+  completeProject(projectId: string, options: VersionOptions) {
+    return apiClient.post(
+      `/projects/${encodeURIComponent(projectId)}/complete`,
+      {},
+      projectSchema,
+      options,
+    );
+  },
+  cancelProject(
+    projectId: string,
+    payload: CancelProjectInput,
+    options: VersionOptions,
+  ) {
+    return apiClient.post(
+      `/projects/${encodeURIComponent(projectId)}/cancel`,
+      payload,
+      projectSchema,
+      options,
+    );
+  },
+  listProjectHistory(
+    projectId: string,
+    query: ProjectHistoryQuery = {},
+    options: RequestOptions = {},
+  ) {
+    return apiClient.get(
+      `/projects/${encodeURIComponent(projectId)}/history`,
+      page(auditSchema),
+      { ...options, query },
+    );
+  },
 };

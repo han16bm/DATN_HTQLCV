@@ -1,22 +1,43 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
 "use client";
-import {
-  useFeatureQuery,
-  type FeatureQueryOptions,
-} from "@/lib/query/use-feature-query";
-import type { ContractRequest } from "@/services/api-contract";
-import * as contracts from "../api/project-members.contract";
-import { projectMembersService } from "../api/project-members.service";
+import { projectMemberQuerySchema } from "@/features/project-members/schemas/project-members.schema";
+import { type ProjectMemberQuery } from "@/features/project-members/types/project-members.types";
+import { useSession } from "@/lib/auth/session-context";
+import type { QueryOptions } from "@/lib/query/use-query-access";
+import { useQueryAccess } from "@/lib/query/use-query-access";
+import { idSchema } from "@/lib/validation/request.schema";
+import { useQuery } from "@tanstack/react-query";
 import { projectMembersKeys } from "../api/project-members.keys";
+import { projectMembersService } from "../api/project-members.service";
+
 export function useListProjectMembersQuery(
-  request: ContractRequest<typeof contracts.listProjectMembersContract>,
-  options: FeatureQueryOptions = {},
+  projectId: string,
+  query: ProjectMemberQuery = {},
+  options: QueryOptions = {},
 ) {
-  return useFeatureQuery(
-    contracts.listProjectMembersContract,
-    request,
-    projectMembersService.listProjectMembers,
-    projectMembersKeys.listProjectMembers,
-    options,
-  );
+  const { session } = useSession();
+  const parsed = projectMemberQuerySchema.safeParse(query);
+  const filters = parsed.success ? parsed.data : query;
+  const result = useQuery({
+    queryKey: parsed.success
+      ? projectMembersKeys.listProjectMembers(
+          session?.user.id ?? "anonymous",
+          projectId,
+          filters,
+        )
+      : [
+          "project-members",
+          session?.user.id ?? "anonymous",
+          "listProjectMembers",
+          "invalid-query",
+        ],
+    queryFn: ({ signal }) =>
+      projectMembersService.listProjectMembers(projectId, filters, { signal }),
+    enabled:
+      options.enabled !== false &&
+      Boolean(session) &&
+      parsed.success &&
+      idSchema.safeParse(projectId).success,
+    staleTime: 30000,
+  });
+  return useQueryAccess(result, "project-members");
 }

@@ -3,7 +3,6 @@ import {
   ContractError,
   errorEnvelopeSchema,
 } from "@/types/api/error";
-
 export async function parseHttpError(response: Response) {
   const parsed = errorEnvelopeSchema.safeParse(
     await response.json().catch(() => null),

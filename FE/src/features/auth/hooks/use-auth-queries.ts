@@ -1,22 +1,18 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
 "use client";
-import {
-  useFeatureQuery,
-  type FeatureQueryOptions,
-} from "@/lib/query/use-feature-query";
-import type { ContractRequest } from "@/services/api-contract";
-import * as contracts from "../api/auth.contract";
-import { authService } from "../api/auth.service";
+import { useSession } from "@/lib/auth/session-context";
+import type { QueryOptions } from "@/lib/query/use-query-access";
+import { useQueryAccess } from "@/lib/query/use-query-access";
+import { useQuery } from "@tanstack/react-query";
 import { authKeys } from "../api/auth.keys";
-export function useGetSessionQuery(
-  request: ContractRequest<typeof contracts.getSessionContract>,
-  options: FeatureQueryOptions = {},
-) {
-  return useFeatureQuery(
-    contracts.getSessionContract,
-    request,
-    authService.getSession,
-    authKeys.getSession,
-    options,
-  );
+import { authService } from "../api/auth.service";
+
+export function useGetSessionQuery(options: QueryOptions = {}) {
+  const { session } = useSession();
+  const result = useQuery({
+    queryKey: authKeys.getSession(session?.user.id ?? "anonymous"),
+    queryFn: ({ signal }) => authService.getSession({ signal }),
+    enabled: options.enabled !== false,
+    staleTime: 10000,
+  });
+  return useQueryAccess(result, "auth");
 }

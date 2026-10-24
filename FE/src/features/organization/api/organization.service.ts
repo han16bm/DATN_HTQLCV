@@ -1,31 +1,115 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
+import type { OrganizationApi } from "@/features/organization/api/organization.contract";
+import { teamSchema } from "@/features/organization/schemas/team.schema";
+import { unitSchema } from "@/features/organization/schemas/unit.schema";
+import {
+  type CreateTeamInput,
+  type CreateUnitInput,
+  type DeactivateTeamInput,
+  type DeactivateUnitInput,
+  type ReplaceTeamMembersInput,
+  type TeamQuery,
+  type UnitQuery,
+  type UpdateTeamInput,
+  type UpdateUnitInput,
+} from "@/features/organization/types/organization.types";
+import { page } from "@/lib/validation/common.schema";
 import { apiClient } from "@/services/api-client";
-import type { ContractRequest } from "@/services/api-contract";
-import * as contracts from "./organization.contract";
-export const organizationService = {
-  listUnits: (request: ContractRequest<typeof contracts.listUnitsContract>) =>
-    apiClient.request(contracts.listUnitsContract, request),
-  getUnit: (request: ContractRequest<typeof contracts.getUnitContract>) =>
-    apiClient.request(contracts.getUnitContract, request),
-  createUnit: (request: ContractRequest<typeof contracts.createUnitContract>) =>
-    apiClient.request(contracts.createUnitContract, request),
-  updateUnit: (request: ContractRequest<typeof contracts.updateUnitContract>) =>
-    apiClient.request(contracts.updateUnitContract, request),
-  deactivateUnit: (
-    request: ContractRequest<typeof contracts.deactivateUnitContract>,
-  ) => apiClient.request(contracts.deactivateUnitContract, request),
-  listTeams: (request: ContractRequest<typeof contracts.listTeamsContract>) =>
-    apiClient.request(contracts.listTeamsContract, request),
-  getTeam: (request: ContractRequest<typeof contracts.getTeamContract>) =>
-    apiClient.request(contracts.getTeamContract, request),
-  createTeam: (request: ContractRequest<typeof contracts.createTeamContract>) =>
-    apiClient.request(contracts.createTeamContract, request),
-  updateTeam: (request: ContractRequest<typeof contracts.updateTeamContract>) =>
-    apiClient.request(contracts.updateTeamContract, request),
-  replaceTeamMembers: (
-    request: ContractRequest<typeof contracts.replaceTeamMembersContract>,
-  ) => apiClient.request(contracts.replaceTeamMembersContract, request),
-  deactivateTeam: (
-    request: ContractRequest<typeof contracts.deactivateTeamContract>,
-  ) => apiClient.request(contracts.deactivateTeamContract, request),
+import type {
+  MutationOptions,
+  RequestOptions,
+  VersionOptions,
+} from "@/services/api.types";
+export const organizationService: OrganizationApi = {
+  listUnits(query: UnitQuery = {}, options: RequestOptions = {}) {
+    return apiClient.get(`/units`, page(unitSchema), {
+      ...options,
+      query,
+    });
+  },
+  getUnit(unitId: string, options: RequestOptions = {}) {
+    return apiClient.get(
+      `/units/${encodeURIComponent(unitId)}`,
+      unitSchema,
+      options,
+    );
+  },
+  createUnit(payload: CreateUnitInput, options: MutationOptions) {
+    return apiClient.post(`/units`, payload, unitSchema, options);
+  },
+  updateUnit(
+    unitId: string,
+    payload: UpdateUnitInput,
+    options: VersionOptions,
+  ) {
+    return apiClient.patch(
+      `/units/${encodeURIComponent(unitId)}`,
+      payload,
+      unitSchema,
+      options,
+    );
+  },
+  deactivateUnit(
+    unitId: string,
+    payload: DeactivateUnitInput,
+    options: VersionOptions,
+  ) {
+    return apiClient.post(
+      `/units/${encodeURIComponent(unitId)}/deactivate`,
+      payload,
+      unitSchema,
+      options,
+    );
+  },
+  listTeams(query: TeamQuery = {}, options: RequestOptions = {}) {
+    return apiClient.get(`/teams`, page(teamSchema), {
+      ...options,
+      query,
+    });
+  },
+  getTeam(teamId: string, options: RequestOptions = {}) {
+    return apiClient.get(
+      `/teams/${encodeURIComponent(teamId)}`,
+      teamSchema,
+      options,
+    );
+  },
+  createTeam(payload: CreateTeamInput, options: MutationOptions) {
+    return apiClient.post(`/teams`, payload, teamSchema, options);
+  },
+  updateTeam(
+    teamId: string,
+    payload: UpdateTeamInput,
+    options: VersionOptions,
+  ) {
+    return apiClient.patch(
+      `/teams/${encodeURIComponent(teamId)}`,
+      payload,
+      teamSchema,
+      options,
+    );
+  },
+  replaceTeamMembers(
+    teamId: string,
+    payload: ReplaceTeamMembersInput,
+    options: VersionOptions,
+  ) {
+    return apiClient.put(
+      `/teams/${encodeURIComponent(teamId)}/members`,
+      payload,
+      teamSchema,
+      options,
+    );
+  },
+  deactivateTeam(
+    teamId: string,
+    payload: DeactivateTeamInput,
+    options: VersionOptions,
+  ) {
+    return apiClient.post(
+      `/teams/${encodeURIComponent(teamId)}/deactivate`,
+      payload,
+      teamSchema,
+      options,
+    );
+  },
 };

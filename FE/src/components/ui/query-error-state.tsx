@@ -1,5 +1,6 @@
 "use client";
 import { ApiError } from "@/types/api/error";
+
 export function QueryErrorState({
   error,
   retry,

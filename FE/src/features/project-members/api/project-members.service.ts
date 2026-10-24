@@ -1,24 +1,66 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
+import type { ProjectMembersApi } from "@/features/project-members/api/project-members.contract";
+import { membershipSchema } from "@/features/project-members/schemas/project-members.schema";
+import {
+  type AddProjectMemberInput,
+  type EndProjectMembershipInput,
+  type ProjectMemberQuery,
+  type UpdateProjectMemberPermissionsInput,
+} from "@/features/project-members/types/project-members.types";
+import { page } from "@/lib/validation/common.schema";
 import { apiClient } from "@/services/api-client";
-import type { ContractRequest } from "@/services/api-contract";
-import * as contracts from "./project-members.contract";
-export const projectMembersService = {
-  listProjectMembers: (
-    request: ContractRequest<typeof contracts.listProjectMembersContract>,
-  ) => apiClient.request(contracts.listProjectMembersContract, request),
-  addProjectMember: (
-    request: ContractRequest<typeof contracts.addProjectMemberContract>,
-  ) => apiClient.request(contracts.addProjectMemberContract, request),
-  updateProjectMemberPermissions: (
-    request: ContractRequest<
-      typeof contracts.updateProjectMemberPermissionsContract
-    >,
-  ) =>
-    apiClient.request(
-      contracts.updateProjectMemberPermissionsContract,
-      request,
-    ),
-  endProjectMembership: (
-    request: ContractRequest<typeof contracts.endProjectMembershipContract>,
-  ) => apiClient.request(contracts.endProjectMembershipContract, request),
+import type {
+  MutationOptions,
+  RequestOptions,
+  VersionOptions,
+} from "@/services/api.types";
+export const projectMembersService: ProjectMembersApi = {
+  listProjectMembers(
+    projectId: string,
+    query: ProjectMemberQuery = {},
+    options: RequestOptions = {},
+  ) {
+    return apiClient.get(
+      `/projects/${encodeURIComponent(projectId)}/members`,
+      page(membershipSchema),
+      { ...options, query },
+    );
+  },
+  addProjectMember(
+    projectId: string,
+    payload: AddProjectMemberInput,
+    options: MutationOptions,
+  ) {
+    return apiClient.post(
+      `/projects/${encodeURIComponent(projectId)}/members`,
+      payload,
+      membershipSchema,
+      options,
+    );
+  },
+  updateProjectMemberPermissions(
+    projectId: string,
+    membershipId: string,
+    payload: UpdateProjectMemberPermissionsInput,
+    options: VersionOptions,
+  ) {
+    return apiClient.patch(
+      `/projects/${encodeURIComponent(projectId)}/members/${encodeURIComponent(membershipId)}`,
+      payload,
+      membershipSchema,
+      options,
+    );
+  },
+  endProjectMembership(
+    projectId: string,
+    membershipId: string,
+    payload: EndProjectMembershipInput,
+    options: VersionOptions,
+  ) {
+    return apiClient.post(
+      `/projects/${encodeURIComponent(projectId)}/members/${encodeURIComponent(membershipId)}/end`,
+      payload,
+      membershipSchema,
+      options,
+    );
+  },
 };

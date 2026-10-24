@@ -1,43 +1,14 @@
-// Generated from fe-specs contract 0.3.0. Rebuild with npm run contracts.
-import { normalizeQuery } from "@/lib/query/normalize-query";
-import * as contracts from "./reports.contract";
+import {
+  type GetReportPreviewQuery,
+  type ReportQuery,
+} from "@/features/reports/types/reports.types";
 export const reportsKeys = {
   all: ["reports"] as const,
   viewer: (viewerId: string) => ["reports", viewerId] as const,
-  listReports: (
-    viewerId: string,
-    params: Record<string, string> = {},
-    query: Record<string, unknown> = {},
-  ) =>
-    [
-      "reports",
-      viewerId,
-      "listReports",
-      params,
-      normalizeQuery(contracts.listReportsContract.query.parse(query)),
-    ] as const,
-  getReportPreview: (
-    viewerId: string,
-    params: Record<string, string> = {},
-    query: Record<string, unknown> = {},
-  ) =>
-    [
-      "reports",
-      viewerId,
-      "getReportPreview",
-      params,
-      normalizeQuery(contracts.getReportPreviewContract.query.parse(query)),
-    ] as const,
-  getReport: (
-    viewerId: string,
-    params: Record<string, string> = {},
-    query: Record<string, unknown> = {},
-  ) =>
-    [
-      "reports",
-      viewerId,
-      "getReport",
-      params,
-      normalizeQuery(contracts.getReportContract.query.parse(query)),
-    ] as const,
+  listReports: (viewerId: string, query: ReportQuery) =>
+    ["reports", viewerId, "listReports", query] as const,
+  getReportPreview: (viewerId: string, query: GetReportPreviewQuery) =>
+    ["reports", viewerId, "getReportPreview", query] as const,
+  getReport: (viewerId: string, reportId: string) =>
+    ["reports", viewerId, "getReport", reportId] as const,
 };

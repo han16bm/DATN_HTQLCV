@@ -7,10 +7,9 @@
     "dev": "next dev --hostname 0.0.0.0",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint src tests scripts --max-warnings=0",
+    "lint": "eslint src tests --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "contracts": "node scripts/generate-contracts.mjs"
+    "test": "vitest run"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -31,11 +30,14 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.16",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
     "@types/node": "^22.18.12",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "eslint": "^9.38.0",
     "eslint-config-next": "^16.0.0",
+    "jsdom": "^29.1.1",
     "msw": "^2.12.2",
     "prettier": "^3.9.10",
     "tailwindcss": "^4.1.16",

@@ -22,7 +22,7 @@ import {
 } from "./http";
 export const submissionHandlers = [
   http.get(
-    "*/api/v1/tasks/:taskId/submissions",
+    "*/api/tasks/:taskId/submissions",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const taskId = idSchema.parse(params.taskId);
@@ -36,7 +36,7 @@ export const submissionHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/tasks/:taskId/submissions/:submissionId",
+    "*/api/tasks/:taskId/submissions/:submissionId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const taskId = idSchema.parse(params.taskId);
@@ -50,7 +50,7 @@ export const submissionHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/tasks/:taskId/submissions",
+    "*/api/tasks/:taskId/submissions",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const taskId = idSchema.parse(params.taskId);
@@ -82,7 +82,7 @@ export const submissionHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/tasks/:taskId/submissions/:submissionId/approve",
+    "*/api/tasks/:taskId/submissions/:submissionId/approve",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const taskId = idSchema.parse(params.taskId);
@@ -116,7 +116,7 @@ export const submissionHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/tasks/:taskId/submissions/:submissionId/request-revision",
+    "*/api/tasks/:taskId/submissions/:submissionId/request-revision",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const taskId = idSchema.parse(params.taskId);
@@ -150,7 +150,7 @@ export const submissionHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/review-queue",
+    "*/api/review-queue",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const query = parseQuery(request, reviewQueueQuerySchema);

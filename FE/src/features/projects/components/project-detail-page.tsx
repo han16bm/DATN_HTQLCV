@@ -3,11 +3,12 @@ import {
   Badge,
   ButtonLink,
   DataTable,
-  Loading,
-  Pagination,
+  DetailLink,
   Panel,
 } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { HistoryTable } from "@/components/ui/history-table";
 import { useListTasksQuery } from "@/features/tasks/hooks/use-tasks-queries";
 import { dateTime } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
@@ -21,49 +22,30 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
   const search = useSearchParams();
   const filters = useUrlFilters();
   const project = useGetProjectQuery(projectId);
-  const history = useListProjectHistoryQuery(projectId, { page: filters.page });
+  const history = useListProjectHistoryQuery(projectId, {
+    page: filters.page,
+    pageSize: search.get("tab") === "history" ? 20 : 5,
+  });
   const tasks = useListTasksQuery({ projectId, pageSize: 5 });
   if (project.isError) return <QueryErrorState error={project.error} />;
-  if (!project.data) return <Loading />;
+  if (!project.data) return <PageSkeleton />;
   if (search.get("tab") === "history")
-    return (
-      <Panel title="Lịch sử dự án">
-        {history.isError ? (
-          <QueryErrorState
-            error={history.error}
-            retry={() => void history.refetch()}
-          />
-        ) : !history.data ? (
-          <Loading />
-        ) : (
-          <>
-            <DataTable
-              headers={[
-                "Thời điểm",
-                "Người thao tác",
-                "Sự kiện",
-                "Lý do",
-                "Thay đổi",
-              ]}
-              rows={history.data.items.map((a) => [
-                dateTime(a.at),
-                a.actorId,
-                a.action,
-                a.reason ?? "—",
-                <details key="change">
-                  <summary>Xem trước / sau</summary>
-                  <p>Trước: {JSON.stringify(a.before)}</p>
-                  <p>Sau: {JSON.stringify(a.after)}</p>
-                </details>,
-              ])}
-            />
-            <Pagination
-              {...history.data.pagination}
-              onPage={(p) => filters.set("page", String(p))}
-            />
-          </>
-        )}
-      </Panel>
+    return history.isError ? (
+      <QueryErrorState
+        error={history.error}
+        retry={() => void history.refetch()}
+      />
+    ) : !history.data ? (
+      <PageSkeleton variant="table" />
+    ) : (
+      <HistoryTable
+        title="Lịch sử dự án"
+        pagination={{
+          ...history.data.pagination,
+          onPage: (p) => filters.set("page", String(p)),
+        }}
+        items={history.data.items}
+      />
     );
   const p = project.data;
   return (
@@ -72,49 +54,52 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
         <Panel title="Mục tiêu dự án">
           <p className="prose">{p.objective}</p>
         </Panel>
-        <Panel title="Các mốc triển khai">
-          {history.data ? (
-            <ul className="timeline">
-              {history.data.items.map((a) => (
-                <li key={a.id}>
-                  {a.action}
-                  <div className="small muted">
-                    {dateTime(a.at)}
-                    {a.reason ? ` · ${a.reason}` : ""}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : history.isError ? (
-            <QueryErrorState error={history.error} />
-          ) : (
-            <Loading />
-          )}
-        </Panel>
-        <Panel title="Công việc gần đây">
-          {tasks.isError ? (
-            <QueryErrorState error={tasks.error} />
-          ) : tasks.data ? (
-            <>
-              <DataTable
-                headers={["Công việc", "Trạng thái", "Hạn"]}
-                rows={tasks.data.items.map((t) => [
-                  <ButtonLink key={t.id} href={`/tasks/${t.id}`}>
-                    {t.title}
-                  </ButtonLink>,
-                  <Badge key="status" value={t.status} />,
-                  dateTime(t.dueAt),
-                ])}
-              />
-              <p className="small muted">
-                {tasks.data.pagination.total} công việc trong phạm vi bạn được
-                xem.
-              </p>
-            </>
-          ) : (
-            <Loading />
-          )}
-        </Panel>
+        {history.isError ? (
+          <QueryErrorState
+            error={history.error}
+            retry={() => void history.refetch()}
+          />
+        ) : !history.data ? (
+          <PageSkeleton variant="table" />
+        ) : (
+          <HistoryTable
+            title="Các mốc triển khai"
+            items={history.data.items}
+            pagination={{ total: history.data.pagination.total }}
+            headerActions={
+              <ButtonLink href={`/projects/${projectId}?tab=history`}>
+                Xem toàn bộ lịch sử
+              </ButtonLink>
+            }
+          />
+        )}
+        {tasks.isError ? (
+          <QueryErrorState error={tasks.error} />
+        ) : tasks.data ? (
+          <DataTable
+            title="Công việc gần đây"
+            headerActions={
+              <ButtonLink href={`/tasks?projectId=${projectId}`}>
+                Tất cả công việc
+              </ButtonLink>
+            }
+            pagination={{ total: tasks.data.pagination.total }}
+            actions
+            headers={["Công việc", "Trạng thái", "Hạn", "Hành động"]}
+            rows={tasks.data.items.map((t) => [
+              t.title,
+              <Badge key="status" value={t.status} />,
+              dateTime(t.dueAt),
+              <DetailLink
+                key="detail"
+                href={`/tasks/${t.id}`}
+                label={`Xem công việc ${t.title}`}
+              />,
+            ])}
+          />
+        ) : (
+          <PageSkeleton />
+        )}
       </div>
       <div>
         <Panel title="Thông tin kế hoạch">

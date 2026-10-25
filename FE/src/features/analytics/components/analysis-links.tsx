@@ -1,19 +1,8 @@
 "use client";
-import { number } from "@/lib/format";
+import { DetailLink } from "@/components/ui/page";
 import { type AnalysisRefDto, type DomainActionDto } from "@/types/common";
 import Link from "next/link";
 
-export const metricUnit = (unit: string) =>
-  ({
-    TASK: "việc",
-    COUNT: "lần",
-    PERCENT: "%",
-    MINUTE: "phút",
-    HOUR: "giờ",
-    REPORT: "báo cáo",
-  })[unit] ?? unit;
-export const metricValue = (value: number | null, unit: string) =>
-  number(value, metricUnit(unit));
 export function AnalysisLink({
   value,
   label = "Xem chi tiết",
@@ -22,12 +11,10 @@ export function AnalysisLink({
   label?: string;
 }) {
   return (
-    <Link
-      className="text-link"
+    <DetailLink
       href={`/analytics/details/${encodeURIComponent(value.analysisId)}`}
-    >
-      {label}
-    </Link>
+      label={label}
+    />
   );
 }
 export function actionHref(action: DomainActionDto) {

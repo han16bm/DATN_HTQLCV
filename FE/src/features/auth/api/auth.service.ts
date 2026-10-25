@@ -4,8 +4,17 @@ import {
   logoutResultSchema,
   sessionSchema,
 } from "@/features/auth/schemas/session.schema";
-import { type LoginInput } from "@/features/auth/types/auth.types";
-import type { RequestOptions } from "@/services/api-client";
+import type {
+  LoginInput,
+  UpdateProfileInput,
+  ChangePasswordInput,
+} from "@/features/auth/types/auth.types";
+import { passwordResultSchema } from "../schemas/password.schema";
+import type {
+  RequestOptions,
+  VersionOptions,
+  MutationOptions,
+} from "@/services/api-client";
 import {
   apiClient,
   parseResponse,
@@ -47,5 +56,20 @@ export const authService: AuthApi = {
     return apiClient
       .get<unknown>("/auth/me", { ...options, ...skipAuthRefreshConfig })
       .then(parseResponse(sessionSchema));
+  },
+  updateProfile(payload: UpdateProfileInput, options: VersionOptions) {
+    const form = new FormData();
+    if (payload.username !== undefined) form.set("username", payload.username);
+    if (payload.displayName !== undefined)
+      form.set("displayName", payload.displayName);
+    if (payload.avatar) form.set("avatar", payload.avatar);
+    return apiClient
+      .patch<unknown>("/auth/me", form, options)
+      .then(parseResponse(sessionSchema));
+  },
+  changePassword(payload: ChangePasswordInput, options: MutationOptions) {
+    return apiClient
+      .put<unknown>("/auth/me/password", payload, options)
+      .then(parseResponse(passwordResultSchema));
   },
 };

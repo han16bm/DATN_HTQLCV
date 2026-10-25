@@ -1,6 +1,6 @@
 "use client";
 import { useHashDialog } from "@/lib/forms/use-hash-dialog";
-import { useUI } from "@/stores/ui-store";
+import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import * as Dialog from "@radix-ui/react-dialog";
 import { type ReactNode } from "react";
 
@@ -19,12 +19,9 @@ export function HashDialog({
   return (
     <Dialog.Root
       open={dialog.name === name}
-      onOpenChange={(open) => {
+      onOpenChange={async (open) => {
         if (open) dialog.open(name);
-        else if (
-          !useUI.getState().dirtyForms.length ||
-          window.confirm("Bỏ dữ liệu chưa lưu trong biểu mẫu?")
-        )
+        else if (await confirmDiscard("Bỏ dữ liệu chưa lưu trong biểu mẫu?"))
           dialog.close();
       }}
     >

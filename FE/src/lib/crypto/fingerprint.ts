@@ -4,7 +4,7 @@ async function normalize(value: unknown): Promise<unknown> {
       type: value.type,
       size: value.size,
       name: value instanceof File ? value.name : undefined,
-      content: await digest(await value.arrayBuffer()),
+      content: await digest(new Uint8Array(await value.arrayBuffer())),
     };
   }
   if (Array.isArray(value)) return Promise.all(value.map(normalize));

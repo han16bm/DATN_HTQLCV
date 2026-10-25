@@ -1,6 +1,8 @@
 import { alertsService } from "@/features/alerts/api/alerts.service";
 import { analyticsService } from "@/features/analytics/api/analytics.service";
 import { authService } from "@/features/auth/api/auth.service";
+import { metricValue } from "@/lib/format";
+import { reportsService } from "@/features/reports/api/reports.service";
 import { db, evaluateAlertRules, setClock } from "@/mocks/db";
 import { resetMockState, server } from "@/mocks/node";
 import { registerRefresh, token } from "@/services/api-client";
@@ -22,6 +24,129 @@ const login = (username = "minh") =>
 const scope = { projectId: "p-main", from: "2026-10-01", to: "2026-10-23" };
 const waitJob = () => new Promise((resolve) => setTimeout(resolve, 1650));
 describe("analytics snapshots, jobs and alerts over HTTP", () => {
+  it("derives analytics dates, empty trends and alert scopes from the current source clock", async () => {
+    const current = "2027-02-10T03:30:00.000Z";
+    setClock(current);
+    await login();
+    const period = {
+      projectId: "p-main",
+      from: "2027-02-01",
+      to: "2027-02-10",
+    };
+    const dashboard = await analyticsService.getDashboard(period);
+    expect(dashboard.metadata.dataAsOf).toBe(current);
+    expect(dashboard.trend).toEqual([]);
+    const detail = await analyticsService.getAnalysisDetail(
+      dashboard.overviewRef.analysisId,
+    );
+    expect(detail.snapshot.dataAsOf).toBe(current);
+    const stored = db.details.get(detail.snapshot.analysisId)!;
+    expect(Date.parse(stored.snapshot.expiresAt)).toBeGreaterThan(
+      Date.parse(current),
+    );
+    const alert = await alertsService.getAlert("alert-1");
+    const source = await analyticsService.getAnalysisDetail(
+      alert.analysisRef!.analysisId,
+    );
+    expect(source.snapshot.scope).toEqual(period);
+    setClock("2027-02-10T03:35:00.000Z");
+    const next = await analyticsService.getDashboard(period);
+    expect(next.metadata.dataAsOf).toBe("2027-02-10T03:35:00.000Z");
+    expect(next.overviewRef.analysisId).not.toBe(detail.snapshot.analysisId);
+    expect(
+      (await analyticsService.getAnalysisDetail(detail.snapshot.analysisId))
+        .freshness,
+    ).toEqual({
+      status: "OUTDATED",
+      latestAnalysisId: next.overviewRef.analysisId,
+    });
+  });
+  it("gives ADMIN a global dashboard with unit filters and read-only drilldowns", async () => {
+    const session = await login("admin");
+    expect(session.systemPermissions).toContain("ANALYTICS_VIEW");
+    expect(session.systemPermissions).not.toContain("TASKS_MANAGE");
+    const query = { from: scope.from, to: scope.to };
+    const all = await analyticsService.getDashboard(query);
+    expect(
+      all.projectComparisons.map((project) => project.projectId).sort(),
+    ).toEqual(db.projects.map((project) => project.id).sort());
+    expect(all.totalTasks).toBe(db.tasks.length);
+    const units = await analyticsService.listAnalyticsFilterOptions({
+      kind: "UNIT",
+    });
+    expect(units.items.map((unit) => unit.id).sort()).toEqual([
+      "unit-product",
+      "unit-tech",
+    ]);
+    const tech = await analyticsService.getDashboard({
+      ...query,
+      unitId: "unit-tech",
+    });
+    expect(tech.projectComparisons.map((project) => project.projectId)).toEqual(
+      ["p-other"],
+    );
+    expect(tech.totalTasks).toBe(
+      db.tasks.filter((task) => task.projectId === "p-other").length,
+    );
+    const detail = await analyticsService.getAnalysisDetail(
+      tech.overviewRef.analysisId,
+    );
+    expect(detail.snapshot.analysisId).toBe(tech.overviewRef.analysisId);
+    expect(detail.feedback.canSubmit).toBe(false);
+    await expect(
+      reportsService.createReportDraft(
+        { projectId: "p-main", periodType: "DAILY", periodStart: "2026-10-21" },
+        { key: "admin-report-denied" },
+      ),
+    ).rejects.toMatchObject({ status: 403 });
+    await expect(
+      alertsService.updateAlert(
+        "alert-1",
+        { status: "READ" },
+        { version: 1, key: "admin-alert-denied" },
+      ),
+    ).rejects.toMatchObject({ status: 403 });
+    await login("minh");
+    await expect(
+      analyticsService.getDashboard({ ...query, unitId: "unit-tech" }),
+    ).rejects.toMatchObject({ status: 403 });
+    await expect(
+      analyticsService.getAnalysisDetail(tech.overviewRef.analysisId),
+    ).rejects.toMatchObject({ status: 403 });
+  });
+  it("returns an empty dashboard for an existing unit without projects", async () => {
+    await login("admin");
+    db.units.push({
+      id: "unit-empty",
+      name: "Đơn vị mới",
+      version: 1,
+      status: "ACTIVE",
+      parentId: null,
+      managerId: null,
+    });
+    const query = { from: scope.from, to: scope.to, unitId: "unit-empty" };
+    const dashboard = await analyticsService.getDashboard(query);
+    expect(dashboard.totalTasks).toBe(0);
+    expect(dashboard.projectComparisons).toEqual([]);
+    expect(
+      (
+        await analyticsService.listAnalyticsFilterOptions({
+          kind: "PROJECT",
+          unitId: query.unitId,
+        })
+      ).items,
+    ).toEqual([]);
+    expect(
+      (
+        await analyticsService.getAnalysisDetail(
+          dashboard.overviewRef.analysisId,
+        )
+      ).snapshot.analysisId,
+    ).toBe(dashboard.overviewRef.analysisId);
+    await expect(
+      analyticsService.getDashboard({ ...query, unitId: "missing-unit" }),
+    ).rejects.toMatchObject({ status: 403 });
+  });
   it("returns all 16 KPIs, typed missing capacity and stable refs without creating jobs", async () => {
     await login();
     const a = await analyticsService.getDashboard(scope);
@@ -30,6 +155,17 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
     expect(new Set(a.metrics.map((m) => m.code)).size).toBe(16);
     expect(a.overviewRef).toEqual(b.overviewRef);
     expect(db.jobs.size).toBe(0);
+    expect(Object.keys(a.metadata).sort()).toEqual(["dataAsOf", "quality"]);
+    const count = a.metrics.find((metric) => metric.code === "K01")!;
+    const detail = await analyticsService.getAnalysisDetail(
+      count.analysisRef.analysisId,
+    );
+    expect(detail.systemSummary).toMatch(/việc\./);
+    expect(detail.systemSummary).not.toMatch(/TASK|COUNT|MINUTE/);
+    expect(detail.snapshot.metrics[0].formula).toContain(
+      "không tính công việc đã hủy",
+    );
+    expect(detail.snapshot.metrics[0].formula).not.toContain("K01");
     expect(a.metrics.find((m) => m.code === "K13")?.value).toBeNull();
     expect(a.metrics.find((m) => m.code === "K14")?.value).toBeNull();
     const workload = await analyticsService.getWorkload(scope);
@@ -110,6 +246,11 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
     const detail = await analyticsService.getAnalysisDetail(id);
     expect(detail.explanation.status).toBe("READY");
     expect(detail.explanation.lastSuccess?.snapshotId).toBe(detail.snapshot.id);
+    for (const metric of detail.snapshot.metrics) {
+      expect(detail.explanation.lastSuccess?.findings[0].text).toContain(
+        `${metric.label}: ${metricValue(metric.value, metric.unit)}`,
+      );
+    }
     expect(
       (
         await analyticsService.createAnalysisJob(

@@ -1,10 +1,11 @@
 import { authService } from "@/features/auth/api/auth.service";
 import { organizationService } from "@/features/organization/api/organization.service";
 import { usersService } from "@/features/users/api/users.service";
+import type { ProfileDto } from "@/features/users/types/users.types";
 import { createRequestTickets } from "@/lib/query/mutation-requests";
 import { db } from "@/mocks/db";
 import { resetMockState, server } from "@/mocks/node";
-import { registerRefresh, token } from "@/services/api-client";
+import { apiClient, registerRefresh, token } from "@/services/api-client";
 import { QueryClient } from "@tanstack/react-query";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 beforeAll(() => {
@@ -21,6 +22,297 @@ beforeEach(async () => {
   await authService.login({ username: "admin", password: "Mock@12345" });
 });
 const key = () => crypto.randomUUID();
+
+describe("Member profiles via HTTP/MSW", () => {
+  it("lets signed-in employees read minimal profile data without admin access", async () => {
+    await authService.login({ username: "lan", password: "Mock@12345" });
+    const response = await apiClient.get<{ data: ProfileDto }>(
+      "/users/u-lan/profile",
+    );
+    const profile = response.data.data;
+    expect(Object.keys(profile).sort()).toEqual([
+      "avatarUrl",
+      "displayName",
+      "email",
+      "id",
+      "systemRole",
+      "unit",
+    ]);
+    expect(profile).toMatchObject({
+      displayName: "Trần Lan",
+      unit: "Phòng sản phẩm",
+      email: "lan@example.test",
+    });
+    await expect(usersService.getUser("u-lan")).rejects.toMatchObject({
+      status: 403,
+    });
+  });
+
+  it("lets employees read contact details across units without granting project access", async () => {
+    const profile = await usersService.getProfile("u-other");
+    await authService.login({ username: "lan", password: "Mock@12345" });
+    const outside = await usersService.getProfile("u-other");
+    expect(outside).toEqual(profile);
+    expect(outside.displayName).toBe("Người dùng dự án khác");
+    expect(outside.email).toBeTruthy();
+    await expect(apiClient.get("/projects/p-other")).rejects.toMatchObject({
+      status: 403,
+    });
+  });
+
+  it("rejects pagination and filters that no longer belong to the profile resource", async () => {
+    for (const params of [
+      { unitId: "unit-other" },
+      { page: 1 },
+      { pageSize: 20 },
+    ]) {
+      await expect(
+        apiClient.get("/users/u-pm/profile", { params }),
+      ).rejects.toMatchObject({ status: 422 });
+    }
+  });
+
+  it("requires authentication and handles unavailable member profiles", async () => {
+    for (const id of ["missing-user", "u-locked"]) {
+      await expect(usersService.getProfile(id)).rejects.toMatchObject({
+        status: 404,
+      });
+    }
+    token.set(null);
+    await expect(usersService.getProfile("u-lan")).rejects.toMatchObject({
+      status: 401,
+    });
+  });
+});
+
+describe("Personal profile via HTTP/MSW", () => {
+  it("edits only the signed-in profile and keeps email and organization unchanged", async () => {
+    const adminName = db.users.find(
+      (user) => user.id === "u-admin",
+    )?.displayName;
+    const session = await authService.login({
+      username: "lan",
+      password: "Mock@12345",
+    });
+    const result = await authService.updateProfile(
+      { username: "lan.profile", displayName: "Lan Nguyễn" },
+      { key: key(), version: session.user.version },
+    );
+    expect(result.user).toMatchObject({
+      id: session.user.id,
+      username: "lan.profile",
+      displayName: "Lan Nguyễn",
+      email: session.user.email,
+      unitId: session.user.unitId,
+      systemRole: session.user.systemRole,
+      version: session.user.version + 1,
+      avatarUrl: null,
+    });
+    expect((await authService.getSession()).user).toEqual(result.user);
+    expect(db.users.find((user) => user.id === "u-admin")?.displayName).toBe(
+      adminName,
+    );
+    await expect(
+      authService.login({ username: "lan", password: "Mock@12345" }),
+    ).rejects.toMatchObject({ status: 401 });
+    expect(
+      (
+        await authService.login({
+          username: "lan.profile",
+          password: "Mock@12345",
+        })
+      ).user.id,
+    ).toBe(session.user.id);
+  });
+
+  it("rejects protected fields, duplicate usernames and stale versions", async () => {
+    const session = await authService.getSession();
+    const payload = { username: session.user.username, displayName: "Tên mới" };
+    for (const [field, value] of [
+      ["email", "new@example.test"],
+      ["systemRole", "EMPLOYEE"],
+      ["unitId", "unit-other"],
+      ["userId", "u-lan"],
+    ]) {
+      const form = new FormData();
+      Object.entries(payload).forEach(([name, value]) => form.set(name, value));
+      form.set(field, value);
+      await expect(
+        apiClient.patch("/auth/me", form, {
+          headers: {
+            "If-Match": `"${session.user.version}"`,
+            "Idempotency-Key": key(),
+          },
+        }),
+      ).rejects.toMatchObject({ status: 422 });
+    }
+    await expect(
+      authService.updateProfile(
+        { ...payload, username: "lan" },
+        { key: key(), version: session.user.version },
+      ),
+    ).rejects.toMatchObject({ code: "DUPLICATE_USERNAME" });
+    await authService.updateProfile(payload, {
+      key: key(),
+      version: session.user.version,
+    });
+    await expect(
+      authService.updateProfile(
+        { ...payload, displayName: "Bản cũ" },
+        { key: key(), version: session.user.version },
+      ),
+    ).rejects.toMatchObject({ status: 412 });
+    expect((await authService.getSession()).user.displayName).toBe("Tên mới");
+  });
+
+  it("uploads an avatar, serves its bytes and replaces it without retaining old images", async () => {
+    const session = await authService.getSession();
+    const avatar = new Blob(
+      [
+        Buffer.from(
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aRZkAAAAASUVORK5CYII=",
+          "base64",
+        ),
+      ],
+      { type: "image/png" },
+    );
+    const payload = { avatar };
+    const options = { key: key(), version: session.user.version };
+    const updated = await authService.updateProfile(payload, options);
+    const replay = await authService.updateProfile(payload, options);
+    expect(replay).toEqual(updated);
+    expect(db.avatars.size).toBe(1);
+    expect(updated.user.avatarUrl).toMatch(/^\/api\/avatars\//);
+    expect(updated.user.username).toBe(session.user.username);
+    expect(updated.user.displayName).toBe(session.user.displayName);
+    const image = await fetch(`http://gateway.test${updated.user.avatarUrl}`);
+    expect(image.status).toBe(200);
+    expect(image.headers.get("content-type")).toBe("image/png");
+    expect(new Uint8Array(await image.arrayBuffer())).toEqual(
+      new Uint8Array(await avatar.arrayBuffer()),
+    );
+    expect((await usersService.getUser(session.user.id)).avatarUrl).toBe(
+      updated.user.avatarUrl,
+    );
+    const replaced = await authService.updateProfile(payload, {
+      key: key(),
+      version: updated.user.version,
+    });
+    expect(replaced.user.avatarUrl).not.toBe(updated.user.avatarUrl);
+    expect(db.avatars.size).toBe(1);
+    expect(
+      (await fetch(`http://gateway.test${updated.user.avatarUrl}`)).status,
+    ).toBe(404);
+  });
+
+  it.each([
+    new Blob(["<svg></svg>"], { type: "image/svg+xml" }),
+    new Blob([new Uint8Array(2 * 1024 ** 2 + 1)], { type: "image/png" }),
+    new Blob(["not an image"], { type: "image/png" }),
+  ])("rejects invalid avatar uploads atomically", async (avatar) => {
+    const session = await authService.getSession();
+    await expect(
+      authService.updateProfile(
+        {
+          username: session.user.username,
+          displayName: "Không được lưu",
+          avatar,
+        },
+        { key: key(), version: session.user.version },
+      ),
+    ).rejects.toMatchObject({ status: 422 });
+    expect((await authService.getSession()).user).toEqual(session.user);
+    expect(db.avatars.size).toBe(0);
+  });
+
+  it("requires a valid session to edit a profile", async () => {
+    token.set(null);
+    await expect(
+      authService.updateProfile(
+        { username: "admin", displayName: "Không được lưu" },
+        { key: key(), version: 1 },
+      ),
+    ).rejects.toMatchObject({ status: 401 });
+    await expect(
+      authService.changePassword(
+        { currentPassword: "Mock@12345", newPassword: "New@12345" },
+        { key: key() },
+      ),
+    ).rejects.toMatchObject({ status: 401 });
+  });
+  it("accepts a profile patch without unrelated fields and rejects an empty patch", async () => {
+    const session = await authService.getSession();
+    await expect(
+      authService.updateProfile(
+        {},
+        { key: key(), version: session.user.version },
+      ),
+    ).rejects.toMatchObject({ status: 422 });
+    const result = await authService.updateProfile(
+      { displayName: "Tên hiển thị mới" },
+      { key: key(), version: session.user.version },
+    );
+    expect(result.user).toMatchObject({
+      username: session.user.username,
+      displayName: "Tên hiển thị mới",
+      email: session.user.email,
+    });
+  });
+  it("verifies the current password, changes only the viewer and replays the same attempt safely", async () => {
+    await authService.login({ username: "lan", password: "Mock@12345" });
+    await expect(
+      authService.changePassword(
+        { currentPassword: "Wrong@12345", newPassword: " New@12345 " },
+        { key: key() },
+      ),
+    ).rejects.toMatchObject({ status: 422, code: "WRONG_PASSWORD" });
+    const body = { currentPassword: "Mock@12345", newPassword: " New@12345 " };
+    const options = { key: key() };
+    expect(await authService.changePassword(body, options)).toEqual({
+      ok: true,
+    });
+    expect(await authService.changePassword(body, options)).toEqual({
+      ok: true,
+    });
+    expect(db.passwords.get("u-admin")).toBe("Mock@12345");
+    expect(JSON.stringify(db.audits)).not.toContain(body.newPassword);
+    expect(
+      db.audits.filter((audit) => audit.action === "Đổi mật khẩu"),
+    ).toHaveLength(1);
+    await expect(
+      authService.login({ username: "lan", password: "Mock@12345" }),
+    ).rejects.toMatchObject({ status: 401 });
+    await expect(
+      authService.login({ username: "lan", password: "New@12345" }),
+    ).rejects.toMatchObject({ status: 401 });
+    expect(
+      (await authService.login({ username: "lan", password: body.newPassword }))
+        .user.id,
+    ).toBe("u-lan");
+  });
+  it("rejects weak, unchanged and extra password fields", async () => {
+    for (const body of [
+      { currentPassword: "", newPassword: "New@12345" },
+      { currentPassword: "Mock@12345", newPassword: "short" },
+      { currentPassword: "Mock@12345", newPassword: "Mock@12345" },
+      {
+        currentPassword: "Mock@12345",
+        newPassword: "New@12345",
+        confirmPassword: "New@12345",
+      },
+      {
+        currentPassword: "Mock@12345",
+        newPassword: "New@12345",
+        userId: "u-lan",
+      },
+    ])
+      await expect(
+        authService.changePassword(body, { key: key() }),
+      ).rejects.toMatchObject({ status: 422 });
+    expect(db.passwords.get("u-admin")).toBe("Mock@12345");
+    expect(db.passwords.get("u-lan")).toBe("Mock@12345");
+  });
+});
 describe("S03–S07 administration via HTTP/MSW", () => {
   it("creates, filters, edits, locks and unlocks a user without returning a password", async () => {
     let user = await usersService.createUser(

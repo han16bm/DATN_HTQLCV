@@ -1,5 +1,4 @@
 "use client";
-import { label } from "@/lib/format";
 import { ApiError } from "@/types/api/error";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { z } from "zod";
@@ -18,6 +17,7 @@ export function FormError({
   onConflictAccept?: () => void;
 }) {
   const [comparison, setComparison] = useState<unknown>(undefined);
+  const values = z.record(z.string(), z.unknown()).safeParse(comparison);
   return (
     <div className="notice error wide" role="alert">
       <p>{error.message}</p>
@@ -43,28 +43,9 @@ export function FormError({
         )}
       {comparison !== undefined && (
         <details open>
-          <summary>
-            Phiên bản hiện tại — dữ liệu đang nhập được giữ nguyên
-          </summary>
-          {(() => {
-            const latest = z
-              .object({
-                version: z.number(),
-                status: z.string().optional(),
-              })
-              .safeParse(comparison);
-            return latest.success ? (
-              <p>
-                Phiên bản {latest.data.version}
-                {latest.data.status ? ` · ${label(latest.data.status)}` : ""}
-              </p>
-            ) : null;
-          })()}
+          <summary>Bản mới nhất — nội dung bạn nhập được giữ lại</summary>
           <dl>
             {fields.map((config) => {
-              const values = z
-                .record(z.string(), z.unknown())
-                .safeParse(comparison);
               if (!values.success || !(config.name in values.data)) return null;
               const value = values.data[config.name];
               return (
@@ -86,7 +67,7 @@ export function FormError({
                 setError(null);
               }}
             >
-              Đã đối chiếu, dùng phiên bản mới để lưu
+              Đã đối chiếu, tiếp tục chỉnh sửa
             </button>
           )}
         </details>

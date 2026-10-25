@@ -1,5 +1,6 @@
 import { taskStatusSchema } from "@/features/tasks/schemas/task.schema";
 import {
+  entityLabelSchema,
   listQuerySchema,
   personRefSchema,
 } from "@/lib/validation/common.schema";
@@ -90,10 +91,12 @@ export const reportRowSchema = z
   .object(reportSchema.shape)
   .pick({
     id: true,
-    projectId: true,
     periodType: true,
     periodStart: true,
     status: true,
     author: true,
   })
-  .extend({ totalMinutes: z.number().int().min(0).nullable() });
+  .extend({
+    project: entityLabelSchema,
+    totalMinutes: z.number().int().min(0).nullable(),
+  });

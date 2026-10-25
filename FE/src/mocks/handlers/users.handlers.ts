@@ -11,9 +11,10 @@ import {
   userSchema,
 } from "@/features/users/schemas/user.schema";
 import { page, reasonSchema } from "@/lib/validation/common.schema";
-import { idSchema } from "@/lib/validation/request.schema";
+import { emptySchema, idSchema } from "@/lib/validation/request.schema";
 import { http } from "msw";
 import { usersDb } from "../db";
+import { profileSchema } from "@/features/users/schemas/profile.schema";
 import {
   authenticatedUser,
   mockCommand,
@@ -23,7 +24,16 @@ import {
 } from "./http";
 export const userHandlers = [
   http.get(
-    "*/api/v1/users",
+    "*/api/users/:userId/profile",
+    mockHandler(({ request, params }) => {
+      authenticatedUser(request);
+      const userId = idSchema.parse(params.userId);
+      parseQuery(request, emptySchema);
+      return mockJson(request, usersDb.getProfile(userId), profileSchema);
+    }),
+  ),
+  http.get(
+    "*/api/users",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const query = parseQuery(request, userQuerySchema);
@@ -36,7 +46,7 @@ export const userHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/users/:userId",
+    "*/api/users/:userId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const userId = idSchema.parse(params.userId);
@@ -49,7 +59,7 @@ export const userHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/users",
+    "*/api/users",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const payload = createUserSchema.parse(await request.json());
@@ -75,7 +85,7 @@ export const userHandlers = [
     }),
   ),
   http.patch(
-    "*/api/v1/users/:userId",
+    "*/api/users/:userId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const userId = idSchema.parse(params.userId);
@@ -107,7 +117,7 @@ export const userHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/users/:userId/lock",
+    "*/api/users/:userId/lock",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const userId = idSchema.parse(params.userId);
@@ -139,7 +149,7 @@ export const userHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/users/:userId/unlock",
+    "*/api/users/:userId/unlock",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const userId = idSchema.parse(params.userId);
@@ -171,7 +181,7 @@ export const userHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/users/:userId/reset-password",
+    "*/api/users/:userId/reset-password",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const userId = idSchema.parse(params.userId);

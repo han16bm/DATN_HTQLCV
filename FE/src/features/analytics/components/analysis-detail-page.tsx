@@ -1,7 +1,8 @@
 "use client";
 import { PermissionGate } from "@/components/layout/permission-gate";
 import { ActionButton } from "@/components/ui/action-button";
-import { Badge, Loading, PageHeader, Panel } from "@/components/ui/page";
+import { Badge, PageHeader, Panel } from "@/components/ui/page";
+import { PageSkeleton, Spinner } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { FeedbackPanel } from "@/features/analytics/components/analysis-feedback-panel";
 import { dateTime } from "@/lib/format";
@@ -13,7 +14,6 @@ import { useAnalysisTracking } from "../hooks/use-analysis-tracking";
 import { useCreateAnalysisJobMutation } from "../hooks/use-analytics-mutations";
 import { useGetAnalysisDetailQuery } from "../hooks/use-analytics-queries";
 import { AnalysisExplanation } from "./analysis-explanation";
-import { metricValue } from "./analysis-links";
 import { AnalysisSources } from "./analysis-sources";
 const typeLabel: Record<string, string> = {
   RISK: "Nguy cơ trễ hạn",
@@ -70,7 +70,7 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
     return (
       <QueryErrorState error={query.error} retry={() => void query.refetch()} />
     );
-  if (!detail) return <Loading />;
+  if (!detail) return <PageSkeleton />;
   const { snapshot, explanation } = detail;
   return (
     <>
@@ -80,8 +80,8 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
         actions={
           <>
             <button
-              onClick={() => {
-                if (confirmDiscard()) router.back();
+              onClick={async () => {
+                if (await confirmDiscard()) router.back();
               }}
             >
               Quay lại
@@ -105,14 +105,13 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
         }
       />
       <p className="metadata">
-        Dữ liệu đến {dateTime(snapshot.dataAsOf)} · Giờ Việt Nam ·{" "}
+        Cập nhật {dateTime(snapshot.dataAsOf)} ·{" "}
         <Badge value={snapshot.quality.status} /> ·{" "}
         <Badge value={detail.freshness.status} />
       </p>
       {detail.freshness.status === "OUTDATED" && (
         <p className="notice">
-          Đang xem bản dữ liệu cũ. Các thông số và lời diễn giải vẫn thuộc cùng
-          mốc.
+          Dữ liệu đã thay đổi sau lần phân tích này.
           {detail.freshness.latestAnalysisId && (
             <>
               {" "}
@@ -126,21 +125,8 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
           )}
         </p>
       )}
-      <div className="metric-grid">
-        {snapshot.metrics.slice(0, 4).map((m) => (
-          <Panel key={m.id}>
-            <p className="muted">{m.label}</p>
-            <p className="metric-value">{metricValue(m.value, m.unit)}</p>
-            <p className="small muted">
-              {m.basis === "CURRENT"
-                ? "Tại thời điểm dữ liệu"
-                : "Trong kỳ đã chọn"}
-            </p>
-          </Panel>
-        ))}
-      </div>
       <div className="analysis-columns">
-        <AnalysisSources snapshot={snapshot} summary={detail.systemSummary} />
+        <AnalysisSources snapshot={snapshot} />
         <div className="analysis-ai">
           <Panel title="AI phân tích">
             <p className="metadata">
@@ -162,11 +148,15 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
               />
             )}
             {create.isPending && (
-              <p role="status">Đang tiếp nhận yêu cầu diễn giải…</p>
+              <p role="status" className="loading-inline">
+                <Spinner />
+                Đang tiếp nhận yêu cầu diễn giải…
+              </p>
             )}
             {["QUEUED", "RUNNING"].includes(explanation.status) && (
-              <p role="status">
-                AI đang phân tích. Thông số và căn cứ vẫn có thể đọc ngay.
+              <p role="status" className="loading-inline">
+                <Spinner />
+                Đang phân tích…
               </p>
             )}
             {(detail.explanation.activeJobId ?? jobId) && (
@@ -181,8 +171,7 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
             )}
             {tracking.paused && (
               <p className="notice">
-                Đã tạm dừng theo dõi sau 2 phút. Tiến trình trên máy chủ vẫn giữ
-                trạng thái thực.{" "}
+                Phân tích đang mất nhiều thời gian hơn dự kiến.{" "}
                 <button onClick={tracking.resume}>Tiếp tục kiểm tra</button>
               </p>
             )}
@@ -204,6 +193,9 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
               snapshot={snapshot}
               value={explanation.lastSuccess}
             />
+            {!explanation.lastSuccess && (
+              <p className="preserve-lines">{detail.systemSummary}</p>
+            )}
           </Panel>
           {snapshot.analysisType === "BOTTLENECK" && (
             <FeedbackPanel value={detail} />

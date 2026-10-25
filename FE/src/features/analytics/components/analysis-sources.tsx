@@ -1,6 +1,6 @@
 "use client";
 import { Panel } from "@/components/ui/page";
-import { dateTime, label } from "@/lib/format";
+import { dateTime, label, metricValue } from "@/lib/format";
 import {
   CartesianGrid,
   Line,
@@ -11,53 +11,48 @@ import {
   YAxis,
 } from "recharts";
 import type { AnalysisDto } from "../types/analytics.types";
-import { DomainActionLink, metricValue } from "./analysis-links";
+import { DomainActionLink } from "./analysis-links";
 export function AnalysisSources({
   snapshot,
-  summary,
 }: {
   snapshot: AnalysisDto["snapshot"];
-  summary: string;
 }) {
   return (
     <div className="analysis-sources">
-      <Panel title="Bối cảnh phân tích">
-        <dl>
-          {snapshot.context.map((c) => (
-            <div key={c.key}>
-              <dt>{c.label}</dt>
-              <dd>
-                {c.valueType === "UTC"
-                  ? dateTime(c.value)
-                  : c.value
-                    ? label(c.value)
-                    : "Chưa đủ dữ liệu"}
-              </dd>
-            </div>
-          ))}
-        </dl>
-        {!snapshot.context.length && (
-          <p>
-            Phạm vi {snapshot.scope.projectId ? "dự án" : "đơn vị"} ·{" "}
-            {snapshot.scope.from} – {snapshot.scope.to}.
-          </p>
+      <Panel title="Chỉ số phân tích">
+        {snapshot.context.length > 0 && (
+          <dl className="analysis-context">
+            {snapshot.context.map((c) => (
+              <div key={c.key}>
+                <dt>{c.label}</dt>
+                <dd>
+                  {c.valueType === "UTC"
+                    ? dateTime(c.value)
+                    : c.value
+                      ? label(c.value)
+                      : "Chưa đủ dữ liệu"}
+                </dd>
+              </div>
+            ))}
+          </dl>
         )}
-      </Panel>
-      <Panel title="Thông số và cách tính">
         {snapshot.metrics.map((m) => (
           <div key={m.id} className="measure-row" id={`metric-${m.id}`}>
             <div className="list-row">
               <span>{m.label}</span>
-              <span>{metricValue(m.value, m.unit)}</span>
+              <strong>{metricValue(m.value, m.unit)}</strong>
             </div>
-            <p className="small muted">{m.formula}</p>
-            {m.value === null && (
-              <p className="small muted">
-                Nguồn chưa đầy đủ nên chưa tính giá trị.
-              </p>
-            )}
           </div>
         ))}
+        <details className="calculation-details">
+          <summary>Ý nghĩa chỉ số</summary>
+          {snapshot.metrics.map((m) => (
+            <p key={m.id} className="small muted">
+              <strong>{m.label}: </strong>
+              {m.formula}
+            </p>
+          ))}
+        </details>
       </Panel>
       {snapshot.series.map((series) => (
         <Panel title={series.label} key={series.id}>
@@ -74,29 +69,19 @@ export function AnalysisSources({
           </div>
         </Panel>
       ))}
-      <Panel title="Dữ liệu căn cứ">
-        <p className="small muted">
-          Nguồn được giới hạn theo quyền truy cập và mốc dữ liệu.
-        </p>
-        {snapshot.evidence.map((ev, i) => (
-          <div className="measure-row" id={`evidence-${ev.id}`} key={ev.id}>
-            <p>{ev.label}</p>
-            <p className="small muted">
-              Căn cứ {i + 1} · {dateTime(ev.observedAt)}
-            </p>
-            <DomainActionLink value={ev.action} />
-          </div>
-        ))}
-        {!snapshot.evidence.length && (
-          <p className="muted">
-            Thông số tổng hợp theo công thức; bản này không có liên kết nguồn
-            chi tiết.
-          </p>
-        )}
-      </Panel>
-      <Panel title="Tổng hợp theo số liệu">
-        <p className="preserve-lines">{summary}</p>
-      </Panel>
+      {snapshot.evidence.length > 0 && (
+        <Panel title="Dữ liệu liên quan">
+          {snapshot.evidence.map((ev, i) => (
+            <div className="measure-row" id={`evidence-${ev.id}`} key={ev.id}>
+              <p>{ev.label}</p>
+              <p className="small muted">
+                Căn cứ {i + 1} · {dateTime(ev.observedAt)}
+              </p>
+              <DomainActionLink value={ev.action} />
+            </div>
+          ))}
+        </Panel>
+      )}
     </div>
   );
 }

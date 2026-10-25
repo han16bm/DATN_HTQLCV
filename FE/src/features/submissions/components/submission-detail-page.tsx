@@ -1,5 +1,6 @@
 "use client";
-import { Badge, Loading, PageHeader, Panel } from "@/components/ui/page";
+import { Badge, PageHeader, Panel } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { EvidenceFile } from "@/features/attachments/components/evidence";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
@@ -22,7 +23,7 @@ export function SubmissionDetailPage({
   if (q.isError)
     return <QueryErrorState error={q.error} retry={() => void q.refetch()} />;
   if (task.isError) return <QueryErrorState error={task.error} />;
-  if (!q.data || !task.data) return <Loading />;
+  if (!q.data || !task.data) return <PageSkeleton />;
   const s = q.data;
   const t = task.data;
   const canReview =
@@ -35,7 +36,7 @@ export function SubmissionDetailPage({
   return (
     <>
       <PageHeader title={`Đối chiếu kết quả · Lần ${s.sequence}`} />
-      <div className="two-column">
+      <div className="submission-layout">
         <Panel title="Tiêu chí nghiệm thu">
           <p className="preserve-lines">{t.acceptanceCriteria}</p>
         </Panel>
@@ -45,17 +46,23 @@ export function SubmissionDetailPage({
             {s.submitter.displayName} · {dateTime(s.submittedAt)}
           </p>
           <p className="preserve-lines">{s.summary}</p>
-          <dl>
-            <dt>Hạn tại lúc nộp</dt>
-            <dd>{dateTime(s.dueAtSnapshot)}</dd>
-            <dt>Tình trạng nộp</dt>
-            <dd>
-              {s.submittedAt > s.dueAtSnapshot
-                ? "Nộp sau hạn"
-                : "Nộp trong hạn"}
-            </dd>
-            <dt>Giờ công tại lúc nộp</dt>
-            <dd>{hours(s.actualMinutesSnapshot)}</dd>
+          <dl className="section-gap">
+            <div>
+              <dt>Hạn tại lúc nộp</dt>
+              <dd>{dateTime(s.dueAtSnapshot)}</dd>
+            </div>
+            <div>
+              <dt>Tình trạng nộp</dt>
+              <dd>
+                {s.submittedAt > s.dueAtSnapshot
+                  ? "Nộp sau hạn"
+                  : "Nộp trong hạn"}
+              </dd>
+            </div>
+            <div>
+              <dt>Giờ công tại lúc nộp</dt>
+              <dd>{hours(s.actualMinutesSnapshot)}</dd>
+            </div>
           </dl>
           {s.links.map((url, i) => (
             <p key={i}>
@@ -73,6 +80,14 @@ export function SubmissionDetailPage({
             <EvidenceFile key={id} attachmentId={id} />
           ))}
         </Panel>
+        {canReview && (
+          <ReviewForm
+            key={s.id}
+            taskId={taskId}
+            submissionId={s.id}
+            version={s.version}
+          />
+        )}
       </div>
       {s.reviewedAt && (
         <Panel title="Kết quả nghiệm thu">
@@ -89,19 +104,7 @@ export function SubmissionDetailPage({
           )}
         </Panel>
       )}
-      {canReview ? (
-        <ReviewForm
-          key={s.id}
-          taskId={taskId}
-          submissionId={s.id}
-          version={s.version}
-        />
-      ) : (
-        <p className="notice">
-          Lần nộp này chỉ được tra cứu. Nghiệm thu yêu cầu đúng quyền, khác
-          người nộp và là lần mới nhất đang chờ.
-        </p>
-      )}
+      {!canReview && <p className="notice">Bạn đang xem kết quả đã nộp.</p>}
     </>
   );
 }

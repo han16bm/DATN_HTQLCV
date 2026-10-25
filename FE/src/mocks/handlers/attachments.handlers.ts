@@ -9,7 +9,7 @@ import { attachmentsDb } from "../db";
 import { authenticatedUser, mockCommand, mockHandler, mockJson } from "./http";
 export const attachmentHandlers = [
   http.get(
-    "*/api/v1/attachments/policy",
+    "*/api/attachments/policy",
     mockHandler(async ({ request }) => {
       authenticatedUser(request);
       return mockJson(
@@ -21,7 +21,7 @@ export const attachmentHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/attachments",
+    "*/api/attachments",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const form = await request.formData();
@@ -51,7 +51,7 @@ export const attachmentHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/attachments/:attachmentId",
+    "*/api/attachments/:attachmentId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const attachmentId = idSchema.parse(params.attachmentId);
@@ -64,7 +64,7 @@ export const attachmentHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/attachments/:attachmentId/content",
+    "*/api/attachments/:attachmentId/content",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const attachmentId = idSchema.parse(params.attachmentId);

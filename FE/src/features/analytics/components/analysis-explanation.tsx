@@ -30,7 +30,9 @@ export function AnalysisExplanation({
           </div>
         </div>
       ))}
-      <h3 className="section-gap">Đề xuất để xem xét</h3>
+      {value.recommendations.length > 0 && (
+        <h3 className="section-gap">Đề xuất</h3>
+      )}
       {value.recommendations.map((r) => (
         <div key={r.id} className="recommendation">
           <h3>{r.title}</h3>
@@ -38,20 +40,15 @@ export function AnalysisExplanation({
           <DomainActionLink value={r.action} label="Mở chức năng liên quan" />
         </div>
       ))}
-      <div className="notice">
-        <h3>Giới hạn cần lưu ý</h3>
+      <details className="analysis-limitations">
+        <summary>Lưu ý khi sử dụng</summary>
         {value.limitations.map((v, i) => (
           <p key={i}>{v}</p>
         ))}
-      </div>
+      </details>
       <p className="small muted metadata">
         {value.modelDisplayName} · Diễn giải lúc {dateTime(value.generatedAt)}
       </p>
     </>
-  ) : (
-    <p className="muted">
-      Chưa có lời diễn giải AI hợp lệ cho bản dữ liệu này. Tổng hợp theo số liệu
-      được trình bày riêng.
-    </p>
-  );
+  ) : null;
 }

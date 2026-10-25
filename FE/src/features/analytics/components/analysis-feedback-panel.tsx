@@ -61,9 +61,6 @@ export function FeedbackPanel({ value }: { value: AnalysisDto }) {
           )}
         </>
       )}
-      <p className="small muted">
-        Phản hồi giữ lịch sử và không tự thay đổi công việc hoặc cảnh báo.
-      </p>
     </Panel>
   );
 }

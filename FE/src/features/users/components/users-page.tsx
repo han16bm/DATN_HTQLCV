@@ -4,11 +4,12 @@ import {
   Badge,
   ButtonLink,
   DataTable,
-  Loading,
+  DetailLink,
   PageHeader,
-  Pagination,
 } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { UserBadge } from "@/components/ui/user-badge";
 import { useListUnitsQuery } from "@/features/organization/hooks/use-organization-queries";
 import {
   systemRoleSchema,
@@ -16,7 +17,6 @@ import {
 } from "@/features/users/schemas/user.schema";
 import { label } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
-import Link from "next/link";
 import { useListUsersQuery } from "../hooks/use-users-queries";
 
 export function UsersPage() {
@@ -42,7 +42,6 @@ function UsersList() {
     <>
       <PageHeader
         title="Tài khoản người dùng"
-        description="Quản lý tài khoản nội bộ và phạm vi truy cập."
         actions={
           <ButtonLink href="/admin/users/new" primary>
             Cấp tài khoản
@@ -102,7 +101,7 @@ function UsersList() {
           </select>
         </label>
       </section>
-      {query.isPending && <Loading />}
+      {query.isPending && <PageSkeleton variant="table" />}
       {query.isError && (
         <QueryErrorState
           error={query.error}
@@ -110,41 +109,37 @@ function UsersList() {
         />
       )}{" "}
       {query.data && (
-        <section className="panel">
-          <DataTable
-            headers={[
-              "Người dùng",
-              "Vai trò hệ thống",
-              "Đơn vị",
-              "Trạng thái",
-              "",
-            ]}
-            rows={query.data.items.map((u) => [
-              <div key="name">
-                <Link className="text-link" href={`/admin/users/${u.id}`}>
-                  {u.displayName}
-                </Link>
-                <div className="small muted">
-                  {u.email} · {u.username}
-                </div>
-              </div>,
-              label(u.systemRole),
-              u.unit.name,
-              <Badge key="status" value={u.status} />,
-              <Link
-                key="detail"
-                className="text-link"
-                href={`/admin/users/${u.id}`}
-              >
-                Chi tiết
-              </Link>,
-            ])}
-          />
-          <Pagination
-            {...query.data.pagination}
-            onPage={(p) => filter.set("page", String(p))}
-          />
-        </section>
+        <DataTable
+          pagination={{
+            ...query.data.pagination,
+            onPage: (p) => filter.set("page", String(p)),
+          }}
+          actions
+          headers={[
+            "Người dùng",
+            "Vai trò hệ thống",
+            "Đơn vị",
+            "Trạng thái",
+            "Hành động",
+          ]}
+          rows={query.data.items.map((u) => [
+            <UserBadge
+              key="name"
+              name={u.displayName}
+              avatarUrl={u.avatarUrl}
+              href={`/users/${encodeURIComponent(u.id)}`}
+              detail={`${u.email} · ${u.username}`}
+            />,
+            label(u.systemRole),
+            u.unit.name,
+            <Badge key="status" value={u.status} />,
+            <DetailLink
+              key="detail"
+              href={`/admin/users/${u.id}`}
+              label={`Xem hồ sơ ${u.displayName}`}
+            />,
+          ])}
+        />
       )}
     </>
   );

@@ -1,7 +1,8 @@
 "use client";
 import { SchemaForm } from "@/components/forms/schema-form";
 import { ActionButton } from "@/components/ui/action-button";
-import { Loading, Panel } from "@/components/ui/page";
+import { Panel } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { ReportNumbers } from "@/features/reports/components/report-numbers";
 import {
@@ -42,25 +43,27 @@ export function ReportEditor({
   const [send, setSend] = useState(false);
   return (
     <>
-      <Panel title="Số liệu từ nhật ký">
-        <ActionButton
-          onAction={async () => {
-            await refresh.mutateAsync({
-              reportId: report.id,
-              version: snapshot.base!.version,
-            });
-          }}
-        >
-          Làm mới số liệu
-        </ActionButton>
-        {preview.isError ? (
-          <QueryErrorState error={preview.error} />
-        ) : preview.data ? (
-          <ReportNumbers value={preview.data} />
-        ) : (
-          <Loading />
-        )}
-      </Panel>
+      {preview.isError ? (
+        <QueryErrorState error={preview.error} />
+      ) : preview.data ? (
+        <ReportNumbers
+          value={preview.data}
+          actions={
+            <ActionButton
+              onAction={async () => {
+                await refresh.mutateAsync({
+                  reportId: report.id,
+                  version: snapshot.base!.version,
+                });
+              }}
+            >
+              Làm mới số liệu
+            </ActionButton>
+          }
+        />
+      ) : (
+        <PageSkeleton variant="form" />
+      )}
       <Panel title="Nội dung báo cáo">
         <label className="checkbox-label">
           <input

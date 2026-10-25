@@ -17,7 +17,7 @@ import {
 } from "./http";
 export const alertHandlers = [
   http.get(
-    "*/api/v1/alerts",
+    "*/api/alerts",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const query = parseQuery(request, alertQuerySchema);
@@ -30,7 +30,7 @@ export const alertHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/alerts/:alertId",
+    "*/api/alerts/:alertId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const alertId = idSchema.parse(params.alertId);
@@ -43,7 +43,7 @@ export const alertHandlers = [
     }),
   ),
   http.patch(
-    "*/api/v1/alerts/:alertId",
+    "*/api/alerts/:alertId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const alertId = idSchema.parse(params.alertId);

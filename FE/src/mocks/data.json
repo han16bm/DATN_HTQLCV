@@ -1,6 +1,25 @@
 {
   "clock": "2026-10-23T10:05:00.000Z",
+  "analysisPolicy": { "retentionDays": 7 },
   "password": "Mock@12345",
+  "metricFormulas": {
+    "K01": "Số công việc được theo dõi, không tính công việc đã hủy.",
+    "K02": "Số công việc được nghiệm thu hoàn thành trong khoảng thời gian đã chọn.",
+    "K03": "Cho biết bao nhiêu phần trăm công việc đã hoàn thành, không tính công việc đã hủy.",
+    "K04": "Số công việc đã quá hạn nhưng chưa hoàn thành, kể cả việc đang chờ nghiệm thu.",
+    "K05": "Cho biết bao nhiêu phần trăm công việc chưa hoàn thành đang bị quá hạn.",
+    "K06": "Tổng thời gian làm việc đã ghi nhận trong khoảng thời gian đã chọn, không tính nhật ký đã loại.",
+    "K07": "Chênh lệch giữa thời gian làm việc thực tế và thời gian ước lượng hiện tại.",
+    "K08": "Số lần nộp kết quả trễ hạn trong khoảng thời gian đã chọn, theo hạn được ghi nhận ở mỗi lần nộp.",
+    "K09": "Số công việc được nghiệm thu sau hạn hoàn thành trong khoảng thời gian đã chọn.",
+    "K10": "Thời gian chờ nghiệm thu trung bình của các kết quả đã nộp trong khoảng thời gian đã chọn. Với kết quả đang chờ, thời gian được tính đến lần cập nhật số liệu gần nhất.",
+    "K11": "Số lần kết quả công việc được yêu cầu chỉnh sửa trong khoảng thời gian đã chọn.",
+    "K12": "Số công việc đang thực hiện hoặc đã được giao nhưng chưa bắt đầu.",
+    "K13": "Thời gian nhân sự có thể dành cho công việc, dựa trên lịch làm việc, thời gian nghỉ và các công việc khác đã có kế hoạch.",
+    "K14": "Mức độ bận của nhân sự so với thời gian họ có thể dành cho công việc. Trên 100% nghĩa là thời gian cần để làm xong việc vượt thời gian có thể đáp ứng.",
+    "K15": "Thời gian trung bình các công việc chưa hoàn thành đã ở bước xử lý hiện tại.",
+    "K16": "Số báo cáo ngày và báo cáo tuần đã gửi trong khoảng thời gian đã chọn."
+  },
   "uploadPolicy": {
     "maxBytes": 20971520,
     "maxAttachments": 10,
@@ -222,7 +241,7 @@
       "updatedAt": "2026-10-01T02:00:00.000Z",
       "projectId": "p-main",
       "title": "Công việc mới",
-      "description": "Dữ liệu minh họa cho phát triển FE",
+      "description": "Tổng hợp yêu cầu cho chức năng quản lý công việc và thống nhất phạm vi thực hiện.",
       "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
       "priority": "NORMAL",
       "dueAt": "2026-10-26T10:00:00.000Z",
@@ -244,7 +263,7 @@
       "updatedAt": "2026-10-22T02:00:00.000Z",
       "projectId": "p-main",
       "title": "Kiểm tra phân quyền",
-      "description": "Dữ liệu minh họa cho phát triển FE",
+      "description": "Kiểm tra quyền truy cập của nhân viên, quản lý và quản trị viên trong từng dự án.",
       "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
       "priority": "NORMAL",
       "dueAt": "2026-10-26T10:00:00.000Z",
@@ -266,7 +285,7 @@
       "updatedAt": "2026-10-23T09:00:00.000Z",
       "projectId": "p-main",
       "title": "Thiết kế luồng giao việc",
-      "description": "Dữ liệu minh họa cho phát triển FE",
+      "description": "Hoàn thiện quy trình giao việc, cập nhật tiến độ và bàn giao giữa các thành viên.",
       "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
       "priority": "NORMAL",
       "dueAt": "2026-10-26T10:00:00.000Z",
@@ -288,7 +307,7 @@
       "updatedAt": "2026-10-22T09:00:00.000Z",
       "projectId": "p-main",
       "title": "API báo cáo tuần",
-      "description": "Dữ liệu minh họa cho phát triển FE",
+      "description": "Tổng hợp giờ công và kết quả thực hiện theo tuần để phục vụ theo dõi tiến độ.",
       "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
       "priority": "NORMAL",
       "dueAt": "2026-10-22T10:00:00.000Z",
@@ -310,7 +329,7 @@
       "updatedAt": "2026-10-22T09:00:00.000Z",
       "projectId": "p-main",
       "title": "Chuẩn hóa biểu mẫu",
-      "description": "Dữ liệu minh họa cho phát triển FE",
+      "description": "Thống nhất các trường thông tin và bố cục biểu mẫu dùng trong quy trình giao việc.",
       "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
       "priority": "NORMAL",
       "dueAt": "2026-10-26T10:00:00.000Z",
@@ -332,7 +351,7 @@
       "updatedAt": "2026-10-22T09:00:00.000Z",
       "projectId": "p-main",
       "title": "Phương án đã dừng",
-      "description": "Dữ liệu minh họa cho phát triển FE",
+      "description": "Ghi nhận phạm vi của phương án đã dừng và lý do thay đổi kế hoạch.",
       "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
       "priority": "NORMAL",
       "dueAt": "2026-10-26T10:00:00.000Z",
@@ -354,7 +373,7 @@
       "updatedAt": "2026-10-22T02:00:00.000Z",
       "projectId": "p-other",
       "title": "Công việc ngoài phạm vi",
-      "description": "Dữ liệu minh họa cho phát triển FE",
+      "description": "Chuẩn bị nội dung triển khai cho dự án của Phòng kỹ thuật.",
       "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
       "priority": "NORMAL",
       "dueAt": "2026-10-26T10:00:00.000Z",
@@ -725,7 +744,7 @@
             "value": 1440,
             "unit": "MINUTE",
             "basis": "CURRENT",
-            "formula": "Thời điểm dữ liệu trừ hạn hoàn thành của công việc còn mở.",
+            "formula": "Thời gian công việc đã trễ so với hạn hoàn thành.",
             "missingFields": []
           },
           {
@@ -734,7 +753,7 @@
             "value": 1500,
             "unit": "MINUTE",
             "basis": "CURRENT",
-            "formula": "Thời điểm dữ liệu trừ thời điểm nộp kết quả đang chờ.",
+            "formula": "Thời gian đã chờ kể từ khi nộp kết quả để nghiệm thu.",
             "missingFields": []
           },
           {
@@ -743,7 +762,7 @@
             "value": 120,
             "unit": "MINUTE",
             "basis": "CURRENT",
-            "formula": "Tổng số phút của các nhật ký còn hiệu lực.",
+            "formula": "Thời gian làm việc thực tế đã ghi nhận, không tính nhật ký đã loại.",
             "missingFields": []
           },
           {
@@ -752,7 +771,7 @@
             "value": 0,
             "unit": "COUNT",
             "basis": "CURRENT",
-            "formula": "Đếm các lần đã được yêu cầu chỉnh sửa.",
+            "formula": "Số lần kết quả công việc được yêu cầu chỉnh sửa.",
             "missingFields": []
           }
         ],
@@ -867,7 +886,7 @@
       "generation": {
         "allowed": true
       },
-      "systemSummary": "Công việc đang chờ nghiệm thu, quá hạn 24 giờ tại mốc dữ liệu. Kết quả được nộp trước hạn một giờ; đã ghi 120 phút."
+      "systemSummary": "Công việc đã quá hạn 24 giờ vì vẫn đang chờ nghiệm thu. Kết quả được nộp trước hạn một giờ và đã ghi nhận 2 giờ làm việc."
     },
     {
       "snapshot": {
@@ -898,16 +917,16 @@
             "value": 2,
             "unit": "TASK",
             "basis": "CURRENT",
-            "formula": "Số TODO/IN_PROGRESS hiện giao cho Lan.",
+            "formula": "Số công việc được giao cho Lan và đang chờ làm hoặc đang thực hiện.",
             "missingFields": []
           },
           {
             "id": "m-estimate",
-            "label": "Dự kiến hiện tại",
+            "label": "Ước lượng hiện tại",
             "value": 960,
             "unit": "MINUTE",
             "basis": "CURRENT",
-            "formula": "480 + 480 phút của hai công việc mở.",
+            "formula": "Tổng thời gian ước lượng hiện tại của các công việc đang được giao.",
             "missingFields": []
           },
           {
@@ -916,16 +935,16 @@
             "value": null,
             "unit": "MINUTE",
             "basis": "CURRENT",
-            "formula": "Chỉ cộng tổng khi mọi việc trong phạm vi đã được cập nhật thời gian còn lại.",
+            "formula": "Thời gian ước tính để làm xong các công việc đang nhận. Chỉ xác định được khi mọi công việc đã cập nhật thời gian còn lại.",
             "missingFields": ["remainingMinutes:t-2"]
           },
           {
             "id": "m-capacity",
-            "label": "Thời gian khả dụng",
+            "label": "Thời gian có thể làm việc",
             "value": null,
             "unit": "MINUTE",
             "basis": "PERIOD",
-            "formula": "Lịch làm việc trừ nghỉ và nghĩa vụ đã dành trong cùng kỳ.",
+            "formula": "Thời gian có thể dành cho công việc sau khi đã tính thời gian nghỉ và các công việc khác đã có kế hoạch.",
             "missingFields": ["capacityCalendar:u-lan"]
           }
         ],
@@ -981,14 +1000,14 @@
             {
               "id": "f-1",
               "title": "Cần cập nhật phần việc còn lại",
-              "text": "Một trong hai công việc chưa có thời gian còn lại; tổng dự kiến hiện tại không thay thế tổng còn lại.",
+              "text": "Một trong hai công việc chưa cập nhật thời gian cần để làm xong. Ước lượng hiện tại là tổng thời gian dự tính cho cả công việc, không phải thời gian còn lại.",
               "metricIds": ["m-open", "m-estimate", "m-remaining"],
               "evidenceIds": ["e-task2", "e-task3"]
             },
             {
               "id": "f-2",
               "title": "Chưa có mẫu số khả dụng",
-              "text": "Chưa có lịch khả dụng trong kỳ nên chưa tính tỷ lệ tải hoặc kết luận vượt sức chứa.",
+              "text": "Chưa có lịch làm việc nên chưa biết Lan có thể dành bao nhiêu thời gian cho các công việc này và có đang nhận quá nhiều việc hay không.",
               "metricIds": ["m-capacity"],
               "evidenceIds": ["e-task2", "e-task3"]
             }
@@ -1008,7 +1027,7 @@
             }
           ],
           "limitations": [
-            "Chưa có ước lượng còn lại của việc Kiểm tra phân quyền và lịch khả dụng của Lan. Không suy còn lại bằng dự kiến trừ giờ đã làm."
+            "Chưa có ước lượng thời gian cần để làm xong việc Kiểm tra phân quyền và lịch làm việc của Lan. Thời gian còn lại cần được người thực hiện cập nhật."
           ]
         },
         "activeJobId": null,
@@ -1017,7 +1036,7 @@
       "generation": {
         "allowed": true
       },
-      "systemSummary": "Trần Lan đang nhận 2 công việc TODO/IN_PROGRESS, tổng dự kiến 960 phút. Chưa đủ thời gian còn lại và lịch khả dụng để tính tỷ lệ tải."
+      "systemSummary": "Trần Lan đang nhận 2 công việc, với tổng thời gian ước lượng hiện tại là 16 giờ. Chưa có đủ thông tin về thời gian còn lại và lịch làm việc để xác định mức độ bận."
     },
     {
       "snapshot": {
@@ -1048,7 +1067,7 @@
             "value": 1500,
             "unit": "MINUTE",
             "basis": "CURRENT",
-            "formula": "Thời điểm dữ liệu trừ thời điểm gần nhất chuyển sang chờ nghiệm thu.",
+            "formula": "Thời gian công việc đã chờ kể từ lần gần nhất được chuyển sang nghiệm thu.",
             "missingFields": []
           },
           {
@@ -1057,7 +1076,7 @@
             "value": 1440,
             "unit": "MINUTE",
             "basis": "CURRENT",
-            "formula": "Ngưỡng thử nghiệm được BE cấu hình: 24 giờ liên tục.",
+            "formula": "Mốc chờ nghiệm thu 24 giờ dùng để nhắc xem xét công việc. Đây là ngưỡng thử nghiệm.",
             "missingFields": []
           },
           {
@@ -1066,7 +1085,7 @@
             "value": 60,
             "unit": "MINUTE",
             "basis": "CURRENT",
-            "formula": "max(0, 1500 − 1440).",
+            "formula": "Thời gian chờ đã vượt mốc 24 giờ. Chưa vượt mốc thì hiển thị 0.",
             "missingFields": []
           },
           {
@@ -1075,7 +1094,7 @@
             "value": 0,
             "unit": "COUNT",
             "basis": "CURRENT",
-            "formula": "Đếm các quyết định yêu cầu sửa đã ghi.",
+            "formula": "Số lần kết quả công việc được yêu cầu chỉnh sửa.",
             "missingFields": []
           }
         ],
@@ -1088,7 +1107,7 @@
           },
           {
             "key": "calendar",
-            "label": "Cách tính thời gian",
+            "label": "Thời gian theo dõi",
             "value": "Liên tục, gồm cả ngoài giờ làm việc",
             "valueType": "TEXT"
           }
@@ -1146,7 +1165,7 @@
             }
           ],
           "limitations": [
-            "Ngưỡng 24 giờ là giá trị thử nghiệm cần BE cấu hình. Thời gian liên tục không phải giờ công."
+            "Ngưỡng 24 giờ cần được điều chỉnh theo quy trình của đơn vị. Thời gian chờ không phải giờ công."
           ]
         },
         "activeJobId": null,
@@ -1155,7 +1174,7 @@
       "generation": {
         "allowed": true
       },
-      "systemSummary": "Kết quả đang chờ nghiệm thu 1.500 phút liên tục, vượt ngưỡng thử nghiệm 1.440 phút là 60 phút; chưa có vòng yêu cầu sửa."
+      "systemSummary": "Kết quả đã chờ nghiệm thu 25 giờ, lâu hơn mốc nhắc xem xét 24 giờ là 1 giờ. Chưa có yêu cầu chỉnh sửa. Mốc theo dõi này đang dùng để thử nghiệm."
     },
     {
       "snapshot": {
@@ -1186,7 +1205,7 @@
             "value": 5,
             "unit": "TASK",
             "basis": "CURRENT",
-            "formula": "6 công việc − 1 đã hủy.",
+            "formula": "Số công việc được theo dõi, không tính công việc đã hủy.",
             "missingFields": []
           },
           {
@@ -1195,7 +1214,7 @@
             "value": 1,
             "unit": "TASK",
             "basis": "CURRENT",
-            "formula": "Số công việc COMPLETED tại dataAsOf.",
+            "formula": "Số công việc đã hoàn thành tại thời điểm cập nhật dữ liệu.",
             "missingFields": []
           },
           {
@@ -1204,7 +1223,7 @@
             "value": 20,
             "unit": "PERCENT",
             "basis": "CURRENT",
-            "formula": "1 / 5 × 100.",
+            "formula": "Tỷ lệ công việc đã hoàn thành trong số các công việc được theo dõi, không tính việc đã hủy.",
             "missingFields": []
           },
           {
@@ -1213,7 +1232,7 @@
             "value": 1,
             "unit": "TASK",
             "basis": "CURRENT",
-            "formula": "Việc mở và dataAsOf > dueAt.",
+            "formula": "Số công việc đã quá hạn nhưng chưa hoàn thành.",
             "missingFields": []
           },
           {
@@ -1222,7 +1241,7 @@
             "value": 6,
             "unit": "HOUR",
             "basis": "PERIOD",
-            "formula": "(180 + 120 + 60) / 60.",
+            "formula": "Tổng thời gian làm việc đã ghi nhận trong khoảng thời gian đã chọn.",
             "missingFields": []
           },
           {
@@ -1231,7 +1250,7 @@
             "value": 1,
             "unit": "TASK",
             "basis": "CURRENT",
-            "formula": "Giá trị từ dữ liệu nguồn đã lọc quyền.",
+            "formula": "Số công việc đã nộp kết quả và đang chờ nghiệm thu.",
             "missingFields": []
           }
         ],
@@ -1253,7 +1272,7 @@
           },
           {
             "id": "e-logs",
-            "label": "3 nhật ký ACTIVE: 180, 120 và 60 phút trong kỳ.",
+            "label": "3 nhật ký còn hiệu lực: 180, 120 và 60 phút trong kỳ.",
             "observedAt": "2026-10-23T10:00:00.000Z",
             "action": null
           }
@@ -1307,7 +1326,7 @@
       "generation": {
         "allowed": true
       },
-      "systemSummary": "Dự án có 5 công việc không hủy, 1 công việc hoàn thành (20%), 1 việc đang quá hạn và 360 phút giờ công trong kỳ."
+      "systemSummary": "Dự án đang theo dõi 5 công việc, trong đó 1 việc đã hoàn thành (20%) và 1 việc đang quá hạn. Thời gian làm việc đã ghi nhận trong kỳ là 6 giờ."
     },
     {
       "snapshot": {
@@ -1338,7 +1357,7 @@
             "value": 6,
             "unit": "HOUR",
             "basis": "PERIOD",
-            "formula": "Tổng phút nhật ký ACTIVE / 60.",
+            "formula": "Tổng thời gian làm việc đã ghi nhận trong khoảng thời gian đã chọn, không tính nhật ký đã loại.",
             "missingFields": []
           },
           {
@@ -1347,7 +1366,7 @@
             "value": 360,
             "unit": "MINUTE",
             "basis": "PERIOD",
-            "formula": "180 + 120 + 60.",
+            "formula": "Tổng thời gian làm việc được ghi trong các nhật ký, không tính nhật ký đã loại.",
             "missingFields": []
           },
           {
@@ -1356,7 +1375,7 @@
             "value": 3,
             "unit": "COUNT",
             "basis": "PERIOD",
-            "formula": "Đếm 3 nhật ký ACTIVE.",
+            "formula": "Số nhật ký giờ công được ghi nhận trong khoảng thời gian đã chọn, không tính nhật ký đã loại.",
             "missingFields": []
           },
           {
@@ -1365,7 +1384,7 @@
             "value": 2,
             "unit": "COUNT",
             "basis": "PERIOD",
-            "formula": "Đếm những người khác nhau đã ghi nhật ký.",
+            "formula": "Số người đã ghi nhật ký giờ công trong khoảng thời gian đã chọn.",
             "missingFields": []
           }
         ],
@@ -1476,7 +1495,7 @@
       "generation": {
         "allowed": true
       },
-      "systemSummary": "Tổng giờ công trong kỳ là 6 giờ, từ 360 phút của 3 nhật ký còn hiệu lực, do 2 người ghi."
+      "systemSummary": "Trong kỳ, 2 nhân sự đã ghi nhận tổng cộng 6 giờ làm việc qua 3 nhật ký giờ công."
     }
   ]
 }

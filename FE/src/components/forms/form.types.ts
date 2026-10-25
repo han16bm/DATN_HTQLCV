@@ -13,11 +13,15 @@ export type FormField = {
     | "select"
     | "multi"
     | "date"
-    | "datetime-local";
+    | "datetime-local"
+    | "file";
+  accept?: string;
+  autoComplete?: string;
   required?: boolean;
   nullable?: boolean;
   emptyAsUndefined?: boolean;
   hint?: string;
+  width?: "short" | "medium" | "long" | "full";
   dependsOn?: string;
   options?: FormOption[];
 };

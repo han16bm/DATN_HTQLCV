@@ -56,8 +56,19 @@ export const labels: Record<string, string> = {
   WORKLOAD: "Khối lượng công việc",
   BOTTLENECK: "Điểm nghẽn quy trình",
   DATA_QUALITY: "Chất lượng dữ liệu",
+  PROJECT_MANAGE: "Quản lý dự án",
+  PROJECT_CREATE: "Tạo dự án",
+  MEMBERS_MANAGE: "Quản lý thành viên",
+  TASKS_MANAGE: "Quản lý công việc",
+  TASKS_REVIEW: "Nghiệm thu công việc",
+  ANALYTICS_VIEW: "Xem phân tích",
+  ALERTS_MANAGE: "Xử lý cảnh báo",
+  USERS_MANAGE: "Quản lý tài khoản",
+  ORGANIZATION_MANAGE: "Quản lý tổ chức",
 };
 export const label = (value: string) => labels[value] ?? value;
+export const eventLabel = (value: string) =>
+  value.split(" → ").map(label).join(" → ");
 export const dateTime = (value: string | null | undefined) =>
   value
     ? new Intl.DateTimeFormat("vi-VN", {
@@ -73,6 +84,16 @@ export const number = (value: number | null | undefined, suffix = "") =>
         value,
       ) + (suffix ? ` ${suffix}` : "");
 export const hours = (minutes: number) => number(minutes / 60, "giờ");
+const metricUnits: Record<string, string> = {
+  TASK: "việc",
+  COUNT: "lần",
+  PERCENT: "%",
+  MINUTE: "phút",
+  HOUR: "giờ",
+  REPORT: "báo cáo",
+};
+export const metricValue = (value: number | null, unit: string) =>
+  number(value, metricUnits[unit] ?? unit);
 export function fileSize(bytes: number) {
   const step = bytes >= 1024 ** 2 ? 2 : bytes >= 1024 ? 1 : 0;
   return number(bytes / 1024 ** step, ["B", "KiB", "MiB"][step]);

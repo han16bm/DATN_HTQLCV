@@ -1,143 +1,67 @@
 "use client";
-import { UnitForm } from "./unit-form";
-
 import { PermissionGate } from "@/components/layout/permission-gate";
 import {
   Badge,
   ButtonLink,
-  Empty,
-  Loading,
+  DataTable,
+  DetailLink,
   PageHeader,
-  Pagination,
-  Panel,
 } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
-import { useListUsersQuery } from "@/features/users/hooks/use-users-queries";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
-import { useUI } from "@/stores/ui-store";
-import {
-  useGetUnitQuery,
-  useListUnitsQuery,
-} from "../hooks/use-organization-queries";
+import { useListUnitsQuery } from "../hooks/use-organization-queries";
 
 export function OrganizationPage() {
   return (
     <PermissionGate permission="ORGANIZATION_MANAGE">
-      <UnitsWorkspace />
+      <UnitsList />
     </PermissionGate>
   );
 }
-function UnitsWorkspace() {
+function UnitsList() {
   const filters = useUrlFilters();
-  const units = useListUnitsQuery({ page: filters.page, pageSize: 100 });
-  const users = useListUsersQuery({ pageSize: 100, status: "ACTIVE" });
-  const selectedId = filters.get("unit") || units.data?.items[0]?.id || "";
-  const detail = useGetUnitQuery(selectedId, {
-    enabled: selectedId !== "new",
-  });
-  if (units.isError)
-    return (
-      <QueryErrorState error={units.error} retry={() => void units.refetch()} />
-    );
+  const query = useListUnitsQuery({ page: filters.page });
   return (
     <>
       <PageHeader
         title="Cơ cấu đơn vị"
-        description="Sắp xếp đơn vị, người phụ trách và thành viên."
         actions={
           <>
             <ButtonLink href="/admin/teams">Quản lý nhóm</ButtonLink>
-            <button
-              className="primary"
-              onClick={() => {
-                if (confirmDiscard()) filters.set("unit", "new");
-              }}
-            >
+            <ButtonLink href="/admin/organization/new" primary>
               Thêm đơn vị
-            </button>
+            </ButtonLink>
           </>
         }
       />
-      {!units.data ? (
-        <Loading />
+      {query.isError ? (
+        <QueryErrorState
+          error={query.error}
+          retry={() => void query.refetch()}
+        />
+      ) : !query.data ? (
+        <PageSkeleton variant="table" />
       ) : (
-        <div className="organization-layout">
-          <Panel title="Danh sách đơn vị">
-            <div className="entity-list">
-              {units.data.items.map((u) => (
-                <button
-                  key={u.id}
-                  className={u.id === selectedId ? "selected" : ""}
-                  onClick={() => {
-                    if (!confirmDiscard()) return;
-                    filters.set("unit", u.id);
-                  }}
-                >
-                  <span>{u.name}</span>
-                  <Badge value={u.status} />
-                </button>
-              ))}
-              {!units.data.items.length && <Empty />}
-            </div>
-            <Pagination
-              {...units.data.pagination}
-              onPage={(p) => filters.set("page", String(p))}
-            />
-          </Panel>
-          <div>
-            {selectedId === "new" ? (
-              <UnitForm
-                key="new"
-                onCreated={(id) => filters.set("unit", id)}
-                units={units.data.items}
-                users={
-                  users.data?.items.map((u) => ({
-                    value: u.id,
-                    label: u.displayName,
-                  })) ?? []
-                }
-              />
-            ) : detail.isError ? (
-              <QueryErrorState
-                error={detail.error}
-                retry={() => void detail.refetch()}
-              />
-            ) : detail.data ? (
-              <UnitForm
-                key={detail.data.id}
-                unit={detail.data}
-                units={units.data.items}
-                users={
-                  users.data?.items.map((u) => ({
-                    value: u.id,
-                    label: u.displayName,
-                  })) ?? []
-                }
-                reload={() => detail.refetch()}
-              />
-            ) : selectedId ? (
-              <Loading />
-            ) : (
-              <Empty />
-            )}
-            {users.isError && (
-              <QueryErrorState
-                error={users.error}
-                retry={() => void users.refetch()}
-              />
-            )}
-          </div>
-        </div>
+        <DataTable
+          title="Danh sách đơn vị"
+          actions
+          headers={["Đơn vị", "Trạng thái", "Hành động"]}
+          rows={query.data.items.map((unit) => [
+            unit.name,
+            <Badge key="status" value={unit.status} />,
+            <DetailLink
+              key="detail"
+              href={`/admin/organization/${encodeURIComponent(unit.id)}`}
+              label={`Xem đơn vị ${unit.name}`}
+            />,
+          ])}
+          pagination={{
+            ...query.data.pagination,
+            onPage: (p) => filters.set("page", String(p)),
+          }}
+        />
       )}
     </>
   );
-}
-function confirmDiscard() {
-  if (
-    useUI.getState().dirtyForms.length &&
-    !window.confirm("Bỏ các thay đổi chưa lưu để chuyển đơn vị?")
-  )
-    return false;
-  useUI.getState().reset();
-  return true;
 }

@@ -2,7 +2,7 @@
 import type { FormField } from "@/components/forms/form.types";
 import { VersionedSchemaForm } from "@/components/forms/versioned-schema-form";
 import { HashDialog } from "@/components/ui/dialog";
-import { Loading } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
 import { useGetTaskQuery } from "@/features/tasks/hooks/use-tasks-queries";
@@ -48,7 +48,7 @@ export function TimeLogDialog({ taskId }: { taskId: string }) {
       description="Số phút được ghi riêng, không tự suy từ thời gian chạy trạng thái."
     >
       {!task.data ? (
-        <Loading />
+        <PageSkeleton variant="form" />
       ) : task.data.assigneeId !== session?.user.id ||
         task.data.status !== "IN_PROGRESS" ||
         project.data?.status !== "ACTIVE" ? (
@@ -59,7 +59,7 @@ export function TimeLogDialog({ taskId }: { taskId: string }) {
       ) : logId && logs.isError ? (
         <QueryErrorState error={logs.error} />
       ) : logId && !logs.data ? (
-        <Loading />
+        <PageSkeleton variant="form" />
       ) : logId &&
         (!selected ||
           selected.userId !== session?.user.id ||
@@ -146,8 +146,9 @@ function LogForm({
           Thao tác
           <select
             value={action}
-            onChange={(e) => {
-              if (confirmDiscard()) setAction(e.target.value);
+            onChange={async (e) => {
+              const value = e.target.value;
+              if (await confirmDiscard()) setAction(value);
             }}
           >
             <option value="EDIT">Sửa nhật ký</option>

@@ -27,7 +27,7 @@ import {
 } from "./http";
 export const taskHandlers = [
   http.get(
-    "*/api/v1/tasks",
+    "*/api/tasks",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const query = parseQuery(request, taskQuerySchema);
@@ -40,7 +40,7 @@ export const taskHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/tasks/:taskId",
+    "*/api/tasks/:taskId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const taskId = idSchema.parse(params.taskId);
@@ -53,7 +53,7 @@ export const taskHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/projects/:projectId/tasks",
+    "*/api/projects/:projectId/tasks",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const projectId = idSchema.parse(params.projectId);
@@ -80,7 +80,7 @@ export const taskHandlers = [
     }),
   ),
   http.patch(
-    "*/api/v1/tasks/:taskId",
+    "*/api/tasks/:taskId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const taskId = idSchema.parse(params.taskId);
@@ -112,7 +112,7 @@ export const taskHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/tasks/:taskId/assignments",
+    "*/api/tasks/:taskId/assignments",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const taskId = idSchema.parse(params.taskId);
@@ -144,7 +144,7 @@ export const taskHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/tasks/:taskId/start",
+    "*/api/tasks/:taskId/start",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const taskId = idSchema.parse(params.taskId);
@@ -171,7 +171,7 @@ export const taskHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/tasks/:taskId/pause",
+    "*/api/tasks/:taskId/pause",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const taskId = idSchema.parse(params.taskId);
@@ -203,7 +203,7 @@ export const taskHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/tasks/:taskId/cancel",
+    "*/api/tasks/:taskId/cancel",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const taskId = idSchema.parse(params.taskId);
@@ -235,7 +235,7 @@ export const taskHandlers = [
     }),
   ),
   http.patch(
-    "*/api/v1/tasks/:taskId/remaining-estimate",
+    "*/api/tasks/:taskId/remaining-estimate",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const taskId = idSchema.parse(params.taskId);
@@ -267,7 +267,7 @@ export const taskHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/tasks/:taskId/history",
+    "*/api/tasks/:taskId/history",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const taskId = idSchema.parse(params.taskId);

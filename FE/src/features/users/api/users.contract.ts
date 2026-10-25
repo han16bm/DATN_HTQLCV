@@ -8,6 +8,7 @@ import {
   type UserDto,
   type UserList,
   type UserQuery,
+  type ProfileDto,
 } from "@/features/users/types/users.types";
 import type {
   MutationOptions,
@@ -17,6 +18,7 @@ import type {
 export interface UsersApi {
   listUsers(query?: UserQuery, options?: RequestOptions): Promise<UserList>;
   getUser(userId: string, options?: RequestOptions): Promise<UserDto>;
+  getProfile(userId: string, options?: RequestOptions): Promise<ProfileDto>;
   createUser(
     payload: CreateUserInput,
     options: MutationOptions,

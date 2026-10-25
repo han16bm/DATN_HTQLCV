@@ -44,7 +44,12 @@ import type {
   AttachmentDto,
   UploadAttachmentInput,
 } from "@/features/attachments/types/attachments.types";
-import type { LoginInput, SessionDto } from "@/features/auth/types/auth.types";
+import type {
+  LoginInput,
+  SessionDto,
+  UpdateProfileInput,
+  ChangePasswordInput,
+} from "@/features/auth/types/auth.types";
 import { teamSchema } from "@/features/organization/schemas/team.schema";
 import { unitSchema } from "@/features/organization/schemas/unit.schema";
 import type {
@@ -133,6 +138,7 @@ import type {
   UpdateUserInput,
   UserDto,
   UserQuery,
+  ProfileDto,
   UserRow,
 } from "@/features/users/types/users.types";
 import {
@@ -142,6 +148,7 @@ import {
 import { checkAnalysisData } from "@/lib/validation/contract-refinements";
 import { idSchema } from "@/lib/validation/request.schema";
 import { ApiError } from "@/types/api/error";
+import { dateTime, hours, localDateTime, metricValue } from "@/lib/format";
 import type {
   AnalysisRefDto,
   AnalysisSubjectDto,
@@ -152,7 +159,10 @@ import { z } from "zod";
 import seed from "./data.json";
 
 // Dữ liệu và kiểu lưu trữ.
-const userModel = z.object(userSchema.shape).omit({ unit: true });
+const userModel = z
+  .object(userSchema.shape)
+  .omit({ unit: true, avatarUrl: true })
+  .extend({ avatarId: idSchema.nullable().default(null) });
 const projectModel = z
   .object(projectSchema.shape)
   .omit({ owner: true, unit: true })
@@ -170,10 +180,8 @@ const taskModel = z
     isOverdue: true,
   })
   .extend({
-    createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
     statusChangedAt: z.iso.datetime(),
-    firstStartedAt: z.iso.datetime().nullable(),
     completedAt: z.iso.datetime().nullable(),
   });
 const logModel = z
@@ -247,7 +255,8 @@ const analysisModel = z
     explanation: explanationModel,
   })
   .superRefine(checkAnalysisData);
-const auditModel = auditSchema.extend({
+const auditModel = auditSchema.omit({ actor: true }).extend({
+  actorId: idSchema,
   entityType: z.string(),
   entityId: idSchema,
 });
@@ -311,6 +320,7 @@ function createDatabase() {
         new Blob([seed.fileContent], { type: file.mimeType }),
       ]),
     ),
+    avatars: new Map<string, Blob>(),
     passwords: new Map(users.map((user) => [user.id, seed.password])),
     snapshotIndex: new Map<string, string>(),
     snapshotProjects: new Map<string, string[]>(),
@@ -346,7 +356,9 @@ export function resetDatabase() {
   db = createDatabase();
 }
 export function setClock(value: string) {
-  clock = z.iso.datetime().parse(value);
+  const next = z.iso.datetime().parse(value);
+  if (next !== clock) db.revision++;
+  clock = next;
 }
 function touch(v: { version: number; updatedAt?: string }) {
   v.version++;
@@ -355,12 +367,13 @@ function touch(v: { version: number; updatedAt?: string }) {
 }
 const systemPermissions = (user: User): SessionDto["systemPermissions"] =>
   user.systemRole === "ADMIN"
-    ? ["USERS_MANAGE", "ORGANIZATION_MANAGE"]
+    ? ["USERS_MANAGE", "ORGANIZATION_MANAGE", "ANALYTICS_VIEW"]
     : user.systemRole === "MANAGER"
       ? ["PROJECT_CREATE"]
       : [];
 const can = (u: User, permission: string, projectId?: string) =>
-  projectId
+  (u.systemRole === "ADMIN" && permission === "ANALYTICS_VIEW") ||
+  (projectId
     ? db.members.some(
         (m) =>
           m.projectId === projectId &&
@@ -368,12 +381,13 @@ const can = (u: User, permission: string, projectId?: string) =>
           !m.endedAt &&
           m.permissions.some((p) => p === permission),
       )
-    : systemPermissions(u).some((p) => p === permission);
+    : systemPermissions(u).some((p) => p === permission));
 const inProject = (u: User, projectId: string) =>
   db.members.some(
     (m) => m.projectId === projectId && m.userId === u.id && !m.endedAt,
   );
 function visibleTask(u: User, t: Task) {
+  if (u.systemRole === "ADMIN") return true;
   return (
     inProject(u, t.projectId) &&
     (can(u, "TASKS_MANAGE", t.projectId) ||
@@ -429,6 +443,7 @@ const userRow = (user: User): UserRow => ({
   username: user.username,
   displayName: user.displayName,
   email: user.email,
+  avatarUrl: user.avatarId ? `/api/avatars/${user.avatarId}` : null,
   unitId: user.unitId,
   systemRole: user.systemRole,
   status: user.status,
@@ -461,6 +476,7 @@ const taskRow = (task: Task): TaskRow => ({
   status: task.status,
   priority: task.priority,
   dueAt: task.dueAt,
+  firstStartedAt: task.firstStartedAt,
   isOverdue: isTaskOverdue(task),
   assignee: task.assigneeId ? person(task.assigneeId) : null,
   project: {
@@ -473,6 +489,7 @@ const taskDTO = (task: Task): TaskDto => ({
   ...taskRow(task),
   version: task.version,
   projectId: task.projectId,
+  createdAt: task.createdAt,
   description: task.description,
   acceptanceCriteria: task.acceptanceCriteria,
   estimatedMinutes: task.estimatedMinutes,
@@ -515,6 +532,7 @@ const submissionRow = (
 const reviewRow = (item: (typeof db.submissions)[number]): ReviewRow => ({
   id: item.id,
   taskId: item.taskId,
+  taskTitle: db.tasks.find((task) => task.id === item.taskId)!.title,
   sequence: item.sequence,
   submitter: person(item.submittedBy),
   submittedAt: item.submittedAt,
@@ -539,7 +557,10 @@ const submissionDTO = (
 });
 const reportRow = (report: Report): ReportRow => ({
   id: report.id,
-  projectId: report.projectId,
+  project: {
+    id: report.projectId,
+    name: db.projects.find((project) => project.id === report.projectId)!.name,
+  },
   periodType: report.periodType,
   periodStart: report.periodStart,
   status: report.status,
@@ -565,7 +586,7 @@ const reportDTO = (report: Report): ReportDto => ({
 const teamRow = (team: (typeof db.teams)[number]): TeamRow => ({
   id: team.id,
   name: team.name,
-  unitId: team.unitId,
+  unit: unitRef(team.unitId),
   status: team.status,
   memberCount: team.memberIds.length,
 });
@@ -581,7 +602,11 @@ function sessionDTO(user: User): SessionDto {
   return {
     user: {
       id: user.id,
+      version: user.version,
+      avatarUrl: user.avatarId ? `/api/avatars/${user.avatarId}` : null,
       displayName: user.displayName,
+      username: user.username,
+      email: user.email,
       unitId: user.unitId,
       unit: unitRef(user.unitId),
       systemRole: user.systemRole,
@@ -606,15 +631,35 @@ const unitRow = (unit: (typeof db.units)[number]): UnitRow => ({
   name: unit.name,
   status: unit.status,
 });
-const auditDTO = (item: Audit): AuditDto => ({
-  id: item.id,
-  actorId: item.actorId,
-  action: item.action,
-  at: item.at,
-  before: item.before,
-  after: item.after,
-  reason: item.reason,
-});
+function auditDTO(item: Audit): AuditDto {
+  const keys =
+    item.after && typeof item.after === "object" ? Object.keys(item.after) : [];
+  const view = (value: Audit["before"]): AuditDto["before"] => {
+    if (!value || typeof value !== "object" || Array.isArray(value))
+      return value;
+    return Object.fromEntries(
+      keys
+        .filter((key) => key in value)
+        .map((key) =>
+          ["userId", "ownerId", "assigneeId"].includes(key)
+            ? [
+                key.slice(0, -2),
+                typeof value[key] === "string" ? person(value[key]) : null,
+              ]
+            : [key, value[key]],
+        ),
+    );
+  };
+  return {
+    id: item.id,
+    actor: person(item.actorId),
+    action: item.action,
+    at: item.at,
+    before: view(item.before),
+    after: view(item.after),
+    reason: item.reason,
+  };
+}
 
 // Phân trang và phiên bản cập nhật.
 function paginate<T>(items: T[], query: { page?: number; pageSize?: number }) {
@@ -685,6 +730,83 @@ export const authDb = {
   },
   getSession(accessToken: string | undefined) {
     return sessionDTO(sessionUser(accessToken));
+  },
+  async updateProfile(
+    viewer: User,
+    body: UpdateProfileInput,
+    expectedVersion: string | null,
+  ) {
+    requireVersion(expectedVersion, viewer);
+    if (body.username !== undefined)
+      unique(body.username, viewer.email, viewer.id);
+    const { avatar, ...data } = body;
+    if (avatar) {
+      const bytes = new Uint8Array(await avatar.slice(0, 12).arrayBuffer());
+      const valid =
+        (avatar.type === "image/png" &&
+          [137, 80, 78, 71, 13, 10, 26, 10].every(
+            (byte, i) => bytes[i] === byte,
+          )) ||
+        (avatar.type === "image/jpeg" &&
+          bytes[0] === 255 &&
+          bytes[1] === 216 &&
+          bytes[2] === 255) ||
+        (avatar.type === "image/webp" &&
+          new TextDecoder().decode(bytes.slice(0, 4)) === "RIFF" &&
+          new TextDecoder().decode(bytes.slice(8, 12)) === "WEBP");
+      if (!valid)
+        throw new ApiError(
+          422,
+          "INVALID_AVATAR",
+          "Tệp đã chọn không phải ảnh hợp lệ.",
+          [
+            {
+              path: ["avatar"],
+              message: "Vui lòng chọn ảnh JPG, PNG hoặc WebP hợp lệ.",
+            },
+          ],
+        );
+    }
+    const before = {
+      username: viewer.username,
+      displayName: viewer.displayName,
+    };
+    if (avatar) {
+      if (viewer.avatarId) db.avatars.delete(viewer.avatarId);
+      viewer.avatarId = crypto.randomUUID();
+      db.avatars.set(viewer.avatarId, avatar);
+    }
+    Object.assign(viewer, data);
+    touch(viewer);
+    audit(viewer.id, "USER", viewer.id, "Cập nhật hồ sơ cá nhân", before, data);
+    return sessionDTO(viewer);
+  },
+  changePassword(viewer: User, body: ChangePasswordInput) {
+    if (db.passwords.get(viewer.id) !== body.currentPassword)
+      throw new ApiError(
+        422,
+        "WRONG_PASSWORD",
+        "Mật khẩu hiện tại chưa đúng.",
+        [
+          {
+            path: ["currentPassword"],
+            message: "Mật khẩu hiện tại chưa đúng.",
+          },
+        ],
+      );
+    db.passwords.set(viewer.id, body.newPassword);
+    audit(viewer.id, "USER", viewer.id, "Đổi mật khẩu", null, null);
+    return { ok: true as const };
+  },
+  getAvatar(avatarId: string) {
+    const file = db.avatars.get(avatarId);
+    if (!file)
+      throw new ApiError(
+        404,
+        "AVATAR_NOT_FOUND",
+        "Không tìm thấy ảnh đại diện.",
+      );
+    return file;
   },
   logout(accessToken: string | undefined) {
     const user = sessionUser(accessToken);
@@ -1008,6 +1130,23 @@ function unique(username: string, email: string, except?: string) {
     ]);
 }
 export const usersDb = {
+  getProfile(userId: string): ProfileDto {
+    const user = requireUser(userId);
+    if (user.status !== "ACTIVE")
+      throw new ApiError(
+        404,
+        "PROFILE_NOT_FOUND",
+        "Hồ sơ này hiện không khả dụng.",
+      );
+    return {
+      id: user.id,
+      displayName: user.displayName,
+      avatarUrl: user.avatarId ? `/api/avatars/${user.avatarId}` : null,
+      unit: unitRef(user.unitId).name,
+      systemRole: user.systemRole,
+      email: user.email,
+    };
+  },
   listUsers(viewer: User, query: UserQuery) {
     requireAdmin(viewer, "USERS_MANAGE");
     return paginate(
@@ -1039,6 +1178,7 @@ export const usersDb = {
       ...entity(),
       updatedAt: now(),
       ...data,
+      avatarId: null,
       status: "ACTIVE" as const,
     };
     db.users.push(user);
@@ -1311,9 +1451,7 @@ function requireProject(user: User, id: string, permission?: string) {
   const project = db.projects.find((p) => p.id === id);
   if (!project) throw new ApiError(404, "NOT_FOUND", "Không tìm thấy dự án.");
   if (
-    !db.members.some(
-      (m) => m.projectId === id && m.userId === user.id && !m.endedAt,
-    ) ||
+    (!inProject(user, id) && user.systemRole !== "ADMIN") ||
     (permission && !can(user, permission, id))
   )
     throw new ApiError(
@@ -1329,7 +1467,7 @@ export const projectsDb = {
       db.projects
         .filter(
           (p) =>
-            inProject(viewer, p.id) &&
+            (viewer.systemRole === "ADMIN" || inProject(viewer, p.id)) &&
             (!query.q ||
               `${p.code} ${p.name}`
                 .toLowerCase()
@@ -1870,11 +2008,9 @@ export const tasksDb = {
         "Hạn không phù hợp kế hoạch dự án.",
       );
     const { changeReason, ...patch } = body;
-    const before = {
-      title: task.title,
-      dueAt: task.dueAt,
-      estimatedMinutes: task.estimatedMinutes,
-    };
+    const before = Object.fromEntries(
+      Object.keys(patch).map((key) => [key, task[key as keyof typeof patch]]),
+    );
     Object.assign(task, patch);
     touch(task);
     audit(
@@ -2129,7 +2265,9 @@ export const timeLogsDb = {
       patch.minutes ?? log.minutes,
       log.id,
     );
-    const before = { minutes: log.minutes, workDate: log.workDate };
+    const before = Object.fromEntries(
+      Object.keys(patch).map((key) => [key, log[key as keyof typeof patch]]),
+    );
     Object.assign(log, patch);
     touch(log);
     touch(task);
@@ -2356,6 +2494,12 @@ export const submissionsDb = {
 // Báo cáo.
 function activeProject(actor: User, id: string) {
   const project = requireProject(actor, id);
+  if (!inProject(actor, id))
+    throw new ApiError(
+      403,
+      "FORBIDDEN",
+      "Chỉ thành viên dự án được lập báo cáo cá nhân.",
+    );
   if (project.status !== "ACTIVE")
     throw new ApiError(
       409,
@@ -2376,7 +2520,7 @@ function validPeriod(periodType: Report["periodType"], start: string) {
     );
 }
 const canRead = (actor: User, r: Report) =>
-  inProject(actor, r.projectId) &&
+  (actor.systemRole === "ADMIN" || inProject(actor, r.projectId)) &&
   (r.authorId === actor.id ||
     (r.status === "SUBMITTED" &&
       (can(actor, "PROJECT_MANAGE", r.projectId) ||
@@ -2670,10 +2814,9 @@ const quality = (missingFields: string[] = []): Quality => ({
   status: missingFields.length ? "PARTIAL" : "SUFFICIENT",
   missingFields,
 });
-const time = () => (db.revision === 1 ? "2026-10-23T10:00:00.000Z" : now());
 function analyticsScope(u: User, query: AnalyticsQuery) {
   const allowed = db.projects.filter((p) => can(u, "ANALYTICS_VIEW", p.id));
-  if (!allowed.length)
+  if (!allowed.length && u.systemRole !== "ADMIN")
     throw new ApiError(
       403,
       "FORBIDDEN",
@@ -2694,16 +2837,26 @@ function analyticsScope(u: User, query: AnalyticsQuery) {
       (!query.unitId || p.unitId === query.unitId) &&
       (!query.ownerId || p.ownerId === query.ownerId),
   );
-  if ((query.projectId || query.unitId) && !projects.length)
+  if (
+    !projects.length &&
+    (query.projectId ||
+      (query.unitId &&
+        !(
+          u.systemRole === "ADMIN" &&
+          db.units.some((unit) => unit.id === query.unitId)
+        )))
+  )
     throw new ApiError(403, "FORBIDDEN", "Bạn không có quyền xem phạm vi này.");
   const scope = {
     ...query,
-    ...(!query.unitId && !query.projectId ? { unitId: u.unitId } : {}),
+    ...(!query.unitId && !query.projectId && u.systemRole !== "ADMIN"
+      ? { unitId: u.unitId }
+      : {}),
   };
   const team = query.teamId
     ? db.teams.find((t) => t.id === query.teamId)
     : null;
-  if (query.teamId && (!team || team.unitId !== (query.unitId ?? u.unitId)))
+  if (query.teamId && (!team || (scope.unitId && team.unitId !== scope.unitId)))
     throw new ApiError(403, "FORBIDDEN", "Nhóm nằm ngoài phạm vi.");
   const people = team?.memberIds ?? null;
   const cohort = db.tasks.filter(
@@ -2747,16 +2900,12 @@ const action = (
 });
 function meta(missing: string[] = []): AnalysisMetaDto {
   return {
-    dataAsOf: time(),
-    calculationVersion: "business-rules-v2",
+    dataAsOf: now(),
     quality: quality(missing),
   };
 }
 
 // Snapshot phân tích và căn cứ.
-function subjectKey(subject: AnalysisSubjectDto) {
-  return JSON.stringify(subject);
-}
 function snapshotRef(
   u: User,
   scope: Scope,
@@ -2769,7 +2918,7 @@ function snapshotRef(
   context: ContextItemDto[] = [],
   missing: string[] = [],
 ): AnalysisRefDto {
-  const index = `${db.revision}|${u.id}|${JSON.stringify(scope)}|${subjectKey(subject)}|${type}`;
+  const index = `${db.revision}|${u.id}|${JSON.stringify(scope)}|${JSON.stringify(subject)}|${type}`;
   let detail = db.details.get(db.snapshotIndex.get(index) ?? "");
   if (!detail) {
     const id = `an-${crypto.randomUUID()}`;
@@ -2783,8 +2932,10 @@ function snapshotRef(
         title,
         subject,
         scope,
-        dataAsOf: time(),
-        expiresAt: "2026-11-30T10:00:00.000Z",
+        dataAsOf: now(),
+        expiresAt: new Date(
+          Date.parse(now()) + seed.analysisPolicy.retentionDays * 86400000,
+        ).toISOString(),
         quality:
           metrics.length && metrics.every((m) => m.value === null)
             ? {
@@ -2860,19 +3011,16 @@ function taskAnalysis(
     (s) => s.id === t.latestSubmissionId && s.status === "PENDING",
   );
   const overdue = task.isOverdue
-    ? Math.max(0, (Date.parse(time()) - Date.parse(t.dueAt)) / 60000)
+    ? Math.max(0, (Date.parse(now()) - Date.parse(t.dueAt)) / 60000)
     : 0;
   const wait = pending
-    ? Math.max(
-        0,
-        (Date.parse(time()) - Date.parse(pending.submittedAt)) / 60000,
-      )
+    ? Math.max(0, (Date.parse(now()) - Date.parse(pending.submittedAt)) / 60000)
     : 0;
   const evidence: EvidenceDto[] = [
     {
       id: "e-task",
-      label: `Hạn công việc: ${t.dueAt}`,
-      observedAt: time(),
+      label: `Hạn hoàn thành: ${dateTime(t.dueAt)}`,
+      observedAt: now(),
       action: action("TASK_DETAIL", t.id),
     },
   ];
@@ -2889,21 +3037,21 @@ function taskAnalysis(
       "Thời gian quá hạn",
       overdue,
       "MINUTE",
-      "Mốc dữ liệu trừ hạn của công việc còn mở.",
+      "Thời gian công việc đã trễ so với hạn hoàn thành.",
     ),
     measure(
       "WAIT",
       "Chờ nghiệm thu",
       wait,
       "MINUTE",
-      "Mốc dữ liệu trừ thời điểm nộp kết quả.",
+      "Thời gian đã chờ kể từ khi nộp kết quả để nghiệm thu.",
     ),
     measure(
       "ACTUAL",
-      "Giờ công đã ghi",
+      "Giờ công thực tế",
       task.actualMinutes,
       "MINUTE",
-      "Tổng số phút nhật ký ACTIVE.",
+      "Thời gian làm việc thực tế đã ghi nhận, không tính nhật ký đã loại.",
     ),
     measure(
       "REVISIONS",
@@ -2912,10 +3060,10 @@ function taskAnalysis(
         (s) => s.taskId === t.id && s.status === "REVISION_REQUESTED",
       ).length,
       "COUNT",
-      "Đếm quyết định yêu cầu sửa.",
+      "Số lần kết quả công việc được yêu cầu chỉnh sửa.",
     ),
   ];
-  const summary = `${t.title}: ${task.isOverdue ? "công việc còn mở và đã quá hạn" : "chưa có dấu hiệu quá hạn hiện tại"}. Đã ghi ${task.actualMinutes} phút. ${pending ? "Kết quả đang chờ nghiệm thu; thời gian chờ không cộng vào giờ công." : "Cần đối chiếu dữ liệu kế hoạch và tiến độ trước khi đưa ra quyết định."}`;
+  const summary = `${t.title}: ${task.isOverdue ? "công việc đã quá hạn nhưng chưa hoàn thành" : "công việc chưa quá hạn"}. Thời gian làm việc đã ghi nhận là ${hours(task.actualMinutes)}. ${pending ? "Kết quả đang chờ nghiệm thu; thời gian chờ không được tính là giờ làm việc." : "Cần xem lại kế hoạch và tiến độ trước khi quyết định điều chỉnh."}`;
   return snapshotRef(
     u,
     scope,
@@ -2979,7 +3127,7 @@ function dashboard(u: User, query: AnalyticsQuery): DashboardDto {
       (!scope.assigneeId || r.authorId === scope.assigneeId) &&
       (!people || people.includes(r.authorId)),
   );
-  const overdue = open.filter((t) => t.dueAt < time()).length;
+  const overdue = open.filter((t) => t.dueAt < now()).length;
   const actual = sum(logs.map((l) => l.minutes));
   const estimates = sum(valid.map((t) => t.estimatedMinutes));
   const original = sum(valid.map((t) => t.originalEstimatedMinutes));
@@ -3008,7 +3156,7 @@ function dashboard(u: User, query: AnalyticsQuery): DashboardDto {
     MetricDto["basis"],
     number | null,
   ][] = [
-    ["K01", "Công việc được tính", valid.length, "TASK", "CURRENT", null],
+    ["K01", "Công việc theo dõi", valid.length, "TASK", "CURRENT", null],
     [
       "K02",
       "Hoàn thành trong kỳ",
@@ -3037,7 +3185,7 @@ function dashboard(u: User, query: AnalyticsQuery): DashboardDto {
     ["K06", "Giờ công trong kỳ", actual / 60, "HOUR", "PERIOD", null],
     [
       "K07",
-      "Chênh lệch dự kiến",
+      "Chênh lệch so với ước lượng hiện tại",
       cohortActual - estimates,
       "MINUTE",
       "CURRENT",
@@ -3053,7 +3201,7 @@ function dashboard(u: User, query: AnalyticsQuery): DashboardDto {
     ],
     [
       "K09",
-      "Hoàn tất muộn",
+      "Nghiệm thu trễ hạn",
       reviewed.filter(
         (s) =>
           s.status === "ACCEPTED" &&
@@ -3066,11 +3214,11 @@ function dashboard(u: User, query: AnalyticsQuery): DashboardDto {
     ],
     [
       "K10",
-      "Chờ xét trung bình",
+      "Chờ nghiệm thu trung bình",
       mean(
         submissions.map(
           (s) =>
-            (Date.parse(s.reviewedAt ?? time()) - Date.parse(s.submittedAt)) /
+            (Date.parse(s.reviewedAt ?? now()) - Date.parse(s.submittedAt)) /
             60000,
         ),
       ),
@@ -3090,20 +3238,20 @@ function dashboard(u: User, query: AnalyticsQuery): DashboardDto {
     ],
     [
       "K12",
-      "Việc đang làm / chờ làm",
+      "Công việc đang nhận",
       currentWorking.length,
       "TASK",
       "CURRENT",
       null,
     ],
-    ["K13", "Thời gian khả dụng", null, "MINUTE", "PERIOD", null],
-    ["K14", "Tỷ lệ tải", null, "PERCENT", "PERIOD", null],
+    ["K13", "Thời gian có thể làm việc", null, "MINUTE", "PERIOD", null],
+    ["K14", "Mức độ bận", null, "PERCENT", "PERIOD", null],
     [
       "K15",
-      "Thời gian ở trạng thái",
+      "Thời gian ở bước xử lý hiện tại",
       mean(
         open.map(
-          (t) => (Date.parse(time()) - Date.parse(t.statusChangedAt)) / 60000,
+          (t) => (Date.parse(now()) - Date.parse(t.statusChangedAt)) / 60000,
         ),
       ),
       "MINUTE",
@@ -3118,7 +3266,7 @@ function dashboard(u: User, query: AnalyticsQuery): DashboardDto {
       label,
       value,
       unit === "REPORT" ? "COUNT" : unit,
-      "Tính theo quy tắc " + code + " từ dữ liệu trong phạm vi đã chọn.",
+      seed.metricFormulas[code as keyof typeof seed.metricFormulas],
     );
     m.basis = basis;
     m.missingFields =
@@ -3142,7 +3290,7 @@ function dashboard(u: User, query: AnalyticsQuery): DashboardDto {
         [],
         value === null
           ? "Chưa đủ dữ liệu để tính chỉ số."
-          : `${label}: ${value} ${unit}.`,
+          : `${label}: ${metricValue(value, unit)}.`,
       ),
     });
   });
@@ -3160,12 +3308,12 @@ function dashboard(u: User, query: AnalyticsQuery): DashboardDto {
         m.label,
         m.value,
         m.unit === "REPORT" ? "COUNT" : m.unit,
-        "Theo quy tắc " + m.code,
+        seed.metricFormulas[m.code],
       ),
       basis: m.basis,
     })),
     [],
-    `${projects.length} dự án, ${valid.length} công việc không hủy, ${completed.length} hoàn thành; ${overdue} việc quá hạn và ${actual} phút giờ công trong kỳ.`,
+    `Đang theo dõi ${valid.length} công việc trong ${projects.length} dự án, trong đó ${completed.length} việc đã hoàn thành và ${overdue} việc đã quá hạn. Thời gian làm việc đã ghi nhận trong kỳ là ${hours(actual)}.`,
   );
   const timeliness = (items: typeof submissions) => ({
     onTimeCount: items.filter((s) => s.submittedAt <= s.dueAtSnapshot).length,
@@ -3214,7 +3362,7 @@ function dashboard(u: User, query: AnalyticsQuery): DashboardDto {
                 : [],
             ),
           ),
-      ).add("2026-10-23"),
+      ),
     ]
       .filter((date) => date >= scope.from && date <= scope.to)
       .sort()
@@ -3259,7 +3407,7 @@ function dashboard(u: User, query: AnalyticsQuery): DashboardDto {
           p.name,
           [],
           [],
-          `${p.name}: ${pts.length} công việc không hủy.`,
+          `${p.name} đang theo dõi ${pts.length} công việc, không tính việc đã hủy.`,
         ),
       };
     }),
@@ -3277,8 +3425,8 @@ function risks(u: User, query: AnalyticsQuery): RisksDto {
       const nearReview =
         !overdue &&
         t.status === "PENDING_REVIEW" &&
-        Date.parse(time()) - Date.parse(t.statusChangedAt) >= 24 * 3600000 &&
-        Date.parse(t.dueAt) - Date.parse(time()) <= 48 * 3600000;
+        Date.parse(now()) - Date.parse(t.statusChangedAt) >= 24 * 3600000 &&
+        Date.parse(t.dueAt) - Date.parse(now()) <= 48 * 3600000;
       return riskItemSchema.parse({
         taskId: t.id,
         taskTitle: t.title,
@@ -3292,10 +3440,10 @@ function risks(u: User, query: AnalyticsQuery): RisksDto {
               : "NO_SIGNAL",
         evidence: [
           overdue
-            ? "Công việc còn mở sau hạn."
+            ? "Công việc đã quá hạn nhưng chưa hoàn thành."
             : nearReview
-              ? "Chờ nghiệm thu từ 24 giờ liên tục và hạn trong 48 giờ; ngưỡng thử nghiệm."
-              : "Cần đối chiếu nguồn tiến độ.",
+              ? "Đã chờ nghiệm thu ít nhất 24 giờ và còn nhiều nhất 48 giờ là đến hạn. Đây là ngưỡng theo dõi thử nghiệm."
+              : "Cần xem thêm tiến độ và báo cáo để đánh giá khả năng hoàn thành đúng hạn.",
         ],
         quality: quality(
           t.remainingMinutes === null ? ["remainingMinutes"] : [],
@@ -3325,7 +3473,9 @@ function risks(u: User, query: AnalyticsQuery): RisksDto {
         insufficientDataCount: rows.filter(
           (r) => r.category === "INSUFFICIENT_DATA",
         ).length,
-        evidence: ["Phân loại từ công việc trong cùng phạm vi."],
+        evidence: [
+          "Mức nguy cơ dựa trên tình trạng các công việc trong dự án.",
+        ],
         analysisRef: snapshotRef(
           u,
           { ...scope, projectId: p.id },
@@ -3338,7 +3488,7 @@ function risks(u: User, query: AnalyticsQuery): RisksDto {
               "Công việc quá hạn",
               rows.filter((r) => r.category === "OVERDUE").length,
               "TASK",
-              "Đếm công việc mở sau hạn.",
+              "Số công việc đã quá hạn nhưng chưa hoàn thành.",
             ),
           ],
           [],
@@ -3401,25 +3551,25 @@ function workload(u: User, query: AnalyticsQuery): WorkloadDto {
               "Việc đang nhận",
               current.length,
               "TASK",
-              "TODO/IN_PROGRESS theo người nhận.",
+              "Số công việc được giao và đang chờ làm hoặc đang thực hiện.",
             ),
             measure(
               "REMAINING",
-              "Phút còn lại",
+              "Thời gian cần để làm xong",
               remaining,
               "MINUTE",
-              "Tổng ước lượng còn lại được nhập riêng.",
+              "Thời gian ước tính để làm xong các công việc đang nhận, theo cập nhật mới nhất của người thực hiện.",
             ),
             measure(
               "CAPACITY",
-              "Khả dụng",
+              "Thời gian có thể làm việc",
               null,
               "MINUTE",
-              "Lịch làm việc trừ nghỉ và nghĩa vụ khác.",
+              "Thời gian có thể dành cho công việc sau khi đã tính thời gian nghỉ và các công việc khác đã có kế hoạch.",
             ),
           ],
           [],
-          `${person(id).displayName} đang nhận ${current.length} công việc. Chưa có lịch khả dụng nên chưa đủ dữ liệu kết luận quá tải.`,
+          `${person(id).displayName} đang nhận ${current.length} công việc. Chưa có lịch làm việc nên chưa xác định được có đang nhận quá nhiều việc hay không.`,
           [],
           ["workingCalendar"],
         ),
@@ -3437,10 +3587,10 @@ function bottlenecks(u: User, query: AnalyticsQuery): BottlenecksDto {
       .filter(
         (t) =>
           (t.status === "PENDING_REVIEW" &&
-            Date.parse(time()) - Date.parse(t.statusChangedAt) >=
+            Date.parse(now()) - Date.parse(t.statusChangedAt) >=
               24 * 3600000) ||
           (["TODO", "IN_PROGRESS"].includes(t.status) &&
-            (Date.parse(time()) - Date.parse(t.statusChangedAt) >=
+            (Date.parse(now()) - Date.parse(t.statusChangedAt) >=
               48 * 3600000 ||
               db.submissions.filter(
                 (s) => s.taskId === t.id && s.status === "REVISION_REQUESTED",
@@ -3453,13 +3603,13 @@ function bottlenecks(u: User, query: AnalyticsQuery): BottlenecksDto {
           .enum(["TODO", "IN_PROGRESS", "PENDING_REVIEW"])
           .parse(t.status),
         elapsedMinutes:
-          (Date.parse(time()) - Date.parse(t.statusChangedAt)) / 60000,
+          (Date.parse(now()) - Date.parse(t.statusChangedAt)) / 60000,
         revisionCount: db.submissions.filter(
           (s) => s.taskId === t.id && s.status === "REVISION_REQUESTED",
         ).length,
         calendarBasis: "CONTINUOUS",
         evidence: [
-          "Thời gian liên tục ở trạng thái hiện tại; không tương đương giờ công.",
+          "Thời gian công việc đã ở bước xử lý hiện tại, bao gồm cả lúc chờ và ngoài giờ làm việc. Đây không phải giờ làm việc thực tế.",
         ],
         assignee: t.assigneeId ? person(t.assigneeId) : null,
         analysisRef: taskAnalysis(u, scope, t, "BOTTLENECK"),
@@ -3499,7 +3649,7 @@ function requireAnalysis(actor: User, id: string) {
     throw new ApiError(404, "NOT_FOUND", "Không tìm thấy bản phân tích.");
   const ids = analysisProjectIds(id);
   if (
-    !ids.length ||
+    (!ids.length && actor.systemRole !== "ADMIN") ||
     ids.some((projectId) => !can(actor, "ANALYTICS_VIEW", projectId))
   )
     throw new ApiError(
@@ -3654,8 +3804,15 @@ function createJob(
         findings: [
           {
             id: "finding-1",
-            title: "Đối chiếu dữ liệu hiện có",
-            text: "Các thông số phản ánh phạm vi và mốc dữ liệu đã chọn. Cần xem căn cứ trước khi điều chỉnh kế hoạch hoặc phân công.",
+            title: "Tình hình hiện tại",
+            text: snapshot.metrics.length
+              ? snapshot.metrics
+                  .map(
+                    (metric) =>
+                      `${metric.label}: ${metricValue(metric.value, metric.unit)}`,
+                  )
+                  .join("; ")
+              : target.systemSummary,
             metricIds: snapshot.metrics.map((m) => m.id),
             evidenceIds: snapshot.evidence.map((e) => e.id),
           },
@@ -3665,7 +3822,7 @@ function createJob(
           .slice(0, 2)
           .map((e, i) => ({
             id: `recommendation-${i}`,
-            title: "Kiểm tra nguồn nghiệp vụ",
+            title: "Xem thông tin liên quan",
             text: e.label,
             evidenceIds: [e.id],
             action: e.action,
@@ -3735,13 +3892,14 @@ function alertRow(a: (typeof db.alerts)[number]): AlertRow {
 }
 function alertDTO(a: (typeof db.alerts)[number], u: User): AlertDto {
   const task = db.tasks.find((t) => t.id === a.taskId);
+  const today = localDateTime(now()).slice(0, 10);
   return {
     ...a,
     taskTitle: task?.title ?? null,
     analysisRef: task
       ? taskAnalysis(
           u,
-          { projectId: a.projectId, from: "2026-10-01", to: "2026-10-23" },
+          { projectId: a.projectId, from: `${today.slice(0, 8)}01`, to: today },
           task,
           a.type === "BOTTLENECK" ? "BOTTLENECK" : "RISK",
         )
@@ -3911,9 +4069,22 @@ export const analyticsDb = {
         (!query.unitId || p.unitId === query.unitId) &&
         (!query.projectId || p.id === query.projectId),
     );
-    if ((query.unitId || query.projectId) && !projects.length)
+    if (
+      !projects.length &&
+      (query.projectId ||
+        (query.unitId &&
+          !(
+            viewer.systemRole === "ADMIN" &&
+            db.units.some((unit) => unit.id === query.unitId)
+          )))
+    )
       throw new ApiError(403, "FORBIDDEN", "Không có quyền trong phạm vi lọc.");
-    const unitIds = projects.map((p) => p.unitId);
+    const unitIds =
+      viewer.systemRole === "ADMIN"
+        ? db.units
+            .filter((unit) => !query.unitId || unit.id === query.unitId)
+            .map((unit) => unit.id)
+        : projects.map((p) => p.unitId);
     const memberIds = db.members
       .filter((m) => !m.endedAt && projects.some((p) => p.id === m.projectId))
       .map((m) => m.userId);

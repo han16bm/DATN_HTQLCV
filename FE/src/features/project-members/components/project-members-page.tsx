@@ -1,13 +1,10 @@
 "use client";
 import { SchemaForm } from "@/components/forms/schema-form";
 import { HashDialog } from "@/components/ui/dialog";
-import {
-  DataTable,
-  Loading,
-  PageHeader,
-  Pagination,
-} from "@/components/ui/page";
+import { DataTable, PageHeader } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { UserBadge } from "@/components/ui/user-badge";
 import { addMemberSchema } from "@/features/project-members/schemas/project-members.schema";
 import { type MembershipDto } from "@/features/project-members/types/project-members.types";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
@@ -43,7 +40,6 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
     <>
       <PageHeader
         title="Thành viên dự án"
-        description="Quyền được cấp riêng trên từng dự án."
         actions={
           manage && (
             <button
@@ -61,69 +57,63 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
           retry={() => void query.refetch()}
         />
       ) : !query.data ? (
-        <Loading />
+        <PageSkeleton variant="table" />
       ) : (
-        <section className="panel">
-          <DataTable
-            headers={[
-              "Thành viên",
-              "Vai trò dự án",
-              "Quyền nghiệp vụ",
-              "Tư cách",
-              "",
-            ]}
-            rows={query.data.items.map((m) => [
-              <div key="person">
-                {m.user.displayName}
-                <div className="small muted">{m.userId}</div>
-              </div>,
-              label(m.projectRole),
-              m.permissions.length
-                ? `${m.permissions.length} quyền`
-                : "Theo việc được giao",
-              m.endedAt
-                ? `Đã kết thúc ${dateTime(m.endedAt)}`
-                : "Đang tham gia",
-              manage && (
-                <div key="actions" className="actions">
-                  <Link
-                    className="text-link"
-                    href={`/projects/${projectId}/permissions?member=${m.id}`}
-                  >
-                    {m.projectRole === "OWNER" ? "Xem quyền" : "Phân quyền"}
-                  </Link>
-                  {!m.endedAt && m.projectRole !== "OWNER" && (
-                    <>
-                      <Link
-                        className="text-link"
-                        href={`/tasks?projectId=${projectId}&assigneeId=${m.userId}`}
-                      >
-                        Bàn giao việc
-                      </Link>
-                      <button
-                        onClick={() => {
-                          setEnding(m);
-                          dialog.open("end-member");
-                        }}
-                      >
-                        Kết thúc
-                      </button>
-                    </>
-                  )}
-                </div>
-              ),
-            ])}
-          />
-          <Pagination
-            {...query.data.pagination}
-            onPage={(p) => filters.set("page", String(p))}
-          />
-        </section>
+        <DataTable
+          pagination={{
+            ...query.data.pagination,
+            onPage: (p) => filters.set("page", String(p)),
+          }}
+          actions
+          headers={[
+            "Thành viên",
+            "Vai trò dự án",
+            "Quyền nghiệp vụ",
+            "Tư cách",
+            "Hành động",
+          ]}
+          rows={query.data.items.map((m) => [
+            <UserBadge
+              key="person"
+              name={m.user.displayName}
+              href={`/users/${encodeURIComponent(m.user.id)}`}
+            />,
+            label(m.projectRole),
+            m.permissions.length
+              ? `${m.permissions.length} quyền`
+              : "Theo việc được giao",
+            m.endedAt ? `Đã kết thúc ${dateTime(m.endedAt)}` : "Đang tham gia",
+            manage && (
+              <div key="actions" className="actions">
+                <Link
+                  className="text-link"
+                  href={`/projects/${projectId}/permissions?member=${m.id}`}
+                >
+                  {m.projectRole === "OWNER" ? "Xem quyền" : "Phân quyền"}
+                </Link>
+                {!m.endedAt && m.projectRole !== "OWNER" && (
+                  <>
+                    <Link
+                      className="text-link"
+                      href={`/tasks?projectId=${projectId}&assigneeId=${m.userId}`}
+                    >
+                      Bàn giao việc
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setEnding(m);
+                        dialog.open("end-member");
+                      }}
+                    >
+                      Kết thúc
+                    </button>
+                  </>
+                )}
+              </div>
+            ),
+          ])}
+        />
       )}
-      <div className="hint">
-        Bàn giao các công việc mở trước khi kết thúc tư cách. Giờ công và lịch
-        sử phân công được giữ lại.
-      </div>
       {manage && (
         <>
           <HashDialog name="add-member" title="Thêm thành viên dự án">

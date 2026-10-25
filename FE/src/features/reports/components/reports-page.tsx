@@ -3,19 +3,18 @@ import {
   Badge,
   ButtonLink,
   DataTable,
-  Loading,
+  DetailLink,
   PageHeader,
-  Pagination,
-  Panel,
 } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { UserBadge } from "@/components/ui/user-badge";
 import { useListProjectMembersQuery } from "@/features/project-members/hooks/use-project-members-queries";
 import { useListProjectsQuery } from "@/features/projects/hooks/use-projects-queries";
 import { periodTypeSchema } from "@/features/reports/schemas/reports.schema";
 import { hasPermission, useSession } from "@/lib/auth/session-context";
 import { hours, label, options } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
-import Link from "next/link";
 import { z } from "zod";
 import { useListReportsQuery } from "../hooks/use-reports-queries";
 export function ReportsPage() {
@@ -40,7 +39,6 @@ export function ReportsPage() {
     <>
       <PageHeader
         title="Báo cáo công việc"
-        description="Báo cáo cá nhân và các bản đã gửi trong phạm vi quản lý."
         actions={
           <ButtonLink href="/reports/new" primary>
             Lập báo cáo
@@ -124,38 +122,35 @@ export function ReportsPage() {
       {q.isError ? (
         <QueryErrorState error={q.error} retry={() => void q.refetch()} />
       ) : !q.data ? (
-        <Loading />
+        <PageSkeleton variant="table" />
       ) : (
-        <Panel>
-          <DataTable
-            headers={[
-              "Báo cáo",
-              "Người lập",
-              "Tổng giờ công đã chốt",
-              "Trạng thái",
-            ]}
-            rows={q.data.items.map((r) => [
-              <Link
-                key={r.id}
-                className="text-link"
-                href={`/reports/${r.id}${r.status === "DRAFT" ? "/edit" : ""}`}
-              >
-                {label(r.periodType)} · {r.periodStart}
-                <p className="small muted">
-                  {projects.data?.items.find((p) => p.id === r.projectId)
-                    ?.name ?? r.projectId}
-                </p>
-              </Link>,
-              r.author.displayName,
-              r.totalMinutes !== null ? hours(r.totalMinutes) : "Chưa chốt",
-              <Badge key="status" value={r.status} />,
-            ])}
-          />
-          <Pagination
-            {...q.data.pagination}
-            onPage={(p) => f.set("page", String(p))}
-          />
-        </Panel>
+        <DataTable
+          pagination={{
+            ...q.data.pagination,
+            onPage: (p) => f.set("page", String(p)),
+          }}
+          actions
+          headers={[
+            "Báo cáo",
+            "Dự án",
+            "Người lập",
+            "Giờ công",
+            "Trạng thái",
+            "Hành động",
+          ]}
+          rows={q.data.items.map((r) => [
+            `${label(r.periodType)} · ${r.periodStart}`,
+            r.project.name,
+            <UserBadge key="author" name={r.author.displayName} />,
+            r.totalMinutes !== null ? hours(r.totalMinutes) : "Chưa chốt",
+            <Badge key="status" value={r.status} />,
+            <DetailLink
+              key="detail"
+              href={`/reports/${r.id}${r.status === "DRAFT" ? "/edit" : ""}`}
+              label={`Xem báo cáo ${r.periodStart}`}
+            />,
+          ])}
+        />
       )}
     </>
   );

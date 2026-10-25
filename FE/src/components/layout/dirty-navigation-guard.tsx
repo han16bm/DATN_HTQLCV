@@ -1,11 +1,12 @@
 "use client";
 import { useUI } from "@/stores/ui-store";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 export function DirtyNavigationGuard() {
   const path = usePathname();
   const search = useSearchParams();
+  const router = useRouter();
   const previous = useRef<{ url: string; state: unknown } | null>(null);
   useEffect(() => {
     previous.current = { url: location.href, state: history.state };
@@ -14,20 +15,25 @@ export function DirtyNavigationGuard() {
     const remember = () => {
       previous.current = { url: location.href, state: history.state };
     };
-    const back = (event: PopStateEvent) => {
+    const discard = async () => {
       if (
-        previous.current &&
-        useUI.getState().dirtyForms.length &&
-        !window.confirm(
-          "Bạn có dữ liệu chưa lưu. Bỏ thay đổi để rời nội dung này?",
-        )
-      ) {
+        !(await useUI
+          .getState()
+          .confirm("Bạn có dữ liệu chưa lưu. Bỏ thay đổi để rời trang?"))
+      )
+        return false;
+      useUI.getState().clearDirty();
+      useUI.getState().setSidebar(false);
+      return true;
+    };
+    const back = async (event: PopStateEvent) => {
+      if (previous.current && useUI.getState().dirtyForms.length) {
         event.stopImmediatePropagation();
+        const target = new URL(location.href);
         history.pushState(previous.current.state, "", previous.current.url);
-        return;
-      }
-      if (useUI.getState().dirtyForms.length) useUI.getState().reset();
-      remember();
+        if (await discard())
+          router.replace(target.pathname + target.search + target.hash);
+      } else remember();
     };
     const unload = (event: BeforeUnloadEvent) => {
       if (useUI.getState().dirtyForms.length) {
@@ -35,8 +41,17 @@ export function DirtyNavigationGuard() {
         event.returnValue = "";
       }
     };
-    const navigate = (event: MouseEvent) => {
-      if (!useUI.getState().dirtyForms.length || event.defaultPrevented) return;
+    const navigate = async (event: MouseEvent) => {
+      if (
+        !useUI.getState().dirtyForms.length ||
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      )
+        return;
       const anchor =
         event.target instanceof Element ? event.target.closest("a") : null;
       if (
@@ -45,18 +60,19 @@ export function DirtyNavigationGuard() {
         anchor.hasAttribute("download")
       )
         return;
-      const destination = new URL(anchor.href, location.href);
+      const target = new URL(anchor.href, location.href);
       if (
-        destination.pathname === location.pathname &&
-        destination.search === location.search
+        target.pathname === location.pathname &&
+        target.search === location.search
       )
         return;
-      if (
-        !window.confirm("Bạn có dữ liệu chưa lưu. Bỏ thay đổi để rời trang?")
-      ) {
-        event.preventDefault();
-        event.stopPropagation();
-      } else useUI.getState().reset();
+      event.preventDefault();
+      event.stopPropagation();
+      if (await discard()) {
+        if (target.origin === location.origin)
+          router.push(target.pathname + target.search + target.hash);
+        else location.assign(target.href);
+      }
     };
     window.addEventListener("beforeunload", unload);
     window.addEventListener("hashchange", remember);
@@ -68,6 +84,6 @@ export function DirtyNavigationGuard() {
       window.removeEventListener("popstate", back, true);
       document.removeEventListener("click", navigate, true);
     };
-  }, []);
+  }, [router]);
   return null;
 }

@@ -1,6 +1,7 @@
 "use client";
 import { SchemaForm } from "@/components/forms/schema-form";
-import { Loading, PageHeader, Panel } from "@/components/ui/page";
+import { PageHeader, Panel } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListProjectsQuery } from "@/features/projects/hooks/use-projects-queries";
 import {
@@ -29,7 +30,7 @@ export function NewReportPage() {
         {projects.isError ? (
           <QueryErrorState error={projects.error} />
         ) : !projects.data ? (
-          <Loading />
+          <PageSkeleton variant="form" />
         ) : (
           <SchemaForm
             schema={createReportSchema.pick({

@@ -12,7 +12,7 @@ Yêu cầu bổ sung đã chốt trong trao đổi: BE dùng Microservices; FE d
 
 | Mã | Quy ước hiện tại | Mức độ |
 |---|---|---|
-| D01 | Một public origin của Gateway, prefix `/api/v1`, camelCase, ID dạng chuỗi opaque | Đề xuất kỹ thuật, BE đối chiếu |
+| D01 | Một public origin của Gateway, prefix `/api`, camelCase, ID dạng chuỗi opaque | Đề xuất kỹ thuật, BE đối chiếu |
 | D02 | Access token Bearer giữ trong bộ nhớ; refresh qua cookie HttpOnly do BE quản lý | Đề xuất, cần chốt với BE; không tự chuyển token sang localStorage |
 | D03 | Thành công `{data,meta}`; lỗi `{error,meta}`; pagination page/pageSize/total | Đề xuất, cần đối chiếu contract BE |
 | D04 | Version số nguyên và If-Match dạng `"1"`; thiếu trả 428, cũ trả 412 | Đề xuất cho concurrency; không đổi sang 409 mà không đồng bộ toàn bộ tài liệu |

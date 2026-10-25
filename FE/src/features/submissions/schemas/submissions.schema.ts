@@ -60,7 +60,10 @@ export const submissionSchema = z
       z
         .string()
         .url()
-        .refine((v) => /^https?:\/\//.test(v), "Chỉ nhận liên kết HTTP/HTTPS"),
+        .refine(
+          (v) => /^https?:\/\//.test(v),
+          "Vui lòng nhập liên kết đầy đủ, ví dụ https://example.com.",
+        ),
     ),
     attachmentIds: z.array(idSchema),
     dueAtSnapshot: z.iso.datetime(),
@@ -92,11 +95,14 @@ export const submissionRowSchema = z.object(submissionSchema.shape).pick({
   status: true,
 });
 
-export const reviewRowSchema = z.object(submissionSchema.shape).pick({
-  id: true,
-  taskId: true,
-  sequence: true,
-  submitter: true,
-  submittedAt: true,
-  dueAtSnapshot: true,
-});
+export const reviewRowSchema = z
+  .object(submissionSchema.shape)
+  .pick({
+    id: true,
+    taskId: true,
+    sequence: true,
+    submitter: true,
+    submittedAt: true,
+    dueAtSnapshot: true,
+  })
+  .extend({ taskTitle: z.string().min(1).max(255) });

@@ -1,7 +1,7 @@
 "use client";
 import { VersionedSchemaForm } from "@/components/forms/versioned-schema-form";
 import { HashDialog } from "@/components/ui/dialog";
-import { Loading } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { EvidenceUploader } from "@/features/attachments/components/evidence";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
@@ -45,7 +45,7 @@ export function SubmitResultDialog({ taskId }: { taskId: string }) {
       {query.isError ? (
         <QueryErrorState error={query.error} />
       ) : !query.data ? (
-        <Loading />
+        <PageSkeleton variant="form" />
       ) : query.data.assigneeId !== session?.user.id ||
         query.data.status !== "IN_PROGRESS" ||
         project.data?.status !== "ACTIVE" ? (
@@ -92,7 +92,7 @@ function SubmissionForm({
             name: "links",
             label: "Liên kết minh chứng",
             type: "textarea",
-            hint: "Mỗi dòng một liên kết HTTP/HTTPS, tối đa 10 liên kết.",
+            hint: "Mỗi dòng một liên kết, tối đa 10 liên kết.",
           },
         ]}
         submitDisabled={busy}

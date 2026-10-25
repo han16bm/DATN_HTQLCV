@@ -1,4 +1,5 @@
 "use client";
+import { Spinner } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { type AttachmentDto } from "@/features/attachments/types/attachments.types";
 import { fileSize } from "@/lib/format";
@@ -89,7 +90,10 @@ export function EvidenceUploader({
         }}
       />
       {upload.isPending && (
-        <p role="status">Đang tải tệp, vui lòng chờ trước khi nộp…</p>
+        <p role="status" className="loading-inline">
+          <Spinner />
+          Đang tải tệp, vui lòng chờ trước khi nộp…
+        </p>
       )}
       {items.map((item) => (
         <div className="list-row" key={item.id}>
@@ -119,15 +123,24 @@ export function EvidenceFile({ attachmentId }: { attachmentId: string }) {
   const query = useGetAttachmentQuery(attachmentId);
   const { pending, error, download } = useDownloadAttachment();
   if (query.isError) return <QueryErrorState error={query.error} />;
-  if (!query.data) return <p>Đang tải thông tin tệp…</p>;
+  if (!query.data)
+    return (
+      <p role="status" className="loading-inline">
+        <Spinner />
+        Đang tải thông tin tệp…
+      </p>
+    );
   const item = query.data;
   return (
     <div className="section-gap">
       <button
         type="button"
+        className="pending-button"
+        aria-busy={pending}
         disabled={pending || item.status !== "READY"}
         onClick={() => void download(item.id, item.filename)}
       >
+        {pending && <Spinner />}
         {pending ? "Đang tải…" : `Tải ${item.filename}`} (
         {fileSize(item.sizeBytes)})
       </button>

@@ -18,7 +18,7 @@ import {
 } from "./http";
 export const timeLogHandlers = [
   http.get(
-    "*/api/v1/tasks/:taskId/time-logs",
+    "*/api/tasks/:taskId/time-logs",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const taskId = idSchema.parse(params.taskId);
@@ -32,7 +32,7 @@ export const timeLogHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/tasks/:taskId/time-logs",
+    "*/api/tasks/:taskId/time-logs",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const taskId = idSchema.parse(params.taskId);
@@ -64,7 +64,7 @@ export const timeLogHandlers = [
     }),
   ),
   http.patch(
-    "*/api/v1/time-logs/:timeLogId",
+    "*/api/time-logs/:timeLogId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const timeLogId = idSchema.parse(params.timeLogId);
@@ -96,7 +96,7 @@ export const timeLogHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/time-logs/:timeLogId/void",
+    "*/api/time-logs/:timeLogId/void",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const timeLogId = idSchema.parse(params.timeLogId);

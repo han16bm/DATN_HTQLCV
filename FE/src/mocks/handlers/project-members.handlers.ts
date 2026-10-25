@@ -17,7 +17,7 @@ import {
 } from "./http";
 export const projectMemberHandlers = [
   http.get(
-    "*/api/v1/projects/:projectId/members",
+    "*/api/projects/:projectId/members",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const projectId = idSchema.parse(params.projectId);
@@ -31,7 +31,7 @@ export const projectMemberHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/projects/:projectId/members",
+    "*/api/projects/:projectId/members",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const projectId = idSchema.parse(params.projectId);
@@ -58,7 +58,7 @@ export const projectMemberHandlers = [
     }),
   ),
   http.patch(
-    "*/api/v1/projects/:projectId/members/:membershipId",
+    "*/api/projects/:projectId/members/:membershipId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const projectId = idSchema.parse(params.projectId);
@@ -92,7 +92,7 @@ export const projectMemberHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/projects/:projectId/members/:membershipId/end",
+    "*/api/projects/:projectId/members/:membershipId/end",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const projectId = idSchema.parse(params.projectId);

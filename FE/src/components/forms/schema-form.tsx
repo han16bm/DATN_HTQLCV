@@ -1,5 +1,6 @@
 "use client";
 import { useUI } from "@/stores/ui-store";
+import { Spinner } from "@/components/ui/loading";
 import { ApiError } from "@/types/api/error";
 import { useEffect, useId, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -36,6 +37,7 @@ export function SchemaForm<S extends z.ZodType<FormValues>>({
   }, [id, isDirty, markDirty]);
   return (
     <form
+      className={`schema-form ${fields.length <= 3 ? "form-compact" : ""}`}
       noValidate
       onSubmit={form.handleSubmit(async (values) => {
         setError(null);
@@ -86,7 +88,13 @@ export function SchemaForm<S extends z.ZodType<FormValues>>({
         )}
         <div className="form-actions wide">
           {cancel}
-          <button className="primary" type="submit" disabled={submitDisabled}>
+          <button
+            className="primary pending-button"
+            type="submit"
+            disabled={submitDisabled}
+            aria-busy={isSubmitting}
+          >
+            {isSubmitting && <Spinner />}
             {isSubmitting ? "Đang lưu…" : submitLabel}
           </button>
         </div>

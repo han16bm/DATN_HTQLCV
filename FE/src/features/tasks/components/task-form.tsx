@@ -33,16 +33,10 @@ export function TaskForm({
   const base = snapshot.base;
   const router = useRouter();
   const fields: FormField[] = [
-    { name: "title", label: "Tên công việc", required: true },
-    { name: "description", label: "Mô tả", type: "textarea", nullable: true },
-    {
-      name: "acceptanceCriteria",
-      label: "Tiêu chí nghiệm thu",
-      type: "textarea",
-      required: true,
-    },
+    { name: "title", label: "Tên công việc", required: true, width: "full" },
     {
       name: "priority",
+      width: "short",
       label: "Ưu tiên",
       type: "select",
       options: options(prioritySchema.options),
@@ -58,6 +52,13 @@ export function TaskForm({
       name: "estimatedMinutes",
       label: "Thời gian dự kiến (phút)",
       type: "number",
+      required: true,
+    },
+    { name: "description", label: "Mô tả", type: "textarea", nullable: true },
+    {
+      name: "acceptanceCriteria",
+      label: "Tiêu chí nghiệm thu",
+      type: "textarea",
       required: true,
     },
     ...(task

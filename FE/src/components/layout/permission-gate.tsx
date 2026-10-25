@@ -1,5 +1,5 @@
 "use client";
-import { Loading } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { hasPermission, useSession } from "@/lib/auth/session-context";
 import { ApiError } from "@/types/api/error";
@@ -14,7 +14,7 @@ export function PermissionGate({
   children: ReactNode;
 }) {
   const { session, loading } = useSession();
-  if (loading) return <Loading />;
+  if (loading) return <PageSkeleton />;
   return hasPermission(session, permission, projectId) ? (
     children
   ) : (

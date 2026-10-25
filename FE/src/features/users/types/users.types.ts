@@ -13,6 +13,8 @@ import type {
 import type { reasonSchema } from "@/lib/validation/common.schema";
 import { type Page } from "@/types/common";
 import { type z } from "zod";
+import type { profileSchema } from "../schemas/profile.schema";
+export type ProfileDto = z.output<typeof profileSchema>;
 export type UserDto = z.output<typeof userSchema>;
 export type UserQuery = z.input<typeof userQuerySchema>;
 export type UserRow = z.output<typeof userRowSchema>;

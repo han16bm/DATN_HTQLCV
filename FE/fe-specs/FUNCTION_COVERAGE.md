@@ -58,7 +58,7 @@ Chỉ xuất 24 ảnh màn chính. Toàn bộ 43 màn/biểu mẫu/hộp thoại
 ## Các lựa chọn thay đổi hoặc cần đối chiếu BE
 
 - Theo yêu cầu mới của người dùng, AI dùng LLM có sẵn để diễn giải snapshot. Các phần đào tạo/so sánh mô hình dự báo trong chương 10 là phương án mở rộng có điều kiện; không giao Codex dựng mô hình dự báo riêng hoặc chế tạo xác suất từ LLM.
-- Snapshot, public Gateway `/api/v1`, Bearer/refresh cookie, DTO/envelope, If-Match, idempotency, job, lookup và feedback endpoint là contract FE đề xuất để khép kín các luồng nguồn; chưa phải OpenAPI đã được BE triển khai. Các giá trị cần chốt có ở 00_SCOPE_AND_DECISIONS.md.
+- Snapshot, public Gateway `/api`, Bearer/refresh cookie, DTO/envelope, If-Match, idempotency, job, lookup và feedback endpoint là contract FE đề xuất để khép kín các luồng nguồn; chưa phải OpenAPI đã được BE triển khai. Các giá trị cần chốt có ở 00_SCOPE_AND_DECISIONS.md.
 - Bàn giao IN_PROGRESS về TODO là lựa chọn D06 để mock nhất quán; nguồn yêu cầu lưu lịch sử và kiểm tra trạng thái nhưng chưa chốt đầy đủ chuyển đổi này.
 - Không thêm thiết kế dữ liệu tổng thể/ERD của người 3. Mock model và projection chỉ mô tả dữ liệu cần cho nghiệp vụ/HTTP.
 - Không thêm chat, lương/chi phí, đăng ký công khai, inbox thông báo hoặc AI tự điều hành. Notification delivery là trách nhiệm BE sau commit; không phải một màn mới.

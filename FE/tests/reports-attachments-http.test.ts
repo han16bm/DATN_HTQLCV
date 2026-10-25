@@ -83,7 +83,7 @@ describe("reports and evidence through HTTP", () => {
         await (await attachmentsService.downloadAttachment("a-criteria")).text()
       ).startsWith("%PDF-1.4"),
     ).toBe(true);
-    await login("admin");
+    await login("other");
     await expect(
       attachmentsService.getAttachment("a-criteria"),
     ).rejects.toMatchObject({ status: 403 });

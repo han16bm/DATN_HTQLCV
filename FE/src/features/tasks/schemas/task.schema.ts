@@ -43,6 +43,8 @@ export const taskSchema = z
       .min(1, "Vui lòng nhập thông tin bắt buộc")
       .max(2000),
     priority: prioritySchema,
+    createdAt: z.iso.datetime(),
+    firstStartedAt: z.iso.datetime().nullable(),
     dueAt: z.iso.datetime(),
     originalDueAt: z.iso.datetime(),
     estimatedMinutes: z.number().int().safe().positive(),
@@ -67,6 +69,7 @@ export const taskRowSchema = z.object(taskSchema.shape).pick({
   status: true,
   priority: true,
   dueAt: true,
+  firstStartedAt: true,
   isOverdue: true,
   project: true,
   assignee: true,

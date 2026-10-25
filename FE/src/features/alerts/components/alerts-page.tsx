@@ -1,19 +1,12 @@
 "use client";
 import { PermissionGate } from "@/components/layout/permission-gate";
-import {
-  Badge,
-  DataTable,
-  Loading,
-  PageHeader,
-  Pagination,
-  Panel,
-} from "@/components/ui/page";
+import { Badge, DataTable, DetailLink, PageHeader } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { alertStatusSchema } from "@/features/alerts/schemas/alerts.schema";
 import { useListAnalyticsFilterOptionsQuery } from "@/features/analytics/hooks/use-analytics-queries";
 import { label, options } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
-import Link from "next/link";
 import { z } from "zod";
 import { useListAlertsQuery } from "../hooks/use-alerts-queries";
 export const severity = z.enum(["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"]);
@@ -42,10 +35,7 @@ function AlertsList() {
   });
   return (
     <>
-      <PageHeader
-        title="Cảnh báo"
-        description="Theo dõi điều kiện phát sinh và tình trạng xử lý riêng biệt."
-      />
+      <PageHeader title="Cảnh báo" />
       <section className="panel filters">
         <label>
           Dự án
@@ -88,34 +78,35 @@ function AlertsList() {
       {q.isError ? (
         <QueryErrorState error={q.error} retry={() => void q.refetch()} />
       ) : !q.data ? (
-        <Loading />
+        <PageSkeleton variant="table" />
       ) : (
-        <Panel>
-          <DataTable
-            headers={[
-              "Vấn đề",
-              "Đối tượng",
-              "Mức độ",
-              "Tình trạng xử lý",
-              "Điều kiện nguồn",
-            ]}
-            rows={q.data.items.map((a) => [
-              <Link className="text-link" key={a.id} href={`/alerts/${a.id}`}>
-                {label(a.type)}
-              </Link>,
-              a.taskTitle ?? "Dự án",
-              <Badge key="severity" value={a.severity} />,
-              <Badge key="status" value={a.status} />,
-              a.conditionActive
-                ? "Còn điều kiện phát sinh"
-                : "Điều kiện đã hết",
-            ])}
-          />
-          <Pagination
-            {...q.data.pagination}
-            onPage={(p) => f.set("page", String(p))}
-          />
-        </Panel>
+        <DataTable
+          pagination={{
+            ...q.data.pagination,
+            onPage: (p) => f.set("page", String(p)),
+          }}
+          actions
+          headers={[
+            "Vấn đề",
+            "Đối tượng",
+            "Mức độ",
+            "Tình trạng xử lý",
+            "Điều kiện nguồn",
+            "Hành động",
+          ]}
+          rows={q.data.items.map((a) => [
+            label(a.type),
+            a.taskTitle ?? "Dự án",
+            <Badge key="severity" value={a.severity} />,
+            <Badge key="status" value={a.status} />,
+            a.conditionActive ? "Còn điều kiện phát sinh" : "Điều kiện đã hết",
+            <DetailLink
+              key="detail"
+              href={`/alerts/${a.id}`}
+              label={`Xem cảnh báo ${label(a.type)}`}
+            />,
+          ])}
+        />
       )}
     </>
   );

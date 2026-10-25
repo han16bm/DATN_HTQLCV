@@ -56,14 +56,19 @@ export function ProjectForm({
       ? [
           {
             name: "code",
+            width: "short" as const,
             label: "Mã dự án",
             required: true,
             hint: "Chữ in hoa, số, dấu gạch ngang hoặc gạch dưới.",
           },
         ]
       : []),
-    { name: "name", label: "Tên dự án", required: true },
-    { name: "objective", label: "Mục tiêu", type: "textarea", required: true },
+    {
+      name: "name",
+      label: "Tên dự án",
+      required: true,
+      width: project ? "medium" : "long",
+    },
     ...(!project
       ? [
           {
@@ -84,13 +89,21 @@ export function ProjectForm({
       required: true,
       options: ownerOptions,
     },
-    { name: "startDate", label: "Ngày bắt đầu", type: "date", required: true },
+    {
+      name: "startDate",
+      label: "Ngày bắt đầu",
+      type: "date",
+      required: true,
+      width: "medium",
+    },
     {
       name: "dueAt",
+      width: "medium",
       label: "Hạn hoàn thành (giờ Việt Nam)",
       type: "datetime-local",
       required: true,
     },
+    { name: "objective", label: "Mục tiêu", type: "textarea", required: true },
     ...(project
       ? [
           {

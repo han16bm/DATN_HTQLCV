@@ -1,5 +1,7 @@
 "use client";
 import { AuthObserver } from "@/features/auth/components/auth-observer";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Spinner } from "@/components/ui/loading";
 import { shouldRetryQuery } from "@/services/http-error";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
@@ -31,8 +33,7 @@ export function Providers({ children }: { children: ReactNode }) {
     workerReady ??= import("@/mocks/browser").then(({ worker }) =>
       worker.start({
         onUnhandledRequest(request, print) {
-          if (new URL(request.url).pathname.startsWith("/api/v1/"))
-            print.error();
+          if (new URL(request.url).pathname.startsWith("/api/")) print.error();
         },
       }),
     );
@@ -57,13 +58,15 @@ export function Providers({ children }: { children: ReactNode }) {
   if (!ready)
     return (
       <div role="status" className="boot-state">
+        <Spinner />
         Đang chuẩn bị không gian làm việc…
       </div>
     );
   return (
     <QueryClientProvider client={client}>
       <AuthObserver>{children}</AuthObserver>
-      <Toaster position="top-right" />
+      <ConfirmDialog />
+      <Toaster position="top-right" richColors closeButton duration={3500} />
     </QueryClientProvider>
   );
 }

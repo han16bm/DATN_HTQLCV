@@ -1226,3 +1226,9 @@ Discriminated union theo `kind`; mỗi nhánh strict và không nhận field c�
 ## DTO cho lookup bộ lọc phân tích
 
 listAnalyticsFilterOptions trả PageDTO<Shared.EntityLabelDTO>. Với kind=PERSON, name là tên hiển thị; không trả UserDTO, email hoặc vai trò quản trị. Query gồm kind UNIT/PROJECT/TEAM/PERSON bắt buộc; q (tối đa 255), unitId, projectId, teamId, page (mặc định 1) và pageSize (mặc định 20, tối đa 100) tùy chọn. Request strict; BE giới hạn quyền và quan hệ giữa các filter. Đây là response tổng hợp bằng kiểu dùng chung, không thêm schema gốc thứ 94.
+
+## DTO hồ sơ thành viên và mốc công việc theo yêu cầu mới
+
+ProfileDto của GET /users/:userId/profile là object phẳng gồm id/displayName/avatarUrl nullable/unit (tên đơn vị)/systemRole/email, chỉ phục vụ card nhận diện và liên hệ của người đã đăng nhập. Không có thống kê, dự án hoặc phân trang; không dùng UserDTO quản trị để trả thừa field.
+
+Schema TaskDto hiện hành trả createdAt và firstStartedAt đã có trong model để hiển thị chi tiết công việc. firstStartedAt=null khi chưa bắt đầu, giữ mốc lần đầu khi tạm dừng/tiếp tục/bàn giao. TaskRow trả thêm firstStartedAt cho cột Ngày bắt đầu, không trả createdAt. Payload không nhận các mốc này; updatedAt/statusChangedAt/completedAt tiếp tục là dữ liệu nội bộ khi chưa có chỗ hiển thị.

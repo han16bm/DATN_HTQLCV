@@ -1,7 +1,8 @@
 "use client";
-import { Badge, DataTable, Loading, Panel } from "@/components/ui/page";
+import { Badge, DataTable, Empty, Panel } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
-import { dateTime, hours, label, number } from "@/lib/format";
+import { dateTime, hours, label, number, metricValue } from "@/lib/format";
 import Link from "next/link";
 import {
   Bar,
@@ -17,8 +18,34 @@ import {
 } from "recharts";
 import { useGetDashboardQuery } from "../hooks/use-analytics-queries";
 import { useAnalyticsScope } from "../hooks/use-analytics-scope";
-import { AnalysisLink, metricValue } from "./analysis-links";
+import { AnalysisLink } from "./analysis-links";
 import { AnalyticsFrame } from "./analytics-frame";
+import type { MetricDto } from "../types/analytics.types";
+
+function MetricCard({ metric }: { metric: MetricDto }) {
+  return (
+    <article className="metric-card" aria-label={metric.label}>
+      <div className="metric-heading">
+        <h3>{metric.label}</h3>
+        <AnalysisLink
+          value={metric.analysisRef}
+          label={`Xem chỉ số ${metric.label}`}
+        />
+      </div>
+      <p
+        className={`metric-number ${metric.value === null ? "metric-missing" : ""}`}
+      >
+        {metricValue(metric.value, metric.unit)}
+      </p>
+      <p className="small muted">
+        {metric.basis === "CURRENT" ? "Hiện tại" : "Trong kỳ"}
+        {metric.denominator !== null
+          ? ` · Tổng ${number(metric.denominator)}`
+          : ""}
+      </p>
+    </article>
+  );
+}
 
 export function DashboardPage() {
   const scope = useAnalyticsScope();
@@ -34,11 +61,11 @@ export function DashboardPage() {
           retry={() => void query.refetch()}
         />
       ) : !query.data ? (
-        <Loading />
+        <PageSkeleton variant="cards" />
       ) : (
         <>
           <p className="metadata">
-            Dữ liệu đến {dateTime(query.data.metadata.dataAsOf)} · Giờ Việt Nam
+            Cập nhật {dateTime(query.data.metadata.dataAsOf)}
             · <Badge value={query.data.metadata.quality.status} /> ·{" "}
             <AnalysisLink
               value={query.data.overviewRef}
@@ -48,21 +75,7 @@ export function DashboardPage() {
           <div className="metric-grid">
             {["K03", "K04", "K06", "K12"].map((code) => {
               const m = data?.metrics.find((m) => m.code === code);
-              return m ? (
-                <Panel key={m.code}>
-                  <p className="muted">{m.label}</p>
-                  <p className="metric-value">{metricValue(m.value, m.unit)}</p>
-                  <p className="small muted">
-                    {m.basis === "CURRENT"
-                      ? "Hiện trạng tại mốc dữ liệu"
-                      : "Theo kỳ đã chọn"}
-                    {m.denominator !== null
-                      ? ` · Mẫu số ${number(m.denominator)}`
-                      : ""}
-                  </p>
-                  <AnalysisLink value={m.analysisRef} />
-                </Panel>
-              ) : null;
+              return m ? <MetricCard key={m.code} metric={m} /> : null;
             })}
           </div>
           <div className="two-column">
@@ -99,9 +112,7 @@ export function DashboardPage() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <p className="small muted">
-                {query.data.totalTasks} công việc; nhóm đã hủy thể hiện riêng.
-              </p>
+              <p className="small muted">{query.data.totalTasks} công việc</p>
               <details>
                 <summary>Xem số liệu trạng thái</summary>
                 <DataTable
@@ -114,105 +125,121 @@ export function DashboardPage() {
               </details>
             </Panel>
             <Panel title="Hoàn thành và nộp kết quả">
-              <p className="small muted">
-                Chỉ hiển thị ngày có dữ liệu nguồn được xác nhận trong kỳ.
-              </p>
-              <div
-                className="chart"
-                role="img"
-                aria-label="Xu hướng hoàn thành và số lần nộp"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={query.data.trend}>
-                    <CartesianGrid vertical={false} stroke="#e0e5eb" />
-                    <XAxis
-                      dataKey="date"
-                      tickFormatter={(d) => String(d).slice(5)}
-                      fontSize={11}
-                    />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip />
-                    <Legend />
-                    <Line
-                      type="linear"
-                      dataKey="completedCount"
-                      name="Hoàn thành"
-                      stroke="#365b85"
-                      connectNulls={false}
-                    />
-                    <Line
-                      type="linear"
-                      dataKey="submissionCount"
-                      name="Lần nộp"
-                      stroke="#839782"
-                      strokeDasharray="4 4"
-                      connectNulls={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+              {!query.data.trend.length ? (
+                <Empty message="Chưa có hoạt động hoàn thành hoặc nộp kết quả trong kỳ." />
+              ) : (
+                <div
+                  className="chart"
+                  role="img"
+                  aria-label="Xu hướng hoàn thành và số lần nộp"
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={query.data.trend}>
+                      <CartesianGrid vertical={false} stroke="#e0e5eb" />
+                      <XAxis
+                        dataKey="date"
+                        tickFormatter={(d) => String(d).slice(5)}
+                        fontSize={11}
+                      />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Legend />
+                      <Line
+                        type="linear"
+                        dataKey="completedCount"
+                        name="Hoàn thành"
+                        stroke="#365b85"
+                        connectNulls={false}
+                      />
+                      <Line
+                        type="linear"
+                        dataKey="submissionCount"
+                        name="Lần nộp"
+                        stroke="#839782"
+                        strokeDasharray="4 4"
+                        connectNulls={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </Panel>
           </div>
-          <Panel title="So sánh dự án">
-            <DataTable
-              headers={[
-                "Dự án",
-                "Công việc được tính",
-                "Hoàn thành",
-                "Quá hạn",
-                "Giờ công trong kỳ",
-                "Phân tích",
-              ]}
-              rows={query.data.projectComparisons.map((p) => [
-                <Link
-                  className="text-link"
-                  key={p.projectId}
-                  href={`/projects/${p.projectId}`}
-                >
-                  {p.projectName}
-                </Link>,
-                String(p.validTaskCount),
-                number(p.completionRate, "%"),
-                String(p.overdueCount),
-                hours(p.actualMinutes),
-                <AnalysisLink key="analysis" value={p.analysisRef} />,
-              ])}
-            />
-          </Panel>
-          <Panel title="Giờ công và dự kiến">
+          <DataTable
+            title="So sánh dự án"
+            actions
+            headers={[
+              "Dự án",
+              "Công việc theo dõi",
+              "Hoàn thành",
+              "Quá hạn",
+              "Giờ công trong kỳ",
+              "Hành động",
+            ]}
+            rows={query.data.projectComparisons.map((p) => [
+              <Link
+                className="text-link"
+                key={p.projectId}
+                href={`/projects/${p.projectId}`}
+              >
+                {p.projectName}
+              </Link>,
+              String(p.validTaskCount),
+              number(p.completionRate, "%"),
+              String(p.overdueCount),
+              hours(p.actualMinutes),
+              <AnalysisLink key="analysis" value={p.analysisRef} />,
+            ])}
+          />
+          <Panel title="Giờ công và ước lượng">
             <div className="two-column">
               <dl>
-                <dt>Thực tế của nhóm công việc hiện tại</dt>
-                <dd>{hours(query.data.timeVariance.actualMinutes)}</dd>
-                <dt>Dự kiến hiện tại</dt>
-                <dd>{hours(query.data.timeVariance.currentEstimateMinutes)}</dd>
-                <dt>Dự kiến gốc</dt>
-                <dd>
-                  {hours(query.data.timeVariance.originalEstimateMinutes)}
-                </dd>
+                <div>
+                  <dt>Giờ công thực tế</dt>
+                  <dd>{hours(query.data.timeVariance.actualMinutes)}</dd>
+                </div>
+                <div>
+                  <dt>Ước lượng hiện tại</dt>
+                  <dd>
+                    {hours(query.data.timeVariance.currentEstimateMinutes)}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Ước lượng ban đầu</dt>
+                  <dd>
+                    {hours(query.data.timeVariance.originalEstimateMinutes)}
+                  </dd>
+                </div>
               </dl>
               <dl>
-                <dt>Chênh lệch so hiện tại / gốc</dt>
-                <dd>
-                  {hours(query.data.timeVariance.deltaCurrentMinutes)} /{" "}
-                  {hours(query.data.timeVariance.deltaOriginalMinutes)}
-                </dd>
-                <dt>Số lần nộp trong kỳ: đúng hạn / muộn</dt>
-                <dd>
-                  {query.data.submissionTimeliness.onTimeCount} /{" "}
-                  {query.data.submissionTimeliness.lateCount} (tổng{" "}
-                  {query.data.submissionTimeliness.denominator})
-                </dd>
-                <dt>Báo cáo ngày / tuần đã gửi</dt>
-                <dd>
-                  {query.data.reporting.submittedDaily} /{" "}
-                  {query.data.reporting.submittedWeekly}
-                </dd>
+                <div>
+                  <dt>Chênh lệch so với ước lượng hiện tại</dt>
+                  <dd>{hours(query.data.timeVariance.deltaCurrentMinutes)}</dd>
+                </div>
+                <div>
+                  <dt>Chênh lệch so với ước lượng ban đầu</dt>
+                  <dd>{hours(query.data.timeVariance.deltaOriginalMinutes)}</dd>
+                </div>
+                <div>
+                  <dt>Nộp kết quả trong kỳ</dt>
+                  <dd>
+                    Đúng hạn: {query.data.submissionTimeliness.onTimeCount} ·
+                    Trễ hạn: {query.data.submissionTimeliness.lateCount} (tổng{" "}
+                    {query.data.submissionTimeliness.denominator})
+                  </dd>
+                </div>
+                <div>
+                  <dt>Báo cáo đã gửi</dt>
+                  <dd>
+                    Ngày: {query.data.reporting.submittedDaily} · Tuần:{" "}
+                    {query.data.reporting.submittedWeekly}
+                  </dd>
+                </div>
               </dl>
             </div>
             <p className="small muted">
-              Chênh lệch thời gian chưa đủ căn cứ đánh giá năng lực. Chưa có
-              lịch yêu cầu báo cáo nên chưa tính tỷ lệ gửi đủ.
+              Chênh lệch giờ công chưa đủ để đánh giá năng lực nhân sự. Chưa có
+              lịch yêu cầu nộp báo cáo nên chưa xác định được tỷ lệ nộp đủ.
             </p>
           </Panel>
           <Panel title="Các chỉ số khác">
@@ -220,21 +247,7 @@ export function DashboardPage() {
               {query.data.metrics
                 .filter((m) => !["K03", "K04", "K06", "K12"].includes(m.code))
                 .map((m) => (
-                  <div className="metric-cell" key={m.code}>
-                    <p className="small muted">
-                      {m.code} · {m.label}
-                    </p>
-                    <p className="metric-secondary">
-                      {metricValue(m.value, m.unit)}
-                    </p>
-                    <p className="small muted">
-                      {m.basis === "CURRENT" ? "Hiện trạng" : "Trong kỳ"}
-                      {m.denominator !== null
-                        ? ` · Mẫu số ${m.denominator}`
-                        : ""}
-                    </p>
-                    <AnalysisLink value={m.analysisRef} />
-                  </div>
+                  <MetricCard key={m.code} metric={m} />
                 ))}
             </div>
           </Panel>

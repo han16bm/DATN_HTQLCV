@@ -57,7 +57,7 @@ export const personRefSchema = z.object({
 });
 export const auditSchema = z.object({
   id: idSchema,
-  actorId: idSchema,
+  actor: personRefSchema,
   action: z.string(),
   at: z.iso.datetime(),
   before: z.json().nullable(),

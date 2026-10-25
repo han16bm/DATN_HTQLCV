@@ -1,11 +1,6 @@
 "use client";
-import {
-  Badge,
-  ButtonLink,
-  Loading,
-  PageHeader,
-  Panel,
-} from "@/components/ui/page";
+import { Badge, ButtonLink, PageHeader, Panel } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
 import { ReportEditor } from "@/features/reports/components/report-editor";
@@ -25,7 +20,7 @@ export function ReportPage({
   const project = useGetProjectQuery(q.data?.projectId ?? "");
   if (q.isError)
     return <QueryErrorState error={q.error} retry={() => void q.refetch()} />;
-  if (!q.data) return <Loading />;
+  if (!q.data) return <PageSkeleton />;
   const r = q.data;
   return (
     <>

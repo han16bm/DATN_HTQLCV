@@ -3,10 +3,10 @@ import { ActionButton } from "@/components/ui/action-button";
 import {
   Badge,
   ButtonLink,
-  Loading,
   PageHeader,
-  Tabs,
+  SectionSelect,
 } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { hasPermission, useSession } from "@/lib/auth/session-context";
 import { useHashDialog } from "@/lib/forms/use-hash-dialog";
@@ -34,23 +34,27 @@ export function ProjectShell({
     return (
       <QueryErrorState error={query.error} retry={() => void query.refetch()} />
     );
-  if (!query.data) return <Loading />;
+  if (!query.data) return <PageSkeleton />;
   const project = query.data;
+  const root = `/projects/${projectId}`;
   const manage = hasPermission(session, "PROJECT_MANAGE", projectId);
   const editable = ["PLANNED", "ACTIVE"].includes(project.status);
   return (
     <>
       <PageHeader
         title={project.name}
-        description={`${project.unit.name} · Kế hoạch dự án`}
+        description={project.unit.name}
+        status={<Badge value={project.status} />}
         actions={
           <>
             <ButtonLink href="/projects">Danh sách</ButtonLink>
             {manage && editable && (
               <>
-                <ButtonLink href={`/projects/${projectId}/edit`}>
-                  Chỉnh sửa kế hoạch
-                </ButtonLink>
+                {path !== `${root}/edit` && (
+                  <ButtonLink href={`${root}/edit`}>
+                    Chỉnh sửa kế hoạch
+                  </ButtonLink>
+                )}
                 {project.status === "PLANNED" && (
                   <ActionButton
                     primary
@@ -73,30 +77,36 @@ export function ProjectShell({
           </>
         }
       />
-      <p className="metadata">
-        <Badge value={project.status} />
-      </p>
-      <Tabs
-        active={search.get("tab") === "history" ? "history" : path}
-        items={[
-          { href: `/projects/${projectId}`, label: "Tổng quan" },
-          { href: `/tasks?projectId=${projectId}`, label: "Công việc" },
-          { href: `/projects/${projectId}/members`, label: "Thành viên" },
-          ...(hasPermission(session, "MEMBERS_MANAGE", projectId)
-            ? [
-                {
-                  href: `/projects/${projectId}/permissions`,
-                  label: "Phân quyền",
-                },
-              ]
-            : []),
-          {
-            href: `/projects/${projectId}?tab=history`,
-            label: "Lịch sử",
-            key: "history",
-          },
-        ]}
-      />
+      <div className="section-toolbar">
+        <SectionSelect
+          label="Mục dự án"
+          active={
+            path === root && search.get("tab") === "history"
+              ? `${root}?tab=history`
+              : path
+          }
+          items={[
+            { href: root, label: "Tổng quan" },
+            { href: `/tasks?projectId=${projectId}`, label: "Công việc" },
+            { href: `${root}/members`, label: "Thành viên" },
+            ...(hasPermission(session, "MEMBERS_MANAGE", projectId)
+              ? [
+                  {
+                    href: `${root}/permissions`,
+                    label: "Phân quyền",
+                  },
+                ]
+              : []),
+            {
+              href: `${root}?tab=history`,
+              label: "Lịch sử",
+            },
+            ...(path === `${root}/edit`
+              ? [{ href: path, label: "Chỉnh sửa kế hoạch" }]
+              : []),
+          ]}
+        />
+      </div>
       {children}
       {manage && editable && (
         <ProjectCloseDialog project={project} reload={query.refetch} />

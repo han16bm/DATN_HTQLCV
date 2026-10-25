@@ -1,7 +1,7 @@
 "use client";
 import { VersionedSchemaForm } from "@/components/forms/versioned-schema-form";
 import { HashDialog } from "@/components/ui/dialog";
-import { Loading } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListProjectMembersQuery } from "@/features/project-members/hooks/use-project-members-queries";
 import { assignTaskSchema } from "@/features/tasks/schemas/task-form.schema";
@@ -40,7 +40,7 @@ export function TaskAssignmentDialog({ task, reload }: TaskDialogProps) {
       {members.isError ? (
         <QueryErrorState error={members.error} />
       ) : !members.data ? (
-        <Loading />
+        <PageSkeleton variant="form" />
       ) : (
         <VersionedSchemaForm
           initial={task}
@@ -107,8 +107,9 @@ export function TaskExecutionDialog({ task, reload }: TaskDialogProps) {
         Thao tác
         <select
           value={action}
-          onChange={(e) => {
-            if (confirmDiscard()) setChoice(e.target.value);
+          onChange={async (e) => {
+            const value = e.target.value;
+            if (await confirmDiscard()) setChoice(value);
           }}
         >
           {actions.map((a) => (

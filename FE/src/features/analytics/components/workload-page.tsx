@@ -1,6 +1,8 @@
 "use client";
-import { DataTable, Loading, Panel } from "@/components/ui/page";
+import { DataTable } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { UserBadge } from "@/components/ui/user-badge";
 import { Metadata } from "@/features/analytics/components/analysis-metadata";
 import { hours, number } from "@/lib/format";
 import Link from "next/link";
@@ -21,50 +23,51 @@ export function WorkloadPage() {
           retry={() => void query.refetch()}
         />
       ) : !query.data ? (
-        <Loading />
+        <PageSkeleton variant="table" />
       ) : (
         <>
           <Metadata value={query.data.metadata} />
-          <Panel>
-            <p className="notice">
-              Tách việc đang nhận và chờ nghiệm thu. Thiếu lịch khả dụng hoặc
-              ước lượng còn lại thì chưa đủ dữ liệu kết luận quá tải.
-            </p>
-            <DataTable
-              headers={[
-                "Nhân viên",
-                "Đang nhận / chờ xét",
-                "Dự kiến gốc / hiện tại",
-                "Còn lại",
-                "Khả dụng",
-                "Tỷ lệ tải",
-                "Chi tiết",
-              ]}
-              rows={query.data.items.map((p) => [
-                p.person.displayName,
-                `${p.openTaskCount} / ${p.pendingReviewCount}`,
-                `${hours(p.originalEstimateMinutes)} / ${hours(p.currentEstimateMinutes)}`,
-                p.remainingMinutes === null
-                  ? "Chưa đủ dữ liệu"
-                  : hours(p.remainingMinutes),
-                p.capacityMinutes === null
-                  ? "Chưa đủ dữ liệu"
-                  : hours(p.capacityMinutes),
-                number(p.utilizationRate, "%"),
-                <div key="links">
-                  <AnalysisLink value={p.analysisRef} />
-                  <p>
-                    <Link
-                      className="text-link"
-                      href={`/tasks?assigneeId=${encodeURIComponent(p.userId)}${scope.query.projectId ? `&projectId=${encodeURIComponent(scope.query.projectId)}` : ""}`}
-                    >
-                      Xem công việc
-                    </Link>
-                  </p>
-                </div>,
-              ])}
-            />
-          </Panel>
+          <DataTable
+            description={
+              <p className="small muted">
+                Chưa có lịch làm việc để xác định mức độ bận của nhân sự.
+              </p>
+            }
+            actions
+            headers={[
+              "Nhân viên",
+              "Đang nhận / chờ nghiệm thu",
+              "Ước lượng ban đầu / hiện tại",
+              "Thời gian còn lại",
+              "Thời gian có thể làm việc",
+              "Mức độ bận",
+              "Hành động",
+            ]}
+            rows={query.data.items.map((p) => [
+              <UserBadge key="person" name={p.person.displayName} />,
+              `${p.openTaskCount} / ${p.pendingReviewCount}`,
+              `${hours(p.originalEstimateMinutes)} / ${hours(p.currentEstimateMinutes)}`,
+              p.remainingMinutes === null
+                ? "Chưa đủ dữ liệu"
+                : hours(p.remainingMinutes),
+              p.capacityMinutes === null
+                ? "Chưa đủ dữ liệu"
+                : hours(p.capacityMinutes),
+              number(p.utilizationRate, "%"),
+              <div key="links" className="actions">
+                <Link
+                  className="detail-link"
+                  href={`/tasks?assigneeId=${encodeURIComponent(p.userId)}${scope.query.projectId ? `&projectId=${encodeURIComponent(scope.query.projectId)}` : ""}`}
+                >
+                  Công việc
+                </Link>
+                <AnalysisLink
+                  value={p.analysisRef}
+                  label={`Xem khối lượng của ${p.person.displayName}`}
+                />
+              </div>,
+            ])}
+          />
         </>
       )}
     </AnalyticsFrame>

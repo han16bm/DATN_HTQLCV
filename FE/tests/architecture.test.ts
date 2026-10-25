@@ -54,11 +54,11 @@ describe("Feature organization and HTTP boundaries", () => {
       /api\/.*\.contract|from\s*["'](?:msw|\.\/handlers)["']|:\s*Request\b|\.headers\.get\(/,
     );
   });
-  it("aligns all 79 service and handler routes with the approved API catalog", () => {
+  it("aligns service and image routes with the approved API catalog", () => {
     const catalog = readFileSync("fe-specs/api/API_CATALOG.md", "utf8");
     const expected = [
       ...new Set(
-        [...catalog.matchAll(/`(GET|POST|PATCH|PUT) (\/api\/v1\/[^`]+)`/g)].map(
+        [...catalog.matchAll(/`(GET|POST|PATCH|PUT) (\/api\/[^`]+)`/g)].map(
           (m) => `${m[1]} ${m[2]}`,
         ),
       ),
@@ -66,7 +66,7 @@ describe("Feature organization and HTTP boundaries", () => {
     const actual = handlers
       .map((h) => `${h.info.method} ${String(h.info.path).replace(/^\*/, "")}`)
       .sort();
-    expect(actual).toHaveLength(79);
+    expect(actual).toHaveLength(83);
     expect(actual).toEqual(expected);
     const services = readdirSync("src/features")
       .flatMap((feature) => {
@@ -83,11 +83,14 @@ describe("Feature organization and HTTP boundaries", () => {
             /\$\{encodeURIComponent\((\w+)\)\}/g,
             ":$1",
           );
-          return `${match[1].toUpperCase()} /api/v1${path}`;
+          return `${match[1].toUpperCase()} /api${path}`;
         });
       })
       .sort();
-    expect(services).toEqual(expected);
+    // Avatar images are loaded by the browser through their response URL.
+    expect([...services, "GET /api/avatars/:avatarId"].sort()).toEqual(
+      expected,
+    );
   });
   it("keeps runtime mock imports at the browser bootstrap boundary", () => {
     const violations = files("src")

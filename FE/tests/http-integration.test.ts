@@ -1,6 +1,7 @@
 import { analyticsService } from "@/features/analytics/api/analytics.service";
 import { authService } from "@/features/auth/api/auth.service";
 import { projectMembersService } from "@/features/project-members/api/project-members.service";
+import { projectsService } from "@/features/projects/api/projects.service";
 import { submissionsService } from "@/features/submissions/api/submissions.service";
 import { tasksService } from "@/features/tasks/api/tasks.service";
 import { timeLogsService } from "@/features/time-logs/api/time-logs.service";
@@ -11,7 +12,15 @@ import { shouldRetryQuery } from "@/services/http-error";
 import { ApiError, ContractError } from "@/types/api/error";
 import axios from "axios";
 import { http, HttpResponse } from "msw";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 beforeAll(() => {
   server.listen({ onUnhandledRequest: "error" });
 });
@@ -28,6 +37,56 @@ async function signIn(username: string) {
   return authService.login({ username, password: "Mock@12345" });
 }
 describe("Feature service → Axios HTTP → MSW → mock database", () => {
+  it("uses the unversioned API and delays both successful and failed mock responses", async () => {
+    expect(apiClient.defaults.baseURL).toBe("http://gateway.test/api");
+    await signIn("minh");
+    vi.stubEnv("NEXT_PUBLIC_MSW_DELAY", "40");
+    try {
+      let started = performance.now();
+      await tasksService.getTask("t-3");
+      expect(performance.now() - started).toBeGreaterThanOrEqual(35);
+      started = performance.now();
+      await expect(tasksService.getTask("missing-task")).rejects.toMatchObject({
+        status: 404,
+      });
+      expect(performance.now() - started).toBeGreaterThanOrEqual(35);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+  it("projects history with readable people and only compared fields while preserving internal audit facts", async () => {
+    await signIn("minh");
+    const project = await projectsService.getProject("p-main");
+    await projectsService.updateProject(
+      project.id,
+      { ownerId: "u-huy", changeReason: "Đổi người phụ trách" },
+      { version: project.version, key: "history-owner-change" },
+    );
+    const result = await apiClient.get<{
+      data: {
+        items: {
+          actor: { displayName: string };
+          before: object;
+          after: object;
+          action: string;
+        }[];
+      };
+    }>(`/projects/${project.id}/history`);
+    const audit = result.data.data.items.find(
+      (item) => item.action === "Điều chỉnh kế hoạch",
+    )!;
+    expect(audit.actor.displayName).toBe("Nguyễn Minh");
+    expect(audit).not.toHaveProperty("actorId");
+    expect(audit.before).toEqual({
+      owner: { id: "u-pm", displayName: "Nguyễn Minh" },
+    });
+    expect(audit.after).toEqual({
+      owner: { id: "u-huy", displayName: "Nguyễn Huy" },
+    });
+    expect(
+      db.audits.find((item) => item.action === "Điều chỉnh kế hoạch")?.before,
+    ).toMatchObject({ ownerId: "u-pm", name: project.name });
+  });
   it("sends compact list rows over HTTP before the client parses the response", async () => {
     const check = async (path: string, fields: string[]) => {
       const response = await apiClient.get<{
@@ -44,13 +103,14 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
       "username",
       "displayName",
       "email",
+      "avatarUrl",
       "unitId",
       "systemRole",
       "status",
       "unit",
     ]);
     await check("/units", ["id", "name", "status"]);
-    await check("/teams", ["id", "name", "unitId", "status", "memberCount"]);
+    await check("/teams", ["id", "name", "unit", "status", "memberCount"]);
     await signIn("minh");
     await check("/projects", [
       "id",
@@ -69,13 +129,14 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
       "status",
       "priority",
       "dueAt",
+      "firstStartedAt",
       "isOverdue",
       "project",
       "assignee",
     ]);
     await check("/reports", [
       "id",
-      "projectId",
+      "project",
       "periodType",
       "periodStart",
       "status",
@@ -92,6 +153,7 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
     await check("/review-queue", [
       "id",
       "taskId",
+      "taskTitle",
       "sequence",
       "submitter",
       "submittedAt",
@@ -112,11 +174,15 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
       data: { user: object; projectAccess: object[] };
     }>("/auth/me");
     expect(Object.keys(session.data.data.user).sort()).toEqual([
+      "avatarUrl",
       "displayName",
+      "email",
       "id",
       "systemRole",
       "unit",
       "unitId",
+      "username",
+      "version",
     ]);
     expect(Object.keys(session.data.data.projectAccess[0]).sort()).toEqual([
       "permissions",
@@ -141,17 +207,17 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
     const task = await apiClient.get<{ data: Record<string, unknown> }>(
       "/tasks/t-3",
     );
-    for (const field of [
-      "createdAt",
-      "updatedAt",
-      "statusChangedAt",
-      "firstStartedAt",
-      "completedAt",
-    ]) {
+    for (const field of ["updatedAt", "statusChangedAt", "completedAt"]) {
       expect(task.data.data).not.toHaveProperty(field);
       expect(db.tasks.find((item) => item.id === "t-3")).toHaveProperty(field);
     }
-    expect(task.data.data).toMatchObject({ id: "t-3", version: 1 });
+    const storedTask = db.tasks.find((item) => item.id === "t-3")!;
+    expect(task.data.data).toMatchObject({
+      id: "t-3",
+      version: 1,
+      createdAt: storedTask.createdAt,
+      firstStartedAt: storedTask.firstStartedAt,
+    });
     await signIn("minh");
     const scope = {
       projectId: "p-main",
@@ -259,7 +325,7 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
     let refreshes = 0;
     const headers: (string | null)[] = [];
     const observe = ({ request }: { request: Request }) => {
-      if (new URL(request.url).pathname.startsWith("/api/v1/tasks"))
+      if (new URL(request.url).pathname.startsWith("/api/tasks"))
         headers.push(request.headers.get("Authorization"));
     };
     server.events.on("request:start", observe);
@@ -310,7 +376,7 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
       begin = resolve;
     });
     const observe = ({ request }: { request: Request }) => {
-      if (new URL(request.url).pathname === "/api/v1/tasks") begin();
+      if (new URL(request.url).pathname === "/api/tasks") begin();
     };
     server.events.on("request:start", observe);
     try {
@@ -330,7 +396,7 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
   });
   it("normalizes transport failures for the query retry policy", async () => {
     await signIn("lan");
-    server.use(http.get("*/api/v1/tasks/t-3", () => HttpResponse.error()));
+    server.use(http.get("*/api/tasks/t-3", () => HttpResponse.error()));
     const error = await tasksService
       .getTask("t-3")
       .catch((error: unknown) => error);
@@ -353,7 +419,7 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
     const observe = ({ request }: { request: Request }) => {
       if (
         request.method === "POST" &&
-        new URL(request.url).pathname === "/api/v1/projects/p-main/tasks"
+        new URL(request.url).pathname === "/api/projects/p-main/tasks"
       )
         posts++;
     };
@@ -391,7 +457,7 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
         sort: "dueAt",
       });
       const sent = requests.find(
-        (r) => new URL(r.url).pathname === "/api/v1/tasks",
+        (r) => new URL(r.url).pathname === "/api/tasks",
       );
       expect(sent).toMatchObject({
         method: "GET",
@@ -408,9 +474,17 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
       server.events.removeListener("request:start", observe);
     }
   });
-  it("keeps ADMIN outside project business scope", async () => {
+  it("lets ADMIN inspect tasks without granting project mutations", async () => {
     await signIn("admin");
-    await expect(tasksService.getTask("t-3")).rejects.toMatchObject({
+    const task = await tasksService.getTask("t-3");
+    expect(task.id).toBe("t-3");
+    await expect(
+      tasksService.cancelTask(
+        task.id,
+        { reason: "Kiểm tra quyền" },
+        { version: task.version, key: "admin-denied-write" },
+      ),
+    ).rejects.toMatchObject({
       status: 403,
       code: "FORBIDDEN",
     });
@@ -446,7 +520,7 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
       { data: { ...task, version: 0 }, meta },
       { data: task, meta: { ...meta, serverTime: "invalid" } },
     ]) {
-      server.use(http.get("*/api/v1/tasks/t-3", () => HttpResponse.json(body)));
+      server.use(http.get("*/api/tasks/t-3", () => HttpResponse.json(body)));
       await expect(tasksService.getTask("t-3")).rejects.toBeInstanceOf(
         ContractError,
       );
@@ -545,6 +619,48 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
     ).rejects.toBeInstanceOf(ApiError);
     expect((await tasksService.getTask("t-4")).status).toBe("PENDING_REVIEW");
   });
+  it("preserves creation and first-start timestamps through pause, restart and handover", async () => {
+    await signIn("lan");
+    let task = await tasksService.getTask("t-2");
+    const createdAt = task.createdAt;
+    expect(task.firstStartedAt).toBeNull();
+    setClock("2026-10-23T10:06:00.000Z");
+    task = await tasksService.startTask(task.id, {
+      version: task.version,
+      key: "first-start",
+    });
+    const firstStartedAt = task.firstStartedAt;
+    expect(firstStartedAt).toBe("2026-10-23T10:06:00.000Z");
+    setClock("2026-10-23T10:07:00.000Z");
+    task = await tasksService.pauseTask(
+      task.id,
+      { reason: "Chờ thông tin" },
+      { version: task.version, key: "pause" },
+    );
+    task = await tasksService.startTask(task.id, {
+      version: task.version,
+      key: "restart",
+    });
+    expect(task).toMatchObject({ createdAt, firstStartedAt });
+    await signIn("minh");
+    task = await tasksService.assignTask(
+      task.id,
+      { assigneeId: "u-huy", reason: "Bàn giao công việc" },
+      { version: task.version, key: "handover" },
+    );
+    expect(task).toMatchObject({ status: "TODO", createdAt, firstStartedAt });
+    await signIn("huy");
+    setClock("2026-10-23T10:08:00.000Z");
+    task = await tasksService.startTask(task.id, {
+      version: task.version,
+      key: "start-after-handover",
+    });
+    expect(task).toMatchObject({ createdAt, firstStartedAt, actualMinutes: 0 });
+    expect(await tasksService.getTask(task.id)).toMatchObject({
+      createdAt,
+      firstStartedAt,
+    });
+  });
   it("creates, assigns, logs, revises, resubmits and accepts through HTTP", async () => {
     await signIn("minh");
     let task = await tasksService.createTask(
@@ -562,6 +678,8 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
       },
     );
     expect(task.status).toBe("NEW");
+    expect(task.createdAt).toBe("2026-10-23T10:05:00.000Z");
+    expect(task.firstStartedAt).toBeNull();
     task = await tasksService.assignTask(
       task.id,
       { assigneeId: "u-lan" },

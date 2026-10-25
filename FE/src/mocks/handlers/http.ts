@@ -93,9 +93,8 @@ export function mockHandler(
   resolve: HttpResponseResolver,
 ): HttpResponseResolver {
   return async (context) => {
+    const scenario = context.request.headers.get("X-Mock-Scenario");
     try {
-      const scenario = context.request.headers.get("X-Mock-Scenario");
-      if (scenario === "slow") await delay(1500);
       if (scenario === "server-error")
         throw new ApiError(
           503,
@@ -111,6 +110,15 @@ export function mockHandler(
       return await resolve(context);
     } catch (error) {
       return toMockErrorResponse(error);
+    } finally {
+      const ms =
+        scenario === "slow"
+          ? 1500
+          : Number(
+              process.env.NEXT_PUBLIC_MSW_DELAY ??
+                (process.env.NODE_ENV === "test" ? 0 : 400),
+            );
+      if (ms > 0) await delay(ms);
     }
   };
 }

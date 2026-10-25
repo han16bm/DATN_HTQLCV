@@ -70,28 +70,31 @@ export function UserCommands({ user }: { user: UserDto }) {
     setMode(null);
   };
   return (
-    <Panel title="Truy cập và mật khẩu">
-      <p className="muted">
-        Khóa thông thường yêu cầu bàn giao việc mở. Khóa khẩn cấp thu hồi truy
-        cập ngay và giữ lịch sử.
-      </p>
-      <div className="actions section-gap">
+    <Panel title="Truy cập và mật khẩu" className="account-access">
+      <div className="actions">
         <button
-          onClick={() => {
-            if (confirmDiscard()) setMode(mode === "lock" ? null : "lock");
+          onClick={async () => {
+            if (await confirmDiscard())
+              setMode(mode === "lock" ? null : "lock");
           }}
         >
           {isLocked ? "Mở khóa tài khoản" : "Khóa tài khoản"}
         </button>
         <button
-          onClick={() => {
-            if (confirmDiscard())
+          onClick={async () => {
+            if (await confirmDiscard())
               setMode(mode === "password" ? null : "password");
           }}
         >
           Cấp lại mật khẩu
         </button>
       </div>
+      {mode === "lock" && !isLocked && (
+        <p className="small muted section-gap">
+          Khóa thông thường yêu cầu bàn giao việc mở. Khóa khẩn cấp thu hồi truy
+          cập ngay.
+        </p>
+      )}
       {mode &&
         (mode === "password" ? (
           <SchemaForm

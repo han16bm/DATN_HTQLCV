@@ -5,7 +5,11 @@ import { z } from "zod";
 export const sessionSchema = z.object({
   user: z.object(userSchema.shape).pick({
     id: true,
+    version: true,
+    avatarUrl: true,
     displayName: true,
+    username: true,
+    email: true,
     unitId: true,
     unit: true,
     systemRole: true,

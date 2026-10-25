@@ -2,10 +2,10 @@
 import {
   Badge,
   ButtonLink,
-  Loading,
   PageHeader,
-  Tabs,
+  SectionSelect,
 } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
 import { hasPermission, useSession } from "@/lib/auth/session-context";
@@ -32,8 +32,9 @@ export function TaskShell({
     return (
       <QueryErrorState error={query.error} retry={() => void query.refetch()} />
     );
-  if (!query.data) return <Loading />;
+  if (!query.data) return <PageSkeleton />;
   const task = query.data;
+  const root = `/tasks/${taskId}`;
   const active = project.data?.status === "ACTIVE";
   const editable =
     active && ["NEW", "TODO", "IN_PROGRESS"].includes(task.status);
@@ -43,7 +44,16 @@ export function TaskShell({
     <>
       <PageHeader
         title={task.title}
-        description={`${task.project.name} · Công việc`}
+        description={task.project.name}
+        status={
+          <>
+            <Badge value={task.status} />
+            <span className="badge">
+              Ưu tiên {label(task.priority).toLowerCase()}
+            </span>
+            {task.isOverdue && <Badge value="OVERDUE" />}
+          </>
+        }
         actions={
           <>
             {active && own && task.status === "IN_PROGRESS" && (
@@ -64,9 +74,9 @@ export function TaskShell({
             )}
             {editable && manage && (
               <>
-                <ButtonLink href={`/tasks/${taskId}/edit`}>
-                  Điều chỉnh
-                </ButtonLink>
+                {path !== `${root}/edit` && (
+                  <ButtonLink href={`${root}/edit`}>Điều chỉnh</ButtonLink>
+                )}
                 <button onClick={() => dialog.open("assignment")}>
                   {task.assigneeId ? "Bàn giao" : "Giao việc"}
                 </button>
@@ -86,22 +96,25 @@ export function TaskShell({
           </>
         }
       />
-      <p className="metadata">
-        <Badge value={task.status} />{" "}
-        <span className="badge">
-          Ưu tiên {label(task.priority).toLowerCase()}
-        </span>
-        {task.isOverdue && <Badge value="OVERDUE" />}
-      </p>
-      <Tabs
-        active={path}
-        items={[
-          { href: `/tasks/${taskId}`, label: "Thông tin" },
-          { href: `/tasks/${taskId}/time-logs`, label: "Giờ công" },
-          { href: `/tasks/${taskId}/submissions`, label: "Các lần nộp" },
-          { href: `/tasks/${taskId}/history`, label: "Lịch sử" },
-        ]}
-      />
+      <div className="section-toolbar">
+        <SectionSelect
+          label="Mục công việc"
+          active={
+            path.startsWith(`${root}/submissions/`)
+              ? `${root}/submissions`
+              : path
+          }
+          items={[
+            { href: root, label: "Thông tin" },
+            { href: `${root}/time-logs`, label: "Giờ công" },
+            { href: `${root}/submissions`, label: "Các lần nộp" },
+            { href: `${root}/history`, label: "Lịch sử" },
+            ...(path === `${root}/edit`
+              ? [{ href: path, label: "Điều chỉnh" }]
+              : []),
+          ]}
+        />
+      </div>
       {project.isError && (
         <QueryErrorState
           error={project.error}

@@ -1,7 +1,10 @@
 "use client";
+import { Spinner } from "@/components/ui/loading";
 import { loginSchema } from "@/features/auth/schemas/login.schema";
 import { useSession } from "@/lib/auth/session-context";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRight, CircleCheckBig, LockKeyhole } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -13,6 +16,7 @@ export function LoginPage() {
   const router = useRouter();
   const { session, signIn, loading } = useSession();
   const mutation = useLoginMutation();
+  const busy = loading || mutation.isPending;
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: { username: "", password: "" },
@@ -23,7 +27,13 @@ export function LoginPage() {
   return (
     <main className="login-layout">
       <div className="login-intro">
-        <span className="eyebrow">KHÔNG GIAN LÀM VIỆC NỘI BỘ</span>
+        <div className="login-brand">
+          <span className="brand-mark">
+            <CircleCheckBig size={25} />
+          </span>
+          Cổng công việc
+        </div>
+        <span className="eyebrow">KẾT NỐI CÔNG VIỆC · CÙNG NHAU TIẾN XA</span>
         <h1>
           Cùng một mục tiêu.
           <br />
@@ -33,9 +43,29 @@ export function LoginPage() {
           Quản lý dự án, công việc và kết quả thực hiện trong một không gian
           chung.
         </p>
+        <Image
+          className="login-illustration"
+          src="/illustrations/login-work.svg"
+          alt="Nhân viên ngồi làm việc trước máy tính, nhìn từ phía sau"
+          width={680}
+          height={440}
+          loading="eager"
+        />
+        <div className="login-caption">
+          <span />
+          Kế hoạch rõ ràng. Làm việc hiệu quả.
+        </div>
       </div>
       <section className="login-panel">
-        <h2>Đăng nhập</h2>
+        <div className="login-panel-heading">
+          <span className="login-lock">
+            <LockKeyhole size={25} strokeWidth={1.7} />
+          </span>
+          <div>
+            <span className="eyebrow">CHÀO MỪNG BẠN TRỞ LẠI</span>
+            <h2>Đăng nhập</h2>
+          </div>
+        </div>
         <p className="muted">Sử dụng tài khoản nội bộ đã được cấp.</p>
         <form
           onSubmit={form.handleSubmit(async (body) => {
@@ -48,7 +78,7 @@ export function LoginPage() {
             }
           })}
         >
-          <fieldset disabled={mutation.isPending || loading}>
+          <fieldset disabled={busy}>
             <label htmlFor="username">Tên đăng nhập</label>
             <input
               id="username"
@@ -77,8 +107,18 @@ export function LoginPage() {
                 {mutation.error.message}
               </p>
             )}
-            <button type="submit" className="primary">
-              {mutation.isPending ? "Đang đăng nhập…" : "Đăng nhập"}
+            <button
+              type="submit"
+              className="primary pending-button"
+              aria-busy={busy}
+            >
+              {busy && <Spinner />}
+              {mutation.isPending
+                ? "Đang đăng nhập…"
+                : loading
+                  ? "Đang tải phiên…"
+                  : "Đăng nhập"}
+              {!busy && <ArrowRight size={18} aria-hidden="true" />}
             </button>
           </fieldset>
         </form>

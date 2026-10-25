@@ -1,7 +1,7 @@
 "use client";
 import { VersionedSchemaForm } from "@/components/forms/versioned-schema-form";
 import { HashDialog } from "@/components/ui/dialog";
-import { Loading } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { type ProjectDto } from "@/features/projects/types/projects.types";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
@@ -44,7 +44,7 @@ export function ProjectCloseDialog({
           retry={() => void checks.refetch()}
         />
       ) : !checks.data ? (
-        <Loading />
+        <PageSkeleton variant="form" />
       ) : (
         <>
           <dl>
@@ -72,8 +72,9 @@ export function ProjectCloseDialog({
                 Thao tác
                 <select
                   value={action}
-                  onChange={(e) => {
-                    if (confirmDiscard()) setAction(e.target.value);
+                  onChange={async (e) => {
+                    const value = e.target.value;
+                    if (await confirmDiscard()) setAction(value);
                   }}
                 >
                   {project.status === "ACTIVE" && (

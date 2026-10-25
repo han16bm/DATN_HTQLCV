@@ -2,7 +2,8 @@
 import { TaskForm } from "./task-form";
 
 import { PermissionGate } from "@/components/layout/permission-gate";
-import { Loading, PageHeader, Panel } from "@/components/ui/page";
+import { PageHeader, Panel } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
 import { dateTime } from "@/lib/format";
@@ -20,7 +21,7 @@ export function TaskEditorPage({
   const project = useGetProjectQuery(id);
   if (query.isError) return <QueryErrorState error={query.error} />;
   if (project.isError) return <QueryErrorState error={project.error} />;
-  if (!project.data) return <Loading />;
+  if (!project.data) return <PageSkeleton variant="form" />;
   return (
     <PermissionGate permission="TASKS_MANAGE" projectId={id}>
       <PageHeader

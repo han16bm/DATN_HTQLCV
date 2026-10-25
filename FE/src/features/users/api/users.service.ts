@@ -19,6 +19,7 @@ import type {
   VersionOptions,
 } from "@/services/api-client";
 import { apiClient, parseResponse } from "@/services/api-client";
+import { profileSchema } from "../schemas/profile.schema";
 export const usersService: UsersApi = {
   listUsers(query: UserQuery = {}, options: RequestOptions = {}) {
     return apiClient
@@ -29,6 +30,11 @@ export const usersService: UsersApi = {
     return apiClient
       .get<unknown>(`/users/${encodeURIComponent(userId)}`, options)
       .then(parseResponse(userSchema));
+  },
+  getProfile(userId: string, options: RequestOptions = {}) {
+    return apiClient
+      .get<unknown>(`/users/${encodeURIComponent(userId)}/profile`, options)
+      .then(parseResponse(profileSchema));
   },
   createUser(payload: CreateUserInput, options: MutationOptions) {
     return apiClient

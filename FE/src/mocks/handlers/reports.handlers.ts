@@ -21,7 +21,7 @@ import {
 } from "./http";
 export const reportHandlers = [
   http.get(
-    "*/api/v1/reports",
+    "*/api/reports",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const query = parseQuery(request, reportQuerySchema);
@@ -34,7 +34,7 @@ export const reportHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/report-previews",
+    "*/api/report-previews",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const query = parseQuery(request, reportPreviewQuerySchema);
@@ -47,7 +47,7 @@ export const reportHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/reports/:reportId",
+    "*/api/reports/:reportId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const reportId = idSchema.parse(params.reportId);
@@ -60,7 +60,7 @@ export const reportHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/reports",
+    "*/api/reports",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const payload = createReportSchema.parse(await request.json());
@@ -86,7 +86,7 @@ export const reportHandlers = [
     }),
   ),
   http.patch(
-    "*/api/v1/reports/:reportId",
+    "*/api/reports/:reportId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const reportId = idSchema.parse(params.reportId);
@@ -118,7 +118,7 @@ export const reportHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/reports/:reportId/refresh",
+    "*/api/reports/:reportId/refresh",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const reportId = idSchema.parse(params.reportId);
@@ -149,7 +149,7 @@ export const reportHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/reports/:reportId/submit",
+    "*/api/reports/:reportId/submit",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const reportId = idSchema.parse(params.reportId);

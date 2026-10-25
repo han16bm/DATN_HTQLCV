@@ -5,8 +5,8 @@ import { dateTime } from "@/lib/format";
 export function Metadata({ value }: { value: AnalysisMetaDto }) {
   return (
     <p className="metadata">
-      Dữ liệu đến {dateTime(value.dataAsOf)} · Quy tắc nghiệp vụ{" "}
-      {value.calculationVersion} · <Badge value={value.quality.status} />
+      Cập nhật {dateTime(value.dataAsOf)} ·{" "}
+      <Badge value={value.quality.status} />
     </p>
   );
 }

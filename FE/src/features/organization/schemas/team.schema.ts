@@ -1,4 +1,7 @@
-import { listQuerySchema } from "@/lib/validation/common.schema";
+import {
+  entityLabelSchema,
+  listQuerySchema,
+} from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 export const createTeamSchema = z
@@ -48,5 +51,5 @@ export const teamQuerySchema = z
 
 export const teamRowSchema = z
   .object(teamSchema.shape)
-  .pick({ id: true, name: true, unitId: true, status: true })
-  .extend({ memberCount: z.number().int().min(0) });
+  .pick({ id: true, name: true, status: true })
+  .extend({ unit: entityLabelSchema, memberCount: z.number().int().min(0) });

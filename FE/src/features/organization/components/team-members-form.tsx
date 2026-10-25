@@ -6,22 +6,28 @@ import { type TeamDto } from "@/features/organization/types/organization.types";
 import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
 import { toast } from "sonner";
 import { useReplaceTeamMembersMutation } from "../hooks/use-organization-mutations";
+import type { ReactNode } from "react";
 export function TeamMembersForm({
   team,
   people,
   reload,
+  cancel,
+  onDone,
 }: {
   team: TeamDto;
   people: FormOption[];
   reload?: () => Promise<{
     data?: TeamDto;
   }>;
+  cancel?: ReactNode;
+  onDone: () => void;
 }) {
   const snapshot = useEditSnapshot(team);
   const mutation = useReplaceTeamMembersMutation();
   return (
     <SchemaForm
       schema={teamMembersSchema}
+      cancel={cancel}
       fields={[
         {
           name: "memberIds",
@@ -48,6 +54,7 @@ export function TeamMembersForm({
           }),
         );
         toast.success("Đã cập nhật thành viên nhóm.");
+        onDone();
       }}
       submitLabel="Lưu thành viên"
     />

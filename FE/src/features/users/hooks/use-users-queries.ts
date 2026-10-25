@@ -1,6 +1,6 @@
 "use client";
 import { userQuerySchema } from "@/features/users/schemas/user.schema";
-import { type UserQuery } from "@/features/users/types/users.types";
+import type { UserQuery } from "@/features/users/types/users.types";
 import { hasPermission, useSession } from "@/lib/auth/session-context";
 import type { QueryOptions } from "@/lib/query/use-query-access";
 import { useQueryAccess } from "@/lib/query/use-query-access";
@@ -8,6 +8,18 @@ import { queryIdSchema } from "@/lib/validation/request.schema";
 import { useQuery } from "@tanstack/react-query";
 import { usersKeys } from "../api/users.keys";
 import { usersService } from "../api/users.service";
+
+export function useGetProfileQuery(userId: string) {
+  const id = queryIdSchema.parse(userId);
+  const { session } = useSession();
+  const result = useQuery({
+    queryKey: usersKeys.getProfile(session?.user.id ?? "anonymous", id),
+    queryFn: ({ signal }) => usersService.getProfile(id, { signal }),
+    enabled: Boolean(session) && Boolean(id),
+    staleTime: 0,
+  });
+  return useQueryAccess(result, "users");
+}
 
 export function useListUsersQuery(
   query: UserQuery = {},

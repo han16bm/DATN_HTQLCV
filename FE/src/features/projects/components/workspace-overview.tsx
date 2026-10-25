@@ -2,13 +2,15 @@
 import {
   Badge,
   ButtonLink,
-  Loading,
+  DataTable,
+  DetailLink,
   PageHeader,
-  Panel,
 } from "@/components/ui/page";
+import { PageSkeleton, Skeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListReportsQuery } from "@/features/reports/hooks/use-reports-queries";
 import { useListReviewQueueQuery } from "@/features/submissions/hooks/use-submissions-queries";
+import { useListTasksQuery } from "@/features/tasks/hooks/use-tasks-queries";
 import { hasPermission, useSession } from "@/lib/auth/session-context";
 import { dateTime } from "@/lib/format";
 import Link from "next/link";
@@ -16,21 +18,52 @@ import { useListProjectsQuery } from "../hooks/use-projects-queries";
 
 export function WorkspaceOverview() {
   const { session } = useSession();
+  const userId = session?.user.id ?? "";
+  const canReview = hasPermission(session, "TASKS_REVIEW");
   const projects = useListProjectsQuery({ pageSize: 4 });
   const drafts = useListReportsQuery({
-    authorId: session?.user.id,
+    authorId: userId,
     status: "DRAFT",
     pageSize: 1,
   });
   const reviews = useListReviewQueueQuery(
     { pageSize: 1 },
-    { enabled: hasPermission(session, "TASKS_REVIEW") },
+    { enabled: canReview },
   );
+  const overdue = useListTasksQuery({
+    assigneeId: userId,
+    overdue: true,
+    pageSize: 1,
+  });
+  const cards = [
+    { title: "Dự án", query: projects, href: "/projects", action: "Xem dự án" },
+    {
+      title: "Báo cáo nháp",
+      query: drafts,
+      href: `/reports?status=DRAFT&authorId=${userId}`,
+      action: "Tiếp tục báo cáo",
+    },
+    ...(canReview
+      ? [
+          {
+            title: "Chờ nghiệm thu",
+            query: reviews,
+            href: "/reviews",
+            action: "Mở hàng chờ",
+          },
+        ]
+      : []),
+    {
+      title: "Công việc quá hạn",
+      query: overdue,
+      href: `/tasks?overdue=true&assigneeId=${userId}`,
+      action: "Xem công việc",
+    },
+  ];
   return (
     <>
       <PageHeader
         title={`Chào ${session?.user.displayName.split(" ").at(-1) ?? "bạn"},`}
-        description="Công việc, dự án và các việc cần xử lý trong phạm vi của bạn."
         actions={
           <>
             {hasPermission(session, "ANALYTICS_VIEW") && (
@@ -42,62 +75,58 @@ export function WorkspaceOverview() {
           </>
         }
       />
-      <div className="metric-grid">
-        <Panel title="Dự án tham gia">
-          <p className="metric-value">
-            {projects.data?.pagination.total ?? "—"}
-          </p>
-          <Link className="text-link" href="/projects">
-            Xem dự án
-          </Link>
-        </Panel>
-        <Panel title="Báo cáo nháp của tôi">
-          <p className="metric-value">{drafts.data?.pagination.total ?? "—"}</p>
-          <Link className="text-link" href="/reports?status=DRAFT">
-            Tiếp tục báo cáo
-          </Link>
-        </Panel>
-        {hasPermission(session, "TASKS_REVIEW") && (
-          <Panel title="Kết quả chờ nghiệm thu">
-            <p className="metric-value">
-              {reviews.data?.pagination.total ?? "—"}
-            </p>
-            <Link className="text-link" href="/reviews">
-              Mở hàng chờ
-            </Link>
-          </Panel>
-        )}
-        <Panel title="Việc cần chú ý">
-          <p>Công việc mở đã qua hạn hoàn thành</p>
+      <section className="overview-stats" aria-label="Số liệu cá nhân">
+        {cards.map(({ title, query, href, action }) => (
           <Link
-            className="text-link"
-            href={`/tasks?overdue=true&assigneeId=${session?.user.id ?? ""}`}
+            className="overview-stat"
+            href={href}
+            key={title}
+            aria-busy={query.isPending}
           >
-            Xem công việc quá hạn của tôi
+            <span>{title}</span>
+            <strong>
+              {query.isPending ? (
+                <Skeleton className="skeleton-count" />
+              ) : (
+                (query.data?.pagination.total ?? "—")
+              )}
+            </strong>
+            <span
+              className={`small ${query.isError ? "field-error" : "muted"}`}
+            >
+              {query.isError ? "Không tải được số liệu" : action}
+            </span>
           </Link>
-        </Panel>
-      </div>
+        ))}
+      </section>
       {projects.isError ? (
         <QueryErrorState error={projects.error} />
       ) : !projects.data ? (
-        <Loading />
+        <PageSkeleton variant="cards" />
       ) : (
-        projects.data.items.length > 0 && (
-          <Panel title="Dự án đang tham gia">
-            <div className="project-grid">
-              {projects.data.items.map((p) => (
-                <div key={p.id}>
-                  <Link className="text-link" href={`/projects/${p.id}`}>
-                    {p.name}
-                  </Link>
-                  <p className="small muted">
-                    <Badge value={p.status} /> · Hạn {dateTime(p.dueAt)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </Panel>
-        )
+        <DataTable
+          title="Dự án đang theo dõi"
+          headerActions={<ButtonLink href="/projects">Tất cả dự án</ButtonLink>}
+          actions
+          headers={[
+            "Dự án",
+            "Người phụ trách",
+            "Trạng thái",
+            "Hạn hoàn thành",
+            "Hành động",
+          ]}
+          rows={projects.data.items.map((p) => [
+            p.name,
+            p.owner.displayName,
+            <Badge key="status" value={p.status} />,
+            dateTime(p.dueAt),
+            <DetailLink
+              key="detail"
+              href={`/projects/${p.id}`}
+              label={`Xem dự án ${p.name}`}
+            />,
+          ])}
+        />
       )}
     </>
   );

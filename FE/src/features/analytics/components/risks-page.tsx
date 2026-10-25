@@ -1,5 +1,6 @@
 "use client";
-import { Badge, DataTable, Loading, Panel } from "@/components/ui/page";
+import { Badge, DataTable } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { Metadata } from "@/features/analytics/components/analysis-metadata";
 import Link from "next/link";
@@ -20,61 +21,64 @@ export function RisksPage() {
           retry={() => void query.refetch()}
         />
       ) : !query.data ? (
-        <Loading />
+        <PageSkeleton variant="table" />
       ) : (
         <>
           <Metadata value={query.data.metadata} />
-          <Panel title="Nguy cơ theo dự án">
-            <DataTable
-              headers={[
-                "Dự án",
-                "Mức nguy cơ",
-                "Quá hạn / có nguy cơ",
-                "Thiếu dữ liệu",
-                "Căn cứ",
-              ]}
-              rows={query.data.projects.map((p) => [
-                p.projectName,
-                <Badge key="risk" value={p.riskLevel} />,
-                `${p.overdueCount} / ${p.atRiskCount}`,
-                String(p.insufficientDataCount),
-                <div key="source">
-                  <p>{p.evidence.join(" ")}</p>
-                  <AnalysisLink value={p.analysisRef} />
-                </div>,
-              ])}
-            />
-          </Panel>
-          <Panel title="Công việc cần đối chiếu">
-            <DataTable
-              headers={[
-                "Công việc",
-                "Người nhận",
-                "Nhóm nhận định",
-                "Căn cứ",
-                "Chất lượng",
-              ]}
-              rows={query.data.items.map((t) => [
-                <Link
-                  key={t.taskId}
-                  href={`/tasks/${t.taskId}`}
-                  className="text-link"
-                >
-                  {t.taskTitle}
-                </Link>,
-                t.assignee?.displayName ?? "Chưa phân công",
-                <Badge key="category" value={t.category} />,
-                <div key="evidence">
-                  <p>{t.evidence.join(" ")}</p>
-                  <AnalysisLink value={t.analysisRef} />
-                </div>,
-                <Badge key="quality" value={t.quality.status} />,
-              ])}
-            />
-            <p className="small muted">
-              Phân loại theo quy tắc; mức nguy cơ không phải xác suất dự báo.
-            </p>
-          </Panel>
+          <DataTable
+            title="Nguy cơ theo dự án"
+            actions
+            headers={[
+              "Dự án",
+              "Mức nguy cơ",
+              "Quá hạn / có nguy cơ",
+              "Thiếu dữ liệu",
+              "Căn cứ",
+              "Hành động",
+            ]}
+            rows={query.data.projects.map((p) => [
+              p.projectName,
+              <Badge key="risk" value={p.riskLevel} />,
+              `${p.overdueCount} / ${p.atRiskCount}`,
+              String(p.insufficientDataCount),
+              p.evidence.join(" "),
+              <AnalysisLink
+                key="detail"
+                value={p.analysisRef}
+                label={`Xem nguy cơ của ${p.projectName}`}
+              />,
+            ])}
+          />
+          <DataTable
+            title="Công việc cần đối chiếu"
+            actions
+            headers={[
+              "Công việc",
+              "Người nhận",
+              "Nhóm nhận định",
+              "Căn cứ",
+              "Chất lượng",
+              "Hành động",
+            ]}
+            rows={query.data.items.map((t) => [
+              <Link
+                key={t.taskId}
+                href={`/tasks/${t.taskId}`}
+                className="text-link"
+              >
+                {t.taskTitle}
+              </Link>,
+              t.assignee?.displayName ?? "Chưa phân công",
+              <Badge key="category" value={t.category} />,
+              t.evidence.join(" "),
+              <Badge key="quality" value={t.quality.status} />,
+              <AnalysisLink
+                key="detail"
+                value={t.analysisRef}
+                label={`Xem phân tích ${t.taskTitle}`}
+              />,
+            ])}
+          />
         </>
       )}
     </AnalyticsFrame>

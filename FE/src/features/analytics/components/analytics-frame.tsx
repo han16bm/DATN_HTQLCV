@@ -1,6 +1,7 @@
 "use client";
 import { PermissionGate } from "@/components/layout/permission-gate";
-import { PageHeader, Tabs } from "@/components/ui/page";
+import { PageHeader, SectionSelect } from "@/components/ui/page";
+import * as Popover from "@radix-ui/react-popover";
 import {
   prioritySchema,
   taskStatusSchema,
@@ -25,83 +26,128 @@ export function AnalyticsFrame({
   const path = usePathname();
   return (
     <PermissionGate permission="ANALYTICS_VIEW">
-      <PageHeader
-        title={title}
-        description="Theo dõi số liệu và căn cứ trong phạm vi được cấp quyền."
-      />
-      <Tabs
-        active={path}
-        items={[
-          ["/dashboard", "Tổng quan"],
-          ["/analytics/risks", "Nguy cơ trễ hạn"],
-          ["/analytics/workload", "Khối lượng"],
-          ["/analytics/bottlenecks", "Điểm nghẽn"],
-          ["/analytics/summary", "Tổng hợp"],
-        ].map(([href, label]) => ({
-          href: href + scope.suffix,
-          label,
-          key: href,
-        }))}
-      />
-      <section className="panel filters">
-        <LookupFilter kind="UNIT" name="unitId" label="Đơn vị" />
-        <LookupFilter kind="PROJECT" name="projectId" label="Dự án" />
-        <label>
-          Từ ngày
-          <input
-            type="date"
-            value={scope.query.from}
-            onChange={(e) => f.set("from", e.target.value)}
-          />
-        </label>
-        <label>
-          Đến ngày
-          <input
-            type="date"
-            value={scope.query.to}
-            onChange={(e) => f.set("to", e.target.value)}
-          />
-        </label>
-        <details className="wide advanced-filters">
-          <summary>Bộ lọc nâng cao</summary>
-          <div className="filters">
-            <LookupFilter kind="TEAM" name="teamId" label="Nhóm" />
-            <LookupFilter
-              kind="PERSON"
-              name="ownerId"
-              label="Phụ trách dự án"
-            />
-            <LookupFilter kind="PERSON" name="assigneeId" label="Nhân viên" />
-            {[
-              {
-                name: "status",
-                title: "Trạng thái",
-                values: taskStatusSchema.options,
-              },
-              {
-                name: "priority",
-                title: "Ưu tiên",
-                values: prioritySchema.options,
-              },
-            ].map((field) => (
-              <label key={field.name}>
-                {field.title}
-                <select
-                  value={f.get(field.name)}
-                  onChange={(e) => f.set(field.name, e.target.value)}
-                >
-                  <option value="">Tất cả</option>
-                  {field.values.map((v) => (
-                    <option key={v} value={v}>
-                      {label(v)}
-                    </option>
+      <PageHeader title={title} />
+      <div className="section-toolbar">
+        <SectionSelect
+          label="Mục phân tích"
+          active={path}
+          suffix={scope.suffix}
+          items={[
+            { href: "/dashboard", label: "Tổng quan" },
+            { href: "/analytics/risks", label: "Nguy cơ trễ hạn" },
+            { href: "/analytics/workload", label: "Khối lượng" },
+            { href: "/analytics/bottlenecks", label: "Điểm nghẽn" },
+            { href: "/analytics/summary", label: "Tổng hợp" },
+          ]}
+        />
+        <Popover.Root>
+          <Popover.Trigger asChild>
+            <button type="button">Bộ lọc</button>
+          </Popover.Trigger>
+          <Popover.Portal>
+            <Popover.Content
+              className="analytics-filter-popover"
+              align="end"
+              sideOffset={8}
+              collisionPadding={16}
+              aria-label="Bộ lọc phân tích"
+            >
+              <div className="analytics-filter-heading">
+                <h2>Bộ lọc</h2>
+                <Popover.Close aria-label="Đóng bộ lọc">×</Popover.Close>
+              </div>
+              <div className="analytics-filter-fields">
+                <LookupFilter kind="UNIT" name="unitId" label="Đơn vị" />
+                <LookupFilter kind="PROJECT" name="projectId" label="Dự án" />
+                <label>
+                  Từ ngày
+                  <input
+                    type="date"
+                    value={scope.query.from}
+                    onChange={(e) => f.set("from", e.target.value)}
+                  />
+                </label>
+                <label>
+                  Đến ngày
+                  <input
+                    type="date"
+                    value={scope.query.to}
+                    onChange={(e) => f.set("to", e.target.value)}
+                  />
+                </label>
+              </div>
+              <details className="analytics-more-filters">
+                <summary>Bộ lọc khác</summary>
+                <div className="analytics-filter-fields">
+                  <LookupFilter kind="TEAM" name="teamId" label="Nhóm" />
+                  <LookupFilter
+                    kind="PERSON"
+                    name="ownerId"
+                    label="Phụ trách dự án"
+                  />
+                  <LookupFilter
+                    kind="PERSON"
+                    name="assigneeId"
+                    label="Nhân viên"
+                  />
+                  {[
+                    {
+                      name: "status",
+                      title: "Trạng thái",
+                      values: taskStatusSchema.options,
+                    },
+                    {
+                      name: "priority",
+                      title: "Ưu tiên",
+                      values: prioritySchema.options,
+                    },
+                  ].map((field) => (
+                    <label key={field.name}>
+                      {field.title}
+                      <select
+                        value={f.get(field.name)}
+                        onChange={(e) => f.set(field.name, e.target.value)}
+                      >
+                        <option value="">Tất cả</option>
+                        {field.values.map((v) => (
+                          <option key={v} value={v}>
+                            {label(v)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   ))}
-                </select>
-              </label>
-            ))}
-          </div>
-        </details>
-      </section>
+                </div>
+              </details>
+              <div className="analytics-filter-actions">
+                <button
+                  type="button"
+                  onClick={() =>
+                    f.setMany({
+                      unitId: "",
+                      projectId: "",
+                      teamId: "",
+                      ownerId: "",
+                      assigneeId: "",
+                      status: "",
+                      priority: "",
+                      from: "",
+                      to: "",
+                    })
+                  }
+                >
+                  Đặt lại
+                </button>
+                <Popover.Close asChild>
+                  <button type="button" className="primary">
+                    Xong
+                  </button>
+                </Popover.Close>
+              </div>
+            </Popover.Content>
+          </Popover.Portal>
+        </Popover.Root>
+      </div>
       {!scope.parsed.success ? (
         <p className="notice error">
           Bộ lọc không hợp lệ. Kiểm tra lại ngày và phạm vi đã chọn.
@@ -158,9 +204,7 @@ function LookupFilter({
           else f.set(name, e.target.value);
         }}
       >
-        <option value="">
-          {query.isPending ? "Đang tải…" : "Tất cả trong quyền"}
-        </option>
+        <option value="">{query.isPending ? "Đang tải…" : "Tất cả"}</option>
         {query.data?.items.map((i) => (
           <option key={i.id} value={i.id}>
             {i.name}

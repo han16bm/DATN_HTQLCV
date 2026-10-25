@@ -1,12 +1,7 @@
 "use client";
 import { PermissionGate } from "@/components/layout/permission-gate";
-import {
-  Badge,
-  ButtonLink,
-  Loading,
-  PageHeader,
-  Panel,
-} from "@/components/ui/page";
+import { Badge, ButtonLink, PageHeader, Panel } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { AlertForm } from "@/features/alerts/components/alert-form";
 import { AnalysisLink } from "@/features/analytics/components/analysis-links";
@@ -26,7 +21,7 @@ function AlertDetail({ alertId }: { alertId: string }) {
   const { session } = useSession();
   if (q.isError)
     return <QueryErrorState error={q.error} retry={() => void q.refetch()} />;
-  if (!q.data) return <Loading />;
+  if (!q.data) return <PageSkeleton />;
   const a = q.data;
   return (
     <>
@@ -65,20 +60,28 @@ function AlertDetail({ alertId }: { alertId: string }) {
         </Panel>
         <Panel title="Thông tin xử lý">
           <dl>
-            <dt>Tiếp nhận</dt>
-            <dd>{dateTime(a.createdAt)}</dd>
-            <dt>Người xử lý gần nhất</dt>
-            <dd>
-              {a.handledBy === session?.user.id
-                ? session.user.displayName
-                : (a.handledBy ?? "Chưa có")}
-            </dd>
-            <dt>Thời điểm</dt>
-            <dd>{dateTime(a.handledAt)}</dd>
-            <dt>Hướng xử lý hoặc lý do</dt>
-            <dd className="preserve-lines">
-              {a.resolutionNote ?? "Chưa ghi nhận"}
-            </dd>
+            <div>
+              <dt>Tiếp nhận</dt>
+              <dd>{dateTime(a.createdAt)}</dd>
+            </div>
+            <div>
+              <dt>Người xử lý gần nhất</dt>
+              <dd>
+                {a.handledBy === session?.user.id
+                  ? session.user.displayName
+                  : (a.handledBy ?? "Chưa có")}
+              </dd>
+            </div>
+            <div>
+              <dt>Thời điểm</dt>
+              <dd>{dateTime(a.handledAt)}</dd>
+            </div>
+            <div>
+              <dt>Hướng xử lý hoặc lý do</dt>
+              <dd className="preserve-lines">
+                {a.resolutionNote ?? "Chưa ghi nhận"}
+              </dd>
+            </div>
           </dl>
         </Panel>
       </div>

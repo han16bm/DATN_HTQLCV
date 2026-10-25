@@ -2,15 +2,18 @@
 import type { FormField, FormOption } from "@/components/forms/form.types";
 import { SchemaForm } from "@/components/forms/schema-form";
 import { Badge, ButtonLink, Panel } from "@/components/ui/page";
+import { Avatar } from "@/components/ui/avatar";
 import {
   createUserSchema,
   updateUserSchema,
 } from "@/features/users/schemas/user-form.schema";
 import { systemRoleSchema } from "@/features/users/schemas/user.schema";
 import { type UserDto } from "@/features/users/types/users.types";
-import { changedFields, dateTime, options } from "@/lib/format";
+import { changedFields, dateTime, label, options } from "@/lib/format";
 import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
+import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 import {
   useCreateUserMutation,
@@ -32,12 +35,35 @@ export function UserProfileForm({
   const update = useUpdateUserMutation();
   const snapshot = useEditSnapshot(user);
   const base = snapshot.base;
+  const [open, setOpen] = useState(false);
+  const cancel = async () => {
+    if (!(await confirmDiscard("Bỏ thay đổi tài khoản chưa lưu?"))) return;
+    setOpen(false);
+  };
   const fields: FormField[] = [
     ...(!user
-      ? [{ name: "username", label: "Tên đăng nhập", required: true }]
+      ? [
+          {
+            name: "username",
+            label: "Tên đăng nhập",
+            required: true,
+            width: "short" as const,
+          },
+        ]
       : []),
-    { name: "displayName", label: "Họ tên", required: true },
-    { name: "email", label: "Email", type: "email", required: true },
+    {
+      name: "displayName",
+      label: "Họ tên",
+      required: true,
+      width: user ? "medium" : "long",
+    },
+    {
+      name: "email",
+      label: "Email",
+      type: "email",
+      required: true,
+      width: "medium",
+    },
     {
       name: "unitId",
       label: "Đơn vị",
@@ -85,18 +111,64 @@ export function UserProfileForm({
       : { systemRole: "EMPLOYEE", unitId: units[0]?.value ?? "" },
     onConflictReload: () => snapshot.load(reload),
     onConflictAccept: snapshot.accept,
-    cancel: <ButtonLink href="/admin/users">Hủy</ButtonLink>,
+    cancel: user ? (
+      <button type="button" onClick={cancel}>
+        Hủy
+      </button>
+    ) : (
+      <ButtonLink href="/admin/users">Hủy</ButtonLink>
+    ),
     submitLabel: user ? "Lưu thông tin" : "Tạo tài khoản",
   };
   return (
-    <Panel title="Thông tin tài khoản">
+    <Panel
+      title="Thông tin tài khoản"
+      actions={
+        user && !open ? (
+          <button
+            type="button"
+            onClick={() => {
+              snapshot.saved(user);
+              setOpen(true);
+            }}
+          >
+            Chỉnh sửa thông tin
+          </button>
+        ) : undefined
+      }
+    >
       {user && (
-        <p className="metadata">
-          {user.username} · Mã tài khoản: {user.id} ·{" "}
-          <Badge value={user.status} /> · Cập nhật {dateTime(user.updatedAt)}
-        </p>
+        <div className="account-identity">
+          <Avatar name={user.displayName} src={user.avatarUrl} large />
+          <div>
+            <strong>{user.displayName}</strong>
+            <span className="small muted">{user.username}</span>
+          </div>
+          <Badge value={user.status} />
+        </div>
       )}
-      {base ? (
+      {user && !open ? (
+        <>
+          <dl className="record-details">
+            <div>
+              <dt>Đơn vị</dt>
+              <dd>{user.unit.name}</dd>
+            </div>
+            <div>
+              <dt>Email</dt>
+              <dd>{user.email}</dd>
+            </div>
+            <div>
+              <dt>Vai trò hệ thống</dt>
+              <dd>{label(user.systemRole)}</dd>
+            </div>
+            <div>
+              <dt>Cập nhật lần cuối</dt>
+              <dd>{dateTime(user.updatedAt)}</dd>
+            </div>
+          </dl>
+        </>
+      ) : base ? (
         <SchemaForm
           {...formProps}
           schema={updateUserSchema}

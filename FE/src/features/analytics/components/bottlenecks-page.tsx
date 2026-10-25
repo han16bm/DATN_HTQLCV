@@ -1,11 +1,6 @@
 "use client";
-import {
-  Badge,
-  ButtonLink,
-  DataTable,
-  Loading,
-  Panel,
-} from "@/components/ui/page";
+import { Badge, ButtonLink, DataTable } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { Metadata } from "@/features/analytics/components/analysis-metadata";
 import { hours } from "@/lib/format";
@@ -27,43 +22,41 @@ export function BottlenecksPage() {
           retry={() => void query.refetch()}
         />
       ) : !query.data ? (
-        <Loading />
+        <PageSkeleton variant="table" />
       ) : (
         <>
           <Metadata value={query.data.metadata} />
-          <Panel>
-            <p className="notice">
-              Thời gian liên tục ở trạng thái hoặc chờ nghiệm thu được tách khỏi
-              giờ công thực hiện.
-            </p>
-            <DataTable
-              headers={[
-                "Khâu xử lý",
-                "Công việc",
-                "Người nhận",
-                "Thời gian tồn đọng",
-                "Số vòng sửa",
-                "Bằng chứng",
-              ]}
-              rows={query.data.items.map((t) => [
-                <Badge key="stage" value={t.stage} />,
-                <Link
-                  key={t.taskId}
-                  href={`/tasks/${t.taskId}`}
-                  className="text-link"
-                >
-                  {t.taskTitle}
-                </Link>,
-                t.assignee?.displayName ?? "Chưa phân công",
-                `${hours(t.elapsedMinutes)} · ${t.calendarBasis === "CONTINUOUS" ? "Giờ liên tục" : "Theo lịch làm việc"}`,
-                String(t.revisionCount),
-                <div key="evidence">
-                  <p>{t.evidence.join(" ")}</p>
-                  <AnalysisLink value={t.analysisRef} />
-                </div>,
-              ])}
-            />
-          </Panel>
+          <DataTable
+            actions
+            headers={[
+              "Khâu xử lý",
+              "Công việc",
+              "Người nhận",
+              "Thời gian tồn đọng",
+              "Số vòng sửa",
+              "Bằng chứng",
+              "Hành động",
+            ]}
+            rows={query.data.items.map((t) => [
+              <Badge key="stage" value={t.stage} />,
+              <Link
+                key={t.taskId}
+                href={`/tasks/${t.taskId}`}
+                className="text-link"
+              >
+                {t.taskTitle}
+              </Link>,
+              t.assignee?.displayName ?? "Chưa phân công",
+              `${hours(t.elapsedMinutes)} · ${t.calendarBasis === "CONTINUOUS" ? "Giờ liên tục" : "Theo lịch làm việc"}`,
+              String(t.revisionCount),
+              t.evidence.join(" "),
+              <AnalysisLink
+                key="detail"
+                value={t.analysisRef}
+                label={`Xem điểm nghẽn ${t.taskTitle}`}
+              />,
+            ])}
+          />
           <ButtonLink href="/reviews">Mở hàng chờ nghiệm thu</ButtonLink>
         </>
       )}

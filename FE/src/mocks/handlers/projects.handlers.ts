@@ -24,7 +24,7 @@ import {
 } from "./http";
 export const projectHandlers = [
   http.get(
-    "*/api/v1/projects",
+    "*/api/projects",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const query = parseQuery(request, projectQuerySchema);
@@ -37,7 +37,7 @@ export const projectHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/projects/:projectId",
+    "*/api/projects/:projectId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const projectId = idSchema.parse(params.projectId);
@@ -50,7 +50,7 @@ export const projectHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/projects",
+    "*/api/projects",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const payload = createProjectSchema.parse(await request.json());
@@ -76,7 +76,7 @@ export const projectHandlers = [
     }),
   ),
   http.patch(
-    "*/api/v1/projects/:projectId",
+    "*/api/projects/:projectId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const projectId = idSchema.parse(params.projectId);
@@ -108,7 +108,7 @@ export const projectHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/projects/:projectId/activate",
+    "*/api/projects/:projectId/activate",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const projectId = idSchema.parse(params.projectId);
@@ -139,7 +139,7 @@ export const projectHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/projects/:projectId/closure-checks",
+    "*/api/projects/:projectId/closure-checks",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const projectId = idSchema.parse(params.projectId);
@@ -152,7 +152,7 @@ export const projectHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/projects/:projectId/complete",
+    "*/api/projects/:projectId/complete",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const projectId = idSchema.parse(params.projectId);
@@ -183,7 +183,7 @@ export const projectHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/projects/:projectId/cancel",
+    "*/api/projects/:projectId/cancel",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const projectId = idSchema.parse(params.projectId);
@@ -215,7 +215,7 @@ export const projectHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/projects/:projectId/history",
+    "*/api/projects/:projectId/history",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const projectId = idSchema.parse(params.projectId);

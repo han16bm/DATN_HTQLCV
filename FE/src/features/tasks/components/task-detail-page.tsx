@@ -1,13 +1,19 @@
 "use client";
 import { SchemaForm } from "@/components/forms/schema-form";
-import { ButtonLink, Loading, Panel } from "@/components/ui/page";
+import { HistoryTable } from "@/components/ui/history-table";
+import { PageSkeleton } from "@/components/ui/loading";
+import { ButtonLink, Panel } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { UserBadge } from "@/components/ui/user-badge";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
 import { remainingSchema } from "@/features/tasks/schemas/task-form.schema";
-import { type TaskDto } from "@/features/tasks/types/tasks.types";
+import type { TaskDto } from "@/features/tasks/types/tasks.types";
 import { useSession } from "@/lib/auth/session-context";
-import { dateTime, number } from "@/lib/format";
+import { dateTime, hours } from "@/lib/format";
 import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
+import { confirmDiscard } from "@/lib/forms/confirm-discard";
+import Link from "next/link";
+import { useState } from "react";
 import { toast } from "sonner";
 import { useUpdateRemainingEstimateMutation } from "../hooks/use-tasks-mutations";
 import {
@@ -20,89 +26,92 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
   const history = useListTaskHistoryQuery(taskId, { pageSize: 5 });
   const project = useGetProjectQuery(query.data?.projectId ?? "");
   const { session } = useSession();
-  if (query.isError) return <QueryErrorState error={query.error} />;
-  if (!query.data) return <Loading />;
+  if (query.isError)
+    return (
+      <QueryErrorState error={query.error} retry={() => void query.refetch()} />
+    );
+  if (!query.data) return <PageSkeleton />;
   const task = query.data;
   return (
-    <div className="details-grid">
-      <div>
+    <div className="task-detail">
+      <Panel title="Thông tin công việc">
+        <dl className="record-details task-meta">
+          <div>
+            <dt>Người thực hiện</dt>
+            <dd>
+              {task.assignee ? (
+                <UserBadge
+                  name={task.assignee.displayName}
+                  href={`/users/${encodeURIComponent(task.assignee.id)}`}
+                />
+              ) : (
+                "Chưa phân công"
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt>Dự án</dt>
+            <dd>
+              <Link
+                className="text-link"
+                href={`/projects/${encodeURIComponent(task.projectId)}`}
+              >
+                {task.project.name}
+              </Link>
+            </dd>
+          </div>
+          <div>
+            <dt>Ngày tạo</dt>
+            <dd>{dateTime(task.createdAt)}</dd>
+          </div>
+          <div>
+            <dt>Bắt đầu thực hiện</dt>
+            <dd>
+              {task.firstStartedAt
+                ? dateTime(task.firstStartedAt)
+                : "Chưa bắt đầu"}
+            </dd>
+          </div>
+          <div>
+            <dt>Hạn hoàn thành</dt>
+            <dd className={task.isOverdue ? "task-overdue" : undefined}>
+              {dateTime(task.dueAt)}
+            </dd>
+          </div>
+          <div>
+            <dt>Hạn ban đầu</dt>
+            <dd>{dateTime(task.originalDueAt)}</dd>
+          </div>
+        </dl>
+      </Panel>
+      <div className="task-layout">
         <Panel title="Nội dung công việc">
           <p className="prose">
             {task.description || "Chưa có mô tả bổ sung."}
           </p>
-          <h3 className="section-gap">Tiêu chí nghiệm thu</h3>
-          <p className="prose">{task.acceptanceCriteria}</p>
-        </Panel>
-        <Panel title="Hoạt động gần đây">
-          {history.isError ? (
-            <QueryErrorState error={history.error} />
-          ) : !history.data ? (
-            <Loading />
-          ) : (
-            <ul className="timeline">
-              {history.data.items.map((a) => (
-                <li key={a.id}>
-                  {a.action}
-                  <div className="small muted">
-                    {dateTime(a.at)}
-                    {a.reason ? ` · ${a.reason}` : ""}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-          <ButtonLink href={`/tasks/${taskId}/history`}>
-            Xem toàn bộ lịch sử
-          </ButtonLink>
-        </Panel>
-      </div>
-      <div>
-        <Panel title="Thông tin công việc">
-          <dl>
-            <div>
-              <dt>Người thực hiện</dt>
-              <dd>{task.assignee?.displayName ?? "Chưa phân công"}</dd>
-            </div>
-            <div>
-              <dt>Hạn hoàn thành</dt>
-              <dd>{dateTime(task.dueAt)}</dd>
-            </div>
-            <div>
-              <dt>Hạn ban đầu</dt>
-              <dd>{dateTime(task.originalDueAt)}</dd>
-            </div>
-            <div>
-              <dt>Dự án</dt>
-              <dd>{task.project.name}</dd>
-            </div>
-          </dl>
+          <div className="task-criteria">
+            <h3>Tiêu chí nghiệm thu</h3>
+            <p className="prose">{task.acceptanceCriteria}</p>
+          </div>
         </Panel>
         <Panel title="Giờ công">
-          <p>
-            Đã ghi / dự kiến: {number(task.actualMinutes / 60)} /{" "}
-            {number(task.estimatedMinutes / 60)} giờ
-          </p>
-          <progress
-            max={task.estimatedMinutes}
-            value={task.actualMinutes}
-            aria-label="Giờ công đã ghi so với dự kiến"
-          />
-          <p className="small muted">
-            Đây là giờ đã ghi so với dự kiến, không phải tỷ lệ hoàn thành.
-          </p>
-          <dl className="section-gap">
-            <div>
-              <dt>Dự kiến ban đầu</dt>
-              <dd>{number(task.originalEstimatedMinutes, "phút")}</dd>
-            </div>
-            <div>
-              <dt>Dự kiến hiện tại</dt>
-              <dd>{number(task.estimatedMinutes, "phút")}</dd>
-            </div>
-            <div>
-              <dt>Còn lại đã cập nhật</dt>
-              <dd>{number(task.remainingMinutes, "phút")}</dd>
-            </div>
+          <dl className="task-effort">
+            {[
+              ["Đã thực hiện", hours(task.actualMinutes)],
+              ["Ước lượng hiện tại", hours(task.estimatedMinutes)],
+              ["Ước lượng ban đầu", hours(task.originalEstimatedMinutes)],
+              [
+                "Ước tính còn lại",
+                task.remainingMinutes === null
+                  ? "Chưa cập nhật"
+                  : hours(task.remainingMinutes),
+              ],
+            ].map(([label, value]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
           </dl>
           {task.assigneeId === session?.user.id &&
             task.status === "IN_PROGRESS" &&
@@ -115,6 +124,25 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
             )}
         </Panel>
       </div>
+      {history.isError ? (
+        <QueryErrorState
+          error={history.error}
+          retry={() => void history.refetch()}
+        />
+      ) : !history.data ? (
+        <PageSkeleton variant="table" />
+      ) : (
+        <HistoryTable
+          title="Hoạt động gần đây"
+          items={history.data.items}
+          pagination={{ total: history.data.pagination.total }}
+          headerActions={
+            <ButtonLink href={`/tasks/${encodeURIComponent(taskId)}/history`}>
+              Xem toàn bộ lịch sử
+            </ButtonLink>
+          }
+        />
+      )}
     </div>
   );
 }
@@ -129,33 +157,50 @@ function RemainingForm({
 }) {
   const mutation = useUpdateRemainingEstimateMutation();
   const snapshot = useEditSnapshot(task);
+  const [open, setOpen] = useState(false);
+  const cancel = async () => {
+    if (!(await confirmDiscard("Bỏ cập nhật thời gian chưa lưu?"))) return;
+    setOpen(false);
+  };
   return (
     <div className="section-gap">
-      <SchemaForm
-        schema={remainingSchema}
-        fields={[
-          {
-            name: "remainingMinutes",
-            label: "Còn lại (phút)",
-            type: "number",
-            required: true,
-          },
-        ]}
-        defaults={{ remainingMinutes: task.remainingMinutes ?? "" }}
-        onConflictReload={() => snapshot.load(reload)}
-        onConflictAccept={snapshot.accept}
-        onSubmit={async (values) => {
-          snapshot.saved(
-            await mutation.mutateAsync({
-              taskId: task.id,
-              payload: values,
-              version: snapshot.base.version,
-            }),
-          );
-          toast.success("Đã cập nhật phút còn lại.");
-        }}
-        submitLabel="Lưu cập nhật"
-      />
+      {open ? (
+        <SchemaForm
+          schema={remainingSchema}
+          fields={[
+            {
+              name: "remainingMinutes",
+              label: "Còn lại (phút)",
+              type: "number",
+              required: true,
+            },
+          ]}
+          defaults={{ remainingMinutes: task.remainingMinutes ?? "" }}
+          cancel={
+            <button type="button" onClick={cancel}>
+              Hủy
+            </button>
+          }
+          onConflictReload={() => snapshot.load(reload)}
+          onConflictAccept={snapshot.accept}
+          onSubmit={async (values) => {
+            snapshot.saved(
+              await mutation.mutateAsync({
+                taskId: task.id,
+                payload: values,
+                version: snapshot.base.version,
+              }),
+            );
+            toast.success("Đã cập nhật phút còn lại.");
+            setOpen(false);
+          }}
+          submitLabel="Lưu cập nhật"
+        />
+      ) : (
+        <button type="button" onClick={() => setOpen(true)}>
+          Cập nhật thời gian còn lại
+        </button>
+      )}
     </div>
   );
 }

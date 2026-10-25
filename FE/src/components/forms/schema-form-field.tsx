@@ -1,7 +1,48 @@
 "use client";
+import { useLayoutEffect, useRef, type ComponentPropsWithRef } from "react";
 import { Controller, type UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 import type { FormField, FormValues } from "./form.types";
+import { MultiSelect } from "./multi-select";
+
+function Textarea({
+  ref: fieldRef,
+  value,
+  ...props
+}: ComponentPropsWithRef<"textarea">) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const resize = () => {
+      element.style.height = "auto";
+      element.style.height = `${element.scrollHeight}px`;
+    };
+    resize();
+    if (typeof ResizeObserver === "undefined") return;
+    let width = element.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (element.clientWidth !== width) {
+        width = element.clientWidth;
+        resize();
+      }
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [value]);
+  return (
+    <textarea
+      {...props}
+      value={value}
+      rows={2}
+      ref={(element) => {
+        ref.current = element;
+        if (typeof fieldRef === "function") fieldRef(element);
+        else if (fieldRef) fieldRef.current = element;
+      }}
+    />
+  );
+}
 export function SchemaFormField<T extends FormValues>({
   config,
   id,
@@ -16,10 +57,15 @@ export function SchemaFormField<T extends FormValues>({
   watched: Partial<FormValues>;
 }) {
   const { errors } = form.formState;
+  const width =
+    config.width ??
+    (config.type === "textarea" || config.type === "multi"
+      ? "full"
+      : ["number", "date", "datetime-local"].includes(config.type ?? "")
+        ? "short"
+        : "medium");
   return (
-    <div
-      className={`form-field ${config.type === "textarea" || config.type === "multi" ? "wide" : ""}`}
-    >
+    <div className={`form-field field-${width}`}>
       <label htmlFor={`${id}-${config.name}`}>
         {config.label}
         {config.required && " *"}
@@ -38,6 +84,15 @@ export function SchemaFormField<T extends FormValues>({
               ? `${id}-${config.name}-error`
               : undefined,
           };
+          if (config.type === "file")
+            return (
+              <input
+                {...props}
+                type="file"
+                accept={config.accept}
+                onChange={(event) => field.onChange(event.target.files?.[0])}
+              />
+            );
           if (config.type === "multi") {
             const selected = z.array(z.string()).catch([]).parse(field.value);
             const available = config.options?.filter(
@@ -46,31 +101,13 @@ export function SchemaFormField<T extends FormValues>({
                 o.parentValue === watched[config.dependsOn],
             );
             return (
-              <div
-                className="checkbox-grid"
-                role="group"
-                aria-label={config.label}
-              >
-                {available?.map((option) => (
-                  <label key={option.value} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(option.value)}
-                      onChange={(event) =>
-                        field.onChange(
-                          event.target.checked
-                            ? [...selected, option.value]
-                            : selected.filter((v) => v !== option.value),
-                        )
-                      }
-                    />
-                    {option.label}
-                  </label>
-                ))}
-                {!available?.length && (
-                  <span className="small muted">Chưa có lựa chọn phù hợp.</span>
-                )}
-              </div>
+              <MultiSelect
+                {...props}
+                label={config.label}
+                options={available ?? []}
+                value={selected}
+                onChange={field.onChange}
+              />
             );
           }
           if (config.type === "select")
@@ -100,9 +137,8 @@ export function SchemaFormField<T extends FormValues>({
             );
           if (config.type === "textarea")
             return (
-              <textarea
+              <Textarea
                 {...props}
-                rows={4}
                 value={typeof field.value === "string" ? field.value : ""}
                 onChange={field.onChange}
               />
@@ -112,7 +148,8 @@ export function SchemaFormField<T extends FormValues>({
               {...props}
               type={config.type ?? "text"}
               autoComplete={
-                config.type === "password" ? "new-password" : undefined
+                config.autoComplete ??
+                (config.type === "password" ? "new-password" : undefined)
               }
               value={
                 typeof field.value === "string" ||

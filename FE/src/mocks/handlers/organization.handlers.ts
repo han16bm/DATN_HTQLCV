@@ -26,7 +26,7 @@ import {
 } from "./http";
 export const organizationHandlers = [
   http.get(
-    "*/api/v1/units",
+    "*/api/units",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const query = parseQuery(request, unitQuerySchema);
@@ -39,7 +39,7 @@ export const organizationHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/units/:unitId",
+    "*/api/units/:unitId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const unitId = idSchema.parse(params.unitId);
@@ -52,7 +52,7 @@ export const organizationHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/units",
+    "*/api/units",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const payload = createUnitSchema.parse(await request.json());
@@ -78,7 +78,7 @@ export const organizationHandlers = [
     }),
   ),
   http.patch(
-    "*/api/v1/units/:unitId",
+    "*/api/units/:unitId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const unitId = idSchema.parse(params.unitId);
@@ -110,7 +110,7 @@ export const organizationHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/units/:unitId/deactivate",
+    "*/api/units/:unitId/deactivate",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const unitId = idSchema.parse(params.unitId);
@@ -142,7 +142,7 @@ export const organizationHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/teams",
+    "*/api/teams",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const query = parseQuery(request, teamQuerySchema);
@@ -155,7 +155,7 @@ export const organizationHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/teams/:teamId",
+    "*/api/teams/:teamId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const teamId = idSchema.parse(params.teamId);
@@ -168,7 +168,7 @@ export const organizationHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/teams",
+    "*/api/teams",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const payload = createTeamSchema.parse(await request.json());
@@ -194,7 +194,7 @@ export const organizationHandlers = [
     }),
   ),
   http.patch(
-    "*/api/v1/teams/:teamId",
+    "*/api/teams/:teamId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const teamId = idSchema.parse(params.teamId);
@@ -226,7 +226,7 @@ export const organizationHandlers = [
     }),
   ),
   http.put(
-    "*/api/v1/teams/:teamId/members",
+    "*/api/teams/:teamId/members",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const teamId = idSchema.parse(params.teamId);
@@ -258,7 +258,7 @@ export const organizationHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/teams/:teamId/deactivate",
+    "*/api/teams/:teamId/deactivate",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const teamId = idSchema.parse(params.teamId);

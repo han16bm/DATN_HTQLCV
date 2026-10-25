@@ -1,13 +1,8 @@
 "use client";
 import { PermissionGate } from "@/components/layout/permission-gate";
 import { ActionButton } from "@/components/ui/action-button";
-import {
-  Badge,
-  ButtonLink,
-  Loading,
-  PageHeader,
-  Panel,
-} from "@/components/ui/page";
+import { Badge, ButtonLink, PageHeader, Panel } from "@/components/ui/page";
+import { PageSkeleton, Spinner } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { dateTime } from "@/lib/format";
 import { useRouter } from "next/navigation";
@@ -32,7 +27,7 @@ function JobContent({ jobId }: { jobId: string }) {
     return (
       <QueryErrorState error={tracking.query.error} retry={tracking.resume} />
     );
-  if (!job) return <Loading />;
+  if (!job) return <PageSkeleton />;
   return (
     <>
       <PageHeader
@@ -40,18 +35,29 @@ function JobContent({ jobId }: { jobId: string }) {
         description={detail.data?.snapshot.title}
       />
       <Panel>
-        <Badge value={job.status} />
+        <div className="actions">
+          {["QUEUED", "RUNNING"].includes(job.status) && !tracking.paused && (
+            <Spinner label="Đang phân tích" />
+          )}
+          <Badge value={job.status} />
+        </div>
         <dl>
-          <dt>Tiếp nhận lúc</dt>
-          <dd>{dateTime(job.createdAt)}</dd>
-          <dt>Kết thúc lúc</dt>
-          <dd>{dateTime(job.completedAt)}</dd>
-          <dt>Kỳ và mốc dữ liệu</dt>
-          <dd>
-            {detail.data?.snapshot.scope.from} –{" "}
-            {detail.data?.snapshot.scope.to} ·{" "}
-            {dateTime(detail.data?.snapshot.dataAsOf)}
-          </dd>
+          <div>
+            <dt>Tiếp nhận lúc</dt>
+            <dd>{dateTime(job.createdAt)}</dd>
+          </div>
+          <div>
+            <dt>Kết thúc lúc</dt>
+            <dd>{dateTime(job.completedAt)}</dd>
+          </div>
+          <div>
+            <dt>Kỳ và mốc dữ liệu</dt>
+            <dd>
+              {detail.data?.snapshot.scope.from} –{" "}
+              {detail.data?.snapshot.scope.to} ·{" "}
+              {dateTime(detail.data?.snapshot.dataAsOf)}
+            </dd>
+          </div>
         </dl>
         {job.error && <p className="notice error">{job.error.message}</p>}
         {tracking.paused && (

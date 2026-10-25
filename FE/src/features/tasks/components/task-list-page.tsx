@@ -4,11 +4,12 @@ import { HashDialog } from "@/components/ui/dialog";
 import {
   Badge,
   DataTable,
+  DetailLink,
   Empty,
-  Loading,
   PageHeader,
   Pagination,
 } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListProjectMembersQuery } from "@/features/project-members/hooks/use-project-members-queries";
 import { useListProjectsQuery } from "@/features/projects/hooks/use-projects-queries";
@@ -65,11 +66,6 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
     <>
       <PageHeader
         title={personal ? "Công việc của tôi" : "Công việc"}
-        description={
-          personal
-            ? "Các công việc được giao và những việc cần thực hiện."
-            : "Theo dõi công việc trong phạm vi dự án được cấp quyền."
-        }
         actions={
           <>
             <button onClick={() => setView(board ? "" : "board")}>
@@ -119,10 +115,20 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
         <label>
           Trạng thái
           <select
-            value={filters.get("status")}
-            onChange={(e) => filters.set("status", e.target.value)}
+            value={
+              filters.get("overdue") === "true"
+                ? "OVERDUE"
+                : filters.get("status")
+            }
+            onChange={(e) =>
+              filters.setMany({
+                status: e.target.value === "OVERDUE" ? "" : e.target.value,
+                overdue: e.target.value === "OVERDUE" ? "true" : "",
+              })
+            }
           >
             <option value="">Tất cả</option>
+            <option value="OVERDUE">Quá hạn</option>
             {taskStatusSchema.options.map((v) => (
               <option key={v} value={v}>
                 {label(v)}
@@ -160,16 +166,6 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
             ))}
           </select>
         </label>
-        <label className="checkbox-label">
-          <input
-            type="checkbox"
-            checked={filters.get("overdue") === "true"}
-            onChange={(e) =>
-              filters.set("overdue", e.target.checked ? "true" : "")
-            }
-          />
-          Chỉ việc quá hạn
-        </label>
       </section>
       {query.isError && (
         <QueryErrorState
@@ -177,7 +173,7 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
           retry={() => void query.refetch()}
         />
       )}{" "}
-      {query.isPending && <Loading />}
+      {query.isPending && <PageSkeleton variant="table" />}
       {data && !query.isError && (
         <>
           {board ? (
@@ -212,39 +208,47 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
                 ))}
               </div>
               {!data.items.length && <Empty />}
+              <Pagination
+                {...data.pagination}
+                onPage={(p) => filters.set("page", String(p))}
+              />
             </>
           ) : (
-            <section className="panel">
-              <DataTable
-                headers={[
-                  "Công việc",
-                  "Người thực hiện",
-                  "Trạng thái",
-                  "Hạn hoàn thành",
-                ]}
-                rows={data.items.map((t) => [
-                  <div key="title">
-                    <Link className="text-link" href={`/tasks/${t.id}`}>
-                      {t.title}
-                    </Link>
-                    <div className="small muted">
-                      {t.project.name} · {label(t.priority)}
-                    </div>
-                  </div>,
-                  t.assignee?.displayName ?? "Chưa phân công",
-                  <span key="state">
-                    <Badge value={t.status} />
-                    {t.isOverdue && <Badge value="OVERDUE" />}
-                  </span>,
-                  dateTime(t.dueAt),
-                ])}
-              />
-            </section>
+            <DataTable
+              pagination={{
+                ...data.pagination,
+                onPage: (p) => filters.set("page", String(p)),
+              }}
+              actions
+              headers={[
+                "Công việc",
+                "Dự án",
+                "Người thực hiện",
+                "Ưu tiên",
+                "Trạng thái",
+                "Ngày bắt đầu",
+                "Hạn hoàn thành",
+                "Hành động",
+              ]}
+              rows={data.items.map((t) => [
+                t.title,
+                t.project.name,
+                t.assignee?.displayName ?? "Chưa phân công",
+                label(t.priority),
+                <span key="state">
+                  <Badge value={t.status} />
+                  {t.isOverdue && <Badge value="OVERDUE" />}
+                </span>,
+                t.firstStartedAt ? dateTime(t.firstStartedAt) : "Chưa bắt đầu",
+                dateTime(t.dueAt),
+                <DetailLink
+                  key="detail"
+                  href={`/tasks/${t.id}`}
+                  label={`Xem công việc ${t.title}`}
+                />,
+              ])}
+            />
           )}
-          <Pagination
-            {...data.pagination}
-            onPage={(p) => filters.set("page", String(p))}
-          />
         </>
       )}
       <HashDialog name="choose-task-project" title="Chọn dự án tạo công việc">

@@ -2,6 +2,8 @@
 
 ## Cách mock hoạt động
 
+Điều chỉnh hiện hành: API dùng tiền tố /api cho client, handler và tài nguyên ảnh. mockHandler chung thêm độ trễ sau khi xử lý response, áp dụng success/error/binary. NEXT_PUBLIC_MSW_DELAY là số ms, mặc định development 400 và test 0; scenario slow là 1500. Có thể đặt 0 để tắt độ trễ, không thêm delay vào service/component. Handler chỉ parse HTTP và gọi mocks/db.ts theo cấu trúc hiện hành tại docs/ARCHITECTURE.md.
+
 Component vẫn gọi API feature qua fetch wrapper. MSW khớp method/path, parse request theo contract, kiểm tra quyền/trạng thái/version rồi thực hiện mutation trên database trong bộ nhớ. Response được kiểm tra đúng schema trước khi trả. Lỗi request và lỗi response có mã khác nhau; không trả một JSON thành công cố định cho mọi thao tác.
 
 Codex sẽ đặt state trong `src/mocks/database.ts` theo `mock/MOCK_MODELS.txt`. Mỗi lần reload/reset về bộ dữ liệu của scenario đang chọn. Trong browser, state sống cùng môi trường trang đang chạy; các tab và Next server không tự chia sẻ cùng database. Vì vậy, một luồng mock có mutation nên được chạy trong một môi trường nhất quán; nếu muốn browser và SSR dùng chung state, chạy một mock API server riêng. Không dùng localStorage để làm database nghiệp vụ thay cho MSW.
@@ -23,7 +25,7 @@ Mật khẩu mẫu: `Mock@12345`. Chỉ dùng trong development/test. Mock token
 
 ## Browser và Next.js
 
-Trong dự án Next.js đích, chạy `npx msw init public --save`, tạo cờ `NEXT_PUBLIC_API_MOCKING=enabled` và chỉ khởi động worker khi NODE_ENV là development. Dynamic import browser mock trong Client Provider, await worker.start trước request đầu tiên, sau đó render phần cần Query. Tắt cờ mock trong production. API client nhận origin Gateway từ cấu hình; các path được đặc tả đã có `/api/v1` nên không nối prefix thêm một lần nữa.
+Trong dự án Next.js đích, chạy `npx msw init public --save`, tạo cờ `NEXT_PUBLIC_API_MOCKING=enabled` và chỉ khởi động worker khi NODE_ENV là development. Dynamic import browser mock trong Client Provider, await worker.start trước request đầu tiên, sau đó render phần cần Query. Tắt cờ mock trong production. API client nhận origin Gateway từ cấu hình; các path được đặc tả đã có `/api` nên không nối prefix thêm một lần nữa.
 
 Browser worker chỉ chặn request phát sinh ở browser. Fetch trong Server Component/SSR cần `setupServer` được khởi động ở Node runtime hoặc một mock API server. Không import `msw/browser` vào instrumentation/server bundle. Không khởi tạo lại setupServer theo từng request; quản lý lifecycle development/test một lần và reset fixture có kiểm soát.
 

@@ -10,87 +10,91 @@ LLM có sẵn chạy qua adapter BE. Số liệu do BE tính. GET tổng quan/da
 
 | Operation | Method và path | HTTP | Cách gọi | Màn |
 |---|---|---|---|---|
-| [login](#login) | `POST /api/v1/auth/login` | 200 | useMutation | S01 |
-| [logout](#logout) | `POST /api/v1/auth/logout` | 200 | useMutation | S01, S02 |
-| [refreshSession](#refreshsession) | `POST /api/v1/auth/refresh` | 200 | Auth adapter single-flight; không tạo query định kỳ | S01, S02 |
-| [getSession](#getsession) | `GET /api/v1/auth/me` | 200 | useQuery | S02 |
-| [listUsers](#listusers) | `GET /api/v1/users` | 200 | useQuery | S03 |
-| [getUser](#getuser) | `GET /api/v1/users/:userId` | 200 | useQuery | S05 |
-| [createUser](#createuser) | `POST /api/v1/users` | 201 | useMutation | S04 |
-| [updateUser](#updateuser) | `PATCH /api/v1/users/:userId` | 200 | useMutation | S05 |
-| [lockUser](#lockuser) | `POST /api/v1/users/:userId/lock` | 200 | useMutation | S05 |
-| [unlockUser](#unlockuser) | `POST /api/v1/users/:userId/unlock` | 200 | useMutation | S05 |
-| [resetUserPassword](#resetuserpassword) | `POST /api/v1/users/:userId/reset-password` | 200 | useMutation | S05 |
-| [listUnits](#listunits) | `GET /api/v1/units` | 200 | useQuery | S06 |
-| [getUnit](#getunit) | `GET /api/v1/units/:unitId` | 200 | useQuery | S06 |
-| [createUnit](#createunit) | `POST /api/v1/units` | 201 | useMutation | S06 |
-| [updateUnit](#updateunit) | `PATCH /api/v1/units/:unitId` | 200 | useMutation | S06 |
-| [deactivateUnit](#deactivateunit) | `POST /api/v1/units/:unitId/deactivate` | 200 | useMutation | S06 |
-| [listTeams](#listteams) | `GET /api/v1/teams` | 200 | useQuery | S07 |
-| [getTeam](#getteam) | `GET /api/v1/teams/:teamId` | 200 | useQuery | S07 |
-| [createTeam](#createteam) | `POST /api/v1/teams` | 201 | useMutation | S07 |
-| [updateTeam](#updateteam) | `PATCH /api/v1/teams/:teamId` | 200 | useMutation | S07 |
-| [replaceTeamMembers](#replaceteammembers) | `PUT /api/v1/teams/:teamId/members` | 200 | useMutation | S07 |
-| [deactivateTeam](#deactivateteam) | `POST /api/v1/teams/:teamId/deactivate` | 200 | useMutation | S07 |
-| [listProjects](#listprojects) | `GET /api/v1/projects` | 200 | useQuery | S02, S08 |
-| [getProject](#getproject) | `GET /api/v1/projects/:projectId` | 200 | useQuery | S10 |
-| [createProject](#createproject) | `POST /api/v1/projects` | 201 | useMutation | S09 |
-| [updateProject](#updateproject) | `PATCH /api/v1/projects/:projectId` | 200 | useMutation | S11 |
-| [activateProject](#activateproject) | `POST /api/v1/projects/:projectId/activate` | 200 | useMutation | S10 |
-| [getProjectClosureChecks](#getprojectclosurechecks) | `GET /api/v1/projects/:projectId/closure-checks` | 200 | useQuery | S14 |
-| [completeProject](#completeproject) | `POST /api/v1/projects/:projectId/complete` | 200 | useMutation | S14 |
-| [cancelProject](#cancelproject) | `POST /api/v1/projects/:projectId/cancel` | 200 | useMutation | S14 |
-| [listProjectHistory](#listprojecthistory) | `GET /api/v1/projects/:projectId/history` | 200 | useQuery | S10 |
-| [listProjectMembers](#listprojectmembers) | `GET /api/v1/projects/:projectId/members` | 200 | useQuery | S12 |
-| [addProjectMember](#addprojectmember) | `POST /api/v1/projects/:projectId/members` | 201 | useMutation | S12 |
-| [updateProjectMemberPermissions](#updateprojectmemberpermissions) | `PATCH /api/v1/projects/:projectId/members/:membershipId` | 200 | useMutation | S13 |
-| [endProjectMembership](#endprojectmembership) | `POST /api/v1/projects/:projectId/members/:membershipId/end` | 200 | useMutation | S12 |
-| [listTasks](#listtasks) | `GET /api/v1/tasks` | 200 | useQuery | S02, S15, S16, S26 |
-| [getTask](#gettask) | `GET /api/v1/tasks/:taskId` | 200 | useQuery | S18 |
-| [createTask](#createtask) | `POST /api/v1/projects/:projectId/tasks` | 201 | useMutation | S17 |
-| [updateTask](#updatetask) | `PATCH /api/v1/tasks/:taskId` | 200 | useMutation | S19 |
-| [assignTask](#assigntask) | `POST /api/v1/tasks/:taskId/assignments` | 200 | useMutation | S20 |
-| [startTask](#starttask) | `POST /api/v1/tasks/:taskId/start` | 200 | useMutation | S21 |
-| [pauseTask](#pausetask) | `POST /api/v1/tasks/:taskId/pause` | 200 | useMutation | S21 |
-| [cancelTask](#canceltask) | `POST /api/v1/tasks/:taskId/cancel` | 200 | useMutation | S21 |
-| [updateRemainingEstimate](#updateremainingestimate) | `PATCH /api/v1/tasks/:taskId/remaining-estimate` | 200 | useMutation | S18 |
-| [listTaskHistory](#listtaskhistory) | `GET /api/v1/tasks/:taskId/history` | 200 | useQuery | S28 |
-| [listTimeLogs](#listtimelogs) | `GET /api/v1/tasks/:taskId/time-logs` | 200 | useQuery | S22 |
-| [createTimeLog](#createtimelog) | `POST /api/v1/tasks/:taskId/time-logs` | 201 | useMutation | S23 |
-| [updateTimeLog](#updatetimelog) | `PATCH /api/v1/time-logs/:timeLogId` | 200 | useMutation | S23 |
-| [voidTimeLog](#voidtimelog) | `POST /api/v1/time-logs/:timeLogId/void` | 200 | useMutation | S23 |
-| [listSubmissions](#listsubmissions) | `GET /api/v1/tasks/:taskId/submissions` | 200 | useQuery | S25 |
-| [getSubmission](#getsubmission) | `GET /api/v1/tasks/:taskId/submissions/:submissionId` | 200 | useQuery | S27 |
-| [createSubmission](#createsubmission) | `POST /api/v1/tasks/:taskId/submissions` | 201 | useMutation | S24 |
-| [approveSubmission](#approvesubmission) | `POST /api/v1/tasks/:taskId/submissions/:submissionId/approve` | 200 | useMutation | S27 |
-| [requestSubmissionRevision](#requestsubmissionrevision) | `POST /api/v1/tasks/:taskId/submissions/:submissionId/request-revision` | 200 | useMutation | S27 |
-| [listReviewQueue](#listreviewqueue) | `GET /api/v1/review-queue` | 200 | useQuery | S26 |
-| [listReports](#listreports) | `GET /api/v1/reports` | 200 | useQuery | S29 |
-| [getReportPreview](#getreportpreview) | `GET /api/v1/report-previews` | 200 | useQuery | S30, S31 |
-| [getReport](#getreport) | `GET /api/v1/reports/:reportId` | 200 | useQuery | S31, S32 |
-| [createReportDraft](#createreportdraft) | `POST /api/v1/reports` | 201 | useMutation | S30 |
-| [updateReportDraft](#updatereportdraft) | `PATCH /api/v1/reports/:reportId` | 200 | useMutation | S31 |
-| [refreshReportDraft](#refreshreportdraft) | `POST /api/v1/reports/:reportId/refresh` | 200 | useMutation | S31 |
-| [submitReport](#submitreport) | `POST /api/v1/reports/:reportId/submit` | 200 | useMutation | S31 |
-| [getUploadPolicy](#getuploadpolicy) | `GET /api/v1/attachments/policy` | 200 | useQuery | S41 |
-| [uploadAttachment](#uploadattachment) | `POST /api/v1/attachments` | 201 | useMutation | S41 |
-| [getAttachment](#getattachment) | `GET /api/v1/attachments/:attachmentId` | 200 | useQuery | S24, S27, S41 |
-| [downloadAttachment](#downloadattachment) | `GET /api/v1/attachments/:attachmentId/content` | 200 | useMutation theo click (GET binary); không cache Blob | S27 |
-| [getDashboard](#getdashboard) | `GET /api/v1/dashboard` | 200 | useQuery | S33 |
-| [getDeadlineRisks](#getdeadlinerisks) | `GET /api/v1/analytics/risks` | 200 | useQuery | S34 |
-| [getWorkload](#getworkload) | `GET /api/v1/analytics/workload` | 200 | useQuery | S35 |
-| [getBottlenecks](#getbottlenecks) | `GET /api/v1/analytics/bottlenecks` | 200 | useQuery | S36 |
-| [getAnalysisSummary](#getanalysissummary) | `GET /api/v1/analytics/summary` | 200 | useQuery | S39 |
-| [createAnalysisJob](#createanalysisjob) | `POST /api/v1/analytics/jobs` | 200 / 202 | useMutation | S40, S43 |
-| [getAnalysisJob](#getanalysisjob) | `GET /api/v1/analytics/jobs/:jobId` | 200 | useQuery | S40, S43 |
-| [listAlerts](#listalerts) | `GET /api/v1/alerts` | 200 | useQuery | S37 |
-| [getAlert](#getalert) | `GET /api/v1/alerts/:alertId` | 200 | useQuery | S38 |
-| [updateAlert](#updatealert) | `PATCH /api/v1/alerts/:alertId` | 200 | useMutation | S38 |
-| [getAnalysisDetail](#getanalysisdetail) | `GET /api/v1/analytics/details/:analysisId` | 200 | useQuery | S43 |
+| [login](#login) | `POST /api/auth/login` | 200 | useMutation | S01 |
+| [logout](#logout) | `POST /api/auth/logout` | 200 | useMutation | S01, S02 |
+| [refreshSession](#refreshsession) | `POST /api/auth/refresh` | 200 | Auth adapter single-flight; không tạo query định kỳ | S01, S02 |
+| [getSession](#getsession) | `GET /api/auth/me` | 200 | useQuery | S02 |
+| [updateProfile](#updateprofile) | `PATCH /api/auth/me` | 200 | useMutation, multipart | Hồ sơ cá nhân |
+| [changePassword](#changepassword) | `PUT /api/auth/me/password` | 200 | useMutation | Hồ sơ / Đổi mật khẩu |
+| [getAvatar](#getavatar) | `GET /api/avatars/:avatarId` | 200 | Image src từ avatarUrl | Hồ sơ, menu tài khoản, quản trị |
+| [listUsers](#listusers) | `GET /api/users` | 200 | useQuery | S03 |
+| [getUser](#getuser) | `GET /api/users/:userId` | 200 | useQuery | S05 |
+| [getProfile](#getprofile) | `GET /api/users/:userId/profile` | 200 | useQuery | Hồ sơ công khai nội bộ |
+| [createUser](#createuser) | `POST /api/users` | 201 | useMutation | S04 |
+| [updateUser](#updateuser) | `PATCH /api/users/:userId` | 200 | useMutation | S05 |
+| [lockUser](#lockuser) | `POST /api/users/:userId/lock` | 200 | useMutation | S05 |
+| [unlockUser](#unlockuser) | `POST /api/users/:userId/unlock` | 200 | useMutation | S05 |
+| [resetUserPassword](#resetuserpassword) | `POST /api/users/:userId/reset-password` | 200 | useMutation | S05 |
+| [listUnits](#listunits) | `GET /api/units` | 200 | useQuery | S06 |
+| [getUnit](#getunit) | `GET /api/units/:unitId` | 200 | useQuery | S06 |
+| [createUnit](#createunit) | `POST /api/units` | 201 | useMutation | S06 |
+| [updateUnit](#updateunit) | `PATCH /api/units/:unitId` | 200 | useMutation | S06 |
+| [deactivateUnit](#deactivateunit) | `POST /api/units/:unitId/deactivate` | 200 | useMutation | S06 |
+| [listTeams](#listteams) | `GET /api/teams` | 200 | useQuery | S07 |
+| [getTeam](#getteam) | `GET /api/teams/:teamId` | 200 | useQuery | S07 |
+| [createTeam](#createteam) | `POST /api/teams` | 201 | useMutation | S07 |
+| [updateTeam](#updateteam) | `PATCH /api/teams/:teamId` | 200 | useMutation | S07 |
+| [replaceTeamMembers](#replaceteammembers) | `PUT /api/teams/:teamId/members` | 200 | useMutation | S07 |
+| [deactivateTeam](#deactivateteam) | `POST /api/teams/:teamId/deactivate` | 200 | useMutation | S07 |
+| [listProjects](#listprojects) | `GET /api/projects` | 200 | useQuery | S02, S08 |
+| [getProject](#getproject) | `GET /api/projects/:projectId` | 200 | useQuery | S10 |
+| [createProject](#createproject) | `POST /api/projects` | 201 | useMutation | S09 |
+| [updateProject](#updateproject) | `PATCH /api/projects/:projectId` | 200 | useMutation | S11 |
+| [activateProject](#activateproject) | `POST /api/projects/:projectId/activate` | 200 | useMutation | S10 |
+| [getProjectClosureChecks](#getprojectclosurechecks) | `GET /api/projects/:projectId/closure-checks` | 200 | useQuery | S14 |
+| [completeProject](#completeproject) | `POST /api/projects/:projectId/complete` | 200 | useMutation | S14 |
+| [cancelProject](#cancelproject) | `POST /api/projects/:projectId/cancel` | 200 | useMutation | S14 |
+| [listProjectHistory](#listprojecthistory) | `GET /api/projects/:projectId/history` | 200 | useQuery | S10 |
+| [listProjectMembers](#listprojectmembers) | `GET /api/projects/:projectId/members` | 200 | useQuery | S12 |
+| [addProjectMember](#addprojectmember) | `POST /api/projects/:projectId/members` | 201 | useMutation | S12 |
+| [updateProjectMemberPermissions](#updateprojectmemberpermissions) | `PATCH /api/projects/:projectId/members/:membershipId` | 200 | useMutation | S13 |
+| [endProjectMembership](#endprojectmembership) | `POST /api/projects/:projectId/members/:membershipId/end` | 200 | useMutation | S12 |
+| [listTasks](#listtasks) | `GET /api/tasks` | 200 | useQuery | S02, S15, S16, S26 |
+| [getTask](#gettask) | `GET /api/tasks/:taskId` | 200 | useQuery | S18 |
+| [createTask](#createtask) | `POST /api/projects/:projectId/tasks` | 201 | useMutation | S17 |
+| [updateTask](#updatetask) | `PATCH /api/tasks/:taskId` | 200 | useMutation | S19 |
+| [assignTask](#assigntask) | `POST /api/tasks/:taskId/assignments` | 200 | useMutation | S20 |
+| [startTask](#starttask) | `POST /api/tasks/:taskId/start` | 200 | useMutation | S21 |
+| [pauseTask](#pausetask) | `POST /api/tasks/:taskId/pause` | 200 | useMutation | S21 |
+| [cancelTask](#canceltask) | `POST /api/tasks/:taskId/cancel` | 200 | useMutation | S21 |
+| [updateRemainingEstimate](#updateremainingestimate) | `PATCH /api/tasks/:taskId/remaining-estimate` | 200 | useMutation | S18 |
+| [listTaskHistory](#listtaskhistory) | `GET /api/tasks/:taskId/history` | 200 | useQuery | S28 |
+| [listTimeLogs](#listtimelogs) | `GET /api/tasks/:taskId/time-logs` | 200 | useQuery | S22 |
+| [createTimeLog](#createtimelog) | `POST /api/tasks/:taskId/time-logs` | 201 | useMutation | S23 |
+| [updateTimeLog](#updatetimelog) | `PATCH /api/time-logs/:timeLogId` | 200 | useMutation | S23 |
+| [voidTimeLog](#voidtimelog) | `POST /api/time-logs/:timeLogId/void` | 200 | useMutation | S23 |
+| [listSubmissions](#listsubmissions) | `GET /api/tasks/:taskId/submissions` | 200 | useQuery | S25 |
+| [getSubmission](#getsubmission) | `GET /api/tasks/:taskId/submissions/:submissionId` | 200 | useQuery | S27 |
+| [createSubmission](#createsubmission) | `POST /api/tasks/:taskId/submissions` | 201 | useMutation | S24 |
+| [approveSubmission](#approvesubmission) | `POST /api/tasks/:taskId/submissions/:submissionId/approve` | 200 | useMutation | S27 |
+| [requestSubmissionRevision](#requestsubmissionrevision) | `POST /api/tasks/:taskId/submissions/:submissionId/request-revision` | 200 | useMutation | S27 |
+| [listReviewQueue](#listreviewqueue) | `GET /api/review-queue` | 200 | useQuery | S26 |
+| [listReports](#listreports) | `GET /api/reports` | 200 | useQuery | S29 |
+| [getReportPreview](#getreportpreview) | `GET /api/report-previews` | 200 | useQuery | S30, S31 |
+| [getReport](#getreport) | `GET /api/reports/:reportId` | 200 | useQuery | S31, S32 |
+| [createReportDraft](#createreportdraft) | `POST /api/reports` | 201 | useMutation | S30 |
+| [updateReportDraft](#updatereportdraft) | `PATCH /api/reports/:reportId` | 200 | useMutation | S31 |
+| [refreshReportDraft](#refreshreportdraft) | `POST /api/reports/:reportId/refresh` | 200 | useMutation | S31 |
+| [submitReport](#submitreport) | `POST /api/reports/:reportId/submit` | 200 | useMutation | S31 |
+| [getUploadPolicy](#getuploadpolicy) | `GET /api/attachments/policy` | 200 | useQuery | S41 |
+| [uploadAttachment](#uploadattachment) | `POST /api/attachments` | 201 | useMutation | S41 |
+| [getAttachment](#getattachment) | `GET /api/attachments/:attachmentId` | 200 | useQuery | S24, S27, S41 |
+| [downloadAttachment](#downloadattachment) | `GET /api/attachments/:attachmentId/content` | 200 | useMutation theo click (GET binary); không cache Blob | S27 |
+| [getDashboard](#getdashboard) | `GET /api/dashboard` | 200 | useQuery | S33 |
+| [getDeadlineRisks](#getdeadlinerisks) | `GET /api/analytics/risks` | 200 | useQuery | S34 |
+| [getWorkload](#getworkload) | `GET /api/analytics/workload` | 200 | useQuery | S35 |
+| [getBottlenecks](#getbottlenecks) | `GET /api/analytics/bottlenecks` | 200 | useQuery | S36 |
+| [getAnalysisSummary](#getanalysissummary) | `GET /api/analytics/summary` | 200 | useQuery | S39 |
+| [createAnalysisJob](#createanalysisjob) | `POST /api/analytics/jobs` | 200 / 202 | useMutation | S40, S43 |
+| [getAnalysisJob](#getanalysisjob) | `GET /api/analytics/jobs/:jobId` | 200 | useQuery | S40, S43 |
+| [listAlerts](#listalerts) | `GET /api/alerts` | 200 | useQuery | S37 |
+| [getAlert](#getalert) | `GET /api/alerts/:alertId` | 200 | useQuery | S38 |
+| [updateAlert](#updatealert) | `PATCH /api/alerts/:alertId` | 200 | useMutation | S38 |
+| [getAnalysisDetail](#getanalysisdetail) | `GET /api/analytics/details/:analysisId` | 200 | useQuery | S43 |
 
 ## login
 
-`POST /api/v1/auth/login` → HTTP 200
+`POST /api/auth/login` → HTTP 200
 
 - Feature `auth` · Màn S01 · UC UC-A01.
 - DTO đích: `LoginRequestDTO`, `LoginResponseDTO`.
@@ -136,7 +140,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## logout
 
-`POST /api/v1/auth/logout` → HTTP 200
+`POST /api/auth/logout` → HTTP 200
 
 - Feature `auth` · Màn S01, S02 · UC UC-A02.
 - DTO đích: `LogoutRequestDTO`, `LogoutResponseDTO`.
@@ -181,7 +185,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## refreshSession
 
-`POST /api/v1/auth/refresh` → HTTP 200
+`POST /api/auth/refresh` → HTTP 200
 
 - Feature `auth` · Màn S01, S02 · UC UC-A01.
 - DTO đích: `RefreshSessionRequestDTO`, `RefreshSessionResponseDTO`.
@@ -224,7 +228,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## getSession
 
-`GET /api/v1/auth/me` → HTTP 200
+`GET /api/auth/me` → HTTP 200
 
 - Feature `auth` · Màn S02 · UC UC-A01.
 - DTO đích: `GetSessionRequestDTO`, `GetSessionResponseDTO`.
@@ -265,7 +269,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## listUsers
 
-`GET /api/v1/users` → HTTP 200
+`GET /api/users` → HTTP 200
 
 - Feature `users` · Màn S03 · UC UC-A03, UC-A04.
 - DTO đích: `ListUsersRequestDTO`, `ListUsersResponseDTO`.
@@ -313,7 +317,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## getUser
 
-`GET /api/v1/users/:userId` → HTTP 200
+`GET /api/users/:userId` → HTTP 200
 
 - Feature `users` · Màn S05 · UC UC-A04.
 - DTO đích: `GetUserRequestDTO`, `GetUserResponseDTO`.
@@ -356,7 +360,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## createUser
 
-`POST /api/v1/users` → HTTP 201
+`POST /api/users` → HTTP 201
 
 - Feature `users` · Màn S04 · UC UC-A03.
 - DTO đích: `CreateUserRequestDTO`, `CreateUserResponseDTO`.
@@ -406,7 +410,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## updateUser
 
-`PATCH /api/v1/users/:userId` → HTTP 200
+`PATCH /api/users/:userId` → HTTP 200
 
 - Feature `users` · Màn S05 · UC UC-A04.
 - DTO đích: `UpdateUserRequestDTO`, `UpdateUserResponseDTO`.
@@ -458,7 +462,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## lockUser
 
-`POST /api/v1/users/:userId/lock` → HTTP 200
+`POST /api/users/:userId/lock` → HTTP 200
 
 - Feature `users` · Màn S05 · UC UC-A04.
 - DTO đích: `LockUserRequestDTO`, `LockUserResponseDTO`.
@@ -507,7 +511,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## unlockUser
 
-`POST /api/v1/users/:userId/unlock` → HTTP 200
+`POST /api/users/:userId/unlock` → HTTP 200
 
 - Feature `users` · Màn S05 · UC UC-A04.
 - DTO đích: `UnlockUserRequestDTO`, `UnlockUserResponseDTO`.
@@ -554,7 +558,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## resetUserPassword
 
-`POST /api/v1/users/:userId/reset-password` → HTTP 200
+`POST /api/users/:userId/reset-password` → HTTP 200
 
 - Feature `users` · Màn S05 · UC UC-A04.
 - DTO đích: `ResetUserPasswordRequestDTO`, `ResetUserPasswordResponseDTO`.
@@ -606,7 +610,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## listUnits
 
-`GET /api/v1/units` → HTTP 200
+`GET /api/units` → HTTP 200
 
 - Feature `organization` · Màn S06 · UC UC-A05.
 - DTO đích: `ListUnitsRequestDTO`, `ListUnitsResponseDTO`.
@@ -652,7 +656,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## getUnit
 
-`GET /api/v1/units/:unitId` → HTTP 200
+`GET /api/units/:unitId` → HTTP 200
 
 - Feature `organization` · Màn S06 · UC UC-A05.
 - DTO đích: `GetUnitRequestDTO`, `GetUnitResponseDTO`.
@@ -695,7 +699,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## createUnit
 
-`POST /api/v1/units` → HTTP 201
+`POST /api/units` → HTTP 201
 
 - Feature `organization` · Màn S06 · UC UC-A05.
 - DTO đích: `CreateUnitRequestDTO`, `CreateUnitResponseDTO`.
@@ -741,7 +745,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## updateUnit
 
-`PATCH /api/v1/units/:unitId` → HTTP 200
+`PATCH /api/units/:unitId` → HTTP 200
 
 - Feature `organization` · Màn S06 · UC UC-A05.
 - DTO đích: `UpdateUnitRequestDTO`, `UpdateUnitResponseDTO`.
@@ -791,7 +795,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## deactivateUnit
 
-`POST /api/v1/units/:unitId/deactivate` → HTTP 200
+`POST /api/units/:unitId/deactivate` → HTTP 200
 
 - Feature `organization` · Màn S06 · UC UC-A05.
 - DTO đích: `DeactivateUnitRequestDTO`, `DeactivateUnitResponseDTO`.
@@ -838,7 +842,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## listTeams
 
-`GET /api/v1/teams` → HTTP 200
+`GET /api/teams` → HTTP 200
 
 - Feature `organization` · Màn S07 · UC UC-A05.
 - DTO đích: `ListTeamsRequestDTO`, `ListTeamsResponseDTO`.
@@ -884,7 +888,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## getTeam
 
-`GET /api/v1/teams/:teamId` → HTTP 200
+`GET /api/teams/:teamId` → HTTP 200
 
 - Feature `organization` · Màn S07 · UC UC-A05.
 - DTO đích: `GetTeamRequestDTO`, `GetTeamResponseDTO`.
@@ -927,7 +931,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## createTeam
 
-`POST /api/v1/teams` → HTTP 201
+`POST /api/teams` → HTTP 201
 
 - Feature `organization` · Màn S07 · UC UC-A05.
 - DTO đích: `CreateTeamRequestDTO`, `CreateTeamResponseDTO`.
@@ -973,7 +977,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## updateTeam
 
-`PATCH /api/v1/teams/:teamId` → HTTP 200
+`PATCH /api/teams/:teamId` → HTTP 200
 
 - Feature `organization` · Màn S07 · UC UC-A05.
 - DTO đích: `UpdateTeamRequestDTO`, `UpdateTeamResponseDTO`.
@@ -1022,7 +1026,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## replaceTeamMembers
 
-`PUT /api/v1/teams/:teamId/members` → HTTP 200
+`PUT /api/teams/:teamId/members` → HTTP 200
 
 - Feature `organization` · Màn S07 · UC UC-A05.
 - DTO đích: `ReplaceTeamMembersRequestDTO`, `ReplaceTeamMembersResponseDTO`.
@@ -1070,7 +1074,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## deactivateTeam
 
-`POST /api/v1/teams/:teamId/deactivate` → HTTP 200
+`POST /api/teams/:teamId/deactivate` → HTTP 200
 
 - Feature `organization` · Màn S07 · UC UC-A05.
 - DTO đích: `DeactivateTeamRequestDTO`, `DeactivateTeamResponseDTO`.
@@ -1117,7 +1121,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## listProjects
 
-`GET /api/v1/projects` → HTTP 200
+`GET /api/projects` → HTTP 200
 
 - Feature `projects` · Màn S02, S08 · UC UC-P03.
 - DTO đích: `ListProjectsRequestDTO`, `ListProjectsResponseDTO`.
@@ -1164,7 +1168,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## getProject
 
-`GET /api/v1/projects/:projectId` → HTTP 200
+`GET /api/projects/:projectId` → HTTP 200
 
 - Feature `projects` · Màn S10 · UC UC-P03.
 - DTO đích: `GetProjectRequestDTO`, `GetProjectResponseDTO`.
@@ -1207,7 +1211,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## createProject
 
-`POST /api/v1/projects` → HTTP 201
+`POST /api/projects` → HTTP 201
 
 - Feature `projects` · Màn S09 · UC UC-P01.
 - DTO đích: `CreateProjectRequestDTO`, `CreateProjectResponseDTO`.
@@ -1258,7 +1262,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## updateProject
 
-`PATCH /api/v1/projects/:projectId` → HTTP 200
+`PATCH /api/projects/:projectId` → HTTP 200
 
 - Feature `projects` · Màn S11 · UC UC-P02.
 - DTO đích: `UpdateProjectRequestDTO`, `UpdateProjectResponseDTO`.
@@ -1311,7 +1315,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## activateProject
 
-`POST /api/v1/projects/:projectId/activate` → HTTP 200
+`POST /api/projects/:projectId/activate` → HTTP 200
 
 - Feature `projects` · Màn S10 · UC UC-P02.
 - DTO đích: `ActivateProjectRequestDTO`, `ActivateProjectResponseDTO`.
@@ -1356,7 +1360,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## getProjectClosureChecks
 
-`GET /api/v1/projects/:projectId/closure-checks` → HTTP 200
+`GET /api/projects/:projectId/closure-checks` → HTTP 200
 
 - Feature `projects` · Màn S14 · UC UC-P02.
 - DTO đích: `GetProjectClosureChecksRequestDTO`, `GetProjectClosureChecksResponseDTO`.
@@ -1405,7 +1409,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## completeProject
 
-`POST /api/v1/projects/:projectId/complete` → HTTP 200
+`POST /api/projects/:projectId/complete` → HTTP 200
 
 - Feature `projects` · Màn S14 · UC UC-P02.
 - DTO đích: `CompleteProjectRequestDTO`, `CompleteProjectResponseDTO`.
@@ -1451,7 +1455,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## cancelProject
 
-`POST /api/v1/projects/:projectId/cancel` → HTTP 200
+`POST /api/projects/:projectId/cancel` → HTTP 200
 
 - Feature `projects` · Màn S14 · UC UC-P02.
 - DTO đích: `CancelProjectRequestDTO`, `CancelProjectResponseDTO`.
@@ -1499,7 +1503,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## listProjectHistory
 
-`GET /api/v1/projects/:projectId/history` → HTTP 200
+`GET /api/projects/:projectId/history` → HTTP 200
 
 - Feature `projects` · Màn S10 · UC UC-P02.
 - DTO đích: `ListProjectHistoryRequestDTO`, `ListProjectHistoryResponseDTO`.
@@ -1546,7 +1550,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## listProjectMembers
 
-`GET /api/v1/projects/:projectId/members` → HTTP 200
+`GET /api/projects/:projectId/members` → HTTP 200
 
 - Feature `project-members` · Màn S12 · UC UC-P04.
 - DTO đích: `ListProjectMembersRequestDTO`, `ListProjectMembersResponseDTO`.
@@ -1593,7 +1597,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## addProjectMember
 
-`POST /api/v1/projects/:projectId/members` → HTTP 201
+`POST /api/projects/:projectId/members` → HTTP 201
 
 - Feature `project-members` · Màn S12 · UC UC-P04.
 - DTO đích: `AddProjectMemberRequestDTO`, `AddProjectMemberResponseDTO`.
@@ -1642,7 +1646,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## updateProjectMemberPermissions
 
-`PATCH /api/v1/projects/:projectId/members/:membershipId` → HTTP 200
+`PATCH /api/projects/:projectId/members/:membershipId` → HTTP 200
 
 - Feature `project-members` · Màn S13 · UC UC-P05.
 - DTO đích: `UpdateProjectMemberPermissionsRequestDTO`, `UpdateProjectMemberPermissionsResponseDTO`.
@@ -1693,7 +1697,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## endProjectMembership
 
-`POST /api/v1/projects/:projectId/members/:membershipId/end` → HTTP 200
+`POST /api/projects/:projectId/members/:membershipId/end` → HTTP 200
 
 - Feature `project-members` · Màn S12 · UC UC-P04.
 - DTO đích: `EndProjectMembershipRequestDTO`, `EndProjectMembershipResponseDTO`.
@@ -1742,7 +1746,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## listTasks
 
-`GET /api/v1/tasks` → HTTP 200
+`GET /api/tasks` → HTTP 200
 
 - Feature `tasks` · Màn S02, S15, S16, S26 · UC UC-T04.
 - DTO đích: `ListTasksRequestDTO`, `ListTasksResponseDTO`.
@@ -1795,7 +1799,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## getTask
 
-`GET /api/v1/tasks/:taskId` → HTTP 200
+`GET /api/tasks/:taskId` → HTTP 200
 
 - Feature `tasks` · Màn S18 · UC UC-T04.
 - DTO đích: `GetTaskRequestDTO`, `GetTaskResponseDTO`.
@@ -1838,7 +1842,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## createTask
 
-`POST /api/v1/projects/:projectId/tasks` → HTTP 201
+`POST /api/projects/:projectId/tasks` → HTTP 201
 
 - Feature `tasks` · Màn S17 · UC UC-T01.
 - DTO đích: `CreateTaskRequestDTO`, `CreateTaskResponseDTO`.
@@ -1890,7 +1894,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## updateTask
 
-`PATCH /api/v1/tasks/:taskId` → HTTP 200
+`PATCH /api/tasks/:taskId` → HTTP 200
 
 - Feature `tasks` · Màn S19 · UC UC-T03.
 - DTO đích: `UpdateTaskRequestDTO`, `UpdateTaskResponseDTO`.
@@ -1944,7 +1948,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## assignTask
 
-`POST /api/v1/tasks/:taskId/assignments` → HTTP 200
+`POST /api/tasks/:taskId/assignments` → HTTP 200
 
 - Feature `tasks` · Màn S20 · UC UC-T02.
 - DTO đích: `AssignTaskRequestDTO`, `AssignTaskResponseDTO`.
@@ -1993,7 +1997,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## startTask
 
-`POST /api/v1/tasks/:taskId/start` → HTTP 200
+`POST /api/tasks/:taskId/start` → HTTP 200
 
 - Feature `tasks` · Màn S21 · UC UC-T05.
 - DTO đích: `StartTaskRequestDTO`, `StartTaskResponseDTO`.
@@ -2038,7 +2042,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## pauseTask
 
-`POST /api/v1/tasks/:taskId/pause` → HTTP 200
+`POST /api/tasks/:taskId/pause` → HTTP 200
 
 - Feature `tasks` · Màn S21 · UC UC-T05.
 - DTO đích: `PauseTaskRequestDTO`, `PauseTaskResponseDTO`.
@@ -2086,7 +2090,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## cancelTask
 
-`POST /api/v1/tasks/:taskId/cancel` → HTTP 200
+`POST /api/tasks/:taskId/cancel` → HTTP 200
 
 - Feature `tasks` · Màn S21 · UC UC-T03.
 - DTO đích: `CancelTaskRequestDTO`, `CancelTaskResponseDTO`.
@@ -2133,7 +2137,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## updateRemainingEstimate
 
-`PATCH /api/v1/tasks/:taskId/remaining-estimate` → HTTP 200
+`PATCH /api/tasks/:taskId/remaining-estimate` → HTTP 200
 
 - Feature `tasks` · Màn S18 · UC UC-D03.
 - DTO đích: `UpdateRemainingEstimateRequestDTO`, `UpdateRemainingEstimateResponseDTO`.
@@ -2181,7 +2185,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## listTaskHistory
 
-`GET /api/v1/tasks/:taskId/history` → HTTP 200
+`GET /api/tasks/:taskId/history` → HTTP 200
 
 - Feature `tasks` · Màn S28 · UC UC-T11.
 - DTO đích: `ListTaskHistoryRequestDTO`, `ListTaskHistoryResponseDTO`.
@@ -2228,7 +2232,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## listTimeLogs
 
-`GET /api/v1/tasks/:taskId/time-logs` → HTTP 200
+`GET /api/tasks/:taskId/time-logs` → HTTP 200
 
 - Feature `time-logs` · Màn S22 · UC UC-T06.
 - DTO đích: `ListTimeLogsRequestDTO`, `ListTimeLogsResponseDTO`.
@@ -2275,7 +2279,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## createTimeLog
 
-`POST /api/v1/tasks/:taskId/time-logs` → HTTP 201
+`POST /api/tasks/:taskId/time-logs` → HTTP 201
 
 - Feature `time-logs` · Màn S23 · UC UC-T06.
 - DTO đích: `CreateTimeLogRequestDTO`, `CreateTimeLogResponseDTO`.
@@ -2329,7 +2333,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## updateTimeLog
 
-`PATCH /api/v1/time-logs/:timeLogId` → HTTP 200
+`PATCH /api/time-logs/:timeLogId` → HTTP 200
 
 - Feature `time-logs` · Màn S23 · UC UC-T06.
 - DTO đích: `UpdateTimeLogRequestDTO`, `UpdateTimeLogResponseDTO`.
@@ -2384,7 +2388,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## voidTimeLog
 
-`POST /api/v1/time-logs/:timeLogId/void` → HTTP 200
+`POST /api/time-logs/:timeLogId/void` → HTTP 200
 
 - Feature `time-logs` · Màn S23 · UC UC-T06.
 - DTO đích: `VoidTimeLogRequestDTO`, `VoidTimeLogResponseDTO`.
@@ -2435,7 +2439,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## listSubmissions
 
-`GET /api/v1/tasks/:taskId/submissions` → HTTP 200
+`GET /api/tasks/:taskId/submissions` → HTTP 200
 
 - Feature `submissions` · Màn S25 · UC UC-T07, UC-T11.
 - DTO đích: `ListSubmissionsRequestDTO`, `ListSubmissionsResponseDTO`.
@@ -2482,7 +2486,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## getSubmission
 
-`GET /api/v1/tasks/:taskId/submissions/:submissionId` → HTTP 200
+`GET /api/tasks/:taskId/submissions/:submissionId` → HTTP 200
 
 - Feature `submissions` · Màn S27 · UC UC-T08, UC-T09.
 - DTO đích: `GetSubmissionRequestDTO`, `GetSubmissionResponseDTO`.
@@ -2526,7 +2530,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## createSubmission
 
-`POST /api/v1/tasks/:taskId/submissions` → HTTP 201
+`POST /api/tasks/:taskId/submissions` → HTTP 201
 
 - Feature `submissions` · Màn S24 · UC UC-T07.
 - DTO đích: `CreateSubmissionRequestDTO`, `CreateSubmissionResponseDTO`.
@@ -2580,7 +2584,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## approveSubmission
 
-`POST /api/v1/tasks/:taskId/submissions/:submissionId/approve` → HTTP 200
+`POST /api/tasks/:taskId/submissions/:submissionId/approve` → HTTP 200
 
 - Feature `submissions` · Màn S27 · UC UC-T08.
 - DTO đích: `ApproveSubmissionRequestDTO`, `ApproveSubmissionResponseDTO`.
@@ -2633,7 +2637,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## requestSubmissionRevision
 
-`POST /api/v1/tasks/:taskId/submissions/:submissionId/request-revision` → HTTP 200
+`POST /api/tasks/:taskId/submissions/:submissionId/request-revision` → HTTP 200
 
 - Feature `submissions` · Màn S27 · UC UC-T09.
 - DTO đích: `RequestSubmissionRevisionRequestDTO`, `RequestSubmissionRevisionResponseDTO`.
@@ -2687,7 +2691,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## listReviewQueue
 
-`GET /api/v1/review-queue` → HTTP 200
+`GET /api/review-queue` → HTTP 200
 
 - Feature `submissions` · Màn S26 · UC UC-T08, UC-T09.
 - DTO đích: `ListReviewQueueRequestDTO`, `ListReviewQueueResponseDTO`.
@@ -2733,7 +2737,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## listReports
 
-`GET /api/v1/reports` → HTTP 200
+`GET /api/reports` → HTTP 200
 
 - Feature `reports` · Màn S29 · UC UC-T11.
 - DTO đích: `ListReportsRequestDTO`, `ListReportsResponseDTO`.
@@ -2784,7 +2788,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## getReportPreview
 
-`GET /api/v1/report-previews` → HTTP 200
+`GET /api/report-previews` → HTTP 200
 
 - Feature `reports` · Màn S30, S31 · UC UC-T10.
 - DTO đích: `GetReportPreviewRequestDTO`, `GetReportPreviewResponseDTO`.
@@ -2829,7 +2833,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## getReport
 
-`GET /api/v1/reports/:reportId` → HTTP 200
+`GET /api/reports/:reportId` → HTTP 200
 
 - Feature `reports` · Màn S31, S32 · UC UC-T11.
 - DTO đích: `GetReportRequestDTO`, `GetReportResponseDTO`.
@@ -2872,7 +2876,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## createReportDraft
 
-`POST /api/v1/reports` → HTTP 201
+`POST /api/reports` → HTTP 201
 
 - Feature `reports` · Màn S30 · UC UC-T10.
 - DTO đích: `CreateReportDraftRequestDTO`, `CreateReportDraftResponseDTO`.
@@ -2923,7 +2927,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## updateReportDraft
 
-`PATCH /api/v1/reports/:reportId` → HTTP 200
+`PATCH /api/reports/:reportId` → HTTP 200
 
 - Feature `reports` · Màn S31 · UC UC-T10.
 - DTO đích: `UpdateReportDraftRequestDTO`, `UpdateReportDraftResponseDTO`.
@@ -2975,7 +2979,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## refreshReportDraft
 
-`POST /api/v1/reports/:reportId/refresh` → HTTP 200
+`POST /api/reports/:reportId/refresh` → HTTP 200
 
 - Feature `reports` · Màn S31 · UC UC-T10.
 - DTO đích: `RefreshReportDraftRequestDTO`, `RefreshReportDraftResponseDTO`.
@@ -3021,7 +3025,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## submitReport
 
-`POST /api/v1/reports/:reportId/submit` → HTTP 200
+`POST /api/reports/:reportId/submit` → HTTP 200
 
 - Feature `reports` · Màn S31 · UC UC-T10.
 - DTO đích: `SubmitReportRequestDTO`, `SubmitReportResponseDTO`.
@@ -3069,7 +3073,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## getUploadPolicy
 
-`GET /api/v1/attachments/policy` → HTTP 200
+`GET /api/attachments/policy` → HTTP 200
 
 - Feature `attachments` · Màn S41 · UC UC-T07.
 - DTO đích: `GetUploadPolicyRequestDTO`, `GetUploadPolicyResponseDTO`.
@@ -3110,7 +3114,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## uploadAttachment
 
-`POST /api/v1/attachments` → HTTP 201
+`POST /api/attachments` → HTTP 201
 
 - Feature `attachments` · Màn S41 · UC UC-T07.
 - DTO đích: `UploadAttachmentRequestDTO`, `UploadAttachmentResponseDTO`.
@@ -3157,7 +3161,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## getAttachment
 
-`GET /api/v1/attachments/:attachmentId` → HTTP 200
+`GET /api/attachments/:attachmentId` → HTTP 200
 
 - Feature `attachments` · Màn S24, S27, S41 · UC UC-T07, UC-T08.
 - DTO đích: `GetAttachmentRequestDTO`, `GetAttachmentResponseDTO`.
@@ -3200,7 +3204,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## downloadAttachment
 
-`GET /api/v1/attachments/:attachmentId/content` → HTTP 200
+`GET /api/attachments/:attachmentId/content` → HTTP 200
 
 - Feature `attachments` · Màn S27 · UC UC-T07, UC-T08.
 - DTO đích: `DownloadAttachmentRequestDTO`, `DownloadAttachmentResponseDTO`.
@@ -3244,7 +3248,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## getDashboard
 
-`GET /api/v1/dashboard` → HTTP 200
+`GET /api/dashboard` → HTTP 200
 
 - Feature `analytics` · Màn S33 · UC UC-D01.
 - DTO đích: `GetDashboardRequestDTO`, `GetDashboardResponseDTO`.
@@ -3300,7 +3304,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## getDeadlineRisks
 
-`GET /api/v1/analytics/risks` → HTTP 200
+`GET /api/analytics/risks` → HTTP 200
 
 - Feature `analytics` · Màn S34 · UC UC-D02.
 - DTO đích: `GetDeadlineRisksRequestDTO`, `GetDeadlineRisksResponseDTO`.
@@ -3357,7 +3361,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## getWorkload
 
-`GET /api/v1/analytics/workload` → HTTP 200
+`GET /api/analytics/workload` → HTTP 200
 
 - Feature `analytics` · Màn S35 · UC UC-D03.
 - DTO đích: `GetWorkloadRequestDTO`, `GetWorkloadResponseDTO`.
@@ -3413,7 +3417,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## getBottlenecks
 
-`GET /api/v1/analytics/bottlenecks` → HTTP 200
+`GET /api/analytics/bottlenecks` → HTTP 200
 
 - Feature `analytics` · Màn S36 · UC UC-D04.
 - DTO đích: `GetBottlenecksRequestDTO`, `GetBottlenecksResponseDTO`.
@@ -3469,7 +3473,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## getAnalysisSummary
 
-`GET /api/v1/analytics/summary` → HTTP 200
+`GET /api/analytics/summary` → HTTP 200
 
 - Feature `analytics` · Màn S39 · UC UC-D06.
 - DTO đích: `GetAnalysisSummaryRequestDTO`, `GetAnalysisSummaryResponseDTO`.
@@ -3525,7 +3529,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## createAnalysisJob
 
-`POST /api/v1/analytics/jobs` → HTTP 202 khi đang chờ/chạy; HTTP 200 khi reuse kết quả đã xong
+`POST /api/analytics/jobs` → HTTP 202 khi đang chờ/chạy; HTTP 200 khi reuse kết quả đã xong
 
 - Feature `analytics` · Màn S40, S43 · UC UC-D02, UC-D03, UC-D04, UC-D06.
 - DTO đích: `CreateAnalysisJobRequestDTO`, `CreateAnalysisJobResponseDTO`.
@@ -3575,7 +3579,7 @@ FE chỉ được gửi: `analysisId`, `generationMode`, `locale`.
 
 ## getAnalysisJob
 
-`GET /api/v1/analytics/jobs/:jobId` → HTTP 200
+`GET /api/analytics/jobs/:jobId` → HTTP 200
 
 - Feature `analytics` · Màn S40, S43 · UC UC-D02, UC-D03, UC-D04, UC-D06.
 - DTO đích: `GetAnalysisJobRequestDTO`, `GetAnalysisJobResponseDTO`.
@@ -3620,7 +3624,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## listAlerts
 
-`GET /api/v1/alerts` → HTTP 200
+`GET /api/alerts` → HTTP 200
 
 - Feature `alerts` · Màn S37 · UC UC-D05.
 - DTO đích: `ListAlertsRequestDTO`, `ListAlertsResponseDTO`.
@@ -3668,7 +3672,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## getAlert
 
-`GET /api/v1/alerts/:alertId` → HTTP 200
+`GET /api/alerts/:alertId` → HTTP 200
 
 - Feature `alerts` · Màn S38 · UC UC-D05.
 - DTO đích: `GetAlertRequestDTO`, `GetAlertResponseDTO`.
@@ -3711,7 +3715,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## updateAlert
 
-`PATCH /api/v1/alerts/:alertId` → HTTP 200
+`PATCH /api/alerts/:alertId` → HTTP 200
 
 - Feature `alerts` · Màn S38 · UC UC-D05.
 - DTO đích: `UpdateAlertRequestDTO`, `UpdateAlertResponseDTO`.
@@ -3760,7 +3764,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 
 ## getAnalysisDetail
 
-`GET /api/v1/analytics/details/:analysisId` → HTTP 200
+`GET /api/analytics/details/:analysisId` → HTTP 200
 
 - Feature `analytics` · Màn S43 · UC UC-D01, UC-D02, UC-D03, UC-D04, UC-D05, UC-D06.
 - DTO đích: `GetAnalysisDetailRequestDTO`, `GetAnalysisDetailResponseDTO`.
@@ -3807,7 +3811,7 @@ Cache theo query key riêng, không có mutation invalidation.
 
 ## createAnalysisFeedback
 
-`POST /api/v1/analytics/details/:analysisId/feedback` → HTTP 201
+`POST /api/analytics/details/:analysisId/feedback` → HTTP 201
 
 - Feature `analytics` · Màn S43 (BOTTLENECK) · UC UC-D04, bước 6, trang 43 tài liệu nguồn.
 - Phiên bắt buộc; cần ANALYTICS_VIEW và ALERTS_MANAGE trong phạm vi nhận định. Quyền xem đơn thuần không đủ ghi phản hồi.
@@ -3845,7 +3849,7 @@ Refetch đúng ['analytics', viewerId, 'detail', analysisId] để lấy feedbac
 
 ## listAnalyticsFilterOptions
 
-`GET /api/v1/analytics/filter-options` → HTTP 200
+`GET /api/analytics/filter-options` → HTTP 200
 
 - Feature `analytics` · Màn S33, S34, S35, S36, S39 · UC UC-D01, UC-D02, UC-D03, UC-D04, UC-D06.
 - Phiên và ANALYTICS_VIEW trong phạm vi bắt buộc; không đòi quyền quản trị tài khoản/tổ chức.
@@ -3882,3 +3886,47 @@ BE tìm kiếm/paginate trên tập lựa chọn được phép; không lấy tr
 Đổi phiên/quyền cancel/remove cache lookup. Thay thành viên/nhóm/dự án liên quan invalidate các lựa chọn và analytics cùng scope. Không gọi listUsers/listUnits/listTeams quản trị chỉ để lấy nhãn bộ lọc.
 
 Scope tổng hợp: query thiếu unitId/projectId dùng đơn vị mặc định hợp lệ trong phiên; không có thì 422, không ngầm mở toàn hệ thống. SUMMARY có subject PROJECT hoặc UNIT; overviewRef và systemSummary phải mô tả đúng một dự án hay cả phạm vi đơn vị.
+
+## Bổ sung hồ sơ cá nhân theo yêu cầu ngày 25/10/2026
+
+### updateProfile
+
+`PATCH /api/auth/me` cập nhật chính tài khoản trong phiên, không nhận userId. Body multipart chỉ gồm username (3–64 ký tự, chữ Latin/số/dấu chấm/gạch dưới/gạch ngang), displayName (1–255 ký tự) và avatar; mỗi trường đều tùy chọn nhưng phải có ít nhất một trường. Mục ảnh chỉ gửi avatar, không gửi lại tên/tên đăng nhập. Trim tên và tên đăng nhập. Email, đơn vị, vai trò và trạng thái không nằm trong whitelist. Tên đăng nhập phải duy nhất; thay tên đăng nhập không đổi mật khẩu.
+
+Avatar nhận JPG, PNG hoặc WebP, dung lượng lớn hơn 0 và tối đa 2 MB. Kiểm tra loại/dung lượng tại schema và chữ ký tệp tại DB. Tệp không hợp lệ không lưu bất kỳ thay đổi nào. Tên và avatar được cập nhật trong cùng transaction.
+
+Yêu cầu bearer, If-Match từ session.user.version và Idempotency-Key. Response 200 là SuccessEnvelope<SessionDTO>; user thêm version và avatarUrl nullable. Phiên hết hạn trả 401; dữ liệu ngoài whitelist/ảnh sai trả 422; trùng tên đăng nhập 409; version cũ 412 và giữ form để đối chiếu. Không tự retry mutation bằng khóa mới.
+
+Thành công cập nhật Query cache phiên từ response và invalidate dữ liệu của người xem để nhãn người dùng được làm mới. Credential và byte ảnh không lưu trong MutationCache; biến mutation dùng ticket tạm. Hồ sơ chỉ mở form sau nút; email/đơn vị/vai trò hiển thị ở phần thông tin.
+
+### getAvatar
+
+`GET /api/avatars/:avatarId` phục vụ byte ảnh theo URL opaque do response cấp, dùng trực tiếp cho Image src. Không trả JSON/base64 trong SessionDTO/UserDTO/UserRow. avatarId là UUID ngẫu nhiên mới mỗi lần thay ảnh; link ảnh không chứa ID tài khoản. Thay ảnh xóa byte ảnh cũ khỏi DB mock; link cũ trả 404. Response có Content-Type ảnh, Content-Length, Cache-Control private và X-Content-Type-Options nosniff. Link ảnh là đường dẫn tài nguyên có thể đọc khi biết URL, không yêu cầu header bearer từ thẻ ảnh.
+
+Mock giữ avatarId trong model và byte ảnh trong DB tạm; reload/reset xóa ảnh cùng các thay đổi khác. Backend thật cần lưu ảnh và cấp avatarUrl tương ứng.
+
+### changePassword
+
+`PUT /api/auth/me/password` đổi mật khẩu của chính tài khoản trong phiên. JSON strict chỉ gồm currentPassword (1–128 ký tự) và newPassword (8–128 ký tự), không trim mật khẩu. Mật khẩu mới phải khác mật khẩu hiện tại; DB kiểm tra currentPassword khớp mật khẩu đang lưu. Không nhận userId, vai trò, mật khẩu xác nhận hoặc các field hồ sơ.
+
+Yêu cầu bearer và Idempotency-Key; không dùng If-Match vì currentPassword là điều kiện cập nhật. Thành công 200 SuccessEnvelope<{ok:true}>; không trả credential hoặc cả hồ sơ. Phiên hiện tại tiếp tục hoạt động. Sai mật khẩu hiện tại trả 422 với field currentPassword; dữ liệu yếu/thừa trường trả 422; không có phiên hợp lệ trả 401/403. Request giống nhau cùng khóa replay kết quả, không đổi mật khẩu/audit lần nữa. Không thay đổi version hồ sơ vì không sửa trường hồ sơ.
+
+Form có Mật khẩu hiện tại/Mật khẩu mới/Nhập lại mật khẩu mới, kiểm tra xác nhận ở FE rồi chỉ gửi hai trường API. Form nằm trong mục Đổi mật khẩu của hồ sơ, mở sau thao tác; giữ nội dung khi lỗi, nhắc draft trước khi đổi mục. Hiển thị thành công bằng toast và dọn form. Mutation dùng ticket tạm, không giữ credential trong Query/Mutation cache, Zustand hoặc audit. Audit chỉ ghi sự kiện Đổi mật khẩu.
+
+### getProfile
+
+`GET /api/users/:userId/profile` đọc hồ sơ công khai nội bộ của một thành viên. Mọi người đã đăng nhập được gọi; không yêu cầu USERS_MANAGE. Không có body, query, If-Match hoặc Idempotency-Key. userId là ID opaque theo quy tắc chung.
+
+Response 200 SuccessEnvelope<ProfileDto> với data là object phẳng chỉ gồm id, displayName, avatarUrl nullable, unit (tên đơn vị), systemRole và email. UI hiển thị card nhận diện và thông tin liên hệ email. Không có wrapper user, stats, projects hoặc pagination.
+
+Không trả username, unitId, version, updatedAt, byte ảnh, thống kê công việc/dự án hoặc field chưa có nguồn. Thiếu phiên trả 401; chủ hồ sơ không tồn tại/bị khóa trả 404; mọi query thừa (kể cả page/pageSize) trả 422. Người xem có thể đọc hồ sơ liên hệ của thành viên khác đơn vị; quyền dự án/task tiếp tục được kiểm tra ở endpoint riêng.
+
+useQuery useGetProfileQuery với key ['users', viewerId, 'getProfile', userId], staleTime 0, chỉ chạy khi có phiên và ID hợp lệ. Màn /users/[userId] nằm trong workspace cần đăng nhập. Lưu hồ sơ cập nhật phiên và invalidate dữ liệu của viewer theo cơ chế hiện có.
+
+### Mốc thời gian trong chi tiết công việc
+
+TaskDto trả createdAt (UTC ISO datetime) và firstStartedAt (UTC ISO datetime hoặc null) cho GET chi tiết và các mutation trả TaskDto. Cả hai lấy trực tiếp từ model hiện có; createdAt do server ghi khi tạo, firstStartedAt chỉ ghi khi bắt đầu lần đầu và giữ qua tạm dừng/tiếp tục/bàn giao. Không nhận hai trường trong payload tạo/sửa. TaskRow của danh sách trả firstStartedAt cho cột Ngày bắt đầu, không trả createdAt. Không đổi cách ghi time log hoặc cách tính giờ công thực tế.
+
+Theo yêu cầu điều chỉnh URL, mọi endpoint trong catalog dùng tiền tố /api, không có thành phần phiên bản. Axios baseURL, MSW handler, avatarUrl và kiểm thử cùng dùng tiền tố này; không giữ alias cho đường dẫn cũ. Tổng số endpoint và các quy tắc quyền/version/idempotency giữ nguyên.
+
+Tổng HTTP route sau bổ sung: 83 (82 service request và 1 image resource).

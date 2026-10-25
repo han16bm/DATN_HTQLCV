@@ -1,15 +1,9 @@
 "use client";
 import { PermissionGate } from "@/components/layout/permission-gate";
-import {
-  DataTable,
-  Loading,
-  PageHeader,
-  Pagination,
-  Panel,
-} from "@/components/ui/page";
+import { DataTable, DetailLink, PageHeader } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListProjectsQuery } from "@/features/projects/hooks/use-projects-queries";
-import { ReviewTaskLink } from "@/features/submissions/components/review-task-link";
 import { hasPermission, useSession } from "@/lib/auth/session-context";
 import { dateTime } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
@@ -32,10 +26,7 @@ function ReviewQueue() {
   const { session } = useSession();
   return (
     <>
-      <PageHeader
-        title="Kết quả chờ nghiệm thu"
-        description="Chỉ hiển thị lần nộp mới nhất đang chờ xét trong phạm vi được cấp quyền."
-      />
+      <PageHeader title="Kết quả chờ nghiệm thu" />
       <div className="panel filters">
         <label>
           Dự án
@@ -57,33 +48,35 @@ function ReviewQueue() {
       {q.isError ? (
         <QueryErrorState error={q.error} retry={() => void q.refetch()} />
       ) : !q.data ? (
-        <Loading />
+        <PageSkeleton variant="table" />
       ) : (
-        <Panel>
-          <DataTable
-            headers={[
-              "Công việc / lần nộp",
-              "Người nộp",
-              "Nộp lúc",
-              "Hạn tại lúc nộp",
-            ]}
-            rows={q.data.items.map((s) => [
-              <ReviewTaskLink
-                key={s.id}
-                taskId={s.taskId}
-                submissionId={s.id}
-                sequence={s.sequence}
-              />,
-              s.submitter.displayName,
-              dateTime(s.submittedAt),
-              dateTime(s.dueAtSnapshot),
-            ])}
-          />
-          <Pagination
-            {...q.data.pagination}
-            onPage={(p) => f.set("page", String(p))}
-          />
-        </Panel>
+        <DataTable
+          pagination={{
+            ...q.data.pagination,
+            onPage: (p) => f.set("page", String(p)),
+          }}
+          headers={[
+            "Công việc",
+            "Lần nộp",
+            "Người nộp",
+            "Nộp lúc",
+            "Hạn tại lúc nộp",
+            "Hành động",
+          ]}
+          actions
+          rows={q.data.items.map((s) => [
+            s.taskTitle,
+            String(s.sequence),
+            s.submitter.displayName,
+            dateTime(s.submittedAt),
+            dateTime(s.dueAtSnapshot),
+            <DetailLink
+              key="detail"
+              href={`/tasks/${s.taskId}/submissions/${s.id}`}
+              label={`Xem lần nộp ${s.sequence}`}
+            />,
+          ])}
+        />
       )}
     </>
   );

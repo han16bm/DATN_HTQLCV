@@ -1,5 +1,6 @@
 "use client";
 import { useState, type ReactNode } from "react";
+import { Spinner } from "./loading";
 
 export function ActionButton({
   children,
@@ -16,7 +17,8 @@ export function ActionButton({
     <div>
       <button
         disabled={busy}
-        className={primary ? "primary" : ""}
+        className={`pending-button ${primary ? "primary" : ""}`}
+        aria-busy={busy}
         onClick={async () => {
           setBusy(true);
           setError("");
@@ -33,6 +35,7 @@ export function ActionButton({
           }
         }}
       >
+        {busy && <Spinner />}
         {busy ? "Đang xử lý…" : children}
       </button>
       {error && (

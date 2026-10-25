@@ -2,7 +2,8 @@
 import { ProjectForm } from "./project-form";
 
 import { PermissionGate } from "@/components/layout/permission-gate";
-import { ButtonLink, Loading, PageHeader } from "@/components/ui/page";
+import { ButtonLink, PageHeader } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListProjectMembersQuery } from "@/features/project-members/hooks/use-project-members-queries";
 import { useGetProjectQuery } from "../hooks/use-projects-queries";
@@ -26,12 +27,11 @@ function EditorLoader({ projectId }: { projectId?: string }) {
     return (
       <QueryErrorState error={query.error} retry={() => void query.refetch()} />
     );
-  if (projectId && !query.data) return <Loading />;
+  if (projectId && !query.data) return <PageSkeleton variant="form" />;
   return (
     <>
       <PageHeader
         title={projectId ? "Điều chỉnh dự án" : "Tạo dự án"}
-        description="Giữ kế hoạch và lý do của mỗi lần điều chỉnh."
         actions={
           <ButtonLink href={projectId ? `/projects/${projectId}` : "/projects"}>
             Quay lại

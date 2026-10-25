@@ -1,7 +1,8 @@
 "use client";
 import { SchemaForm } from "@/components/forms/schema-form";
 import { PermissionGate } from "@/components/layout/permission-gate";
-import { Empty, Loading, PageHeader, Panel } from "@/components/ui/page";
+import { Empty, PageHeader, Panel } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { memberPermissionsSchema } from "@/features/project-members/schemas/project-members.schema";
 import { type MembershipDto } from "@/features/project-members/types/project-members.types";
@@ -39,7 +40,7 @@ function PermissionsWorkspace({ projectId }: { projectId: string }) {
     query.data?.items.find((m) => m.id === filters.get("member")) ??
     query.data?.items[0];
   if (project.isError) return <QueryErrorState error={project.error} />;
-  if (!project.data) return <Loading />;
+  if (!project.data) return <PageSkeleton variant="form" />;
   if (!["PLANNED", "ACTIVE"].includes(project.data.status))
     return (
       <Panel>
@@ -51,25 +52,23 @@ function PermissionsWorkspace({ projectId }: { projectId: string }) {
     );
   return (
     <>
-      <PageHeader
-        title="Quyền trên dự án"
-        description="Chỉ cấp quyền trong phạm vi được ủy quyền. Người xét luôn phải khác người nộp."
-      />
+      <PageHeader title="Quyền trên dự án" />
       {query.isError ? (
         <QueryErrorState
           error={query.error}
           retry={() => void query.refetch()}
         />
       ) : !query.data ? (
-        <Loading />
+        <PageSkeleton variant="form" />
       ) : (
         <Panel>
           <label>
             Thành viên
             <select
               value={selected?.id ?? ""}
-              onChange={(e) => {
-                if (confirmDiscard()) filters.set("member", e.target.value);
+              onChange={async (e) => {
+                const value = e.target.value;
+                if (await confirmDiscard()) filters.set("member", value);
               }}
             >
               {query.data.items.map((m) => (

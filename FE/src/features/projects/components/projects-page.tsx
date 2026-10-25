@@ -2,13 +2,13 @@
 import {
   Badge,
   ButtonLink,
-  Empty,
-  Loading,
+  DataTable,
+  DetailLink,
   PageHeader,
-  Pagination,
-  Panel,
 } from "@/components/ui/page";
+import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { UserBadge } from "@/components/ui/user-badge";
 import { projectStatusSchema } from "@/features/projects/schemas/projects.schema";
 import { hasPermission, useSession } from "@/lib/auth/session-context";
 import { dateTime, label } from "@/lib/format";
@@ -29,7 +29,6 @@ export function ProjectsPage() {
     <>
       <PageHeader
         title="Dự án"
-        description="Tập trung kế hoạch, thành viên và công việc của nhóm."
         actions={
           hasPermission(session, "PROJECT_CREATE") && (
             <ButtonLink href="/projects/new" primary>
@@ -82,7 +81,7 @@ export function ProjectsPage() {
           </select>
         </label>
       </section>
-      {query.isPending && <Loading />}
+      {query.isPending && <PageSkeleton variant="table" />}
       {query.isError && (
         <QueryErrorState
           error={query.error}
@@ -90,46 +89,43 @@ export function ProjectsPage() {
         />
       )}{" "}
       {query.data && !query.isError && (
-        <>
-          <div className="project-grid">
-            {query.data.items.map((p) => (
-              <Panel key={p.id}>
-                <Badge value={p.status} />
-                <h2 className="section-gap">{p.name}</h2>
-                <p className="muted prose">{p.objective}</p>
-                <dl className="section-gap">
-                  <div>
-                    <dt>Người phụ trách</dt>
-                    <dd>{p.owner.displayName}</dd>
-                  </div>
-                  <div>
-                    <dt>Ngày bắt đầu</dt>
-                    <dd>{p.startDate}</dd>
-                  </div>
-                  <div>
-                    <dt>Hạn hoàn thành</dt>
-                    <dd>{dateTime(p.dueAt)}</dd>
-                  </div>
-                </dl>
-                <div className="table-footer">
-                  <span className="small muted">
-                    {p.unit.name} · {p.code}
-                  </span>
-                  <ButtonLink href={`/projects/${p.id}`}>Mở dự án</ButtonLink>
-                </div>
-              </Panel>
-            ))}
-          </div>
-          {!query.data.items.length && (
-            <Panel>
-              <Empty />
-            </Panel>
-          )}
-          <Pagination
-            {...query.data.pagination}
-            onPage={(p) => filters.set("page", String(p))}
-          />
-        </>
+        <DataTable
+          pagination={{
+            ...query.data.pagination,
+            onPage: (p) => filters.set("page", String(p)),
+          }}
+          actions
+          headers={[
+            "Dự án",
+            "Đơn vị",
+            "Người phụ trách",
+            "Trạng thái",
+            "Ngày bắt đầu",
+            "Hạn hoàn thành",
+            "Hành động",
+          ]}
+          rows={query.data.items.map((p) => [
+            <div key="project" className="project-summary">
+              <div className="project-name">
+                <strong>{p.name}</strong>
+                <span className="small muted">{p.code}</span>
+              </div>
+              <p className="project-objective small muted" title={p.objective}>
+                {p.objective}
+              </p>
+            </div>,
+            p.unit.name,
+            <UserBadge key="owner" name={p.owner.displayName} />,
+            <Badge key="status" value={p.status} />,
+            p.startDate.split("-").reverse().join("/"),
+            dateTime(p.dueAt),
+            <DetailLink
+              key="detail"
+              href={`/projects/${p.id}`}
+              label={`Xem dự án ${p.name}`}
+            />,
+          ])}
+        />
       )}
     </>
   );

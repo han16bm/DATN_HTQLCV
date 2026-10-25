@@ -22,18 +22,32 @@ export function ReviewForm({
   submissionId: string;
   version: number;
 }) {
+  const [open, setOpen] = useState(false);
   const [decision, setDecision] = useState("APPROVE");
   const approve = useApproveSubmissionMutation();
   const revision = useRequestSubmissionRevisionMutation();
   const router = useRouter();
+  const close = async () => {
+    if (await confirmDiscard("Bỏ quyết định nghiệm thu chưa lưu?"))
+      setOpen(false);
+  };
+  if (!open)
+    return (
+      <div className="actions review-actions">
+        <button type="button" className="primary" onClick={() => setOpen(true)}>
+          Đưa ra quyết định nghiệm thu
+        </button>
+      </div>
+    );
   return (
-    <Panel title="Quyết định nghiệm thu">
-      <label>
+    <Panel title="Quyết định nghiệm thu" className="review-form">
+      <label className="form-field review-decision">
         Quyết định
         <select
           value={decision}
-          onChange={(e) => {
-            if (confirmDiscard()) setDecision(e.target.value);
+          onChange={async (e) => {
+            const value = e.target.value;
+            if (await confirmDiscard()) setDecision(value);
           }}
         >
           <option value="APPROVE">Chấp nhận kết quả</option>
@@ -41,6 +55,11 @@ export function ReviewForm({
         </select>
       </label>
       <SchemaForm
+        cancel={
+          <button type="button" onClick={close}>
+            Hủy
+          </button>
+        }
         key={decision}
         schema={decision === "APPROVE" ? approveSchema : revisionSchema}
         fields={

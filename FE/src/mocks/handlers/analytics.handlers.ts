@@ -29,7 +29,7 @@ import {
 } from "./http";
 export const analyticsHandlers = [
   http.get(
-    "*/api/v1/dashboard",
+    "*/api/dashboard",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const query = parseQuery(request, analyticsQuerySchema);
@@ -42,7 +42,7 @@ export const analyticsHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/analytics/risks",
+    "*/api/analytics/risks",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const query = parseQuery(request, analyticsQuerySchema);
@@ -55,7 +55,7 @@ export const analyticsHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/analytics/workload",
+    "*/api/analytics/workload",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const query = parseQuery(request, analyticsQuerySchema);
@@ -68,7 +68,7 @@ export const analyticsHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/analytics/bottlenecks",
+    "*/api/analytics/bottlenecks",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const query = parseQuery(request, analyticsQuerySchema);
@@ -81,7 +81,7 @@ export const analyticsHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/analytics/summary",
+    "*/api/analytics/summary",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const query = parseQuery(request, analyticsQuerySchema);
@@ -94,7 +94,7 @@ export const analyticsHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/analytics/jobs",
+    "*/api/analytics/jobs",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const payload = createJobSchema.parse(await request.json());
@@ -125,7 +125,7 @@ export const analyticsHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/analytics/jobs/:jobId",
+    "*/api/analytics/jobs/:jobId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const jobId = idSchema.parse(params.jobId);
@@ -138,7 +138,7 @@ export const analyticsHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/analytics/details/:analysisId",
+    "*/api/analytics/details/:analysisId",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const analysisId = idSchema.parse(params.analysisId);
@@ -151,7 +151,7 @@ export const analyticsHandlers = [
     }),
   ),
   http.post(
-    "*/api/v1/analytics/details/:analysisId/feedback",
+    "*/api/analytics/details/:analysisId/feedback",
     mockHandler(async ({ request, params }) => {
       const viewer = authenticatedUser(request);
       const analysisId = idSchema.parse(params.analysisId);
@@ -178,7 +178,7 @@ export const analyticsHandlers = [
     }),
   ),
   http.get(
-    "*/api/v1/analytics/filter-options",
+    "*/api/analytics/filter-options",
     mockHandler(async ({ request }) => {
       const viewer = authenticatedUser(request);
       const query = parseQuery(request, filterOptionsQuerySchema);

@@ -1,4 +1,5 @@
 "use client";
+
 import { DetailLink } from "@/components/ui/page";
 import { type AnalysisRefDto, type DomainActionDto } from "@/types/common";
 import Link from "next/link";
@@ -17,6 +18,7 @@ export function AnalysisLink({
     />
   );
 }
+
 export function actionHref(action: DomainActionDto) {
   const id = encodeURIComponent(action.taskId ?? "");
   switch (action.target) {
@@ -34,6 +36,7 @@ export function actionHref(action: DomainActionDto) {
       return `/reports/${encodeURIComponent(action.reportId ?? "")}`;
   }
 }
+
 export function DomainActionLink({
   value,
   label = "Mở nguồn",

@@ -1,14 +1,16 @@
 "use client";
+import { canManage } from "@/lib/auth/access";
+
 import { ActionButton } from "@/components/ui/action-button";
+import { PageSkeleton } from "@/components/ui/loading";
 import {
   Badge,
   ButtonLink,
   PageHeader,
   SectionSelect,
 } from "@/components/ui/page";
-import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
-import { hasPermission, useSession } from "@/lib/auth/session-context";
+import { useSession } from "@/lib/auth/session-context";
 import { useHashDialog } from "@/lib/forms/use-hash-dialog";
 import { usePathname, useSearchParams } from "next/navigation";
 import { type ReactNode } from "react";
@@ -37,7 +39,7 @@ export function ProjectShell({
   if (!query.data) return <PageSkeleton />;
   const project = query.data;
   const root = `/projects/${projectId}`;
-  const manage = hasPermission(session, "PROJECT_MANAGE", projectId);
+  const manage = canManage(session, projectId);
   const editable = ["PLANNED", "ACTIVE"].includes(project.status);
   return (
     <>
@@ -89,14 +91,6 @@ export function ProjectShell({
             { href: root, label: "Tổng quan" },
             { href: `/tasks?projectId=${projectId}`, label: "Công việc" },
             { href: `${root}/members`, label: "Thành viên" },
-            ...(hasPermission(session, "MEMBERS_MANAGE", projectId)
-              ? [
-                  {
-                    href: `${root}/permissions`,
-                    label: "Phân quyền",
-                  },
-                ]
-              : []),
             {
               href: `${root}?tab=history`,
               label: "Lịch sử",

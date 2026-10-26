@@ -80,7 +80,7 @@ Các lựa chọn endpoint, DTO, timeout đề xuất, cache và trải nghiệm
 
 ## HTTP và lỗi sau khi nhận job
 
-POST createAnalysisJob trả 200 khi reuse job đã SUCCEEDED, 202 cho job QUEUED/RUNNING. Idempotency replay giữ nguyên receipt ban đầu; FE đọc job mới nhất thay vì giả rằng receipt là trạng thái cuối. Lỗi provider phát sinh sau khi BE đã nhận job được phản ánh qua getAnalysisJob HTTP 200 với status FAILED/error typed; lỗi cấu hình hoặc không nhận được job có thể trả HTTP 503 ErrorEnvelope ngay. Cả hai trường hợp đều giữ số liệu đã đọc.
+POST createAnalysisJob trả 200 khi reuse job đã SUCCEEDED, 202 cho job QUEUED/RUNNING. Idempotency replay giữ nguyên receipt ban đầu; FE đọc job mới nhất thay vì giả rằng receipt là trạng thái cuối. Lỗi provider phát sinh sau khi BE đã nhận job được phản ánh qua getAnalysisJob HTTP 200 với status FAILED/error typed; lỗi cấu hình hoặc không nhận được job có thể trả HTTP 503 ErrorDTO phẳng ngay. Cả hai trường hợp đều giữ số liệu đã đọc.
 
 
 ## Bổ sung sau đối chiếu tài liệu gốc 0.4

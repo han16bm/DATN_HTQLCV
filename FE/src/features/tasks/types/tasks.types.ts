@@ -1,18 +1,18 @@
+import type { reasonSchema } from "@/lib/validation/common.schema";
+import { type AuditDto, type Page } from "@/types/common";
+import { type z } from "zod";
 import type {
   assignTaskSchema,
   createTaskSchema,
   remainingSchema,
   updateTaskSchema,
-} from "@/features/tasks/schemas/task-form.schema";
+} from "../schemas/task-form.schema";
 import type {
   taskHistoryQuerySchema,
   taskQuerySchema,
   taskRowSchema,
   taskSchema,
-} from "@/features/tasks/schemas/task.schema";
-import type { reasonSchema } from "@/lib/validation/common.schema";
-import { type AuditDto, type Page } from "@/types/common";
-import { type z } from "zod";
+} from "../schemas/task.schema";
 export type TaskDto = z.output<typeof taskSchema>;
 export type TaskQuery = z.input<typeof taskQuerySchema>;
 export type TaskRow = z.output<typeof taskRowSchema>;

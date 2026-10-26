@@ -1,6 +1,7 @@
 "use client";
-import { analyticsQuerySchema } from "@/features/analytics/schemas/analytics-query.schema";
+
 import { useSearchParams } from "next/navigation";
+import { analyticsQuerySchema } from "../schemas/analytics-query.schema";
 
 export function useAnalyticsScope() {
   const search = useSearchParams();

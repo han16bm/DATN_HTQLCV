@@ -1,6 +1,6 @@
 import {
   addMemberSchema,
-  memberPermissionsSchema,
+  memberRoleSchema,
   membershipSchema,
   projectMemberQuerySchema,
 } from "@/features/project-members/schemas/project-members.schema";
@@ -42,7 +42,7 @@ export const projectMemberHandlers = [
           operation: "addProjectMember",
           feature: "project-members",
           viewer,
-          permission: "MEMBERS_MANAGE",
+          action: "MEMBERS_MANAGE",
           params: { projectId },
           payload,
         },
@@ -63,21 +63,21 @@ export const projectMemberHandlers = [
       const viewer = authenticatedUser(request);
       const projectId = idSchema.parse(params.projectId);
       const membershipId = idSchema.parse(params.membershipId);
-      const payload = memberPermissionsSchema.parse(await request.json());
+      const payload = memberRoleSchema.parse(await request.json());
       return mockCommand(
         request,
         {
-          operation: "updateProjectMemberPermissions",
+          operation: "updateProjectMemberRole",
           feature: "project-members",
           viewer,
-          permission: "MEMBERS_MANAGE",
+          action: "MEMBERS_MANAGE",
           params: { projectId, membershipId },
           payload,
         },
         async () => {
           return mockJson(
             request,
-            projectMembersDb.updateProjectMemberPermissions(
+            projectMembersDb.updateProjectMemberRole(
               viewer,
               projectId,
               membershipId,
@@ -104,7 +104,7 @@ export const projectMemberHandlers = [
           operation: "endProjectMembership",
           feature: "project-members",
           viewer,
-          permission: "MEMBERS_MANAGE",
+          action: "MEMBERS_MANAGE",
           params: { projectId, membershipId },
           payload,
         },

@@ -1,7 +1,7 @@
 "use client";
-import { PermissionGate } from "@/components/layout/permission-gate";
-import { ButtonLink, PageHeader } from "@/components/ui/page";
+
 import { PageSkeleton } from "@/components/ui/loading";
+import { ButtonLink, PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListUsersQuery } from "@/features/users/hooks/use-users-queries";
 import { useRouter } from "next/navigation";
@@ -10,14 +10,8 @@ import {
   useListUnitsQuery,
 } from "../hooks/use-organization-queries";
 import { UnitForm } from "./unit-form";
+
 export function UnitEditorPage({ unitId }: { unitId?: string }) {
-  return (
-    <PermissionGate permission="ORGANIZATION_MANAGE">
-      <UnitEditor unitId={unitId} />
-    </PermissionGate>
-  );
-}
-function UnitEditor({ unitId }: { unitId?: string }) {
   const router = useRouter();
   const query = useGetUnitQuery(unitId ?? "");
   const units = useListUnitsQuery({ pageSize: 100 });

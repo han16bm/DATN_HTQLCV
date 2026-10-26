@@ -1,5 +1,11 @@
 # Phạm vi và quyết định cho tài liệu FE
 
+## Điều chỉnh role ngày 26/10/2026
+
+Theo yêu cầu người dùng, bỏ quyền cấp lẻ và trang phân quyền riêng. ADMIN quản trị tài khoản/tổ chức và xem tổng quan toàn hệ thống; MANAGER quản lý dự án nơi có tư cách OWNER/MANAGER; MEMBER xử lý công việc được giao. Session chỉ trả user và projectAccess (projectId/projectRole đang hoạt động); model/DTO không còn mảng permissions. Backend giả kiểm tra role cùng phạm vi dự án, người được giao và tác giả, kể cả khi replay. S13 là dialog Đổi vai trò tại danh sách thành viên; PATCH membership chỉ nhận projectRole/reason. Người phụ trách phải là Leader/PM hoạt động trong đơn vị; bàn giao vai trò quản lý ở dự án đang mở trước khi đổi role hệ thống.
+
+Query keys nhận user ID có thể null/undefined; chỉ hàm viewer trong keys đặt giá trị anonymous. Hook không tự tạo user ID dự phòng; key vẫn tách dữ liệu theo người xem và giữ thứ tự feature/viewer/operation.
+
 Ngày lập: 23/10/2026; cập nhật: 24/10/2026. Contract: 0.3.0; tài liệu: 0.4.
 
 ## Nguồn nghiệp vụ
@@ -30,7 +36,7 @@ Yêu cầu bổ sung đã chốt trong trao đổi: BE dùng Microservices; FE d
 
 ## Phần BE cần chốt trước tích hợp thật
 
-Xác nhận URL Gateway và OpenAPI, ánh xạ enum, cơ chế đăng nhập/refresh/CSRF/CORS, envelope lỗi, If-Match, idempotency, chính sách upload/download, API cấp lại mật khẩu, quy tắc chuyển đơn vị/thành viên, nguồn lịch khả dụng, cách xác định “báo cáo cần gửi” trước khi đóng dự án và giao thức job AI. Bảng khác biệt phải ghi cả tác động lên UI, schema, DTO, mapper, mock và test. Các mục chưa chốt không ngăn dựng UI với contract đề xuất.
+Xác nhận URL Gateway và OpenAPI, ánh xạ enum, cơ chế đăng nhập/refresh/CSRF/CORS, cấu trúc lỗi JSON phẳng, If-Match, idempotency, chính sách upload/download, API cấp lại mật khẩu, quy tắc chuyển đơn vị/thành viên, nguồn lịch khả dụng, cách xác định “báo cáo cần gửi” trước khi đóng dự án và giao thức job AI. Bảng khác biệt phải ghi cả tác động lên UI, schema, DTO, mapper, mock và test. Các mục chưa chốt không ngăn dựng UI với contract đề xuất.
 
 ## Tham khảo kỹ thuật
 
@@ -44,7 +50,6 @@ Xác nhận URL Gateway và OpenAPI, ánh xạ enum, cơ chế đăng nhập/ref
 
 Các nguồn kỹ thuật được đối chiếu ngày 23/10/2026. Nội dung định tuyến, mock và validation trong bộ này là phương án áp dụng cho dự án, không phải trích dẫn nguyên văn.
 
-
 ## Trạng thái bàn giao
 
 Đây là đầu vào cho Codex triển khai ở bước tiếp theo. Bộ này gồm ảnh màn chính, sitemap/state dạng TXT, đặc tả mock bằng văn bản, rule Markdown và đặc tả DTO/API. Các đường dẫn `src/...` trong rule là cấu trúc đích Codex sẽ tạo sau, không phải mã đã triển khai kèm theo. Contract đề xuất là 0.3.0; danh mục S01–S42 được giữ để đối chiếu nguồn nghiệp vụ, bổ sung S43 cho chi tiết phân tích.
@@ -54,7 +59,6 @@ Các nguồn kỹ thuật được đối chiếu ngày 23/10/2026. Nội dung �
 Thiết kế lại toàn bộ giao diện giữ font, tăng phân cấp, cải thiện màu và phân bố không gian. AI dùng LLM có sẵn ở BE. Thêm S43 xem thông số/căn cứ kèm lời phân tích, 5 loại nội dung. Contract lên 0.3.0 với 79 operation và các DTO read projection/snapshot/explanation/job. Các thay đổi LLM mới thay phần method/score/summary/job cũ; điều khoản nghiệp vụ khác giữ nguyên.
 
 D10 cập nhật: POST job chỉ tạo/reuse lời phân tích cho snapshot đã có; GET không khởi tạo LLM, job tiến triển độc lập poll. D14 cập nhật: thông số có calculationVersion/quality/dataAsOf; lời LLM có snapshotId/promptVersion/generatedAt/limitations. Không có CALIBRATED_PROBABILITY trong contract mới. Chọn nhà cung cấp/model cụ thể là cấu hình BE chưa được người dùng chỉ định; đặc tả không ràng buộc nhà cung cấp.
-
 
 ## Điều chỉnh bàn giao 0.4
 

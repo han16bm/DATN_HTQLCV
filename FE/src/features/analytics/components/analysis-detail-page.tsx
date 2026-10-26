@@ -1,10 +1,9 @@
 "use client";
-import { PermissionGate } from "@/components/layout/permission-gate";
+
 import { ActionButton } from "@/components/ui/action-button";
-import { Badge, PageHeader, Panel } from "@/components/ui/page";
 import { PageSkeleton, Spinner } from "@/components/ui/loading";
+import { Badge, PageHeader, Panel } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
-import { FeedbackPanel } from "@/features/analytics/components/analysis-feedback-panel";
 import { dateTime } from "@/lib/format";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import Link from "next/link";
@@ -14,6 +13,7 @@ import { useAnalysisTracking } from "../hooks/use-analysis-tracking";
 import { useCreateAnalysisJobMutation } from "../hooks/use-analytics-mutations";
 import { useGetAnalysisDetailQuery } from "../hooks/use-analytics-queries";
 import { AnalysisExplanation } from "./analysis-explanation";
+import { FeedbackPanel } from "./analysis-feedback-panel";
 import { AnalysisSources } from "./analysis-sources";
 const typeLabel: Record<string, string> = {
   RISK: "Nguy cơ trễ hạn",
@@ -25,9 +25,9 @@ const typeLabel: Record<string, string> = {
 
 export function AnalysisDetailPage({ analysisId }: { analysisId: string }) {
   return (
-    <PermissionGate permission="ANALYTICS_VIEW">
+    <>
       <AnalysisDetail key={analysisId} analysisId={analysisId} />
-    </PermissionGate>
+    </>
   );
 }
 

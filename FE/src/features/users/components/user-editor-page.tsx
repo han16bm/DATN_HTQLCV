@@ -1,21 +1,14 @@
 "use client";
-import { UserCommands } from "./user-commands";
-import { UserProfileForm } from "./user-profile-form";
 
-import { PermissionGate } from "@/components/layout/permission-gate";
-import { ButtonLink, PageHeader } from "@/components/ui/page";
 import { PageSkeleton } from "@/components/ui/loading";
+import { ButtonLink, PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListUnitsQuery } from "@/features/organization/hooks/use-organization-queries";
 import { useGetUserQuery } from "../hooks/use-users-queries";
+import { UserCommands } from "./user-commands";
+import { UserProfileForm } from "./user-profile-form";
+
 export function UserEditorPage({ userId }: { userId?: string }) {
-  return (
-    <PermissionGate permission="USERS_MANAGE">
-      <UserEditorLoader userId={userId} />
-    </PermissionGate>
-  );
-}
-function UserEditorLoader({ userId }: { userId?: string }) {
   const query = useGetUserQuery(userId ?? "");
   const units = useListUnitsQuery({ pageSize: 100, status: "ACTIVE" });
   if (units.isError)
@@ -43,7 +36,9 @@ function UserEditorLoader({ userId }: { userId?: string }) {
           units={units.data.items.map((u) => ({ value: u.id, label: u.name }))}
           reload={() => query.refetch()}
         />
-        {query.data && <UserCommands user={query.data} />}
+        {query.data && (
+          <UserCommands user={query.data} reload={query.refetch} />
+        )}
       </div>
     </>
   );

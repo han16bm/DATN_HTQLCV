@@ -9,6 +9,7 @@ import type {
   reasonSchema,
 } from "@/lib/validation/common.schema";
 import { type z } from "zod";
+export type ViewerId = string | null | undefined;
 export type ReasonInput = z.output<typeof reasonSchema>;
 export type EntityLabelDto = z.output<typeof entityLabelSchema>;
 export type PersonRefDto = z.output<typeof personRefSchema>;

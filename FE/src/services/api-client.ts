@@ -1,27 +1,32 @@
-import { metaSchema } from "@/lib/validation/common.schema";
 import { ContractError } from "@/types/api/error";
 import axios, {
   type AxiosRequestConfig,
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from "axios";
-import { z } from "zod";
+import type { z } from "zod";
 import { normalizeHttpError } from "./http-error";
 
-export type RequestOptions = Pick<AxiosRequestConfig, "signal"> & {
-  scenario?: string;
-  skipAuthRefresh?: boolean;
-};
+declare module "axios" {
+  interface AxiosRequestConfig {
+    schema?: z.ZodType;
+    skipAuthRefresh?: boolean;
+    scenario?: string;
+    key?: string;
+    version?: number;
+  }
+}
+
+export type RequestOptions = Pick<
+  AxiosRequestConfig,
+  "signal" | "scenario" | "skipAuthRefresh"
+>;
 export type MutationOptions = RequestOptions & {
   key: string;
   version?: number;
 };
 export type VersionOptions = MutationOptions & { version: number };
-type HttpConfig = InternalAxiosRequestConfig<unknown> &
-  Partial<MutationOptions> & {
-    replay?: boolean;
-  };
-export const skipAuthRefreshConfig: RequestOptions = { skipAuthRefresh: true };
+type HttpConfig = InternalAxiosRequestConfig<unknown> & { replay?: boolean };
 
 let accessToken: string | null = null;
 let refreshHandler: (() => Promise<void>) | null = null;
@@ -68,38 +73,37 @@ apiClient.interceptors.request.use((config: HttpConfig) => {
     config.headers.set("X-Mock-Scenario", config.scenario);
   return config;
 });
-apiClient.interceptors.response.use(undefined, async (error: unknown) => {
-  if (!axios.isAxiosError<unknown, unknown>(error)) throw error;
-  const config: HttpConfig | undefined = error.config;
-  if (
-    error.response?.status === 401 &&
-    config &&
-    !config.replay &&
-    !config.skipAuthRefresh &&
-    refreshHandler
-  ) {
-    config.replay = true;
-    await refreshAuth();
-    return apiClient.request<unknown>(config);
-  }
-  throw await normalizeHttpError(error);
-});
-
-export function parseResponse<T>(schema: z.ZodType<T>) {
-  const envelope = z.object({ data: schema, meta: metaSchema });
-  return (response: AxiosResponse<unknown>): T => {
-    const result = envelope.safeParse(response.data);
-    if (!result.success) throw new ContractError();
-    return result.data.data;
-  };
-}
-export function parseFile(response: AxiosResponse<Blob>): Blob {
-  const type = String(response.headers["content-type"] ?? "");
-  if (
-    !type ||
-    /(?:application\/(?:problem\+)?json|text\/html)/i.test(type) ||
-    !response.headers["content-disposition"]
-  )
-    throw new ContractError("Chưa thể tải tệp lúc này. Vui lòng thử lại.");
-  return response.data;
-}
+apiClient.interceptors.response.use(
+  (response: AxiosResponse<unknown>) => {
+    if (response.config.responseType === "blob") {
+      const type = String(response.headers["content-type"] ?? "");
+      if (
+        !type ||
+        /(?:application\/(?:problem\+)?json|text\/html)/i.test(type) ||
+        !response.headers["content-disposition"]
+      )
+        throw new ContractError("Chưa thể tải tệp lúc này. Vui lòng thử lại.");
+    } else if (response.config.schema) {
+      const result = response.config.schema.safeParse(response.data);
+      if (!result.success) throw new ContractError();
+      response.data = result.data;
+    }
+    return response;
+  },
+  async (error: unknown) => {
+    if (!axios.isAxiosError<unknown, unknown>(error)) throw error;
+    const config: HttpConfig | undefined = error.config;
+    if (
+      error.response?.status === 401 &&
+      config &&
+      !config.replay &&
+      !config.skipAuthRefresh &&
+      refreshHandler
+    ) {
+      config.replay = true;
+      await refreshAuth();
+      return apiClient.request<unknown>(config);
+    }
+    throw await normalizeHttpError(error);
+  },
+);

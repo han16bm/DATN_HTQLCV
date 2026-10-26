@@ -1,13 +1,13 @@
 "use client";
-import { PermissionGate } from "@/components/layout/permission-gate";
+
 import { PageHeader, SectionSelect } from "@/components/ui/page";
-import * as Popover from "@radix-ui/react-popover";
 import {
   prioritySchema,
   taskStatusSchema,
 } from "@/features/tasks/schemas/task.schema";
 import { label } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
+import * as Popover from "@radix-ui/react-popover";
 import { usePathname } from "next/navigation";
 import { type ReactNode } from "react";
 import { useListAnalyticsFilterOptionsQuery } from "../hooks/use-analytics-queries";
@@ -25,7 +25,7 @@ export function AnalyticsFrame({
   const f = useUrlFilters();
   const path = usePathname();
   return (
-    <PermissionGate permission="ANALYTICS_VIEW">
+    <>
       <PageHeader title={title} />
       <div className="section-toolbar">
         <SectionSelect
@@ -155,9 +155,10 @@ export function AnalyticsFrame({
       ) : (
         children
       )}
-    </PermissionGate>
+    </>
   );
 }
+
 function LookupFilter({
   kind,
   name,
@@ -174,7 +175,7 @@ function LookupFilter({
     projectId: ["PERSON", "TEAM"].includes(kind)
       ? f.get("projectId") || undefined
       : undefined,
-    teamId: kind === "PERSON" ? f.get("teamId") || undefined : undefined,
+    teamId: name === "assigneeId" ? f.get("teamId") || undefined : undefined,
     pageSize: 100,
   });
   return (

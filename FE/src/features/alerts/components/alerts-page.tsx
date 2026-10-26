@@ -1,25 +1,17 @@
 "use client";
-import { PermissionGate } from "@/components/layout/permission-gate";
-import { Badge, DataTable, DetailLink, PageHeader } from "@/components/ui/page";
+
 import { PageSkeleton } from "@/components/ui/loading";
+import { Badge, DataTable, DetailLink, PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
-import { alertStatusSchema } from "@/features/alerts/schemas/alerts.schema";
 import { useListAnalyticsFilterOptionsQuery } from "@/features/analytics/hooks/use-analytics-queries";
 import { label, options } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { z } from "zod";
 import { useListAlertsQuery } from "../hooks/use-alerts-queries";
+import { alertStatusSchema } from "../schemas/alerts.schema";
 export const severity = z.enum(["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"]);
 
 export function AlertsPage() {
-  return (
-    <PermissionGate permission="ANALYTICS_VIEW">
-      <AlertsList />
-    </PermissionGate>
-  );
-}
-
-function AlertsList() {
   const f = useUrlFilters();
   const status = alertStatusSchema.safeParse(f.get("status"));
   const level = severity.safeParse(f.get("severity"));
@@ -75,6 +67,12 @@ function AlertsList() {
           </label>
         ))}
       </section>
+      {projects.isError && (
+        <QueryErrorState
+          error={projects.error}
+          retry={() => void projects.refetch()}
+        />
+      )}
       {q.isError ? (
         <QueryErrorState error={q.error} retry={() => void q.refetch()} />
       ) : !q.data ? (

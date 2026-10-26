@@ -1,67 +1,71 @@
-import type { TimeLogsApi } from "@/features/time-logs/api/time-logs.contract";
+import { page } from "@/lib/validation/common.schema";
+import {
+  type RequestOptions,
+  type VersionOptions,
+  apiClient,
+} from "@/services/api-client";
 import {
   timeLogChangeResultSchema,
   timeLogSchema,
-} from "@/features/time-logs/schemas/time-logs.schema";
-import {
-  type CreateTimeLogInput,
-  type TimeLogQuery,
-  type UpdateTimeLogInput,
-  type VoidTimeLogInput,
-} from "@/features/time-logs/types/time-logs.types";
-import { page } from "@/lib/validation/common.schema";
-import type { RequestOptions, VersionOptions } from "@/services/api-client";
-import { apiClient, parseResponse } from "@/services/api-client";
-export const timeLogsService: TimeLogsApi = {
-  listTimeLogs(
+} from "../schemas/time-logs.schema";
+import type {
+  CreateTimeLogInput,
+  TimeLogChangeResult,
+  TimeLogList,
+  TimeLogQuery,
+  UpdateTimeLogInput,
+  VoidTimeLogInput,
+} from "../types/time-logs.types";
+
+export const timeLogsService = {
+  async listTimeLogs(
     taskId: string,
     query: TimeLogQuery = {},
     options: RequestOptions = {},
   ) {
-    return apiClient
-      .get<unknown>(`/tasks/${encodeURIComponent(taskId)}/time-logs`, {
-        ...options,
-        params: query,
-      })
-      .then(parseResponse(page(timeLogSchema)));
+    const response = await apiClient.get<TimeLogList>(
+      `/tasks/${encodeURIComponent(taskId)}/time-logs`,
+      { ...options, params: query, schema: page(timeLogSchema) },
+    );
+    return response.data;
   },
-  createTimeLog(
+
+  async createTimeLog(
     taskId: string,
     payload: CreateTimeLogInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .post<unknown>(
-        `/tasks/${encodeURIComponent(taskId)}/time-logs`,
-        payload,
-        options,
-      )
-      .then(parseResponse(timeLogChangeResultSchema));
+    const response = await apiClient.post<TimeLogChangeResult>(
+      `/tasks/${encodeURIComponent(taskId)}/time-logs`,
+      payload,
+      { ...options, schema: timeLogChangeResultSchema },
+    );
+    return response.data;
   },
-  updateTimeLog(
+
+  async updateTimeLog(
     timeLogId: string,
     payload: UpdateTimeLogInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .patch<unknown>(
-        `/time-logs/${encodeURIComponent(timeLogId)}`,
-        payload,
-        options,
-      )
-      .then(parseResponse(timeLogChangeResultSchema));
+    const response = await apiClient.patch<TimeLogChangeResult>(
+      `/time-logs/${encodeURIComponent(timeLogId)}`,
+      payload,
+      { ...options, schema: timeLogChangeResultSchema },
+    );
+    return response.data;
   },
-  voidTimeLog(
+
+  async voidTimeLog(
     timeLogId: string,
     payload: VoidTimeLogInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .post<unknown>(
-        `/time-logs/${encodeURIComponent(timeLogId)}/void`,
-        payload,
-        options,
-      )
-      .then(parseResponse(timeLogChangeResultSchema));
+    const response = await apiClient.post<TimeLogChangeResult>(
+      `/time-logs/${encodeURIComponent(timeLogId)}/void`,
+      payload,
+      { ...options, schema: timeLogChangeResultSchema },
+    );
+    return response.data;
   },
 };

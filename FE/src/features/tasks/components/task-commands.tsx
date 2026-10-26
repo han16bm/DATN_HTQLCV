@@ -1,24 +1,32 @@
 "use client";
-import { VersionedSchemaForm } from "@/components/forms/versioned-schema-form";
+import { canManage } from "@/lib/auth/access";
+
+import { Form } from "@/components/forms/form";
+import { FormSelect, FormTextarea } from "@/components/forms/form-field";
+import type { FormOption } from "@/components/forms/form.types";
 import { HashDialog } from "@/components/ui/dialog";
 import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListProjectMembersQuery } from "@/features/project-members/hooks/use-project-members-queries";
-import { assignTaskSchema } from "@/features/tasks/schemas/task-form.schema";
-import { type TaskDto } from "@/features/tasks/types/tasks.types";
-import { hasPermission, useSession } from "@/lib/auth/session-context";
+import { useSession } from "@/lib/auth/session-context";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
+import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
 import { useHashDialog } from "@/lib/forms/use-hash-dialog";
+import { validationMessage } from "@/lib/forms/validation-message";
 import { reasonSchema } from "@/lib/validation/common.schema";
-import { emptySchema } from "@/lib/validation/request.schema";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
 import {
   useAssignTaskMutation,
   useCancelTaskMutation,
   usePauseTaskMutation,
   useStartTaskMutation,
 } from "../hooks/use-tasks-mutations";
+import { assignTaskSchema } from "../schemas/task-form.schema";
+import { type TaskDto } from "../types/tasks.types";
 type TaskDialogProps = {
   task: TaskDto;
   reload: () => Promise<{ data?: TaskDto }>;
@@ -30,7 +38,6 @@ export function TaskAssignmentDialog({ task, reload }: TaskDialogProps) {
     { pageSize: 100 },
     { enabled: dialog.name === "assignment" },
   );
-  const mutation = useAssignTaskMutation();
   return (
     <HashDialog
       name="assignment"
@@ -42,49 +49,74 @@ export function TaskAssignmentDialog({ task, reload }: TaskDialogProps) {
       ) : !members.data ? (
         <PageSkeleton variant="form" />
       ) : (
-        <VersionedSchemaForm
-          initial={task}
+        <AssignmentForm
+          task={task}
           reload={reload}
-          schema={assignTaskSchema}
-          fields={[
-            {
-              name: "assigneeId",
-              label: "Người nhận mới",
-              type: "select",
-              required: true,
-              options: members.data.items
-                .filter((m) => !m.endedAt && m.userId !== task.assigneeId)
-                .map((m) => ({ value: m.userId, label: m.user.displayName })),
-            },
-            {
-              name: "reason",
-              label: "Lý do bàn giao",
-              type: "textarea",
-              required: Boolean(task.assigneeId),
-              emptyAsUndefined: !task.assigneeId,
-            },
-          ]}
-          onSubmit={async (values, base) => {
-            await mutation.mutateAsync({
-              taskId: task.id,
-              payload: values,
-              version: base.version,
-            });
-            toast.success("Đã phân công công việc.");
-            dialog.close();
-          }}
-          submitLabel="Xác nhận phân công"
+          people={members.data.items
+            .filter((m) => !m.endedAt && m.userId !== task.assigneeId)
+            .map((m) => ({ value: m.userId, label: m.user.displayName }))}
         />
       )}
     </HashDialog>
   );
 }
+
+function AssignmentForm({
+  task,
+  reload,
+  people,
+}: TaskDialogProps & { people: FormOption[] }) {
+  const mutation = useAssignTaskMutation();
+  const dialog = useHashDialog();
+  const snapshot = useEditSnapshot(task);
+  const schema = assignTaskSchema.extend({
+    reason: task.assigneeId
+      ? reasonSchema.shape.reason
+      : z.string().trim().max(2000),
+  });
+  const form = useForm({
+    resolver: zodResolver(schema, { error: validationMessage }),
+    defaultValues: { assigneeId: "", reason: "" },
+  });
+  return (
+    <Form
+      compact
+      form={form}
+      onConflictReload={() => snapshot.load(reload)}
+      onConflictAccept={snapshot.accept}
+      compareFields={[
+        { name: "assigneeId", label: "Người nhận", options: people },
+      ]}
+      onSubmit={async ({ assigneeId, reason }) => {
+        await mutation.mutateAsync({
+          taskId: task.id,
+          payload: { assigneeId, ...(reason ? { reason } : {}) },
+          version: snapshot.base.version,
+        });
+        toast.success("Đã phân công công việc.");
+        dialog.close();
+      }}
+      submitLabel="Xác nhận phân công"
+    >
+      <FormSelect
+        label="Người nhận mới"
+        required
+        options={people}
+        {...form.register("assigneeId")}
+        error={form.formState.errors.assigneeId}
+      />
+      <FormTextarea
+        label="Lý do bàn giao"
+        required={Boolean(task.assigneeId)}
+        {...form.register("reason")}
+        error={form.formState.errors.reason}
+      />
+    </Form>
+  );
+}
+
 export function TaskExecutionDialog({ task, reload }: TaskDialogProps) {
   const { session } = useSession();
-  const dialog = useHashDialog();
-  const start = useStartTaskMutation();
-  const pause = usePauseTaskMutation();
-  const cancel = useCancelTaskMutation();
   const [choice, setChoice] = useState("");
   const actions = [
     ...(task.assigneeId === session?.user.id && task.status === "TODO"
@@ -93,7 +125,7 @@ export function TaskExecutionDialog({ task, reload }: TaskDialogProps) {
     ...(task.assigneeId === session?.user.id && task.status === "IN_PROGRESS"
       ? [{ value: "PAUSE", label: "Tạm dừng công việc" }]
       : []),
-    ...(hasPermission(session, "TASKS_MANAGE", task.projectId)
+    ...(canManage(session, task.projectId)
       ? [{ value: "CANCEL", label: "Hủy công việc" }]
       : []),
   ];
@@ -120,37 +152,63 @@ export function TaskExecutionDialog({ task, reload }: TaskDialogProps) {
         </select>
       </label>
       <div className="section-gap">
-        <VersionedSchemaForm
-          initial={task}
-          reload={reload}
+        <ExecutionForm
           key={action}
-          schema={action === "START" ? emptySchema : reasonSchema}
-          fields={
-            action === "START"
-              ? []
-              : [
-                  {
-                    name: "reason",
-                    label: action === "PAUSE" ? "Lý do tạm dừng" : "Lý do hủy",
-                    type: "textarea",
-                    required: true,
-                  },
-                ]
-          }
-          onSubmit={async (values, base) => {
-            const input = { taskId: task.id, version: base.version };
-            if ("reason" in values) {
-              await (action === "PAUSE" ? pause : cancel).mutateAsync({
-                ...input,
-                payload: { reason: values.reason },
-              });
-            } else await start.mutateAsync(input);
-            toast.success("Đã cập nhật trạng thái.");
-            dialog.close();
-          }}
-          submitLabel="Xác nhận"
+          action={action}
+          task={task}
+          reload={reload}
         />
       </div>
     </HashDialog>
+  );
+}
+
+function ExecutionForm({
+  action,
+  task,
+  reload,
+}: TaskDialogProps & { action: string }) {
+  const start = useStartTaskMutation();
+  const pause = usePauseTaskMutation();
+  const cancel = useCancelTaskMutation();
+  const dialog = useHashDialog();
+  const snapshot = useEditSnapshot(task);
+  const schema = reasonSchema.extend({
+    reason: action === "START" ? z.string() : reasonSchema.shape.reason,
+  });
+  type Values = z.input<typeof schema>;
+  const form = useForm<Values>({
+    resolver: zodResolver(schema, { error: validationMessage }),
+    defaultValues: { reason: "" },
+  });
+  const { errors } = form.formState;
+  return (
+    <Form
+      compact
+      form={form}
+      onConflictReload={() => snapshot.load(reload)}
+      onConflictAccept={snapshot.accept}
+      onSubmit={async (values) => {
+        const input = { taskId: task.id, version: snapshot.base.version };
+        if (action !== "START") {
+          await (action === "PAUSE" ? pause : cancel).mutateAsync({
+            ...input,
+            payload: { reason: values.reason },
+          });
+        } else await start.mutateAsync(input);
+        toast.success("Đã cập nhật trạng thái.");
+        dialog.close();
+      }}
+      submitLabel="Xác nhận"
+    >
+      {action !== "START" && (
+        <FormTextarea
+          label={action === "PAUSE" ? "Lý do tạm dừng" : "Lý do hủy"}
+          required
+          {...form.register("reason")}
+          error={errors.reason}
+        />
+      )}
+    </Form>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
-import { PermissionGate } from "@/components/layout/permission-gate";
+
+import { PageSkeleton } from "@/components/ui/loading";
 import {
   Badge,
   ButtonLink,
@@ -7,26 +8,15 @@ import {
   DetailLink,
   PageHeader,
 } from "@/components/ui/page";
-import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { useListUnitsQuery } from "@/features/organization/hooks/use-organization-queries";
-import {
-  systemRoleSchema,
-  userStatusSchema,
-} from "@/features/users/schemas/user.schema";
 import { label } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { useListUsersQuery } from "../hooks/use-users-queries";
+import { systemRoleSchema, userStatusSchema } from "../schemas/user.schema";
 
 export function UsersPage() {
-  return (
-    <PermissionGate permission="USERS_MANAGE">
-      <UsersList />
-    </PermissionGate>
-  );
-}
-function UsersList() {
   const filter = useUrlFilters();
   const status = userStatusSchema.safeParse(filter.get("status"));
   const role = systemRoleSchema.safeParse(filter.get("systemRole"));
@@ -101,6 +91,12 @@ function UsersList() {
           </select>
         </label>
       </section>
+      {units.isError && (
+        <QueryErrorState
+          error={units.error}
+          retry={() => void units.refetch()}
+        />
+      )}
       {query.isPending && <PageSkeleton variant="table" />}
       {query.isError && (
         <QueryErrorState

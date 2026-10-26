@@ -1,6 +1,6 @@
 "use client";
-import type { SessionDto } from "@/features/auth/types/auth.types";
 import { Avatar } from "@/components/ui/avatar";
+import type { SessionDto } from "@/features/auth/types/auth.types";
 import { label } from "@/lib/format";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { ChevronDown, LogOut, UserRound } from "lucide-react";

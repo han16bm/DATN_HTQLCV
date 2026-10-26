@@ -1,116 +1,141 @@
-import type { OrganizationApi } from "@/features/organization/api/organization.contract";
-import {
-  teamRowSchema,
-  teamSchema,
-} from "@/features/organization/schemas/team.schema";
-import {
-  unitRowSchema,
-  unitSchema,
-} from "@/features/organization/schemas/unit.schema";
-import {
-  type CreateTeamInput,
-  type CreateUnitInput,
-  type DeactivateTeamInput,
-  type DeactivateUnitInput,
-  type ReplaceTeamMembersInput,
-  type TeamQuery,
-  type UnitQuery,
-  type UpdateTeamInput,
-  type UpdateUnitInput,
-} from "@/features/organization/types/organization.types";
 import { page } from "@/lib/validation/common.schema";
-import type {
-  MutationOptions,
-  RequestOptions,
-  VersionOptions,
+import {
+  type MutationOptions,
+  type RequestOptions,
+  type VersionOptions,
+  apiClient,
 } from "@/services/api-client";
-import { apiClient, parseResponse } from "@/services/api-client";
-export const organizationService: OrganizationApi = {
-  listUnits(query: UnitQuery = {}, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>("/units", { ...options, params: query })
-      .then(parseResponse(page(unitRowSchema)));
+import { teamRowSchema, teamSchema } from "../schemas/team.schema";
+import { unitRowSchema, unitSchema } from "../schemas/unit.schema";
+import type {
+  CreateTeamInput,
+  CreateUnitInput,
+  DeactivateTeamInput,
+  DeactivateUnitInput,
+  ReplaceTeamMembersInput,
+  TeamDto,
+  TeamList,
+  TeamQuery,
+  UnitDto,
+  UnitList,
+  UnitQuery,
+  UpdateTeamInput,
+  UpdateUnitInput,
+} from "../types/organization.types";
+
+export const organizationService = {
+  async listUnits(query: UnitQuery = {}, options: RequestOptions = {}) {
+    const response = await apiClient.get<UnitList>("/units", {
+      ...options,
+      params: query,
+      schema: page(unitRowSchema),
+    });
+    return response.data;
   },
-  getUnit(unitId: string, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>(`/units/${encodeURIComponent(unitId)}`, options)
-      .then(parseResponse(unitSchema));
+
+  async getUnit(unitId: string, options: RequestOptions = {}) {
+    const response = await apiClient.get<UnitDto>(
+      `/units/${encodeURIComponent(unitId)}`,
+      { ...options, schema: unitSchema },
+    );
+    return response.data;
   },
-  createUnit(payload: CreateUnitInput, options: MutationOptions) {
-    return apiClient
-      .post<unknown>("/units", payload, options)
-      .then(parseResponse(unitSchema));
+
+  async createUnit(payload: CreateUnitInput, options: MutationOptions) {
+    const response = await apiClient.post<UnitDto>("/units", payload, {
+      ...options,
+      schema: unitSchema,
+    });
+    return response.data;
   },
-  updateUnit(
+
+  async updateUnit(
     unitId: string,
     payload: UpdateUnitInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .patch<unknown>(`/units/${encodeURIComponent(unitId)}`, payload, options)
-      .then(parseResponse(unitSchema));
+    const response = await apiClient.patch<UnitDto>(
+      `/units/${encodeURIComponent(unitId)}`,
+      payload,
+      { ...options, schema: unitSchema },
+    );
+    return response.data;
   },
-  deactivateUnit(
+
+  async deactivateUnit(
     unitId: string,
     payload: DeactivateUnitInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .post<unknown>(
-        `/units/${encodeURIComponent(unitId)}/deactivate`,
-        payload,
-        options,
-      )
-      .then(parseResponse(unitSchema));
+    const response = await apiClient.post<UnitDto>(
+      `/units/${encodeURIComponent(unitId)}/deactivate`,
+      payload,
+      { ...options, schema: unitSchema },
+    );
+    return response.data;
   },
-  listTeams(query: TeamQuery = {}, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>("/teams", { ...options, params: query })
-      .then(parseResponse(page(teamRowSchema)));
+
+  async listTeams(query: TeamQuery = {}, options: RequestOptions = {}) {
+    const response = await apiClient.get<TeamList>("/teams", {
+      ...options,
+      params: query,
+      schema: page(teamRowSchema),
+    });
+    return response.data;
   },
-  getTeam(teamId: string, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>(`/teams/${encodeURIComponent(teamId)}`, options)
-      .then(parseResponse(teamSchema));
+
+  async getTeam(teamId: string, options: RequestOptions = {}) {
+    const response = await apiClient.get<TeamDto>(
+      `/teams/${encodeURIComponent(teamId)}`,
+      { ...options, schema: teamSchema },
+    );
+    return response.data;
   },
-  createTeam(payload: CreateTeamInput, options: MutationOptions) {
-    return apiClient
-      .post<unknown>("/teams", payload, options)
-      .then(parseResponse(teamSchema));
+
+  async createTeam(payload: CreateTeamInput, options: MutationOptions) {
+    const response = await apiClient.post<TeamDto>("/teams", payload, {
+      ...options,
+      schema: teamSchema,
+    });
+    return response.data;
   },
-  updateTeam(
+
+  async updateTeam(
     teamId: string,
     payload: UpdateTeamInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .patch<unknown>(`/teams/${encodeURIComponent(teamId)}`, payload, options)
-      .then(parseResponse(teamSchema));
+    const response = await apiClient.patch<TeamDto>(
+      `/teams/${encodeURIComponent(teamId)}`,
+      payload,
+      { ...options, schema: teamSchema },
+    );
+    return response.data;
   },
-  replaceTeamMembers(
+
+  async replaceTeamMembers(
     teamId: string,
     payload: ReplaceTeamMembersInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .put<unknown>(
-        `/teams/${encodeURIComponent(teamId)}/members`,
-        payload,
-        options,
-      )
-      .then(parseResponse(teamSchema));
+    const response = await apiClient.put<TeamDto>(
+      `/teams/${encodeURIComponent(teamId)}/members`,
+      payload,
+      { ...options, schema: teamSchema },
+    );
+    return response.data;
   },
-  deactivateTeam(
+
+  async deactivateTeam(
     teamId: string,
     payload: DeactivateTeamInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .post<unknown>(
-        `/teams/${encodeURIComponent(teamId)}/deactivate`,
-        payload,
-        options,
-      )
-      .then(parseResponse(teamSchema));
+    const response = await apiClient.post<TeamDto>(
+      `/teams/${encodeURIComponent(teamId)}/deactivate`,
+      payload,
+      { ...options, schema: teamSchema },
+    );
+    return response.data;
   },
 };

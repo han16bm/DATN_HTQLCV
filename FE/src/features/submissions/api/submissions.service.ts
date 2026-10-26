@@ -1,89 +1,102 @@
-import type { SubmissionsApi } from "@/features/submissions/api/submissions.contract";
+import { page } from "@/lib/validation/common.schema";
+import {
+  type RequestOptions,
+  type VersionOptions,
+  apiClient,
+} from "@/services/api-client";
 import {
   reviewRowSchema,
   submissionResultSchema,
   submissionRowSchema,
   submissionSchema,
-} from "@/features/submissions/schemas/submissions.schema";
-import {
-  type ApproveSubmissionInput,
-  type CreateSubmissionInput,
-  type RequestSubmissionRevisionInput,
-  type ReviewQueueQuery,
-  type SubmissionQuery,
-} from "@/features/submissions/types/submissions.types";
-import { page } from "@/lib/validation/common.schema";
-import type { RequestOptions, VersionOptions } from "@/services/api-client";
-import { apiClient, parseResponse } from "@/services/api-client";
-export const submissionsService: SubmissionsApi = {
-  listSubmissions(
+} from "../schemas/submissions.schema";
+import type {
+  ApproveSubmissionInput,
+  CreateSubmissionInput,
+  RequestSubmissionRevisionInput,
+  ReviewQueueList,
+  ReviewQueueQuery,
+  SubmissionDto,
+  SubmissionList,
+  SubmissionQuery,
+  SubmissionResult,
+} from "../types/submissions.types";
+
+export const submissionsService = {
+  async listSubmissions(
     taskId: string,
     query: SubmissionQuery = {},
     options: RequestOptions = {},
   ) {
-    return apiClient
-      .get<unknown>(`/tasks/${encodeURIComponent(taskId)}/submissions`, {
-        ...options,
-        params: query,
-      })
-      .then(parseResponse(page(submissionRowSchema)));
+    const response = await apiClient.get<SubmissionList>(
+      `/tasks/${encodeURIComponent(taskId)}/submissions`,
+      { ...options, params: query, schema: page(submissionRowSchema) },
+    );
+    return response.data;
   },
-  getSubmission(
+
+  async getSubmission(
     taskId: string,
     submissionId: string,
     options: RequestOptions = {},
   ) {
-    return apiClient
-      .get<unknown>(
-        `/tasks/${encodeURIComponent(taskId)}/submissions/${encodeURIComponent(submissionId)}`,
-        options,
-      )
-      .then(parseResponse(submissionSchema));
+    const response = await apiClient.get<SubmissionDto>(
+      `/tasks/${encodeURIComponent(taskId)}/submissions/${encodeURIComponent(submissionId)}`,
+      { ...options, schema: submissionSchema },
+    );
+    return response.data;
   },
-  createSubmission(
+
+  async createSubmission(
     taskId: string,
     payload: CreateSubmissionInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .post<unknown>(
-        `/tasks/${encodeURIComponent(taskId)}/submissions`,
-        payload,
-        options,
-      )
-      .then(parseResponse(submissionResultSchema));
+    const response = await apiClient.post<SubmissionResult>(
+      `/tasks/${encodeURIComponent(taskId)}/submissions`,
+      payload,
+      { ...options, schema: submissionResultSchema },
+    );
+    return response.data;
   },
-  approveSubmission(
+
+  async approveSubmission(
     taskId: string,
     submissionId: string,
     payload: ApproveSubmissionInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .post<unknown>(
-        `/tasks/${encodeURIComponent(taskId)}/submissions/${encodeURIComponent(submissionId)}/approve`,
-        payload,
-        options,
-      )
-      .then(parseResponse(submissionResultSchema));
+    const response = await apiClient.post<SubmissionResult>(
+      `/tasks/${encodeURIComponent(taskId)}/submissions/${encodeURIComponent(submissionId)}/approve`,
+      payload,
+      { ...options, schema: submissionResultSchema },
+    );
+    return response.data;
   },
-  requestSubmissionRevision(
+
+  async requestSubmissionRevision(
     taskId: string,
     submissionId: string,
     payload: RequestSubmissionRevisionInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .post<unknown>(
-        `/tasks/${encodeURIComponent(taskId)}/submissions/${encodeURIComponent(submissionId)}/request-revision`,
-        payload,
-        options,
-      )
-      .then(parseResponse(submissionResultSchema));
+    const response = await apiClient.post<SubmissionResult>(
+      `/tasks/${encodeURIComponent(taskId)}/submissions/${encodeURIComponent(submissionId)}/request-revision`,
+      payload,
+      { ...options, schema: submissionResultSchema },
+    );
+    return response.data;
   },
-  listReviewQueue(query: ReviewQueueQuery = {}, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>("/review-queue", { ...options, params: query })
-      .then(parseResponse(page(reviewRowSchema)));
+
+  async listReviewQueue(
+    query: ReviewQueueQuery = {},
+    options: RequestOptions = {},
+  ) {
+    const response = await apiClient.get<ReviewQueueList>("/review-queue", {
+      ...options,
+      params: query,
+      schema: page(reviewRowSchema),
+    });
+    return response.data;
   },
 };

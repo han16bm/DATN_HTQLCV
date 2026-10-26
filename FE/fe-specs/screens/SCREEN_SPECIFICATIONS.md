@@ -20,7 +20,7 @@ Giữ font DejaVu Sans, chữ 400–500, xanh trầm và nền trung tính, góc
 | S10 | Cổng quản lý nội bộ | projects | `/projects/[projectId]` | Nguyễn Minh · quản lý có quyền dự án |
 | S11 | Điều chỉnh dự án | projects | `/projects/[projectId]/edit` | Nguyễn Minh · quản lý có quyền dự án |
 | S12 | Thành viên dự án | project-members | `/projects/[projectId]/members` | Nguyễn Minh · quản lý có quyền dự án |
-| S13 | Quyền trên dự án | project-members | `/projects/[projectId]/permissions` | Nguyễn Minh · quản lý có quyền dự án |
+| S13 | Đổi vai trò thành viên | project-members | `/projects/[projectId]/members#member-role` | Nguyễn Minh · quản lý có quyền dự án |
 | S14 | Kết thúc dự án | projects | `/projects/[projectId]#close` | Nguyễn Minh · quản lý có quyền dự án |
 | S15 | Công việc | tasks | `/tasks` | Nguyễn Minh · quản lý có quyền dự án |
 | S16 | Bảng trạng thái công việc | tasks | `/tasks?view=board` | Nguyễn Minh · quản lý có quyền dự án |
@@ -348,45 +348,28 @@ Trạng thái và cách xử lý: xem UI_STATES.txt theo mã Sxx; trạng thái 
 | Vai trò dự án | `projectRole` | select | Tùy điều kiện/loại thao tác; xem schema và whitelist |
 | Lý do nếu kết thúc thành viên | `reason` | textarea | Tùy điều kiện/loại thao tác; xem schema và whitelist |
 
-Action và đích: Thêm thành viên → S12; Bàn giao công việc → S20; Phân quyền → S13; Kết thúc thành viên → S12.
+Action và đích: Thêm thành viên → S12; Bàn giao công việc → S20; Đổi vai trò → S13; Kết thúc thành viên → S12.
 
 Điều kiện/diễn giải: Bàn giao công việc trước khi kết thúc thành viên. Luôn duy trì ít nhất một người phụ trách hoạt động.
 
-Quy tắc triển khai: Thêm người có permissions mặc định []; cấp thêm qua S13. Kết thúc thành viên yêu cầu chọn đúng membershipId, reason và bàn giao việc mở.
+Quy tắc triển khai: Thành viên làm việc được giao; Leader/PM mang vai trò MANAGER trong dự án được quản lý dự án đó. Đổi vai trò qua dialog S13, không cấp quyền riêng. Kết thúc thành viên yêu cầu chọn đúng membershipId, reason và bàn giao việc mở.
 
 API: `listProjectMembers`; `addProjectMember`; `endProjectMembership`.
 
-## S13 — Quyền trên dự án
+## S13 — Đổi vai trò thành viên
 
-Màn/biểu mẫu phụ: đặc tả đầy đủ bằng văn bản, áp dụng DESIGN_SYSTEM và mẫu màn chính cùng feature.
-
-Persona trong ảnh chính: **Nguyễn Minh · quản lý có quyền dự án**. Áp dụng quyền từ phiên thực khi triển khai.
-
-Trạng thái và cách xử lý: xem UI_STATES.txt theo mã Sxx; trạng thái nghiệp vụ/AI ở BUSINESS_STATES.txt và ANALYSIS_FLOW.txt.
-
-- Feature: `project-members`; dạng khung: `permissions`; route: `/projects/[projectId]/permissions`.
-- Phạm vi xem/thao tác: Người có quyền MEMBERS_MANAGE trên dự án; xem danh sách theo phạm vi được cấp.
+- Feature: `project-members`; dialog trên `/projects/[projectId]/members#member-role`.
+- Người thực hiện: tài khoản MANAGER có vai trò OWNER/MANAGER đang hoạt động trong dự án.
 - Use Case: UC-P05.
 
 | Nhãn ô | Tên form | Control | Ghi chú |
 |---|---|---|---|
-| Thành viên* | `membershipId` | select | Có dấu * trong khung; kiểm tra điều kiện cụ thể trước submit |
-| Vai trò dự án* | `projectRole` | select | Có dấu * trong khung; kiểm tra điều kiện cụ thể trước submit |
-| Quản lý kế hoạch dự án | `canManageProject` | checkbox | Tùy điều kiện/loại thao tác; xem schema và whitelist |
-| Quản lý công việc | `canManageTasks` | checkbox | Tùy điều kiện/loại thao tác; xem schema và whitelist |
-| Quản lý thành viên | `canManageMembers` | checkbox | Tùy điều kiện/loại thao tác; xem schema và whitelist |
-| Nghiệm thu kết quả | `canReview` | checkbox | Tùy điều kiện/loại thao tác; xem schema và whitelist |
-| Xem thống kê và AI | `canViewAnalytics` | checkbox | Tùy điều kiện/loại thao tác; xem schema và whitelist |
-| Xử lý cảnh báo | `canManageAlerts` | checkbox | Tùy điều kiện/loại thao tác; xem schema và whitelist |
-| Lý do thay đổi* | `reason` | textarea | Có dấu * trong khung; kiểm tra điều kiện cụ thể trước submit |
+| Vai trò dự án* | `projectRole` | select | MEMBER hoặc MANAGER; MANAGER chỉ dành cho tài khoản Leader/PM |
+| Lý do thay đổi* | `reason` | textarea | Bắt buộc, ghi audit |
 
-Action và đích: Lưu quyền → S12.
+Mở từ hành động Đổi vai trò trên dòng thành viên; lưu thành công đóng dialog và làm mới danh sách/phiên. Không sửa OWNER hoặc tư cách đã kết thúc. Đổi người phụ trách ở S11. Giữ If-Match, idempotency và đối chiếu khi 412; backend kiểm tra role/phạm vi. Không có checkbox hoặc mảng quyền cấp lẻ; người nghiệm thu vẫn phải khác người nộp.
 
-Điều kiện/diễn giải: Quyền hệ thống và quyền dự án được xét riêng. Người nghiệm thu phải khác người nộp kết quả.
-
-Quy tắc triển khai: Form checkbox phải map sang mảng Permission enum. Không sửa OWNER qua API này; đổi người phụ trách ở S11.
-
-API: `updateProjectMemberPermissions`.
+API: `updateProjectMemberRole`.
 
 ## S14 — Kết thúc dự án
 
@@ -1118,7 +1101,7 @@ RISK, WORKLOAD, BOTTLENECK, SUMMARY và METRIC dùng cùng mẫu S43. Nội dung
 | UC-P02 | `updateProject`, `activateProject`, `getProjectClosureChecks`, `completeProject`, `cancelProject`, `listProjectHistory` | S10, S11, S14 |
 | UC-P03 | `listProjects`, `getProject` | S02, S08, S10 |
 | UC-P04 | `listProjectMembers`, `addProjectMember`, `endProjectMembership` | S12 |
-| UC-P05 | `updateProjectMemberPermissions` | S13 |
+| UC-P05 | `updateProjectMemberRole` | S13 |
 | UC-T01 | `createTask` | S17 |
 | UC-T02 | `assignTask` | S20 |
 | UC-T03 | `updateTask`, `cancelTask` | S19, S21 |

@@ -1,37 +1,45 @@
-import type { AlertsApi } from "@/features/alerts/api/alerts.contract";
-import {
-  alertRowSchema,
-  alertSchema,
-} from "@/features/alerts/schemas/alerts.schema";
-import {
-  type AlertQuery,
-  type UpdateAlertInput,
-} from "@/features/alerts/types/alerts.types";
 import { page } from "@/lib/validation/common.schema";
-import type { RequestOptions, VersionOptions } from "@/services/api-client";
-import { apiClient, parseResponse } from "@/services/api-client";
-export const alertsService: AlertsApi = {
-  listAlerts(query: AlertQuery = {}, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>("/alerts", { ...options, params: query })
-      .then(parseResponse(page(alertRowSchema)));
+import {
+  type RequestOptions,
+  type VersionOptions,
+  apiClient,
+} from "@/services/api-client";
+import { alertRowSchema, alertSchema } from "../schemas/alerts.schema";
+import type {
+  AlertDto,
+  AlertList,
+  AlertQuery,
+  UpdateAlertInput,
+} from "../types/alerts.types";
+
+export const alertsService = {
+  async listAlerts(query: AlertQuery = {}, options: RequestOptions = {}) {
+    const response = await apiClient.get<AlertList>("/alerts", {
+      ...options,
+      params: query,
+      schema: page(alertRowSchema),
+    });
+    return response.data;
   },
-  getAlert(alertId: string, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>(`/alerts/${encodeURIComponent(alertId)}`, options)
-      .then(parseResponse(alertSchema));
+
+  async getAlert(alertId: string, options: RequestOptions = {}) {
+    const response = await apiClient.get<AlertDto>(
+      `/alerts/${encodeURIComponent(alertId)}`,
+      { ...options, schema: alertSchema },
+    );
+    return response.data;
   },
-  updateAlert(
+
+  async updateAlert(
     alertId: string,
     payload: UpdateAlertInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .patch<unknown>(
-        `/alerts/${encodeURIComponent(alertId)}`,
-        payload,
-        options,
-      )
-      .then(parseResponse(alertSchema));
+    const response = await apiClient.patch<AlertDto>(
+      `/alerts/${encodeURIComponent(alertId)}`,
+      payload,
+      { ...options, schema: alertSchema },
+    );
+    return response.data;
   },
 };

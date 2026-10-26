@@ -1,20 +1,22 @@
 "use client";
-import { VersionedSchemaForm } from "@/components/forms/versioned-schema-form";
+
+import { Form } from "@/components/forms/form";
+import { FormTextarea } from "@/components/forms/form-field";
 import { HashDialog } from "@/components/ui/dialog";
-import { PageSkeleton } from "@/components/ui/loading";
-import { QueryErrorState } from "@/components/ui/query-error-state";
 import { EvidenceUploader } from "@/features/attachments/components/evidence";
-import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
-import { createSubmissionSchema } from "@/features/submissions/schemas/submissions.schema";
-import { useGetTaskQuery } from "@/features/tasks/hooks/use-tasks-queries";
 import { type TaskDto } from "@/features/tasks/types/tasks.types";
 import { useSession } from "@/lib/auth/session-context";
+import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
 import { useHashDialog } from "@/lib/forms/use-hash-dialog";
+import { validationMessage } from "@/lib/forms/validation-message";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useCreateSubmissionMutation } from "../hooks/use-submissions-mutations";
+import { createSubmissionSchema } from "../schemas/submissions.schema";
 
 const formSchema = z
   .object({
@@ -28,12 +30,19 @@ const formSchema = z
           .map((v) => v.trim())
           .filter(Boolean),
       )
-      .pipe(createSubmissionSchema.shape.links.max(10)),
+      .pipe(createSubmissionSchema.shape.links),
+    attachmentIds: createSubmissionSchema.shape.attachmentIds,
   })
   .strict();
-export function SubmitResultDialog({ taskId }: { taskId: string }) {
-  const query = useGetTaskQuery(taskId);
-  const project = useGetProjectQuery(query.data?.projectId ?? "");
+export function SubmitResultDialog({
+  task,
+  active,
+  reload,
+}: {
+  task: TaskDto;
+  active: boolean;
+  reload: () => Promise<{ data?: TaskDto }>;
+}) {
   const { session } = useSession();
   const dialog = useHashDialog();
   return (
@@ -42,22 +51,19 @@ export function SubmitResultDialog({ taskId }: { taskId: string }) {
       title="Nộp kết quả công việc"
       description="Mỗi lần nộp lưu riêng hạn hoàn thành và tổng giờ công tại thời điểm nộp."
     >
-      {query.isError ? (
-        <QueryErrorState error={query.error} />
-      ) : !query.data ? (
-        <PageSkeleton variant="form" />
-      ) : query.data.assigneeId !== session?.user.id ||
-        query.data.status !== "IN_PROGRESS" ||
-        project.data?.status !== "ACTIVE" ? (
+      {task.assigneeId !== session?.user.id ||
+      task.status !== "IN_PROGRESS" ||
+      !active ? (
         <p>Công việc không còn ở trạng thái được phép nộp kết quả.</p>
-      ) : query.data.actualMinutes <= 0 ? (
+      ) : task.actualMinutes <= 0 ? (
         <p>Cần ghi nhận giờ công hợp lệ trước khi nộp.</p>
       ) : ["submit", "attachment"].includes(dialog.name) ? (
-        <SubmissionForm key={taskId} task={query.data} reload={query.refetch} />
+        <SubmissionForm key={task.id} task={task} reload={reload} />
       ) : null}
     </HashDialog>
   );
 }
+
 function SubmissionForm({
   task,
   reload,
@@ -67,8 +73,17 @@ function SubmissionForm({
     data?: TaskDto;
   }>;
 }) {
-  const [ids, setIds] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const snapshot = useEditSnapshot(task);
+  const form = useForm<
+    z.input<typeof formSchema>,
+    unknown,
+    z.output<typeof formSchema>
+  >({
+    resolver: zodResolver(formSchema, { error: validationMessage }),
+    defaultValues: { summary: "", links: "", attachmentIds: [] },
+  });
+  const { errors } = form.formState;
   const mutation = useCreateSubmissionMutation();
   const dialog = useHashDialog();
   const router = useRouter();
@@ -76,48 +91,49 @@ function SubmissionForm({
     <>
       <h3>Tiêu chí nghiệm thu</h3>
       <p className="preserve-lines">{task.acceptanceCriteria}</p>
-      <VersionedSchemaForm
-        initial={task}
-        reload={reload}
-        schema={formSchema}
-        defaults={{ summary: "", links: "" }}
-        fields={[
-          {
-            name: "summary",
-            label: "Tóm tắt kết quả",
-            type: "textarea",
-            required: true,
-          },
-          {
-            name: "links",
-            label: "Liên kết minh chứng",
-            type: "textarea",
-            hint: "Mỗi dòng một liên kết, tối đa 10 liên kết.",
-          },
+      <Form
+        form={form}
+        onConflictReload={() => snapshot.load(reload)}
+        onConflictAccept={snapshot.accept}
+        compareFields={[
+          { name: "acceptanceCriteria", label: "Tiêu chí nghiệm thu" },
         ]}
         submitDisabled={busy}
         submitLabel="Xác nhận nộp"
-        onSubmit={async (values, base) => {
-          if (busy) throw new Error("Vui lòng chờ tệp tải xong.");
+        onSubmit={async (values) => {
           await mutation.mutateAsync({
             taskId: task.id,
-            payload: createSubmissionSchema.parse({
-              ...values,
-              attachmentIds: ids,
-            }),
-            version: base.version,
+            payload: values,
+            version: snapshot.base.version,
           });
           dialog.close();
           toast.success("Đã nộp kết quả.");
           router.push(`/tasks/${task.id}/submissions`);
         }}
       >
+        <FormTextarea
+          label="Tóm tắt kết quả"
+          required
+          {...form.register("summary")}
+          error={errors.summary}
+        />
+        <FormTextarea
+          label="Liên kết minh chứng"
+          hint="Mỗi dòng một liên kết, tối đa 10 liên kết."
+          {...form.register("links")}
+          error={errors.links}
+        />
         <EvidenceUploader
           taskId={task.id}
-          onChange={setIds}
+          onChange={(ids) =>
+            form.setValue("attachmentIds", ids, {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
+          }
           onBusyChange={setBusy}
         />
-      </VersionedSchemaForm>
+      </Form>
     </>
   );
 }

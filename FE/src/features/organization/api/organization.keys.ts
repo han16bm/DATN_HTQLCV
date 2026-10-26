@@ -1,16 +1,15 @@
-import {
-  type TeamQuery,
-  type UnitQuery,
-} from "@/features/organization/types/organization.types";
+import type { ViewerId } from "@/types/common";
+import { type TeamQuery, type UnitQuery } from "../types/organization.types";
 export const organizationKeys = {
   all: ["organization"] as const,
-  viewer: (viewerId: string) => ["organization", viewerId] as const,
-  listUnits: (viewerId: string, query: UnitQuery) =>
-    ["organization", viewerId, "listUnits", query] as const,
-  getUnit: (viewerId: string, unitId: string) =>
-    ["organization", viewerId, "getUnit", unitId] as const,
-  listTeams: (viewerId: string, query: TeamQuery) =>
-    ["organization", viewerId, "listTeams", query] as const,
-  getTeam: (viewerId: string, teamId: string) =>
-    ["organization", viewerId, "getTeam", teamId] as const,
+  viewer: (viewerId: ViewerId) =>
+    ["organization", viewerId ?? "anonymous"] as const,
+  listUnits: (viewerId: ViewerId, query: UnitQuery) =>
+    [...organizationKeys.viewer(viewerId), "listUnits", query] as const,
+  getUnit: (viewerId: ViewerId, unitId: string) =>
+    [...organizationKeys.viewer(viewerId), "getUnit", unitId] as const,
+  listTeams: (viewerId: ViewerId, query: TeamQuery) =>
+    [...organizationKeys.viewer(viewerId), "listTeams", query] as const,
+  getTeam: (viewerId: ViewerId, teamId: string) =>
+    [...organizationKeys.viewer(viewerId), "getTeam", teamId] as const,
 };

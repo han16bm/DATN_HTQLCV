@@ -1,7 +1,8 @@
 "use client";
+
+import { HistoryTable } from "@/components/ui/history-table";
 import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
-import { HistoryTable } from "@/components/ui/history-table";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { useListTaskHistoryQuery } from "../hooks/use-tasks-queries";
 

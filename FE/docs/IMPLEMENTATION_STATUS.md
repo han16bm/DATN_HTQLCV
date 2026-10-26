@@ -1,6 +1,19 @@
 # Trạng thái triển khai
 
-Cập nhật 25/10/2026. Đã triển khai tuần tự các luồng chính từ S01 đến S43 theo kiến trúc tham khảo vietcd/frontend. Đây là bản FE dùng HTTP/MSW; chưa nối Gateway hoặc LLM thật và chưa nghiệm thu giao diện trên browser.
+## Điều chỉnh role ngày 26/10/2026
+
+Đã bỏ permissions khỏi seed/model/DTO/session và xóa trang phân quyền riêng. Chuyển S13 sang dialog Đổi vai trò tại danh sách thành viên; backend xét role và phạm vi cho request mới lẫn replay. Query keys nhận user ID nullable và xử lý anonymous tại hàm viewer, không còn lặp fallback trong hooks. Chi tiết tại [ARCHITECTURE.md](ARCHITECTURE.md#điều-chỉnh-role-ngày-26102026).
+
+Kiểm tra sau thay đổi: typecheck, lint, build, git diff --check và **153/153 tests ở 9 file đạt**. Các ca kiểm tra gồm role/phạm vi, chặn replay sau thu hồi vai trò, bảo vệ người phụ trách, giữ lịch sử thành viên, từ chối payload permissions cũ và giữ draft khi đổi vai trò gặp 412. Chưa QA trực quan trên browser hoặc nối BE thật.
+
+Cập nhật 26/10/2026. Đã triển khai tuần tự các luồng chính từ S01 đến S43 theo kiến trúc tham khảo vietcd/frontend. Đây là bản FE dùng HTTP/MSW; chưa nối Gateway hoặc LLM thật và chưa nghiệm thu giao diện trên browser.
+
+
+## Rà UI, luồng và tham số — 26/10/2026
+
+Đã sửa snapshot/412 cho thao tác tài khoản, ngừng sử dụng đơn vị/nhóm, kết thúc thành viên và nghiệm thu; dialog Task nhận entity/reload từ cha. Sửa bộ lọc phụ thuộc, phạm vi lookup owner/assignee, lỗi lookup và thông báo dữ liệu thiếu. Phạm vi toàn bộ 12 feature/82 service/83 HTTP route được ghi tại [REFACTOR_REVIEW.md](REFACTOR_REVIEW.md#rà-lại-ui-luồng-và-tham-số--26102026).
+
+Typecheck, lint, build, git diff --check và **167/167 tests ở 9 file đạt**; gồm 14 ca mới cho các lỗi trên. Lookup hiện lấy một trang tối đa 100 bản ghi và chưa bảo đảm đủ nhãn lịch sử; đây vẫn là giới hạn nguồn dữ liệu, không tuyên bố đã xử lý hết khi vượt phạm vi đó. Chưa QA trực quan trên browser.
 
 ## Phạm vi chức năng
 
@@ -10,7 +23,7 @@ Cập nhật 25/10/2026. Đã triển khai tuần tự các luồng chính từ 
 | S03–S05  | Tìm/lọc tài khoản, tạo/sửa, khóa thường/khẩn cấp, mở khóa, cấp lại mật khẩu, bảo vệ admin cuối, thu hồi phiên                                                       |
 | S06–S07  | Đơn vị cha/con, người phụ trách, tạo/sửa/ngừng sử dụng đơn vị và nhóm, thay thành viên nhóm                                                                         |
 | S08–S11  | Danh sách/chi tiết/tạo/sửa dự án, triển khai, kế hoạch và lịch sử trước/sau                                                                                         |
-| S12–S14  | Thêm/kết thúc thành viên, phân quyền trong thẩm quyền, bảo vệ OWNER, kiểm tra điều kiện kết thúc/hủy dự án                                                          |
+| S12–S14  | Thêm/kết thúc thành viên, đổi vai trò theo role hệ thống, bảo vệ OWNER, kiểm tra điều kiện kết thúc/hủy dự án                                                          |
 | S15–S21  | Danh sách/bảng trạng thái, bộ lọc URL, tạo/chi tiết/sửa/giao/bàn giao/bắt đầu/tạm dừng/hủy công việc, cập nhật ước lượng còn lại                                    |
 | S22–S23  | Ghi/sửa/VOID giờ công thủ công, ngày theo phân công, tổng mọi công việc không quá 1.440 phút/người/ngày                                                             |
 | S24–S28  | Nộp/nộp lại, lịch sử lần nộp, hàng chờ, đối chiếu tiêu chí và nghiệm thu/yêu cầu sửa, lịch sử công việc                                                             |
@@ -25,12 +38,12 @@ S16 dùng `/tasks?view=board`; các biểu mẫu phụ dùng hash dialog theo đ
 
 ## API mock và state
 
-Đủ **79 operation có handler HTTP**, được kiểm tra khớp trực tiếp với API theo feature:
+Đủ **83 endpoint HTTP (82 service và 1 URL ảnh đại diện)**, được kiểm tra khớp trực tiếp với API theo feature:
 
 | Feature         | Handler |
 | --------------- | ------: |
-| auth            |       4 |
-| users           |       7 |
+| auth            |       7 |
+| users           |       8 |
 | organization    |      11 |
 | projects        |       9 |
 | project-members |       4 |
@@ -43,13 +56,13 @@ S16 dùng `/tasks?view=board`; các biểu mẫu phụ dùng hash dialog theo đ
 | alerts          |       3 |
 
 - Validation theo contract 0.3.0 được chia theo thực thể/nhóm nghiệp vụ; DTO/query/payload/result nằm trong `types`. Các schema kết quả giống nhau dùng một định nghĩa chung; đã bỏ 55 alias DTO không được dùng. Giới hạn một time log được tách khỏi tổng phút báo cáo tuần.
-- Đã bỏ generator, endpoint metadata, generic feature hook, registry/manifest, các barrel ở gốc feature và route `/403`, `/404` dư thừa. API contract chỉ chứa interface; service gọi `apiClient.get/post/patch/put` rõ path/payload; hook dùng React Query và khai báo invalidation trực tiếp.
-- Các màn báo cáo, nghiệm thu, cảnh báo và phân tích có file riêng. Form dùng chung tách state, field, resolver, lỗi/xung đột; nghiệp vụ analytics được nhóm trong db.ts.
+- Đã bỏ generator, endpoint metadata, generic feature hook, registry/manifest, các barrel ở gốc feature và route `/403`, `/404` dư thừa. Không còn file contract lặp chữ ký; service gọi `apiClient.get/post/patch/put` rõ path/payload; hook dùng React Query và khai báo invalidation trực tiếp.
+- Các màn báo cáo, nghiệm thu, cảnh báo và phân tích có file riêng. Form nghiệp vụ khai báo useForm/zodResolver và field trực tiếp; phần dùng chung giữ control, pending, dirty và lỗi/xung đột; nghiệp vụ analytics được nhóm trong db.ts.
 - Đã áp dụng tiêu chí code gọn: rút tên schema/DTO/query/input/args, bỏ parse input lặp trong service và key, dùng cùng query đã chuẩn hóa cho cache và HTTP. Analytics chia sẻ scope giữa khung lọc và màn; DB dùng query đã được handler parse. Form trả output có kiểu theo schema; tạo/sửa dùng callback riêng và props chung, không parse lại nguyên dữ liệu đã kiểm tra. Payload được ghép mới hoặc chỉ gồm phần thay đổi vẫn được kiểm tra.
 - HTTP transport còn hai file `services/api-client.ts` và `services/http-error.ts`; kiểu options, token bộ nhớ và refresh được đặt cùng client, không còn `api.types.ts`/`auth-session.ts` riêng.
 - Đã chuyển cả 12 feature sang Axios trực tiếp. Query dùng `params`, payload dùng JSON/FormData, download dùng Blob; Axios quản lý timeout và hủy request. Interceptor giữ bearer, refresh dùng chung, If-Match và idempotency; response tiếp tục được kiểm tra bằng Zod.
-- Đã rà luồng lưu/truyền biến: bỏ 13 kiểm tra session lặp trước `hasPermission`, điều kiện enabled trùng kiểm tra ID ở hook, 5 guard lặp trong form sửa, props taskId/tiêu chí trùng task và query phụ chỉ lấy refetch trong dialog. Request ticket khởi tạo một lần; DTO CRUD/cảnh báo không parse lặp trước handler. Refresh báo cáo không gọi HTTP preview hai lần; submit DB dùng cùng preview cho kiểm tra và snapshot. HTTP parse envelope/data một lần và dùng chung meta schema.
-- Đã thống nhất API/params theo catalog: 14 schema danh sách dùng chung pagination/search; `Pagination` suy ra từ schema; 126 trường ID dùng quy tắc opaque chung và 17 query hook dùng ID đã chuẩn hóa cho cache/HTTP/quyền. Đổi tên `ReportPreviewQuery`, `FilterOptionsQuery`, bỏ alias query/input trùng; service nhận ID → query/payload → options. Không thêm slug hoặc đổi 79 route hiện có. Test đối chiếu cả service và handler với catalog.
+- Đã rà luồng lưu/truyền biến: bỏ 13 kiểm tra session lặp trước `hasPermission`, điều kiện enabled trùng kiểm tra ID ở hook, 5 guard lặp trong form sửa, props taskId/tiêu chí trùng task và query phụ chỉ lấy refetch trong dialog. Request ticket khởi tạo một lần; DTO CRUD/cảnh báo không parse lặp trước handler. Refresh báo cáo không gọi HTTP preview hai lần; submit DB dùng cùng preview cho kiểm tra và snapshot. HTTP kiểm tra response trực tiếp bằng schema một lần.
+- Đã thống nhất API/params theo catalog: 14 schema danh sách dùng chung pagination/search; `Pagination` suy ra từ schema; ID dùng quy tắc opaque chung tại form/HTTP; hook truyền resourceId trực tiếp cho cache/HTTP, không parse hoặc tạo alias id/parentId. Đổi tên `ReportPreviewQuery`, `FilterOptionsQuery`, bỏ alias query/input trùng; service nhận ID → query/payload → options. Không thêm slug hoặc đổi 83 route hiện có. Test đối chiếu cả service và handler với catalog.
 - Đã rà model/DTO và ranh giới thư mục: phân biệt model lưu trữ và dữ liệu tính khi đọc trong db.ts; bỏ tổng giờ/cờ quá hạn khỏi model task, bỏ freshness/quyền phản hồi theo viewer khỏi model analysis. Snapshot đã chốt vẫn được lưu. Tách 7 form/thao tác quản trị khỏi màn cha, 2 phần hiển thị phân tích và PermissionGate khỏi UI chung. FormOption riêng cho UI; permission schema dùng chung; upload hiển thị policy từ HTTP thay vì hardcode.
 - Handler chỉ chuyển HTTP sang DB và định dạng status/cookie/header. CRUD, quyền, version, audit, transaction và scheduler nằm ở DB; fixture/policy trong data.json. Có test ngăn đưa nghiệp vụ hoặc seed trở lại handler và ngăn DB phụ thuộc Request/MSW.
 - Mock đã gom về 18 file: data.json, db.ts, browser.ts, node.ts và folder handlers (12 nhóm API, http.ts, index.ts). Xóa 35 file cũ trong db/data/utils và reset.ts; đưa toàn bộ fixture báo cáo/audit/tệp/analysis vào data.json. Handler vẫn chỉ xử lý HTTP và gọi DB; reset tại node.ts xóa state/receipt, hủy scheduler và nạp lại seed. Bỏ 14 alias viewer và các hàm chuyển tiếp analytics không cần thiết.
@@ -129,6 +142,36 @@ Lượt bố trí chi tiết hồ sơ theo vietcd: đã đối chiếu InfoTab/A
 Kiểm tra lượt này: typecheck, lint, build và **135/135 tests ở 9 file** đạt; git diff --check đạt. Các ca màn hình được cập nhật cho form mở sẵn, email readonly, tên tệp và chuyển tab; kiểm tra lưu liên tiếp hai lần không bị stale version, avatar HTTP cập nhật menu, giữ file/draft khi lỗi hoặc hủy bỏ thay đổi và đổi mật khẩu không giữ credential trong cache. Không đổi API/DTO/model. Chưa kiểm tra bố cục trực tiếp trên trình duyệt theo giới hạn bên dưới.
 
 Đã thêm responsive dùng chung cho các thẻ: container theo vùng nội dung/card/form, lưới KPI và skeleton tự chia cột, các vùng chi tiết/tài khoản/đối chiếu/phân tích xếp dọc khi hẹp. Tiêu đề/nút/đính kèm và footer bảng có thể xuống hàng; giảm padding thẻ nhỏ, sửa min-width của fieldset/control và giữ cuộn ngang bên trong bảng/tab. Chỉ thay CSS, không đổi API/DTO/nghiệp vụ. Typecheck, lint, build, git diff --check và **135/135 tests ở 9 file** đạt. Kiểm tra trực quan browser vẫn chờ nghiệm thu do giới hạn công cụ đã ghi nhận.
+
+Đã đối chiếu luồng avatar với account-page/avatar-crop-dialog của vietcd: chọn tệp mở Radix dialog cắt ảnh bằng react-easy-crop, kéo/chạm/phím và zoom 1–3, xác nhận tạo ảnh 512×512 rồi upload qua HTTP/MSW. Hủy/Escape/đóng không hỏi bỏ lưu; cùng tệp có thể chọn lại, URL tạm được thu hồi. Giữ crop khi xử lý ảnh/upload lỗi và đối chiếu version khi 412; thành công vẫn ở mục ảnh và cập nhật menu. Loại bỏ SchemaForm/callback/ảnh preview cũ riêng ở mục avatar; form thông tin/mật khẩu giữ dirty guard. Không đổi API/DTO/model.
+
+Typecheck, lint, build, git diff --check và **138/138 tests ở 9 file** đạt. Kiểm thử dùng cropper thật với giả lập geometry/canvas của JSDOM, xác nhận kéo/zoom thay đổi pixel gửi vào Canvas và chỉ byte ảnh đã cắt được upload/download qua HTTP. Bao phủ hủy/Escape, chọn lại cùng tệp, giới hạn ảnh, lỗi mã hóa và đối chiếu 412 giữ vùng cắt; các luồng thông tin/mật khẩu tiếp tục đạt. Chưa kiểm tra trực quan thao tác cắt trên trình duyệt do giới hạn công cụ bên dưới.
+
+Theo yêu cầu dùng response trực tiếp như vietcd, đã bỏ lớp bọc data/meta và error/meta: success là DTO, collection giữ items/pagination, lỗi là code/message/fieldErrors?/details?. Xóa metaSchema/requestId/serverTime, đổi errorResponseSchema phẳng và parseResponse kiểm tra trực tiếp response.data. MSW và idempotency replay trả cùng JSON DTO/status/header; không thêm tương thích định dạng cũ. Các service giữ schema nghiệp vụ và luồng Axios → MSW → DB; download/avatar binary, auth/refresh, quyền/version/idempotency và độ trễ giữ nguyên. Cập nhật các ca đọc JSON gốc và kiểm tra response/lỗi sai định dạng, cùng tài liệu API/DTO/rule.
+
+Typecheck, lint, build, git diff --check và **139/139 tests ở 9 file** đạt. Các kiểm thử đọc body trước client parse xác nhận collection chỉ có items/pagination, profile/detail không bọc data, lỗi 401/422 phẳng và fieldErrors giữ path. Response DTO hoặc lỗi sai hình dạng bị từ chối; các ca replay/version, refresh, upload/download binary và luồng UI tiếp tục đạt. Kiểm thử qua HTTP/MSW, chưa nối backend thật.
+
+Đã chuyển 82 hàm của 12 service sang cách viết async/await như vietcd: const response = await apiClient.<method><DTO>(...), return response.data. Dùng DTO/List/Result có sẵn, thêm LoginResponse suy từ schema cho token response của auth; không sao chép interface hoặc tạo registry. Service khai báo schema trong config; interceptor kiểm tra JSON/binary và trả dữ liệu đã parse, bỏ parseResponse/parseFile cùng chuỗi .then ở service. Import nội bộ feature dùng đường dẫn tương đối, khoảng cách method thống nhất. Giữ luồng HTTP/MSW, token ngoài Query cache, refresh/cancellation/version/idempotency và định dạng DTO đã thống nhất.
+
+Typecheck, lint, build, git diff --check và **139/139 tests ở 9 file** đạt. Kiểm thử HTTP xác nhận response sai vẫn bị từ chối, trường ngoài DTO được loại trước khi trả service, download kiểm tra header và lỗi JSON trong Blob, refresh một lần cho 401 đồng thời và cancellation không thành lỗi retry. Rà source không còn <unknown>/chuỗi .then hoặc helper parseResponse/parseFile trong service. Không đổi giao diện/API contract hoặc thêm kiểm thử chỉ để khớp cách viết hàm.
+
+## Refactor toàn bộ theo vietcd — 25/10/2026
+
+Đã lần 12 feature và 82 hàm service đến nơi gọi trong ứng dụng; HTTP catalog vẫn đủ 83 route, gồm tài nguyên avatar. [REFACTOR_REVIEW.md](REFACTOR_REVIEW.md) ghi đầy đủ từng hàm, URL, hook/nơi điều phối và các điểm giữ theo nghiệp vụ.
+
+Form chuyển sang useForm có kiểu, zodResolver và JSX field trực tiếp. Bỏ SchemaForm/VersionedSchemaForm, resolver metadata và kiểu Record cho giá trị biểu mẫu; Form dùng chung chỉ quản lý hiển thị/pending/lỗi/dirty/conflict, ReasonForm dùng lại biểu mẫu một lý do. Chọn schema và default riêng cho tạo/sửa, không giữ mã dự án/đơn vị/mật khẩu khởi tạo/thành viên trong nhánh không dùng. Schema patch tái dùng whitelist và constraint của create; changedFields giữ kiểu nên bỏ parse patch lặp. Minh chứng cùng state của form nộp kết quả; bỏ giới hạn links khai báo lặp và parse lại payload đã kiểm tra.
+
+Query giữ một bước chuẩn hóa trước key và HTTP, không dùng query sai để tắt tải vô thời hạn; lỗi vẫn đi qua API. Bỏ 26 options chưa có nơi truyền. Mutation dùng useIdempotentRequest cho 43 thao tác cần khóa; giữ khóa khi lỗi và kết thúc sau thành công, không lặp retry:false. Giữ cache riêng theo viewer, invalidation, xử lý mất quyền, ticket cho credential/file, version/412 và polling AI. Service viết trực tiếp với kiểu DTO, bỏ 12 file interface *.contract.ts lặp chữ ký; HTTP vẫn chỉ có api-client.ts và http-error.ts. Import nội bộ feature dùng đường dẫn tương đối. MSW tiếp tục chặn HTTP và gọi DB tạm, không thêm đường gọi mock trực tiếp.
+
+Kiểm tra cuối: **typecheck, lint, build, git diff --check và 145/145 tests ở 9 file đạt**. Các ca mới bao phủ lỗi filter qua HTTP, giao việc không có lý do thừa, bắt đầu/tạm dừng, tạo/sửa/VOID giờ công với đúng nguồn version, đánh dấu cảnh báo đã đọc, retry giữ/đổi khóa, patch dự án không gửi hoặc kiểm tra trường bất biến, lỗi form tiếng Việt và lỗi phần tử liên kết. Giữ các ca quyền/cache/412/upload/avatar/nghiệm thu/báo cáo/AI trước đó. Chưa kiểm tra bố cục trực tiếp trên trình duyệt hoặc nối backend thật.
+
+## Điều hướng theo role, bỏ hasPermission — 25/10/2026
+
+Đã xóa hasPermission và PermissionGate khỏi FE. Sidebar và WorkspaceShell dùng cùng canVisit trong lib/auth/access.ts; role quyết định trang/menu và bị chặn trước khi mount query khi nhập URL trực tiếp. Bỏ kiểm tra quyền view trong enabled của các hook. Phần canAct của lượt này đã được thay bằng canManage theo role/phạm vi ở lượt 26/10; không tự cấp quyền ghi cho Admin. Dọn 9 component chỉ chuyển tiếp sau khi bỏ gate. Session DTO chỉ còn user/projectAccess, bỏ systemPermissions không còn consumer; backend vẫn kiểm tra role/phạm vi/thao tác độc lập.
+
+403/410 xóa dữ liệu cũ nhưng giữ query lỗi để observer không tự tạo request lặp sau khi bỏ chặn quyền trong hook. Các ca mới kiểm tra Manager thấy trang theo role khi không có quyền trang cấp lẻ, Nhân viên không được mở trang quản lý dù Session chứa quyền dự án, truy cập URL trực tiếp bị chặn trước request, phạm vi API bị từ chối và snapshot hết hạn không tải lại vô hạn.
+
+Typecheck, lint, build, git diff --check và **152/152 tests ở 9 file đạt**. Không thay API nghiệp vụ hoặc cấp thêm quyền backend; Session response đã rút gọn và tài liệu DTO cập nhật tương ứng. Chưa QA trực quan trên browser hoặc nối BE thật.
 
 ## Phần cần nghiệm thu hoặc BE xác nhận
 

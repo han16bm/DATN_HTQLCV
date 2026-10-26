@@ -17,27 +17,3 @@ export const Session = createContext<SessionContext>({
   signOut: async () => {},
 });
 export const useSession = () => useContext(Session);
-export function hasPermission(
-  session: SessionDto | null,
-  permission: string,
-  projectId?: string,
-) {
-  if (!session) return false;
-  if (
-    permission === "ANALYTICS_VIEW" &&
-    session.systemPermissions.includes("ANALYTICS_VIEW")
-  )
-    return true;
-  if (projectId)
-    return session.projectAccess.some(
-      (p) =>
-        p.projectId === projectId &&
-        p.permissions.some((v) => v === permission),
-    );
-  return (
-    session.systemPermissions.some((v) => v === permission) ||
-    session.projectAccess.some((p) =>
-      p.permissions.some((v) => v === permission),
-    )
-  );
-}

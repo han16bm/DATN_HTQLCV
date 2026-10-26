@@ -1,24 +1,34 @@
+import type { ViewerId } from "@/types/common";
 import {
   type AnalyticsQuery,
   type FilterOptionsQuery,
-} from "@/features/analytics/types/analytics.types";
+} from "../types/analytics.types";
 export const analyticsKeys = {
   all: ["analytics"] as const,
-  viewer: (viewerId: string) => ["analytics", viewerId] as const,
-  getDashboard: (viewerId: string, query: AnalyticsQuery) =>
-    ["analytics", viewerId, "getDashboard", query] as const,
-  getDeadlineRisks: (viewerId: string, query: AnalyticsQuery) =>
-    ["analytics", viewerId, "getDeadlineRisks", query] as const,
-  getWorkload: (viewerId: string, query: AnalyticsQuery) =>
-    ["analytics", viewerId, "getWorkload", query] as const,
-  getBottlenecks: (viewerId: string, query: AnalyticsQuery) =>
-    ["analytics", viewerId, "getBottlenecks", query] as const,
-  getAnalysisSummary: (viewerId: string, query: AnalyticsQuery) =>
-    ["analytics", viewerId, "getAnalysisSummary", query] as const,
-  getAnalysisJob: (viewerId: string, jobId: string) =>
-    ["analytics", viewerId, "getAnalysisJob", jobId] as const,
-  getAnalysisDetail: (viewerId: string, analysisId: string) =>
-    ["analytics", viewerId, "getAnalysisDetail", analysisId] as const,
-  listAnalyticsFilterOptions: (viewerId: string, query: FilterOptionsQuery) =>
-    ["analytics", viewerId, "listAnalyticsFilterOptions", query] as const,
+  viewer: (viewerId: ViewerId) =>
+    ["analytics", viewerId ?? "anonymous"] as const,
+  getDashboard: (viewerId: ViewerId, query: AnalyticsQuery) =>
+    [...analyticsKeys.viewer(viewerId), "getDashboard", query] as const,
+  getDeadlineRisks: (viewerId: ViewerId, query: AnalyticsQuery) =>
+    [...analyticsKeys.viewer(viewerId), "getDeadlineRisks", query] as const,
+  getWorkload: (viewerId: ViewerId, query: AnalyticsQuery) =>
+    [...analyticsKeys.viewer(viewerId), "getWorkload", query] as const,
+  getBottlenecks: (viewerId: ViewerId, query: AnalyticsQuery) =>
+    [...analyticsKeys.viewer(viewerId), "getBottlenecks", query] as const,
+  getAnalysisSummary: (viewerId: ViewerId, query: AnalyticsQuery) =>
+    [...analyticsKeys.viewer(viewerId), "getAnalysisSummary", query] as const,
+  getAnalysisJob: (viewerId: ViewerId, jobId: string) =>
+    [...analyticsKeys.viewer(viewerId), "getAnalysisJob", jobId] as const,
+  getAnalysisDetail: (viewerId: ViewerId, analysisId: string) =>
+    [
+      ...analyticsKeys.viewer(viewerId),
+      "getAnalysisDetail",
+      analysisId,
+    ] as const,
+  listAnalyticsFilterOptions: (viewerId: ViewerId, query: FilterOptionsQuery) =>
+    [
+      ...analyticsKeys.viewer(viewerId),
+      "listAnalyticsFilterOptions",
+      query,
+    ] as const,
 };

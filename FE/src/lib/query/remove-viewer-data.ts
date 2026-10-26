@@ -1,15 +1,30 @@
+import { ApiError } from "@/types/api/error";
 import { type QueryClient } from "@tanstack/react-query";
-export async function removeViewerData(client: QueryClient, viewerId: string) {
+
+export async function removeViewerData(
+  client: QueryClient,
+  viewerId: string,
+  feature?: string,
+) {
   const filter = {
     predicate: (q: { queryKey: readonly unknown[] }) =>
-      q.queryKey[0] !== "auth" && q.queryKey[1] === viewerId,
+      q.queryKey[1] === viewerId &&
+      (feature ? q.queryKey[0] === feature : q.queryKey[0] !== "auth"),
   };
   await client.cancelQueries(filter);
-  client.removeQueries(filter);
+  for (const query of client.getQueryCache().findAll(filter)) {
+    const error = query.state.error;
+    if (error instanceof ApiError && [403, 410].includes(error.status)) {
+      // Keep the error entry, without old data, so mounted observers do not refetch forever.
+      query.setState({ data: undefined, dataUpdatedAt: 0 });
+    } else client.removeQueries({ queryKey: query.queryKey, exact: true });
+  }
   for (const mutation of client.getMutationCache().getAll())
     if (
       mutation.options.mutationKey?.[1] === viewerId &&
-      mutation.options.mutationKey?.[0] !== "auth"
+      (feature
+        ? mutation.options.mutationKey?.[0] === feature
+        : mutation.options.mutationKey?.[0] !== "auth")
     )
       client.getMutationCache().remove(mutation);
 }

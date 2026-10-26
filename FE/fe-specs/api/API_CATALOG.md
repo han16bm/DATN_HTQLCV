@@ -2,7 +2,7 @@
 
 Contract đề xuất **0.3.0** · Tài liệu **0.4** · cập nhật 24/10/2026. Có 79 operation, gồm các operation nghiệp vụ, chi tiết LLM và phản hồi điểm nghẽn. Mọi request vẫn đi qua public Gateway.
 
-JSON thành công là SuccessEnvelope<ResponseDTO>; lỗi là ErrorEnvelope. GET không gửi body. Request DTO gồm params/query/body tách biệt. Dữ liệu nested theo DTO_MODELS.md. Tất cả field label/ref mới là read-only; không thêm vào request create/update.
+Điều chỉnh theo yêu cầu ngày 25/10/2026: JSON thành công trả ResponseDTO trực tiếp; danh sách là {items, pagination}, lỗi là ErrorDTO phẳng {code, message, fieldErrors?, details?}. Không bọc data/meta hoặc error/meta, không gửi requestId/serverTime. GET không gửi body. Request DTO gồm params/query/body tách biệt. Dữ liệu nested theo DTO_MODELS.md. Tất cả field label/ref mới là read-only; không thêm vào request create/update.
 
 LLM có sẵn chạy qua adapter BE. Số liệu do BE tính. GET tổng quan/danh sách/chi tiết không gọi LLM; mở S43 có thể chủ động gọi createAnalysisJob REUSE_OR_CREATE một lần nếu BE cho phép và chưa có kết quả/job. Xem LLM_ANALYSIS.md và API_CHANGELOG_LLM.md.
 
@@ -47,7 +47,7 @@ LLM có sẵn chạy qua adapter BE. Số liệu do BE tính. GET tổng quan/da
 | [listProjectHistory](#listprojecthistory) | `GET /api/projects/:projectId/history` | 200 | useQuery | S10 |
 | [listProjectMembers](#listprojectmembers) | `GET /api/projects/:projectId/members` | 200 | useQuery | S12 |
 | [addProjectMember](#addprojectmember) | `POST /api/projects/:projectId/members` | 201 | useMutation | S12 |
-| [updateProjectMemberPermissions](#updateprojectmemberpermissions) | `PATCH /api/projects/:projectId/members/:membershipId` | 200 | useMutation | S13 |
+| [updateProjectMemberRole](#updateprojectmemberrole) | `PATCH /api/projects/:projectId/members/:membershipId` | 200 | useMutation | S13 |
 | [endProjectMembership](#endprojectmembership) | `POST /api/projects/:projectId/members/:membershipId/end` | 200 | useMutation | S12 |
 | [listTasks](#listtasks) | `GET /api/tasks` | 200 | useQuery | S02, S15, S16, S26 |
 | [getTask](#gettask) | `GET /api/tasks/:taskId` | 200 | useQuery | S18 |
@@ -1620,10 +1620,9 @@ Object rỗng `{}`; không có trường nghiệp vụ.
 | Trường | Kiểu | Bắt buộc | Ràng buộc / ý nghĩa |
 |---|---|---|---|
 | `userId` | string | Có | độ dài ≥ 1; độ dài ≤ 100; Tài khoản của thành viên/người ghi theo đúng model. |
-| `projectRole` | enum(MANAGER, MEMBER) | Có | Nhãn vai trò trên một dự án; quyền thực tế nằm trong permissions. |
-| `permissions` | array<enum(USERS_MANAGE, ORGANIZATION_MANAGE, PROJECT_CREATE, PROJECT_MANAGE, MEMBERS_MANAGE, TASKS_MANAGE, TASKS_REVIEW, ANALYTICS_VIEW, ALERTS_MANAGE)> | Có | Mảng enum quyền trong thẩm quyền; không gửi boolean từ form trực tiếp. |
+| `projectRole` | enum(MANAGER, MEMBER) | Có | Vai trò xác định thao tác cố định trong dự án; OWNER/MANAGER chỉ dành cho tài khoản Leader/PM. |
 
-FE chỉ được gửi: `userId`, `projectRole`, `permissions`.
+FE chỉ được gửi: `userId`, `projectRole`.
 
 ### Response DTO
 
@@ -1631,28 +1630,28 @@ FE chỉ được gửi: `userId`, `projectRole`, `permissions`.
 
 ### Trường thay đổi phía BE / mock
 
-`id`, `projectId`, `joinedAt`, `endedAt=null`, `version`, `createdAt`, `updatedAt`, `audit`.
-Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghiệp vụ; giữ giá trị gốc và createdAt. Các projection nhãn được dựng từ nguồn ID, không nhận từ FE.
+`id`, `projectId`, `userId`, `projectRole`, `endedAt=null`, `version`, `audit`.
+Tăng version và ghi audit; giữ ID và lịch sử tư cách. Nhãn người được dựng từ userId, không nhận từ FE.
 
 ### Điều kiện và lỗi
 
 - Tài khoản hoạt động; không trùng thành viên đang hoạt động
-- Không cấp vượt quyền; OWNER chỉ qua thay đổi người phụ trách dự án
+- MANAGER chỉ dành cho tài khoản Leader/PM; OWNER chỉ qua thay đổi người phụ trách dự án
 - 401: sai/hết phiên; 403: thiếu quyền; 404: không tìm thấy trong phạm vi; 409: xung đột nghiệp vụ; 412: version cũ; 422: lỗi field; 429/5xx/network: giữ nội dung và thử lại có kiểm soát. Response sai DTO thành ContractError.
 
 ### Cache sau thao tác
 
 `project-members`, `auth`; ánh xạ đúng scope trong ma trận React Query.
 
-## updateProjectMemberPermissions
+## updateProjectMemberRole
 
 `PATCH /api/projects/:projectId/members/:membershipId` → HTTP 200
 
 - Feature `project-members` · Màn S13 · UC UC-P05.
-- DTO đích: `UpdateProjectMemberPermissionsRequestDTO`, `UpdateProjectMemberPermissionsResponseDTO`.
+- DTO đích: `UpdateProjectMemberRoleRequestDTO`, `UpdateProjectMemberRoleResponseDTO`.
 - Phiên: bắt buộc. Quyền bổ sung: MEMBERS_MANAGE.
 - If-Match: bắt buộc; thiếu 428, version cũ 412. Idempotency-Key: bắt buộc, giữ khi retry cùng payload.
-- Cách gọi: useMutation; hook/adapter đề nghị `useUpdateProjectMemberPermissionsMutation`.
+- Cách gọi: useMutation; hook/adapter đề nghị `useUpdateProjectMemberRoleMutation`.
 
 ### Params DTO
 
@@ -1669,11 +1668,10 @@ Object rỗng `{}`; không có trường nghiệp vụ.
 
 | Trường | Kiểu | Bắt buộc | Ràng buộc / ý nghĩa |
 |---|---|---|---|
-| `projectRole` | enum(MANAGER, MEMBER) | Có | Nhãn vai trò trên một dự án; quyền thực tế nằm trong permissions. |
-| `permissions` | array<enum(USERS_MANAGE, ORGANIZATION_MANAGE, PROJECT_CREATE, PROJECT_MANAGE, MEMBERS_MANAGE, TASKS_MANAGE, TASKS_REVIEW, ANALYTICS_VIEW, ALERTS_MANAGE)> | Có | Mảng enum quyền trong thẩm quyền; không gửi boolean từ form trực tiếp. |
+| `projectRole` | enum(MANAGER, MEMBER) | Có | Vai trò xác định thao tác cố định trong dự án; OWNER/MANAGER chỉ dành cho tài khoản Leader/PM. |
 | `reason` | string | Có | độ dài ≥ 1; độ dài ≤ 2000; Lý do của thao tác; ghi audit, không mass assign vào entity. |
 
-FE chỉ được gửi: `projectRole`, `permissions`, `reason`.
+FE chỉ được gửi: `projectRole`, `reason`.
 
 ### Response DTO
 
@@ -1681,13 +1679,13 @@ FE chỉ được gửi: `projectRole`, `permissions`, `reason`.
 
 ### Trường thay đổi phía BE / mock
 
-`version`, `updatedAt`, `audit`.
-Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghiệp vụ; giữ giá trị gốc và createdAt. Các projection nhãn được dựng từ nguồn ID, không nhận từ FE.
+`projectRole`, `version`, `audit`.
+Tăng version và ghi audit; giữ ID và lịch sử tư cách. Nhãn người được dựng từ userId, không nhận từ FE.
 
 ### Điều kiện và lỗi
 
 - Không sửa OWNER bằng API này
-- Chỉ cấp quyền trong thẩm quyền, giữ người phụ trách cuối cùng
+- Vai trò MANAGER chỉ dành cho tài khoản Leader/PM; không cấp từng quyền riêng. Giữ người phụ trách hiện tại
 - 401: sai/hết phiên; 403: thiếu quyền; 404: không tìm thấy trong phạm vi; 409: xung đột nghiệp vụ; 412: version cũ; 422: lỗi field; 429/5xx/network: giữ nội dung và thử lại có kiểm soát. Response sai DTO thành ContractError.
 - Nguồn version cho If-Match: **Membership** đang hiển thị.
 
@@ -1730,8 +1728,8 @@ FE chỉ được gửi: `reason`.
 
 ### Trường thay đổi phía BE / mock
 
-`endedAt`, `version`, `updatedAt`, `audit`.
-Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghiệp vụ; giữ giá trị gốc và createdAt. Các projection nhãn được dựng từ nguồn ID, không nhận từ FE.
+`endedAt`, `version`, `audit`.
+Tăng version và ghi audit; giữ ID và lịch sử tư cách. Nhãn người được dựng từ userId, không nhận từ FE.
 
 ### Điều kiện và lỗi
 
@@ -3834,7 +3832,7 @@ Object rỗng strict.
 
 ### Response DTO
 
-SuccessEnvelope<Analytics.AnalysisFeedbackDTO>; BE cấp id, analysisId, snapshotId, actorId/actor, createdAt và audit. Xem [DTO](DTO_MODELS.md#analyticsanalysisfeedbackdto).
+Analytics.AnalysisFeedbackDTO; BE cấp id, analysisId, snapshotId, actorId/actor, createdAt và audit. Xem [DTO](DTO_MODELS.md#analyticsanalysisfeedbackdto).
 
 ### Điều kiện và lỗi
 
@@ -3877,7 +3875,7 @@ Không có body. Chỉ gửi các query field nêu trên; không tự khai scope
 
 ### Response DTO
 
-SuccessEnvelope<PageDTO<Shared.EntityLabelDTO>>. items chỉ id/name; PERSON dùng name là displayName, không lộ UserDTO. pagination có page/pageSize/total. Xem [DTO lookup](DTO_MODELS.md#dto-cho-lookup-bộ-lọc-phân-tích).
+PageDTO<Shared.EntityLabelDTO>. items chỉ id/name; PERSON dùng name là displayName, không lộ UserDTO. pagination có page/pageSize/total. Xem [DTO lookup](DTO_MODELS.md#dto-cho-lookup-bộ-lọc-phân-tích).
 
 ### Điều kiện, lỗi và cache
 
@@ -3895,7 +3893,7 @@ Scope tổng hợp: query thiếu unitId/projectId dùng đơn vị mặc địn
 
 Avatar nhận JPG, PNG hoặc WebP, dung lượng lớn hơn 0 và tối đa 2 MB. Kiểm tra loại/dung lượng tại schema và chữ ký tệp tại DB. Tệp không hợp lệ không lưu bất kỳ thay đổi nào. Tên và avatar được cập nhật trong cùng transaction.
 
-Yêu cầu bearer, If-Match từ session.user.version và Idempotency-Key. Response 200 là SuccessEnvelope<SessionDTO>; user thêm version và avatarUrl nullable. Phiên hết hạn trả 401; dữ liệu ngoài whitelist/ảnh sai trả 422; trùng tên đăng nhập 409; version cũ 412 và giữ form để đối chiếu. Không tự retry mutation bằng khóa mới.
+Yêu cầu bearer, If-Match từ session.user.version và Idempotency-Key. Response 200 là SessionDTO; user thêm version và avatarUrl nullable. Phiên hết hạn trả 401; dữ liệu ngoài whitelist/ảnh sai trả 422; trùng tên đăng nhập 409; version cũ 412 và giữ form để đối chiếu. Không tự retry mutation bằng khóa mới.
 
 Thành công cập nhật Query cache phiên từ response và invalidate dữ liệu của người xem để nhãn người dùng được làm mới. Credential và byte ảnh không lưu trong MutationCache; biến mutation dùng ticket tạm. Hồ sơ chỉ mở form sau nút; email/đơn vị/vai trò hiển thị ở phần thông tin.
 
@@ -3909,7 +3907,7 @@ Mock giữ avatarId trong model và byte ảnh trong DB tạm; reload/reset xóa
 
 `PUT /api/auth/me/password` đổi mật khẩu của chính tài khoản trong phiên. JSON strict chỉ gồm currentPassword (1–128 ký tự) và newPassword (8–128 ký tự), không trim mật khẩu. Mật khẩu mới phải khác mật khẩu hiện tại; DB kiểm tra currentPassword khớp mật khẩu đang lưu. Không nhận userId, vai trò, mật khẩu xác nhận hoặc các field hồ sơ.
 
-Yêu cầu bearer và Idempotency-Key; không dùng If-Match vì currentPassword là điều kiện cập nhật. Thành công 200 SuccessEnvelope<{ok:true}>; không trả credential hoặc cả hồ sơ. Phiên hiện tại tiếp tục hoạt động. Sai mật khẩu hiện tại trả 422 với field currentPassword; dữ liệu yếu/thừa trường trả 422; không có phiên hợp lệ trả 401/403. Request giống nhau cùng khóa replay kết quả, không đổi mật khẩu/audit lần nữa. Không thay đổi version hồ sơ vì không sửa trường hồ sơ.
+Yêu cầu bearer và Idempotency-Key; không dùng If-Match vì currentPassword là điều kiện cập nhật. Thành công 200 {ok:true}; không trả credential hoặc cả hồ sơ. Phiên hiện tại tiếp tục hoạt động. Sai mật khẩu hiện tại trả 422 với field currentPassword; dữ liệu yếu/thừa trường trả 422; không có phiên hợp lệ trả 401/403. Request giống nhau cùng khóa replay kết quả, không đổi mật khẩu/audit lần nữa. Không thay đổi version hồ sơ vì không sửa trường hồ sơ.
 
 Form có Mật khẩu hiện tại/Mật khẩu mới/Nhập lại mật khẩu mới, kiểm tra xác nhận ở FE rồi chỉ gửi hai trường API. Form nằm trong mục Đổi mật khẩu của hồ sơ, mở sau thao tác; giữ nội dung khi lỗi, nhắc draft trước khi đổi mục. Hiển thị thành công bằng toast và dọn form. Mutation dùng ticket tạm, không giữ credential trong Query/Mutation cache, Zustand hoặc audit. Audit chỉ ghi sự kiện Đổi mật khẩu.
 
@@ -3917,7 +3915,7 @@ Form có Mật khẩu hiện tại/Mật khẩu mới/Nhập lại mật khẩu 
 
 `GET /api/users/:userId/profile` đọc hồ sơ công khai nội bộ của một thành viên. Mọi người đã đăng nhập được gọi; không yêu cầu USERS_MANAGE. Không có body, query, If-Match hoặc Idempotency-Key. userId là ID opaque theo quy tắc chung.
 
-Response 200 SuccessEnvelope<ProfileDto> với data là object phẳng chỉ gồm id, displayName, avatarUrl nullable, unit (tên đơn vị), systemRole và email. UI hiển thị card nhận diện và thông tin liên hệ email. Không có wrapper user, stats, projects hoặc pagination.
+Response 200 ProfileDto là object phẳng chỉ gồm id, displayName, avatarUrl nullable, unit (tên đơn vị), systemRole và email. UI hiển thị card nhận diện và thông tin liên hệ email. Không có wrapper user, stats, projects hoặc pagination.
 
 Không trả username, unitId, version, updatedAt, byte ảnh, thống kê công việc/dự án hoặc field chưa có nguồn. Thiếu phiên trả 401; chủ hồ sơ không tồn tại/bị khóa trả 404; mọi query thừa (kể cả page/pageSize) trả 422. Người xem có thể đọc hồ sơ liên hệ của thành viên khác đơn vị; quyền dự án/task tiếp tục được kiểm tra ở endpoint riêng.
 

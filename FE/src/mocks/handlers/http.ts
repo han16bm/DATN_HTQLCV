@@ -1,33 +1,30 @@
 import { fingerprint } from "@/lib/crypto/fingerprint";
 import { ApiError } from "@/types/api/error";
-import { HttpResponse, delay, type HttpResponseResolver } from "msw";
+import {
+  HttpResponse,
+  delay,
+  type HttpResponseResolver,
+  type JsonBodyType,
+} from "msw";
 import { z } from "zod";
 import {
   authorizeReplay,
-  now,
   sessionUser,
   withMockTransaction,
   type User,
 } from "../db";
 
 // Định dạng response.
-const meta = () => ({
-  requestId: crypto.randomUUID(),
-  serverTime: now(),
-});
 function toMockErrorResponse(error: unknown) {
   if (error instanceof z.ZodError) {
     return HttpResponse.json(
       {
-        error: {
-          code: "VALIDATION_ERROR",
-          message: "Thông tin gửi lên không hợp lệ.",
-          fieldErrors: error.issues.map((i) => ({
-            path: i.path.map(String),
-            message: i.message,
-          })),
-        },
-        meta: meta(),
+        code: "VALIDATION_ERROR",
+        message: "Thông tin gửi lên không hợp lệ.",
+        fieldErrors: error.issues.map((i) => ({
+          path: i.path.map(String),
+          message: i.message,
+        })),
       },
       { status: 422 },
     );
@@ -35,24 +32,18 @@ function toMockErrorResponse(error: unknown) {
   if (error instanceof ApiError)
     return HttpResponse.json(
       {
-        error: {
-          code: error.code,
-          message: error.message,
-          ...(error.fields.length ? { fieldErrors: error.fields } : {}),
-          ...(error.details ? { details: error.details } : {}),
-        },
-        meta: meta(),
+        code: error.code,
+        message: error.message,
+        ...(error.fields.length ? { fieldErrors: error.fields } : {}),
+        ...(error.details ? { details: error.details } : {}),
       },
       { status: error.status },
     );
   console.error("MSW handler failed", error);
   return HttpResponse.json(
     {
-      error: {
-        code: "INTERNAL_ERROR",
-        message: "Chưa thể xử lý yêu cầu. Vui lòng thử lại.",
-      },
-      meta: meta(),
+      code: "INTERNAL_ERROR",
+      message: "Chưa thể xử lý yêu cầu. Vui lòng thử lại.",
     },
     { status: 500 },
   );
@@ -61,12 +52,12 @@ function toMockErrorResponse(error: unknown) {
 // Xử lý HTTP dùng chung.
 type Receipt = {
   fingerprint: string;
-  data: unknown;
+  data: JsonBodyType;
   status: number;
   headers: Headers;
 };
 const receipts = new Map<string, Receipt>();
-const responseData = new WeakMap<Response, unknown>();
+const responseData = new WeakMap<Response, JsonBodyType>();
 export function resetReceipts() {
   receipts.clear();
 }
@@ -122,7 +113,7 @@ export function mockHandler(
     }
   };
 }
-export function mockJson<S extends z.ZodType>(
+export function mockJson<S extends z.ZodType<JsonBodyType>>(
   request: Request,
   data: unknown,
   schema: S,
@@ -132,7 +123,7 @@ export function mockJson<S extends z.ZodType>(
   const parsed = schema.safeParse(data);
   if (!parsed.success)
     throw new Error(`Invalid mock response: ${parsed.error.message}`);
-  let result: unknown = parsed.data;
+  let result: JsonBodyType = parsed.data;
   const scenario = request.headers.get("X-Mock-Scenario");
   if (scenario === "invalid-response") result = { invalid: true };
   else if (
@@ -146,10 +137,7 @@ export function mockJson<S extends z.ZodType>(
       items: [],
       pagination: { page: 1, pageSize: 20, total: 0 },
     };
-  const response = HttpResponse.json(
-    { data: result, meta: meta() },
-    { status, headers },
-  );
+  const response = HttpResponse.json(result, { status, headers });
   responseData.set(response, parsed.data);
   return response;
 }
@@ -157,7 +145,7 @@ type MockCommand = {
   operation: string;
   feature: string;
   viewer: User;
-  permission: string | null;
+  action: string | null;
   params: Record<string, string>;
   payload: Record<string, unknown>;
 };
@@ -185,7 +173,7 @@ export async function mockCommand(
       if (previous) {
         authorizeReplay(
           command.operation,
-          command.permission,
+          command.action,
           command.viewer,
           command.params,
           command.payload,
@@ -196,10 +184,10 @@ export async function mockCommand(
             "IDEMPOTENCY_CONFLICT",
             "Khóa gửi lặp đã dùng cho nội dung khác.",
           );
-        return HttpResponse.json(
-          { data: previous.data, meta: meta() },
-          { status: previous.status, headers: previous.headers },
-        );
+        return HttpResponse.json(previous.data, {
+          status: previous.status,
+          headers: previous.headers,
+        });
       }
       const response = await execute();
       const data = responseData.get(response);

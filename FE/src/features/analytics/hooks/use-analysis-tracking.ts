@@ -1,4 +1,5 @@
 "use client";
+
 import { useSession } from "@/lib/auth/session-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -9,7 +10,7 @@ export function useAnalysisTracking(jobId: string | null) {
   const [paused, setPaused] = useState(false);
   const [round, setRound] = useState(0);
   const client = useQueryClient();
-  const { session } = useSession();
+  const viewerId = useSession().session?.user.id;
   const seen = useRef<string | null>(null);
   useEffect(() => {
     if (!jobId) return;
@@ -29,12 +30,12 @@ export function useAnalysisTracking(jobId: string | null) {
       seen.current = terminal.id + terminal.status;
       void client.invalidateQueries({
         queryKey: analyticsKeys.getAnalysisDetail(
-          session?.user.id ?? "anonymous",
+          viewerId,
           terminal.analysisId,
         ),
       });
     }
-  }, [terminal, client, session?.user.id]);
+  }, [terminal, client, viewerId]);
   return {
     query,
     paused: paused && !terminal,

@@ -1,25 +1,42 @@
 "use client";
-import { SchemaForm } from "@/components/forms/schema-form";
-import { PageHeader, Panel } from "@/components/ui/page";
+
+import { Form } from "@/components/forms/form";
+import { FormInput, FormSelect } from "@/components/forms/form-field";
 import { PageSkeleton } from "@/components/ui/loading";
+import { PageHeader, Panel } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListProjectsQuery } from "@/features/projects/hooks/use-projects-queries";
-import {
-  createReportSchema,
-  periodTypeSchema,
-} from "@/features/reports/schemas/reports.schema";
 import { options } from "@/lib/format";
+import { validationMessage } from "@/lib/forms/validation-message";
 import { ApiError } from "@/types/api/error";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useCreateReportDraftMutation } from "../hooks/use-reports-mutations";
+import {
+  createReportSchema,
+  periodTypeSchema,
+} from "../schemas/reports.schema";
 export function NewReportPage() {
   const projects = useListProjectsQuery({ pageSize: 100 });
   const create = useCreateReportDraftMutation();
   const router = useRouter();
   const [existing, setExisting] = useState<string | null>(null);
+  const form = useForm({
+    resolver: zodResolver(
+      createReportSchema.pick({
+        projectId: true,
+        periodType: true,
+        periodStart: true,
+      }),
+      { error: validationMessage },
+    ),
+    defaultValues: { periodType: "DAILY" },
+  });
+  const { errors } = form.formState;
   return (
     <>
       <PageHeader
@@ -32,37 +49,9 @@ export function NewReportPage() {
         ) : !projects.data ? (
           <PageSkeleton variant="form" />
         ) : (
-          <SchemaForm
-            schema={createReportSchema.pick({
-              projectId: true,
-              periodType: true,
-              periodStart: true,
-            })}
-            fields={[
-              {
-                name: "projectId",
-                label: "Dự án",
-                type: "select",
-                required: true,
-                options: projects.data.items
-                  .filter((p) => p.status === "ACTIVE")
-                  .map((p) => ({ value: p.id, label: p.name })),
-              },
-              {
-                name: "periodType",
-                label: "Loại báo cáo",
-                type: "select",
-                required: true,
-                options: options(periodTypeSchema.options),
-              },
-              {
-                name: "periodStart",
-                label: "Ngày bắt đầu kỳ",
-                type: "date",
-                required: true,
-              },
-            ]}
-            defaults={{ periodType: "DAILY" }}
+          <Form
+            compact
+            form={form}
             submitLabel="Lấy dữ liệu và mở bản nháp"
             onSubmit={async (values) => {
               setExisting(null);
@@ -83,7 +72,31 @@ export function NewReportPage() {
                 throw cause;
               }
             }}
-          />
+          >
+            <FormSelect
+              label="Dự án"
+              required
+              options={projects.data.items
+                .filter((p) => p.status === "ACTIVE")
+                .map((p) => ({ value: p.id, label: p.name }))}
+              {...form.register("projectId")}
+              error={errors.projectId}
+            />
+            <FormSelect
+              label="Loại báo cáo"
+              required
+              options={options(periodTypeSchema.options)}
+              {...form.register("periodType")}
+              error={errors.periodType}
+            />
+            <FormInput
+              label="Ngày bắt đầu kỳ"
+              required
+              type="date"
+              {...form.register("periodStart")}
+              error={errors.periodStart}
+            />
+          </Form>
         )}
         {existing && (
           <p className="notice">

@@ -1,33 +1,32 @@
 "use client";
-import type {
-  LoginInput,
-  UpdateProfileArgs,
-  ChangePasswordInput,
-} from "@/features/auth/types/auth.types";
-import { authKeys } from "../api/auth.keys";
+
 import { useSession } from "@/lib/auth/session-context";
 import { createRequestTickets } from "@/lib/query/mutation-requests";
+import { useIdempotentRequest } from "@/lib/query/use-idempotent-request";
 import { useAccessErrorHandler } from "@/lib/query/use-query-access";
-import { useMutationAttempt } from "@/lib/query/use-mutation-attempt";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { authKeys } from "../api/auth.keys";
 import { authService } from "../api/auth.service";
+import type {
+  ChangePasswordInput,
+  LoginInput,
+  UpdateProfileArgs,
+} from "../types/auth.types";
 
 export function useChangePasswordMutation() {
-  const { session } = useSession();
+  const viewerId = useSession().session?.user.id;
   const handleError = useAccessErrorHandler();
-  const attempt = useMutationAttempt();
+  const run = useIdempotentRequest();
   const [requests] = useState(() =>
-    createRequestTickets(async (input: ChangePasswordInput) =>
-      authService.changePassword(input, { key: await attempt.keyFor(input) }),
+    createRequestTickets((input: ChangePasswordInput) =>
+      run(input, (key) => authService.changePassword(input, { key })),
     ),
   );
   const mutation = useMutation({
-    mutationKey: ["auth", session?.user.id ?? "anonymous", "changePassword"],
+    mutationKey: [...authKeys.viewer(viewerId), "changePassword"],
     mutationFn: requests.execute,
-    retry: false,
     onError: handleError,
-    onSuccess: () => attempt.reset(),
   });
   return {
     ...mutation,
@@ -38,25 +37,24 @@ export function useChangePasswordMutation() {
 
 export function useUpdateProfileMutation() {
   const client = useQueryClient();
-  const { session } = useSession();
-  const viewerId = session?.user.id ?? "anonymous";
+  const viewerId = useSession().session?.user.id;
   const handleError = useAccessErrorHandler();
-  const attempt = useMutationAttempt();
+  const run = useIdempotentRequest();
   const [requests] = useState(() =>
-    createRequestTickets(async (input: UpdateProfileArgs) =>
-      authService.updateProfile(input.payload, {
-        version: input.version,
-        key: await attempt.keyFor(input),
-      }),
+    createRequestTickets((input: UpdateProfileArgs) =>
+      run(input, (key) =>
+        authService.updateProfile(input.payload, {
+          version: input.version,
+          key,
+        }),
+      ),
     ),
   );
   const mutation = useMutation({
-    mutationKey: ["auth", viewerId, "updateProfile"],
+    mutationKey: [...authKeys.viewer(viewerId), "updateProfile"],
     mutationFn: requests.execute,
-    retry: false,
     onError: handleError,
     onSuccess: async (result) => {
-      attempt.reset();
       await client.cancelQueries({ queryKey: authKeys.getSession(viewerId) });
       client.setQueryData(authKeys.getSession(viewerId), result);
       await client.invalidateQueries({
@@ -73,14 +71,12 @@ export function useUpdateProfileMutation() {
 }
 
 export function useLoginMutation() {
-  const { session } = useSession();
-  const viewerId = session?.user.id ?? "anonymous";
+  const viewerId = useSession().session?.user.id;
   const handleError = useAccessErrorHandler();
   const [requests] = useState(() => createRequestTickets(authService.login));
   const mutation = useMutation({
-    mutationKey: ["auth", viewerId, "login"],
+    mutationKey: [...authKeys.viewer(viewerId), "login"],
     mutationFn: requests.execute,
-    retry: false,
     onError: handleError,
   });
   return {

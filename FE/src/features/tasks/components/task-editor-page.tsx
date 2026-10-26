@@ -1,13 +1,14 @@
 "use client";
-import { TaskForm } from "./task-form";
 
-import { PermissionGate } from "@/components/layout/permission-gate";
-import { PageHeader, Panel } from "@/components/ui/page";
 import { PageSkeleton } from "@/components/ui/loading";
+import { PageHeader, Panel } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
+import { canManage } from "@/lib/auth/access";
+import { useSession } from "@/lib/auth/session-context";
 import { dateTime } from "@/lib/format";
 import { useGetTaskQuery } from "../hooks/use-tasks-queries";
+import { TaskForm } from "./task-form";
 
 export function TaskEditorPage({
   taskId,
@@ -16,6 +17,7 @@ export function TaskEditorPage({
   taskId?: string;
   projectId?: string;
 }) {
+  const { session } = useSession();
   const query = useGetTaskQuery(taskId ?? "");
   const id = projectId ?? query.data?.projectId ?? "";
   const project = useGetProjectQuery(id);
@@ -23,12 +25,16 @@ export function TaskEditorPage({
   if (project.isError) return <QueryErrorState error={project.error} />;
   if (!project.data) return <PageSkeleton variant="form" />;
   return (
-    <PermissionGate permission="TASKS_MANAGE" projectId={id}>
+    <>
       <PageHeader
         title={taskId ? "Điều chỉnh công việc" : "Tạo công việc"}
         description={`${project.data.name} · Hạn dự án ${dateTime(project.data.dueAt)}`}
       />
-      {project.data.status !== "ACTIVE" ? (
+      {!canManage(session, id) ? (
+        <Panel>
+          <p>Bạn không được thay đổi công việc trong dự án này.</p>
+        </Panel>
+      ) : project.data.status !== "ACTIVE" ? (
         <Panel>
           <p>
             Dự án cần ở trạng thái đang triển khai để tạo hoặc sửa công việc.
@@ -47,6 +53,6 @@ export function TaskEditorPage({
           reload={() => query.refetch()}
         />
       )}
-    </PermissionGate>
+    </>
   );
 }

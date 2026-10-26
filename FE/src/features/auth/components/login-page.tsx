@@ -1,6 +1,6 @@
 "use client";
+
 import { Spinner } from "@/components/ui/loading";
-import { loginSchema } from "@/features/auth/schemas/login.schema";
 import { useSession } from "@/lib/auth/session-context";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, CircleCheckBig, LockKeyhole } from "lucide-react";
@@ -8,10 +8,10 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import type { z } from "zod";
 import { useLoginMutation } from "../hooks/use-auth-mutations";
+import { loginSchema } from "../schemas/login.schema";
+import type { LoginInput } from "../types/auth.types";
 
-type LoginInput = z.input<typeof loginSchema>;
 export function LoginPage() {
   const router = useRouter();
   const { session, signIn, loading } = useSession();

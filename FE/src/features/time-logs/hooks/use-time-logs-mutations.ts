@@ -1,36 +1,36 @@
 "use client";
+
 import { analyticsKeys } from "@/features/analytics/api/analytics.keys";
 import { reportsKeys } from "@/features/reports/api/reports.keys";
 import { tasksKeys } from "@/features/tasks/api/tasks.keys";
-import { timeLogsKeys } from "@/features/time-logs/api/time-logs.keys";
+import { useSession } from "@/lib/auth/session-context";
+import { useIdempotentRequest } from "@/lib/query/use-idempotent-request";
+import { useAccessErrorHandler } from "@/lib/query/use-query-access";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { timeLogsKeys } from "../api/time-logs.keys";
+import { timeLogsService } from "../api/time-logs.service";
 import {
   type CreateTimeLogArgs,
   type UpdateTimeLogArgs,
   type VoidTimeLogArgs,
-} from "@/features/time-logs/types/time-logs.types";
-import { useSession } from "@/lib/auth/session-context";
-import { useMutationAttempt } from "@/lib/query/use-mutation-attempt";
-import { useAccessErrorHandler } from "@/lib/query/use-query-access";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { timeLogsService } from "../api/time-logs.service";
+} from "../types/time-logs.types";
 
 export function useCreateTimeLogMutation() {
   const client = useQueryClient();
-  const { session } = useSession();
-  const viewerId = session?.user.id ?? "anonymous";
+  const viewerId = useSession().session?.user.id;
   const handleError = useAccessErrorHandler();
-  const attempt = useMutationAttempt();
+  const run = useIdempotentRequest();
   return useMutation({
-    mutationKey: ["time-logs", viewerId, "createTimeLog"],
-    mutationFn: async (input: CreateTimeLogArgs) =>
-      timeLogsService.createTimeLog(input.taskId, input.payload, {
-        version: input.version,
-        key: await attempt.keyFor(input),
-      }),
-    retry: false,
+    mutationKey: [...timeLogsKeys.viewer(viewerId), "createTimeLog"],
+    mutationFn: (input: CreateTimeLogArgs) =>
+      run(input, (key) =>
+        timeLogsService.createTimeLog(input.taskId, input.payload, {
+          version: input.version,
+          key,
+        }),
+      ),
     onError: handleError,
     onSuccess: async () => {
-      attempt.reset();
       await Promise.all([
         client.invalidateQueries({ queryKey: timeLogsKeys.viewer(viewerId) }),
         client.invalidateQueries({ queryKey: tasksKeys.viewer(viewerId) }),
@@ -40,23 +40,23 @@ export function useCreateTimeLogMutation() {
     },
   });
 }
+
 export function useUpdateTimeLogMutation() {
   const client = useQueryClient();
-  const { session } = useSession();
-  const viewerId = session?.user.id ?? "anonymous";
+  const viewerId = useSession().session?.user.id;
   const handleError = useAccessErrorHandler();
-  const attempt = useMutationAttempt();
+  const run = useIdempotentRequest();
   return useMutation({
-    mutationKey: ["time-logs", viewerId, "updateTimeLog"],
-    mutationFn: async (input: UpdateTimeLogArgs) =>
-      timeLogsService.updateTimeLog(input.timeLogId, input.payload, {
-        version: input.version,
-        key: await attempt.keyFor(input),
-      }),
-    retry: false,
+    mutationKey: [...timeLogsKeys.viewer(viewerId), "updateTimeLog"],
+    mutationFn: (input: UpdateTimeLogArgs) =>
+      run(input, (key) =>
+        timeLogsService.updateTimeLog(input.timeLogId, input.payload, {
+          version: input.version,
+          key,
+        }),
+      ),
     onError: handleError,
     onSuccess: async () => {
-      attempt.reset();
       await Promise.all([
         client.invalidateQueries({ queryKey: timeLogsKeys.viewer(viewerId) }),
         client.invalidateQueries({ queryKey: tasksKeys.viewer(viewerId) }),
@@ -66,23 +66,23 @@ export function useUpdateTimeLogMutation() {
     },
   });
 }
+
 export function useVoidTimeLogMutation() {
   const client = useQueryClient();
-  const { session } = useSession();
-  const viewerId = session?.user.id ?? "anonymous";
+  const viewerId = useSession().session?.user.id;
   const handleError = useAccessErrorHandler();
-  const attempt = useMutationAttempt();
+  const run = useIdempotentRequest();
   return useMutation({
-    mutationKey: ["time-logs", viewerId, "voidTimeLog"],
-    mutationFn: async (input: VoidTimeLogArgs) =>
-      timeLogsService.voidTimeLog(input.timeLogId, input.payload, {
-        version: input.version,
-        key: await attempt.keyFor(input),
-      }),
-    retry: false,
+    mutationKey: [...timeLogsKeys.viewer(viewerId), "voidTimeLog"],
+    mutationFn: (input: VoidTimeLogArgs) =>
+      run(input, (key) =>
+        timeLogsService.voidTimeLog(input.timeLogId, input.payload, {
+          version: input.version,
+          key,
+        }),
+      ),
     onError: handleError,
     onSuccess: async () => {
-      attempt.reset();
       await Promise.all([
         client.invalidateQueries({ queryKey: timeLogsKeys.viewer(viewerId) }),
         client.invalidateQueries({ queryKey: tasksKeys.viewer(viewerId) }),

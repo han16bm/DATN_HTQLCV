@@ -1,8 +1,9 @@
 "use client";
-import { Badge, DataTable, Empty, Panel } from "@/components/ui/page";
+
 import { PageSkeleton } from "@/components/ui/loading";
+import { Badge, DataTable, Empty, Panel } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
-import { dateTime, hours, label, number, metricValue } from "@/lib/format";
+import { dateTime, hours, label, metricValue, number } from "@/lib/format";
 import Link from "next/link";
 import {
   Bar,
@@ -18,9 +19,9 @@ import {
 } from "recharts";
 import { useGetDashboardQuery } from "../hooks/use-analytics-queries";
 import { useAnalyticsScope } from "../hooks/use-analytics-scope";
+import type { MetricDto } from "../types/analytics.types";
 import { AnalysisLink } from "./analysis-links";
 import { AnalyticsFrame } from "./analytics-frame";
-import type { MetricDto } from "../types/analytics.types";
 
 function MetricCard({ metric }: { metric: MetricDto }) {
   return (

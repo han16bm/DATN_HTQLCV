@@ -1,26 +1,37 @@
 "use client";
-import { SchemaForm } from "@/components/forms/schema-form";
+import { canManage } from "@/lib/auth/access";
+
+import { Form } from "@/components/forms/form";
+import { FormInput, FormSelect } from "@/components/forms/form-field";
+import { ReasonForm } from "@/components/forms/reason-form";
 import { HashDialog } from "@/components/ui/dialog";
-import { DataTable, PageHeader } from "@/components/ui/page";
 import { PageSkeleton } from "@/components/ui/loading";
+import { DataTable, PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
-import { addMemberSchema } from "@/features/project-members/schemas/project-members.schema";
-import { type MembershipDto } from "@/features/project-members/types/project-members.types";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
-import { hasPermission, useSession } from "@/lib/auth/session-context";
+import { useSession } from "@/lib/auth/session-context";
 import { dateTime, label } from "@/lib/format";
 import { useHashDialog } from "@/lib/forms/use-hash-dialog";
+import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
+import { validationMessage } from "@/lib/forms/validation-message";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
-import { reasonSchema } from "@/lib/validation/common.schema";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import {
   useAddProjectMemberMutation,
   useEndProjectMembershipMutation,
 } from "../hooks/use-project-members-mutations";
 import { useListProjectMembersQuery } from "../hooks/use-project-members-queries";
+import { addMemberSchema } from "../schemas/project-members.schema";
+import type {
+  AddProjectMemberInput,
+  MembershipDto,
+} from "../types/project-members.types";
+import { MemberRoleForm, memberRoles } from "./member-role-form";
 
 export function ProjectMembersPage({ projectId }: { projectId: string }) {
   const filters = useUrlFilters();
@@ -29,10 +40,14 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
   const dialog = useHashDialog();
   const query = useListProjectMembersQuery(projectId, { page: filters.page });
   const add = useAddProjectMemberMutation();
-  const end = useEndProjectMembershipMutation();
   const [ending, setEnding] = useState<MembershipDto | null>(null);
+  const [editing, setEditing] = useState<MembershipDto | null>(null);
+  const form = useForm<AddProjectMemberInput>({
+    resolver: zodResolver(addMemberSchema, { error: validationMessage }),
+    defaultValues: { userId: "", projectRole: "MEMBER" },
+  });
   const manage =
-    hasPermission(session, "MEMBERS_MANAGE", projectId) &&
+    canManage(session, projectId) &&
     Boolean(
       project.data && ["PLANNED", "ACTIVE"].includes(project.data.status),
     );
@@ -44,7 +59,10 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
           manage && (
             <button
               className="primary"
-              onClick={() => dialog.open("add-member")}
+              onClick={() => {
+                form.reset();
+                dialog.open("add-member");
+              }}
             >
               Thêm thành viên
             </button>
@@ -65,13 +83,7 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
             onPage: (p) => filters.set("page", String(p)),
           }}
           actions
-          headers={[
-            "Thành viên",
-            "Vai trò dự án",
-            "Quyền nghiệp vụ",
-            "Tư cách",
-            "Hành động",
-          ]}
+          headers={["Thành viên", "Vai trò dự án", "Tư cách", "Hành động"]}
           rows={query.data.items.map((m) => [
             <UserBadge
               key="person"
@@ -79,20 +91,19 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
               href={`/users/${encodeURIComponent(m.user.id)}`}
             />,
             label(m.projectRole),
-            m.permissions.length
-              ? `${m.permissions.length} quyền`
-              : "Theo việc được giao",
             m.endedAt ? `Đã kết thúc ${dateTime(m.endedAt)}` : "Đang tham gia",
             manage && (
               <div key="actions" className="actions">
-                <Link
-                  className="text-link"
-                  href={`/projects/${projectId}/permissions?member=${m.id}`}
-                >
-                  {m.projectRole === "OWNER" ? "Xem quyền" : "Phân quyền"}
-                </Link>
                 {!m.endedAt && m.projectRole !== "OWNER" && (
                   <>
+                    <button
+                      onClick={() => {
+                        setEditing(m);
+                        dialog.open("member-role");
+                      }}
+                    >
+                      Đổi vai trò
+                    </button>
                     <Link
                       className="text-link"
                       href={`/tasks?projectId=${projectId}&assigneeId=${m.userId}`}
@@ -117,69 +128,67 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
       {manage && (
         <>
           <HashDialog name="add-member" title="Thêm thành viên dự án">
-            <SchemaForm
-              schema={addMemberSchema.omit({ permissions: true })}
-              fields={[
-                {
-                  name: "userId",
-                  label: "Mã tài khoản nội bộ",
-                  required: true,
-                  hint: "Dùng mã tài khoản do quản trị viên cung cấp; hệ thống kiểm tra tài khoản hoạt động trước khi thêm.",
-                },
-                {
-                  name: "projectRole",
-                  label: "Vai trò dự án",
-                  type: "select",
-                  required: true,
-                  options: [
-                    { value: "MEMBER", label: "Thành viên" },
-                    { value: "MANAGER", label: "Quản lý" },
-                  ],
-                },
-              ]}
-              defaults={{ projectRole: "MEMBER" }}
+            <Form
+              compact
+              form={form}
               onSubmit={async (values) => {
                 await add.mutateAsync({
                   projectId,
-                  payload: addMemberSchema.parse({
-                    ...values,
-                    permissions: [],
-                  }),
+                  payload: values,
                 });
-                toast.success(
-                  "Đã thêm thành viên. Cấp thêm quyền ở màn phân quyền.",
-                );
+                toast.success("Đã thêm thành viên dự án.");
                 dialog.close();
               }}
               submitLabel="Thêm thành viên"
-            />
+            >
+              <FormInput
+                label="Mã tài khoản nội bộ"
+                required
+                hint="Dùng mã tài khoản do quản trị viên cung cấp; hệ thống kiểm tra tài khoản hoạt động trước khi thêm."
+                {...form.register("userId")}
+                error={form.formState.errors.userId}
+              />
+              <FormSelect
+                label="Vai trò dự án"
+                required
+                options={memberRoles}
+                {...form.register("projectRole")}
+                error={form.formState.errors.projectRole}
+              />
+            </Form>
+          </HashDialog>
+          <HashDialog name="member-role" title="Đổi vai trò thành viên">
+            {editing && (
+              <>
+                <p>{editing.user.displayName}</p>
+                <MemberRoleForm
+                  key={editing.id}
+                  projectId={projectId}
+                  member={editing}
+                  reload={async () => ({
+                    data: (await query.refetch()).data?.items.find(
+                      (member) => member.id === editing.id,
+                    ),
+                  })}
+                  onDone={dialog.close}
+                />
+              </>
+            )}
           </HashDialog>
           <HashDialog name="end-member" title="Kết thúc tư cách thành viên">
             {ending && (
               <>
                 <p>{ending.user.displayName}</p>
-                <SchemaForm
+                <EndMemberForm
                   key={ending.id}
-                  schema={reasonSchema}
-                  fields={[
-                    {
-                      name: "reason",
-                      label: "Lý do kết thúc",
-                      type: "textarea",
-                      required: true,
-                    },
-                  ]}
-                  onSubmit={async (values) => {
-                    await end.mutateAsync({
-                      projectId,
-                      membershipId: ending.id,
-                      payload: values,
-                      version: ending.version,
-                    });
-                    toast.success("Đã kết thúc tư cách thành viên.");
-                    dialog.close();
-                  }}
-                  submitLabel="Xác nhận kết thúc"
+                  projectId={projectId}
+                  member={ending}
+                  reload={async () => ({
+                    data: (await query.refetch()).data?.items.find(
+                      (member) => member.id === ending.id,
+                    ),
+                  })}
+                  onDone={dialog.close}
                 />
               </>
             )}
@@ -187,5 +196,41 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
         </>
       )}
     </>
+  );
+}
+
+function EndMemberForm({
+  projectId,
+  member,
+  reload,
+  onDone,
+}: {
+  projectId: string;
+  member: MembershipDto;
+  reload: () => Promise<{ data?: MembershipDto }>;
+  onDone: () => void;
+}) {
+  const end = useEndProjectMembershipMutation();
+  const snapshot = useEditSnapshot(member);
+  return (
+    <ReasonForm
+      label="Lý do kết thúc"
+      compareFields={[
+        { name: "projectRole", label: "Vai trò dự án", options: memberRoles },
+      ]}
+      onConflictReload={() => snapshot.load(reload)}
+      onConflictAccept={snapshot.accept}
+      onSubmit={async (payload) => {
+        await end.mutateAsync({
+          projectId,
+          membershipId: member.id,
+          payload,
+          version: snapshot.base.version,
+        });
+        toast.success("Đã kết thúc tư cách thành viên.");
+        onDone();
+      }}
+      submitLabel="Xác nhận kết thúc"
+    />
   );
 }

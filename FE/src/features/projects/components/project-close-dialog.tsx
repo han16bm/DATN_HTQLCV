@@ -1,20 +1,26 @@
 "use client";
-import { VersionedSchemaForm } from "@/components/forms/versioned-schema-form";
+
+import { Form } from "@/components/forms/form";
+import { FormTextarea } from "@/components/forms/form-field";
 import { HashDialog } from "@/components/ui/dialog";
 import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
-import { type ProjectDto } from "@/features/projects/types/projects.types";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
+import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
 import { useHashDialog } from "@/lib/forms/use-hash-dialog";
+import { validationMessage } from "@/lib/forms/validation-message";
 import { reasonSchema } from "@/lib/validation/common.schema";
-import { emptySchema } from "@/lib/validation/request.schema";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
 import {
   useCancelProjectMutation,
   useCompleteProjectMutation,
 } from "../hooks/use-projects-mutations";
 import { useGetProjectClosureChecksQuery } from "../hooks/use-projects-queries";
+import { type ProjectDto } from "../types/projects.types";
 
 export function ProjectCloseDialog({
   project,
@@ -27,8 +33,6 @@ export function ProjectCloseDialog({
   const checks = useGetProjectClosureChecksQuery(project.id, {
     enabled: dialog.name === "close",
   });
-  const complete = useCompleteProjectMutation();
-  const cancel = useCancelProjectMutation();
   const [action, setAction] = useState(
     project.status === "ACTIVE" ? "COMPLETE" : "CANCEL",
   );
@@ -84,38 +88,11 @@ export function ProjectCloseDialog({
                 </select>
               </label>
               <div className="section-gap">
-                <VersionedSchemaForm
-                  initial={project}
-                  reload={reload}
+                <CloseForm
                   key={action}
-                  schema={action === "COMPLETE" ? emptySchema : reasonSchema}
-                  fields={
-                    action === "CANCEL"
-                      ? [
-                          {
-                            name: "reason",
-                            label: "Lý do hủy",
-                            type: "textarea",
-                            required: true,
-                          },
-                        ]
-                      : []
-                  }
-                  onSubmit={async (values, base) => {
-                    const input = {
-                      projectId: project.id,
-                      version: base.version,
-                    };
-                    if ("reason" in values)
-                      await cancel.mutateAsync({
-                        ...input,
-                        payload: { reason: values.reason },
-                      });
-                    else await complete.mutateAsync(input);
-                    toast.success("Đã đóng dự án.");
-                    dialog.close();
-                  }}
-                  submitLabel="Kiểm tra và xác nhận"
+                  action={action}
+                  project={project}
+                  reload={reload}
                 />
               </div>
             </>
@@ -123,5 +100,61 @@ export function ProjectCloseDialog({
         </>
       )}
     </HashDialog>
+  );
+}
+
+function CloseForm({
+  action,
+  project,
+  reload,
+}: {
+  action: string;
+  project: ProjectDto;
+  reload: () => Promise<{ data?: ProjectDto }>;
+}) {
+  const complete = useCompleteProjectMutation();
+  const cancel = useCancelProjectMutation();
+  const dialog = useHashDialog();
+  const snapshot = useEditSnapshot(project);
+  const schema = reasonSchema.extend({
+    reason: action === "COMPLETE" ? z.string() : reasonSchema.shape.reason,
+  });
+  type Values = z.input<typeof schema>;
+  const form = useForm<Values>({
+    resolver: zodResolver(schema, { error: validationMessage }),
+    defaultValues: { reason: "" },
+  });
+  const { errors } = form.formState;
+  return (
+    <Form
+      compact
+      form={form}
+      onConflictReload={() => snapshot.load(reload)}
+      onConflictAccept={snapshot.accept}
+      onSubmit={async (values) => {
+        const input = {
+          projectId: project.id,
+          version: snapshot.base.version,
+        };
+        if (action === "CANCEL")
+          await cancel.mutateAsync({
+            ...input,
+            payload: { reason: values.reason },
+          });
+        else await complete.mutateAsync(input);
+        toast.success("Đã đóng dự án.");
+        dialog.close();
+      }}
+      submitLabel="Kiểm tra và xác nhận"
+    >
+      {action === "CANCEL" && (
+        <FormTextarea
+          label="Lý do hủy"
+          required
+          {...form.register("reason")}
+          error={errors.reason}
+        />
+      )}
+    </Form>
   );
 }

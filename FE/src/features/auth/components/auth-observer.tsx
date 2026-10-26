@@ -1,5 +1,5 @@
 "use client";
-import { type SessionDto } from "@/features/auth/types/auth.types";
+
 import { Session } from "@/lib/auth/session-context";
 import { refreshAuth, registerRefresh, token } from "@/services/api-client";
 import { useUI } from "@/stores/ui-store";
@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { authKeys } from "../api/auth.keys";
 import { authService } from "../api/auth.service";
+import { type SessionDto } from "../types/auth.types";
 
 export function AuthObserver({ children }: { children: ReactNode }) {
   const client = useQueryClient();
@@ -48,7 +49,7 @@ export function AuthObserver({ children }: { children: ReactNode }) {
     return () => registerRefresh(null);
   }, [client, clear]);
   const query = useQuery({
-    queryKey: authKeys.getSession(viewerId ?? "anonymous"),
+    queryKey: authKeys.getSession(viewerId),
     queryFn: ({ signal }) =>
       authService.getSession({
         signal,

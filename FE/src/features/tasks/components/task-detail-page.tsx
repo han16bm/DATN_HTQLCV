@@ -1,25 +1,31 @@
 "use client";
-import { SchemaForm } from "@/components/forms/schema-form";
+
+import { Form } from "@/components/forms/form";
+import { FormInput } from "@/components/forms/form-field";
 import { HistoryTable } from "@/components/ui/history-table";
 import { PageSkeleton } from "@/components/ui/loading";
 import { ButtonLink, Panel } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
-import { remainingSchema } from "@/features/tasks/schemas/task-form.schema";
-import type { TaskDto } from "@/features/tasks/types/tasks.types";
 import { useSession } from "@/lib/auth/session-context";
 import { dateTime, hours } from "@/lib/format";
-import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
+import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
+import { validationMessage } from "@/lib/forms/validation-message";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import type { z } from "zod";
 import { useUpdateRemainingEstimateMutation } from "../hooks/use-tasks-mutations";
 import {
   useGetTaskQuery,
   useListTaskHistoryQuery,
 } from "../hooks/use-tasks-queries";
+import { remainingSchema } from "../schemas/task-form.schema";
+import type { TaskDto } from "../types/tasks.types";
 
 export function TaskDetailPage({ taskId }: { taskId: string }) {
   const query = useGetTaskQuery(taskId);
@@ -146,6 +152,7 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
     </div>
   );
 }
+
 function RemainingForm({
   task,
   reload,
@@ -162,20 +169,20 @@ function RemainingForm({
     if (!(await confirmDiscard("Bỏ cập nhật thời gian chưa lưu?"))) return;
     setOpen(false);
   };
+  const form = useForm<z.input<typeof remainingSchema>>({
+    resolver: zodResolver(remainingSchema, { error: validationMessage }),
+    defaultValues: { remainingMinutes: task.remainingMinutes ?? undefined },
+  });
+  const { errors } = form.formState;
   return (
     <div className="section-gap">
       {open ? (
-        <SchemaForm
-          schema={remainingSchema}
-          fields={[
-            {
-              name: "remainingMinutes",
-              label: "Còn lại (phút)",
-              type: "number",
-              required: true,
-            },
+        <Form
+          compact
+          form={form}
+          compareFields={[
+            { name: "remainingMinutes", label: "Còn lại (phút)" },
           ]}
-          defaults={{ remainingMinutes: task.remainingMinutes ?? "" }}
           cancel={
             <button type="button" onClick={cancel}>
               Hủy
@@ -195,9 +202,26 @@ function RemainingForm({
             setOpen(false);
           }}
           submitLabel="Lưu cập nhật"
-        />
+        >
+          <FormInput
+            label="Còn lại (phút)"
+            required
+            type="number"
+            {...form.register("remainingMinutes", { valueAsNumber: true })}
+            error={errors.remainingMinutes}
+          />
+        </Form>
       ) : (
-        <button type="button" onClick={() => setOpen(true)}>
+        <button
+          type="button"
+          onClick={() => {
+            snapshot.saved(task);
+            form.reset({
+              remainingMinutes: task.remainingMinutes ?? undefined,
+            });
+            setOpen(true);
+          }}
+        >
           Cập nhật thời gian còn lại
         </button>
       )}

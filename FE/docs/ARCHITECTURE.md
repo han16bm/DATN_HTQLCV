@@ -1,6 +1,14 @@
 # Cấu trúc frontend
 
-Cập nhật 25/10/2026, tham khảo cách tổ chức và luồng auth của `D:/TTZinza/vietcd/frontend`. FE dùng Next.js App Router, TypeScript strict, Tailwind CSS, React Hook Form, Zod, Zustand và TanStack Query. Các yêu cầu nghiệp vụ theo bộ đặc tả và API catalog 0.3.0 trong `fe-specs/`, cùng điều chỉnh mới của người dùng bên dưới.
+## Điều chỉnh role ngày 26/10/2026
+
+Theo yêu cầu người dùng, bỏ quyền cấp lẻ và trang phân quyền riêng. ADMIN quản trị tài khoản/tổ chức và xem tổng quan toàn hệ thống; MANAGER quản lý dự án nơi có tư cách OWNER/MANAGER; MEMBER xử lý công việc được giao. Session chỉ trả user và projectAccess (projectId/projectRole đang hoạt động); model/DTO không còn mảng permissions. Backend giả kiểm tra role cùng phạm vi dự án, người được giao và tác giả, kể cả khi replay. S13 là dialog Đổi vai trò tại danh sách thành viên; PATCH membership chỉ nhận projectRole/reason. Người phụ trách phải là Leader/PM hoạt động trong đơn vị; bàn giao vai trò quản lý ở dự án đang mở trước khi đổi role hệ thống.
+
+Query keys nhận user ID có thể null/undefined; chỉ hàm viewer trong keys đặt giá trị anonymous. Hook không tự tạo user ID dự phòng; key vẫn tách dữ liệu theo người xem và giữ thứ tự feature/viewer/operation.
+
+Cập nhật 26/10/2026, tham khảo cách tổ chức và luồng auth của `D:/TTZinza/vietcd/frontend`. FE dùng Next.js App Router, TypeScript strict, Tailwind CSS, React Hook Form, Zod, Zustand và TanStack Query. Các yêu cầu nghiệp vụ theo bộ đặc tả và API catalog 0.3.0 trong `fe-specs/`, cùng điều chỉnh mới của người dùng bên dưới.
+
+Bảng lần theo đủ 82 hàm trong 12 feature nằm tại [REFACTOR_REVIEW.md](REFACTOR_REVIEW.md). Cấu trúc hiện hành đã bỏ `*.contract.ts` lặp chữ ký và bộ dựng form bằng metadata; các ghi chép lịch sử trước lượt refactor này không yêu cầu tạo lại các tầng đã bỏ.
 
 ## Thư mục và trách nhiệm
 
@@ -10,10 +18,9 @@ src/
   components/
     layout/                         # Workspace shell, navigation, dirty guard
     ui/                             # Control và trạng thái giao diện dùng chung
-    forms/                          # Form RHF, field, resolver, lỗi/xung đột version
+    forms/                          # Khung form, control, lỗi/xung đột và ReasonForm
   features/<feature>/
     api/
-      <feature>.contract.ts         # Interface TypeScript mô tả các hàm API
       <feature>.service.ts          # Gửi input có kiểu qua HTTP, khai báo response schema
       <feature>.keys.ts             # Query key từ viewer, resource và filter đã chuẩn hóa
     schemas/                        # Zod validation theo thực thể/nhóm nghiệp vụ
@@ -23,7 +30,7 @@ src/
       use-<feature>-mutations.ts    # useMutation + service + invalidation
     components/                     # Mỗi màn một file; form/dialog chia riêng
   lib/
-    auth/                           # Session context và permission helper
+    auth/                           # Session context và role/phạm vi dự án
     crypto/                         # Fingerprint dùng chung cho retry/receipt
     forms/                          # Snapshot khi chỉnh sửa
     query/                          # Access error, retry key, cache, URL filters
@@ -32,13 +39,13 @@ src/
     api-client.ts                   # Axios, options, token bộ nhớ, refresh và response validation
     http-error.ts                   # Chuẩn hóa lỗi HTTP/network và quy tắc retry
   stores/                           # State UI client-only
-  types/                            # Envelope/error, Page<T>, value types chung
+  types/                            # HTTP error, Page<T>, value types chung
   mocks/
     data.json                       # Toàn bộ seed, policy và nội dung tệp mẫu
     db.ts                           # DB bộ nhớ, reset/clock, CRUD và nghiệp vụ theo nhóm
     handlers/
       <feature>.handlers.ts         # Chặn API, parse request, gọi DB, trả HTTP response
-      http.ts                       # Envelope, scenario, auth request và receipt dùng chung
+      http.ts                       # JSON response, scenario, auth request và receipt dùng chung
       index.ts                      # Đăng ký các nhóm handler
     browser.ts                      # Browser worker
     node.ts                         # Test server và reset DB/receipt
@@ -49,22 +56,31 @@ Import trực tiếp file cần dùng. Không có barrel `index.ts`, `client.ts`
 
 ## Luồng đọc và ghi dữ liệu
 
+Trang và sidebar dùng chung chính sách role trong `lib/auth/access.ts`. WorkspaceShell chặn route trước khi mount feature; không có PermissionGate hoặc hasPermission. ADMIN mở quản trị; MANAGER/ADMIN mở dashboard, phân tích, cảnh báo và hàng chờ nghiệm thu; MANAGER tạo dự án. Các form quản lý dự án/công việc cho MANAGER/ADMIN; thao tác quản lý dùng canManage theo role MANAGER và tư cách OWNER/MANAGER trong dự án; backend xét lại cùng role/phạm vi. Trang xem dự án/công việc, báo cáo và hồ sơ dành cho mọi thành viên đăng nhập. Query hook chỉ xét phiên, ID, bộ lọc và phụ thuộc tải; không kiểm tra quyền mở trang lần nữa. Session chỉ trả user và projectAccess, bỏ systemPermissions không có nơi dùng trong FE.
+
 ```text
 App route → feature component → React Query hook → feature service
          → Axios HTTP /api/... → MSW handler → mock DB → seed/state
 ```
 
-Ví dụ cảnh báo: `alerts-page.tsx` gọi `useListAlertsQuery(query)`. Hook kiểm tra và chuẩn hóa query một lần, truyền cùng `filters` vào `alertsKeys.listAlerts(viewerId, filters)` và `alertsService.listAlerts(filters, { signal })`. Key chỉ tạo mảng định danh; service gửi đúng input được truyền vào. API client thêm base URL/bearer, kiểm tra envelope/response bằng Zod và chuẩn hóa lỗi. `alerts.handlers.ts` là biên HTTP server độc lập: parse query rồi gọi `alertsDb.listAlerts(viewer, query)`. DB kiểm tra nghiệp vụ, lọc dữ liệu và trả DTO; handler tạo envelope `{ data, meta }`.
+Ví dụ cảnh báo: `alerts-page.tsx` gọi `useListAlertsQuery(query)`. Hook kiểm tra và chuẩn hóa query một lần, truyền cùng `filters` vào `alertsKeys.listAlerts(viewerId, filters)` và `alertsService.listAlerts(filters, { signal })`. Key chỉ tạo mảng định danh; service gửi đúng input được truyền vào. API client thêm base URL/bearer, kiểm tra response bằng Zod và chuẩn hóa lỗi. `alerts.handlers.ts` là biên HTTP server độc lập: parse query rồi gọi `alertsDb.listAlerts(viewer, query)`. DB kiểm tra nghiệp vụ, lọc dữ liệu và trả DTO; handler trả DTO trực tiếp dưới dạng HTTP JSON.
 
-Service gọi trực tiếp Axios, ví dụ `apiClient.get<unknown>("/alerts", { ...options, params: query }).then(parseResponse(page(alertRowSchema)))`. Axios xử lý query params, JSON/FormData, timeout 15 giây và `AbortSignal`; dùng fetch adapter để HTTP/MSW và Blob hoạt động thống nhất giữa browser/test. Không có lớp bọc `get/post/patch/put` riêng. `parseResponse` kiểm tra envelope và schema kết quả; download dùng `responseType: "blob"` cùng `parseFile` để kiểm tra metadata. Interceptor thêm header, refresh một lần khi 401 và chuẩn hóa lỗi, kể cả JSON lỗi trong Blob. Lỗi hủy request giữ dấu cancellation của Axios, bỏ config/request chứa dữ liệu nhạy cảm và không được retry như lỗi mạng.
+Service dùng async/await theo vietcd, ví dụ `const response = await apiClient.get<AlertList>("/alerts", { ...options, params: query, schema: page(alertRowSchema) }); return response.data;`. Mỗi hàm khai báo DTO hiện có và response schema trong config, không dùng chuỗi <unknown>().then(...) hoặc helper parseResponse/parseFile. Interceptor Axios kiểm tra response.data một lần bằng schema, dùng chính dữ liệu đã parse để bỏ trường ngoài DTO trước khi vào cache; binary kiểm tra Content-Type/Content-Disposition theo responseType blob. Không thêm wrapper HTTP hoặc bảng ánh xạ endpoint–schema.
+
+Axios xử lý query params, JSON/FormData, timeout 15 giây và AbortSignal; dùng fetch adapter để HTTP/MSW và Blob hoạt động thống nhất giữa browser/test. Lỗi JSON là object phẳng code/message/fieldErrors?/details?, được kiểm tra bằng errorResponseSchema rồi chuyển thành ApiError. Interceptor thêm header, refresh một lần khi 401 và chuẩn hóa lỗi, kể cả JSON lỗi trong Blob. Lỗi hủy request giữ dấu cancellation của Axios, bỏ config/request chứa dữ liệu nhạy cảm và không được retry như lỗi mạng. Auth login/refresh dùng LoginResponse suy từ schema, giữ token trong bộ nhớ rồi chỉ trả SessionDto; không đưa credential vào Query cache. Các import trong cùng feature dùng đường dẫn tương đối; method có dòng trống để dễ đọc.
 
 Analytics có `useAnalyticsScope` đọc và kiểm tra bộ lọc URL một lần; màn truyền cùng scope cho khung lọc và query hook. Query hook analytics nhận scope đã kiểm tra nên không parse lại. Không tự viết hàm sắp xếp object cho query key; React Query xử lý key object. Service cũng không thêm default hoặc parse lại query/payload. Khi gọi service trực tiếp, caller truyền tham số cần gửi; handler áp dụng default của API cho trường bị bỏ trống.
 
-Mutation như cập nhật cảnh báo gọi `alertsService.updateAlert(alertId, payload, { version, key })`. Axios interceptor gửi `If-Match` và `Idempotency-Key`. Hook giữ key cho lần thử lại cùng nội dung và invalidate rõ các query liên quan khi thành công. Không dùng endpoint descriptor, generic feature hook, registry/manifest hoặc generator.
+Mutation như cập nhật cảnh báo dùng `run(input, key => alertsService.updateAlert(input.alertId, input.payload, { version: input.version, key }))`. `run` lấy từ `useIdempotentRequest`, giữ khóa sau lỗi và kết thúc lần gửi khi thành công. Axios interceptor gửi `If-Match` và `Idempotency-Key`; hook invalidate rõ các query liên quan. Không dùng endpoint descriptor, generic feature hook, registry/manifest hoặc generator. Không lặp chữ ký service trong interface `*.contract.ts`.
 
 Handler không chứa fixture, lọc collection hoặc nghiệp vụ. DB nhận viewer, ID, payload/query và version cần thiết, không nhận `Request`, `Response` hoặc API MSW. `mockCommand` đảm nhận transaction/receipt và chỉ kiểm tra lại quyền khi replay; kiểm tra thao tác mới nằm trong DB. Một triển khai `requireVersion` được dùng chung. Transaction serialize các command và rollback khi thất bại.
 
 `mocks/db.ts` chứa các nhóm xử lý quyền, CRUD, báo cáo, phân tích và cảnh báo; handler import trực tiếp từ file này. Dữ liệu mẫu của báo cáo/audit/phân tích/tệp đã đưa hết vào `data.json`, không chạy bootstrap fixture riêng. `handlers/http.ts` chỉ xử lý phần HTTP dùng chung; `node.ts` reset DB và receipt khi test. Đã bỏ các folder db/data/utils cũ và file reset chuyển tiếp. Các màn analytics/report/submission/alert được chia file; component dùng chung như số liệu báo cáo hoặc form phản hồi được import trực tiếp và không sao chép logic.
+
+
+Lookup phục vụ điều khiển phải tách khỏi trang kết quả đang lọc; không suy lựa chọn toàn hệ thống từ các hàng của một trang. Bắt buộc chờ lookup của form và hiển thị lỗi/thử lại. Chỉ tải lookup phụ khi control xuất hiện; query chính vẫn không kiểm tra quyền mở trang lần nữa. ownerId là người phụ trách dự án, assigneeId là người thực hiện công việc; chỉ assigneeId phụ thuộc nhóm.
+
+Mọi thao tác dùng If-Match chốt snapshot/version khi mở form. Refetch nền không nâng version của draft; 412 tải bản mới từ cha, giữ nội dung và chỉ chấp nhận version sau đối chiếu. Tạo giờ công/nộp kết quả dùng Task; sửa/VOID giờ công dùng TimeLog; nghiệm thu dùng Submission. TaskShell truyền Task/trạng thái hoạt động/reload cho dialog thay vì dialog tự đọc lại Task/Project. Xem kết quả quét và giới hạn lookup trong [REFACTOR_REVIEW.md](REFACTOR_REVIEW.md#rà-lại-ui-luồng-và-tham-số--26102026).
 
 ## Model, DTO và component
 
@@ -80,7 +96,7 @@ Model nội bộ trong db.ts mô tả dữ liệu được lưu; DTO mô tả d�
 | Upload policy                        | DTO đã có maxBytes/maxAttachments/allowedMimeTypes; lỗi nằm ở mô tả UI hardcode 20 MiB. UI hiện đọc policy thật và kiểm tra file theo cùng policy. Download trả Blob trực tiếp, không giữ alias DTO cho kiểu binary có sẵn.                                                              |
 | Form và màn cha                      | Tách user-profile-form, user-commands, unit-form, team-form, team-members-form, project-form, task-form. Màn cha ghép dữ liệu và điều hướng; form giữ RHF/snapshot và gọi mutation hook. Không tạo loader/factory chuyển tiếp riêng.                                                     |
 | Phần hiển thị phân tích              | AnalysisSources hiển thị snapshot/căn cứ/biểu đồ; AnalysisExplanation hiển thị kết quả hợp lệ và citation. Trang detail điều phối query/job/tracking. Component con không fetch lại cùng dữ liệu.                                                                                        |
-| Quyền trong UI chung                 | PermissionGate nằm ở `components/layout`; `components/ui` chỉ hiển thị, không đọc session/quyền. Schema permission dùng chung, quyền dự án và quyền hệ thống vẫn được kiểm tra theo phạm vi nghiệp vụ.                                                                                   |
+| Quyền trong UI chung                 | WorkspaceShell kiểm tra role mở trang theo access.ts; sidebar dùng cùng cấu hình, `components/ui` chỉ hiển thị. Không lưu permissions theo thành viên; role hệ thống và vai trò dự án xác định thao tác cố định. Backend kiểm tra độc lập cùng phạm vi nghiệp vụ.                                                                                   |
 
 Các nguồn còn thiếu đã được xác định: API chọn ứng viên cho PM, lịch khả dụng/capacity và lịch báo cáo bắt buộc. Chưa tự thêm field/endpoint hoặc gán 8 giờ/ngày để lấp chỗ trống. Capacity/utilization giữ null; pendingReportCount còn dựa một phần fixture. Theo yêu cầu người dùng, response hiện hành trong schema/service/MSW dùng Row cho danh sách và DTO cho chi tiết. Catalog 0.3.0 tiếp tục là nguồn route/nghiệp vụ; các DTO đầy đủ trong đặc tả là bản gốc tham chiếu. Khi nối BE cần dùng response đã điều chỉnh này.
 
@@ -94,11 +110,11 @@ Attachment chỉ gửi id/filename/sizeBytes/status; taskId/uploadedBy/mimeType 
 
 Dashboard bỏ tổng hợp trùng KPI và trường lồng không được hiển thị. AnalysisRef chỉ có analysisId. Model analysis vẫn giữ revision/scope/subject/expiry, missingFields và citation cần để kiểm tra nguồn, quyền và kết quả LLM. Seed chỉ giữ analysisDetails, bỏ collection snapshot/explanation trùng không được đọc. Snapshot lịch sử của báo cáo/lần nộp vẫn được lưu.
 
-MSW kiểm tra và serialize dữ liệu đã qua response schema trước khi gửi HTTP. Test đọc body Axios trước parseResponse để phát hiện trường thừa mà Zod phía client có thể bỏ đi. Envelope giữ requestId/serverTime để truy vết HTTP.
+MSW kiểm tra và serialize dữ liệu đã qua response schema trước khi gửi HTTP. Test đọc body Axios không truyền schema để phát hiện trường thừa mà validator phía client có thể bỏ đi; service sản phẩm luôn khai báo schema JSON hoặc responseType blob. Response chỉ có DTO; danh sách giữ {items, pagination}. Đã bỏ lớp bọc data/meta và requestId/serverTime; không có nhánh tương thích định dạng cũ. Idempotency receipt replay cùng JSON DTO, status và header.
 
 ## Quy ước API và tham số
 
-Đối chiếu 79 operation: các route hiện có khớp catalog 0.3.0, gồm resource, subresource, read model và command nghiệp vụ. Các điểm lệch đã sửa nằm ở schema tham số, tên query và cách dùng ID đã chuẩn hóa; chưa có slug trong contract.
+Đối chiếu API catalog và 83 HTTP route hiện hành: các route hiện có khớp catalog 0.3.0, gồm resource, subresource, read model và command nghiệp vụ. ID opaque được kiểm tra tại form/biên HTTP; hook dùng nguyên resourceId cho key/service và không parse lại. Chưa có slug trong contract.
 
 | Thành phần            | Quy ước                                                                                                                                                                                                                                                                                             |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -111,7 +127,7 @@ MSW kiểm tra và serialize dữ liệu đã qua response schema trước khi g
 | Pagination            | `page` bắt đầu từ 1, mặc định 1; `pageSize` mặc định 20, tối đa 100. 14 schema danh sách dùng chung `listQuerySchema.shape`; response `Page<T>` có `{ items, pagination: { page, pageSize, total } }`. `Pagination` suy ra từ schema response, không định nghĩa lại trường.                         |
 | Filter và sort        | Mỗi resource có `<Resource>Query` và whitelist riêng; search dùng `q`, quan hệ dùng `<resource>Id`. `q` trim và rỗng thành undefined. Task dùng sort allowlist `dueAt`, `-dueAt`, `updatedAt`, `-updatedAt`; không thêm sort cho endpoint chưa hỗ trợ.                                              |
 | Ngày và thời điểm     | Analytics/report dùng `from`, `to` là ngày; task dùng `dueFrom`, `dueTo` là UTC. Giữ tên và kiểu theo nghĩa dữ liệu.                                                                                                                                                                                |
-| Cache và HTTP         | Hook chuẩn hóa ID/filter một lần; dùng cùng kết quả cho key, kiểm tra quyền và service. ID thiếu/sai làm query bị tắt. Service gửi input có kiểu qua Axios, không parse lại hoặc ghép ID vào filter/body.                                                                                           |
+| Cache và HTTP         | Hook dùng trực tiếp resourceId cho key/service, không parse hoặc đổi tên thành id/parentId. ID rỗng chờ dữ liệu; ID sai không rỗng nhận lỗi API. Filter chuẩn hóa một lần, dùng cùng kết quả cho key và service. Service gửi input có kiểu qua Axios, không parse lại hoặc ghép ID vào filter/body.                                                                                           |
 
 Tên query theo dữ liệu: `ReportPreviewQuery`, `FilterOptionsQuery`, `TaskQuery`; response chi tiết dùng hậu tố `Dto`, bản ghi danh sách rút gọn dùng `Row`, mutation body dùng `Input`. Đã bỏ các alias query/input trùng cấu trúc trong analytics. Contract TypeScript và service dùng cùng type. Test kiến trúc đối chiếu cả route service lẫn MSW với catalog để phát hiện lệch đường dẫn khi sửa API.
 
@@ -121,7 +137,7 @@ Lịch sử task/dự án dùng `AuditChanges` chung để hiển thị từng t
 
 - React Query quản lý dữ liệu server và session; query key có viewer để phân tách phiên. Hook xử lý 403/410 qua helper chung, xóa dữ liệu không còn được phép xem.
 - Zustand giữ menu, dấu form chưa lưu và yêu cầu xác nhận đang chờ. Bộ lọc có thể chia sẻ nằm trên URL. React Hook Form giữ input và validation theo Zod.
-- Form dùng chung tách phần điều khiển form, field, resolver, lỗi và wrapper version. `onSubmit` nhận kiểu output suy ra từ schema, dùng thẳng dữ liệu đã kiểm tra. Form tạo/sửa chọn schema và callback có kiểu riêng, chia sẻ props hiển thị. Chỉ kiểm tra lại khi dựng payload mới từ nhiều nguồn hoặc lấy phần thay đổi. Form giữ dữ liệu khi 412, cho tải bản mới để đối chiếu rồi xác nhận dùng version mới khi lưu lại.
+- Mỗi form feature khai báo `useForm` có kiểu, `zodResolver` và JSX của từng field như vietcd. `Form` dùng chung giữ pending/lỗi HTTP/dirty/conflict; các control nhận `register`/`Controller` và lỗi. Không có bộ dựng field, resolver metadata hoặc wrapper version. Chuyển deadline qua schema của form, ô số qua RHF. `onSubmit` nhận output đã kiểm tra, `changedFields` trả patch có kiểu; không parse lại patch. Form giữ dữ liệu khi 412, cho tải bản mới để đối chiếu rồi xác nhận version mới. Bỏ sửa rồi mở lại lấy giá trị hiện tại.
 - Access token chỉ nằm trong bộ nhớ của `services/api-client.ts`. File này cũng chứa kiểu request options, callback refresh và Promise dùng chung để các request 401 chờ cùng một lần refresh. Auth service tiêu thụ token và trả `SessionDto`; không đưa token/password vào Query cache, Zustand hoặc localStorage. `http-error.ts` đảm nhận chuẩn hóa lỗi; không cần thêm file types/session riêng cho lượng code hiện tại.
 - Login, tạo user, reset mật khẩu và upload dùng ticket tạm để MutationCache không giữ mật khẩu/byte tệp. Các mutation thông thường nhận variables trực tiếp. Download trả Blob cho hook tiêu thụ và thu hồi Object URL.
 
@@ -137,13 +153,13 @@ Rà soát luồng lưu và truyền dữ liệu:
 
 | Luồng                                        | Cách viết được giữ sau rà soát                                                                                                                                       |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Query và quyền                               | Hook kiểm tra ID; màn chỉ thêm điều kiện riêng như dialog mở hoặc chế độ tạo mới. `hasPermission` xử lý session rỗng, caller không kiểm tra lại.                     |
-| Form tạo/sửa user, đơn vị, nhóm, dự án, task | Nhánh sửa dùng cùng `base` từ snapshot cho ID, patch và version, không kiểm tra lại entity trong callback. Payload được ghép mới vẫn kiểm tra schema.                |
+| Query và quyền                               | Hook kiểm tra ID; màn chỉ thêm điều kiện riêng như dialog mở hoặc chế độ tạo mới. Role mở trang chỉ kiểm tra ở WorkspaceShell; hook không lặp quyền view.                     |
+| Form tạo/sửa user, đơn vị, nhóm, dự án, task | Nhánh sửa dùng cùng `base` từ snapshot cho ID, patch và version, không kiểm tra lại entity trong callback. Patch chỉ lọc trường của output đã hợp lệ nên không parse lại.                |
 | Dialog giao/thực hiện task, đóng dự án       | Nhận entity và callback reload từ query của cha, không tạo observer chỉ để gọi refetch.                                                                              |
 | Nộp kết quả                                  | Form nhận task, lấy ID và tiêu chí từ task thay vì nhận thêm các props chứa cùng dữ liệu.                                                                            |
 | Báo cáo                                      | Mutation refresh invalidate query; component không refetch lần nữa. DB tính preview một lần khi gửi, dùng cùng preview để kiểm tra task và tạo snapshot.             |
 | Đăng nhập, mật khẩu, upload                  | Map giữ request nhạy cảm được khởi tạo một lần qua lazy state; MutationCache chỉ giữ ticket, payload được xóa sau execute.                                           |
-| HTTP                                         | Base URL cấu hình một lần; envelope và data được parse cùng schema; meta dùng chung cho success/error. Nhận diện AxiosError một lần trước chuẩn hóa lỗi.             |
+| HTTP                                         | Base URL cấu hình một lần; kiểm tra DTO trực tiếp từ response.data, lỗi JSON phẳng. Nhận diện AxiosError một lần trước chuẩn hóa lỗi.                                |
 | DTO và phân tích mock                        | Các hàm dựng DTO CRUD/cảnh báo trả object có kiểu; handler kiểm tra response. Scope tái sử dụng danh sách dự án có quyền và nhóm đã tìm, không tìm lại cùng dữ liệu. |
 
 Kiểm tra ở FE và biên HTTP độc lập vẫn cần giữ: backend không tin input từ client và client không tin response ngoài hệ thống. Không bỏ quyền hiện tại khi replay, kiểm tra version, state machine hoặc validation trên payload mới chỉ để giảm dòng.
@@ -190,7 +206,9 @@ AnalyticsFrame dùng cùng SectionSelect/section-toolbar với dự án và côn
 
 ReportRow có `project` thay projectId để trả tên dự án ngay trong hàng; ReviewRow có taskTitle để bỏ query theo từng task. Metadata phân tích chỉ gồm dataAsOf/quality; bỏ calculationVersion không phục vụ thao tác. Định dạng đơn vị/chỉ số dùng `metricValue` trong lib/format cho cả UI và diễn giải mock. Mô tả công thức KPI nằm trong data.json. KPI dùng thẻ nhỏ với nút chi tiết góc trên; trang chi tiết bỏ các khung trùng chỉ số/tổng hợp và không tạo khung căn cứ rỗng. Cách tính và giới hạn diễn giải mở theo nhu cầu.
 
-Hồ sơ theo bố cục account-page của vietcd: tiêu đề/email, tab ngang Thông tin cá nhân/Ảnh đại diện/Đổi mật khẩu, form một cột rộng tối đa 576px ngay bên dưới. Riêng /profile hiển thị form thông tin ngay; bỏ bước mở sửa và bảng thông tin trước form. Email là input readonly bên trên, họ tên/tên đăng nhập xếp dọc, đơn vị/vai trò là dòng thông tin chỉ đọc. Field cao 44px, nút lưu ở dưới bên trái; form mật khẩu cùng bố cục. Tab giữ trạng thái chọn/keyboard/confirmDiscard. Avatar nằm giữa panel ảnh, tròn 160px với placeholder biểu tượng người, nút chọn ảnh riêng và preview/filename sau chọn. onFileChange của field file chỉ phục vụ preview UI, RHF vẫn giữ tệp và validation; object URL được thu hồi khi thay ảnh/rời mục. Ảnh chỉ gửi avatar qua PATCH /auth/me, không gửi email hoặc URL preview. Lưu thành công cập nhật snapshot từ result.user để lưu tiếp đúng version. ProfileHeader chỉ dùng ở hồ sơ công khai. PUT /auth/me/password nhận currentPassword/newPassword, xác nhận chỉ ở FE; không trim/lưu credential vào cache/audit. Endpoint trả {ok:true} và giữ phiên hiện tại.
+Hồ sơ theo bố cục account-page của vietcd: tiêu đề/email, tab ngang Thông tin cá nhân/Ảnh đại diện/Đổi mật khẩu, form một cột rộng tối đa 576px ngay bên dưới. Riêng /profile hiển thị form thông tin ngay; bỏ bước mở sửa và bảng thông tin trước form. Email là input readonly bên trên, họ tên/tên đăng nhập xếp dọc, đơn vị/vai trò là dòng thông tin chỉ đọc. Field cao 44px, nút lưu ở dưới bên trái; form mật khẩu cùng bố cục. Tab giữ trạng thái chọn/keyboard/confirmDiscard cho thông tin/mật khẩu.
+
+AvatarEditor hiển thị avatar hiện tại 160px và chọn tệp; avatarSchema kiểm tra định dạng/dung lượng trước khi mở AvatarCropDialog. React-easy-crop cho kéo bằng chuột/chạm/phím, zoom 1–3 và chọn vùng tròn 1:1. Bấm Cập nhật mới lấy pixel của vùng chọn từ ảnh đang hiển thị, vẽ Canvas 512×512, mã hóa WebP rồi gửi File qua PATCH /auth/me multipart; trình duyệt không hỗ trợ WebP dùng PNG từ Canvas. Không gửi ảnh gốc, tọa độ hoặc URL tạm; giữ version/idempotency và ticket để byte ảnh không vào mutation cache. Hủy/Escape/đóng bỏ nguồn ảnh, không upload hoặc hỏi bỏ lưu; avatar không đăng ký dirty form. Object URL được thu hồi khi đóng, thay tệp hoặc rời mục. Dialog dùng Radix để quản lý focus/Escape, không scale animation làm sai kích thước cropper; giữ vùng cắt/zoom khi lỗi, có đối chiếu ảnh hiện tại và chấp nhận version mới khi 412. Thành công cập nhật ảnh/menu và vẫn ở mục ảnh. Đã bỏ callback onFileChange và profileAvatarSchema không còn nơi dùng. Lưu hồ sơ cập nhật snapshot từ result.user để lưu tiếp đúng version. ProfileHeader chỉ dùng ở hồ sơ công khai. PUT /auth/me/password nhận currentPassword/newPassword, xác nhận chỉ ở FE; không trim/lưu credential vào cache/audit. Endpoint trả {ok:true} và giữ phiên hiện tại.
 
 Hồ sơ thành viên /users/[userId] nằm trong workspace yêu cầu đăng nhập. MemberProfilePage dùng users hook/service qua GET /users/:userId/profile; không dùng API quản trị để đọc hồ sơ. Theo yêu cầu đã điều chỉnh, ProfileDto là object phẳng chỉ có id/displayName/avatarUrl/unit dạng tên/systemRole/email. UI chỉ gồm card nhận diện và thông tin liên hệ email; bỏ toàn bộ thống kê, bảng dự án, query phân trang và logic tính trong DB. Handler xác thực rồi gọi DB lấy hồ sơ; query thừa trả 422. Thành viên bị khóa/không tồn tại trả 404. Key chỉ có viewerId/userId, staleTime 0 để cập nhật hồ sơ khi mở lại. Avatar menu, tên thành viên dự án và danh sách tài khoản có liên kết đến hồ sơ; hồ sơ của chính mình có link quản lý /profile. Tổng catalog vẫn có 83 route (82 service + 1 image resource).
 

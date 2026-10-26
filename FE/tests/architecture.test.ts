@@ -12,18 +12,12 @@ function files(directory: string): string[] {
   );
 }
 describe("Feature organization and HTTP boundaries", () => {
-  it("uses API interfaces and direct HTTP services without endpoint descriptors", () => {
+  it("uses direct HTTP services without endpoint descriptors or mock access", () => {
     for (const feature of readdirSync("src/features")) {
-      const contract = readFileSync(
-        `src/features/${feature}/api/${feature}.contract.ts`,
-        "utf8",
-      );
       const service = readFileSync(
         `src/features/${feature}/api/${feature}.service.ts`,
         "utf8",
       );
-      expect(contract).toMatch(/export interface \w+Api/);
-      expect(contract).not.toMatch(/endpoint\(|ContractRequest|invalidates:/);
       expect(service).toMatch(
         /apiClient\s*\.(get|post|patch|put)(?:<[^>]+>)?\(/,
       );
@@ -127,6 +121,12 @@ describe("Feature organization and HTTP boundaries", () => {
     );
     expect(tasksKeys.listTasks("u-lan", query)).not.toEqual(
       tasksKeys.listTasks("u-pm", query),
+    );
+    expect(tasksKeys.listTasks(null, query)).toEqual(
+      tasksKeys.listTasks(undefined, query),
+    );
+    expect(tasksKeys.listTasks(null, query)).not.toEqual(
+      tasksKeys.listTasks("u-lan", query),
     );
   });
 });

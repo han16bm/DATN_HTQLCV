@@ -1,120 +1,99 @@
 "use client";
-import { filterOptionsQuerySchema } from "@/features/analytics/schemas/analytics-query.schema";
-import {
-  type AnalyticsQuery,
-  type FilterOptionsQuery,
-} from "@/features/analytics/types/analytics.types";
-import { hasPermission, useSession } from "@/lib/auth/session-context";
+
+import { useSession } from "@/lib/auth/session-context";
 import type { QueryOptions } from "@/lib/query/use-query-access";
 import { useQueryAccess } from "@/lib/query/use-query-access";
-import { queryIdSchema } from "@/lib/validation/request.schema";
 import { ApiError } from "@/types/api/error";
 import { useQuery } from "@tanstack/react-query";
 import { analyticsKeys } from "../api/analytics.keys";
 import { analyticsService } from "../api/analytics.service";
+import { filterOptionsQuerySchema } from "../schemas/analytics-query.schema";
+import {
+  type AnalyticsQuery,
+  type FilterOptionsQuery,
+} from "../types/analytics.types";
 
 export function useGetDashboardQuery(
   query: AnalyticsQuery,
   options: QueryOptions = {},
 ) {
-  const { session } = useSession();
+  const viewerId = useSession().session?.user.id;
   const result = useQuery({
-    queryKey: analyticsKeys.getDashboard(
-      session?.user.id ?? "anonymous",
-      query,
-    ),
+    queryKey: analyticsKeys.getDashboard(viewerId, query),
     queryFn: ({ signal }) => analyticsService.getDashboard(query, { signal }),
-    enabled:
-      options.enabled !== false &&
-      hasPermission(session, "ANALYTICS_VIEW", query.projectId),
+    enabled: options.enabled !== false && Boolean(viewerId),
     staleTime: 10000,
   });
   return useQueryAccess(result, "analytics");
 }
+
 export function useGetDeadlineRisksQuery(
   query: AnalyticsQuery,
   options: QueryOptions = {},
 ) {
-  const { session } = useSession();
+  const viewerId = useSession().session?.user.id;
   const result = useQuery({
-    queryKey: analyticsKeys.getDeadlineRisks(
-      session?.user.id ?? "anonymous",
-      query,
-    ),
+    queryKey: analyticsKeys.getDeadlineRisks(viewerId, query),
     queryFn: ({ signal }) =>
       analyticsService.getDeadlineRisks(query, { signal }),
-    enabled:
-      options.enabled !== false &&
-      hasPermission(session, "ANALYTICS_VIEW", query.projectId),
+    enabled: options.enabled !== false && Boolean(viewerId),
     staleTime: 10000,
   });
   return useQueryAccess(result, "analytics");
 }
+
 export function useGetWorkloadQuery(
   query: AnalyticsQuery,
   options: QueryOptions = {},
 ) {
-  const { session } = useSession();
+  const viewerId = useSession().session?.user.id;
   const result = useQuery({
-    queryKey: analyticsKeys.getWorkload(session?.user.id ?? "anonymous", query),
+    queryKey: analyticsKeys.getWorkload(viewerId, query),
     queryFn: ({ signal }) => analyticsService.getWorkload(query, { signal }),
-    enabled:
-      options.enabled !== false &&
-      hasPermission(session, "ANALYTICS_VIEW", query.projectId),
+    enabled: options.enabled !== false && Boolean(viewerId),
     staleTime: 10000,
   });
   return useQueryAccess(result, "analytics");
 }
+
 export function useGetBottlenecksQuery(
   query: AnalyticsQuery,
   options: QueryOptions = {},
 ) {
-  const { session } = useSession();
+  const viewerId = useSession().session?.user.id;
   const result = useQuery({
-    queryKey: analyticsKeys.getBottlenecks(
-      session?.user.id ?? "anonymous",
-      query,
-    ),
+    queryKey: analyticsKeys.getBottlenecks(viewerId, query),
     queryFn: ({ signal }) => analyticsService.getBottlenecks(query, { signal }),
-    enabled:
-      options.enabled !== false &&
-      hasPermission(session, "ANALYTICS_VIEW", query.projectId),
+    enabled: options.enabled !== false && Boolean(viewerId),
     staleTime: 10000,
   });
   return useQueryAccess(result, "analytics");
 }
+
 export function useGetAnalysisSummaryQuery(
   query: AnalyticsQuery,
   options: QueryOptions = {},
 ) {
-  const { session } = useSession();
+  const viewerId = useSession().session?.user.id;
   const result = useQuery({
-    queryKey: analyticsKeys.getAnalysisSummary(
-      session?.user.id ?? "anonymous",
-      query,
-    ),
+    queryKey: analyticsKeys.getAnalysisSummary(viewerId, query),
     queryFn: ({ signal }) =>
       analyticsService.getAnalysisSummary(query, { signal }),
-    enabled:
-      options.enabled !== false &&
-      hasPermission(session, "ANALYTICS_VIEW", query.projectId),
+    enabled: options.enabled !== false && Boolean(viewerId),
     staleTime: 10000,
   });
   return useQueryAccess(result, "analytics");
 }
+
 export function useGetAnalysisJobQuery(
   jobId: string,
   options: QueryOptions & { poll?: number | false } = {},
 ) {
-  const id = queryIdSchema.parse(jobId);
-  const { session } = useSession();
+  const viewerId = useSession().session?.user.id;
   const result = useQuery({
-    queryKey: analyticsKeys.getAnalysisJob(session?.user.id ?? "anonymous", id),
-    queryFn: ({ signal }) => analyticsService.getAnalysisJob(id, { signal }),
-    enabled:
-      options.enabled !== false &&
-      Boolean(id) &&
-      hasPermission(session, "ANALYTICS_VIEW"),
+    queryKey: analyticsKeys.getAnalysisJob(viewerId, jobId),
+    queryFn: ({ signal }) => analyticsService.getAnalysisJob(jobId, { signal }),
+    enabled: options.enabled !== false && Boolean(viewerId && jobId),
     staleTime: 10000,
     refetchInterval: (current) => {
       if (
@@ -135,48 +114,28 @@ export function useGetAnalysisJobQuery(
   });
   return useQueryAccess(result, "analytics");
 }
-export function useGetAnalysisDetailQuery(
-  analysisId: string,
-  options: QueryOptions = {},
-) {
-  const id = queryIdSchema.parse(analysisId);
-  const { session } = useSession();
+
+export function useGetAnalysisDetailQuery(analysisId: string) {
+  const viewerId = useSession().session?.user.id;
   const result = useQuery({
-    queryKey: analyticsKeys.getAnalysisDetail(
-      session?.user.id ?? "anonymous",
-      id,
-    ),
-    queryFn: ({ signal }) => analyticsService.getAnalysisDetail(id, { signal }),
-    enabled:
-      options.enabled !== false &&
-      Boolean(id) &&
-      hasPermission(session, "ANALYTICS_VIEW"),
+    queryKey: analyticsKeys.getAnalysisDetail(viewerId, analysisId),
+    queryFn: ({ signal }) =>
+      analyticsService.getAnalysisDetail(analysisId, { signal }),
+    enabled: Boolean(viewerId && analysisId),
     staleTime: 10000,
   });
   return useQueryAccess(result, "analytics");
 }
-export function useListAnalyticsFilterOptionsQuery(
-  query: FilterOptionsQuery,
-  options: QueryOptions = {},
-) {
-  const { session } = useSession();
-  const parsed = filterOptionsQuerySchema.safeParse(query);
-  const filters = parsed.success ? parsed.data : query;
+
+export function useListAnalyticsFilterOptionsQuery(query: FilterOptionsQuery) {
+  const viewerId = useSession().session?.user.id;
+
+  const filters = filterOptionsQuerySchema.safeParse(query).data ?? query;
   const result = useQuery({
-    queryKey: parsed.success
-      ? analyticsKeys.listAnalyticsFilterOptions(
-          session?.user.id ?? "anonymous",
-          filters,
-        )
-      : [
-          "analytics",
-          session?.user.id ?? "anonymous",
-          "listAnalyticsFilterOptions",
-          "invalid-query",
-        ],
+    queryKey: analyticsKeys.listAnalyticsFilterOptions(viewerId, filters),
     queryFn: ({ signal }) =>
       analyticsService.listAnalyticsFilterOptions(filters, { signal }),
-    enabled: options.enabled !== false && Boolean(session) && parsed.success,
+    enabled: Boolean(viewerId),
     staleTime: 30000,
   });
   return useQueryAccess(result, "analytics");

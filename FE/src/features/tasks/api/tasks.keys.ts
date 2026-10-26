@@ -1,17 +1,16 @@
-import {
-  type TaskHistoryQuery,
-  type TaskQuery,
-} from "@/features/tasks/types/tasks.types";
+import type { ViewerId } from "@/types/common";
+import { type TaskHistoryQuery, type TaskQuery } from "../types/tasks.types";
 export const tasksKeys = {
   all: ["tasks"] as const,
-  viewer: (viewerId: string) => ["tasks", viewerId] as const,
-  listTasks: (viewerId: string, query: TaskQuery) =>
-    ["tasks", viewerId, "listTasks", query] as const,
-  getTask: (viewerId: string, taskId: string) =>
-    ["tasks", viewerId, "getTask", taskId] as const,
+  viewer: (viewerId: ViewerId) => ["tasks", viewerId ?? "anonymous"] as const,
+  listTasks: (viewerId: ViewerId, query: TaskQuery) =>
+    [...tasksKeys.viewer(viewerId), "listTasks", query] as const,
+  getTask: (viewerId: ViewerId, taskId: string) =>
+    [...tasksKeys.viewer(viewerId), "getTask", taskId] as const,
   listTaskHistory: (
-    viewerId: string,
+    viewerId: ViewerId,
     taskId: string,
     query: TaskHistoryQuery,
-  ) => ["tasks", viewerId, "listTaskHistory", taskId, query] as const,
+  ) =>
+    [...tasksKeys.viewer(viewerId), "listTaskHistory", taskId, query] as const,
 };

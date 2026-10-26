@@ -1,101 +1,117 @@
-import type { ProjectsApi } from "@/features/projects/api/projects.contract";
+import { auditSchema, page } from "@/lib/validation/common.schema";
+import {
+  type MutationOptions,
+  type RequestOptions,
+  type VersionOptions,
+  apiClient,
+} from "@/services/api-client";
 import {
   getProjectClosureChecksResultSchema,
   projectRowSchema,
   projectSchema,
-} from "@/features/projects/schemas/projects.schema";
-import {
-  type CancelProjectInput,
-  type CreateProjectInput,
-  type ProjectHistoryQuery,
-  type ProjectQuery,
-  type UpdateProjectInput,
-} from "@/features/projects/types/projects.types";
-import { auditSchema, page } from "@/lib/validation/common.schema";
+} from "../schemas/projects.schema";
 import type {
-  MutationOptions,
-  RequestOptions,
-  VersionOptions,
-} from "@/services/api-client";
-import { apiClient, parseResponse } from "@/services/api-client";
-export const projectsService: ProjectsApi = {
-  listProjects(query: ProjectQuery = {}, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>("/projects", { ...options, params: query })
-      .then(parseResponse(page(projectRowSchema)));
+  CancelProjectInput,
+  CreateProjectInput,
+  GetProjectClosureChecksResult,
+  ProjectDto,
+  ProjectHistoryList,
+  ProjectHistoryQuery,
+  ProjectList,
+  ProjectQuery,
+  UpdateProjectInput,
+} from "../types/projects.types";
+
+export const projectsService = {
+  async listProjects(query: ProjectQuery = {}, options: RequestOptions = {}) {
+    const response = await apiClient.get<ProjectList>("/projects", {
+      ...options,
+      params: query,
+      schema: page(projectRowSchema),
+    });
+    return response.data;
   },
-  getProject(projectId: string, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>(`/projects/${encodeURIComponent(projectId)}`, options)
-      .then(parseResponse(projectSchema));
+
+  async getProject(projectId: string, options: RequestOptions = {}) {
+    const response = await apiClient.get<ProjectDto>(
+      `/projects/${encodeURIComponent(projectId)}`,
+      { ...options, schema: projectSchema },
+    );
+    return response.data;
   },
-  createProject(payload: CreateProjectInput, options: MutationOptions) {
-    return apiClient
-      .post<unknown>("/projects", payload, options)
-      .then(parseResponse(projectSchema));
+
+  async createProject(payload: CreateProjectInput, options: MutationOptions) {
+    const response = await apiClient.post<ProjectDto>("/projects", payload, {
+      ...options,
+      schema: projectSchema,
+    });
+    return response.data;
   },
-  updateProject(
+
+  async updateProject(
     projectId: string,
     payload: UpdateProjectInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .patch<unknown>(
-        `/projects/${encodeURIComponent(projectId)}`,
-        payload,
-        options,
-      )
-      .then(parseResponse(projectSchema));
+    const response = await apiClient.patch<ProjectDto>(
+      `/projects/${encodeURIComponent(projectId)}`,
+      payload,
+      { ...options, schema: projectSchema },
+    );
+    return response.data;
   },
-  activateProject(projectId: string, options: VersionOptions) {
-    return apiClient
-      .post<unknown>(
-        `/projects/${encodeURIComponent(projectId)}/activate`,
-        {},
-        options,
-      )
-      .then(parseResponse(projectSchema));
+
+  async activateProject(projectId: string, options: VersionOptions) {
+    const response = await apiClient.post<ProjectDto>(
+      `/projects/${encodeURIComponent(projectId)}/activate`,
+      {},
+      { ...options, schema: projectSchema },
+    );
+    return response.data;
   },
-  getProjectClosureChecks(projectId: string, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>(
-        `/projects/${encodeURIComponent(projectId)}/closure-checks`,
-        options,
-      )
-      .then(parseResponse(getProjectClosureChecksResultSchema));
+
+  async getProjectClosureChecks(
+    projectId: string,
+    options: RequestOptions = {},
+  ) {
+    const response = await apiClient.get<GetProjectClosureChecksResult>(
+      `/projects/${encodeURIComponent(projectId)}/closure-checks`,
+      { ...options, schema: getProjectClosureChecksResultSchema },
+    );
+    return response.data;
   },
-  completeProject(projectId: string, options: VersionOptions) {
-    return apiClient
-      .post<unknown>(
-        `/projects/${encodeURIComponent(projectId)}/complete`,
-        {},
-        options,
-      )
-      .then(parseResponse(projectSchema));
+
+  async completeProject(projectId: string, options: VersionOptions) {
+    const response = await apiClient.post<ProjectDto>(
+      `/projects/${encodeURIComponent(projectId)}/complete`,
+      {},
+      { ...options, schema: projectSchema },
+    );
+    return response.data;
   },
-  cancelProject(
+
+  async cancelProject(
     projectId: string,
     payload: CancelProjectInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .post<unknown>(
-        `/projects/${encodeURIComponent(projectId)}/cancel`,
-        payload,
-        options,
-      )
-      .then(parseResponse(projectSchema));
+    const response = await apiClient.post<ProjectDto>(
+      `/projects/${encodeURIComponent(projectId)}/cancel`,
+      payload,
+      { ...options, schema: projectSchema },
+    );
+    return response.data;
   },
-  listProjectHistory(
+
+  async listProjectHistory(
     projectId: string,
     query: ProjectHistoryQuery = {},
     options: RequestOptions = {},
   ) {
-    return apiClient
-      .get<unknown>(`/projects/${encodeURIComponent(projectId)}/history`, {
-        ...options,
-        params: query,
-      })
-      .then(parseResponse(page(auditSchema)));
+    const response = await apiClient.get<ProjectHistoryList>(
+      `/projects/${encodeURIComponent(projectId)}/history`,
+      { ...options, params: query, schema: page(auditSchema) },
+    );
+    return response.data;
   },
 };

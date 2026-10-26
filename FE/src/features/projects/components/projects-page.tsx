@@ -1,4 +1,7 @@
 "use client";
+import { canVisit } from "@/lib/auth/access";
+
+import { PageSkeleton } from "@/components/ui/loading";
 import {
   Badge,
   ButtonLink,
@@ -6,19 +9,19 @@ import {
   DetailLink,
   PageHeader,
 } from "@/components/ui/page";
-import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
-import { projectStatusSchema } from "@/features/projects/schemas/projects.schema";
-import { hasPermission, useSession } from "@/lib/auth/session-context";
+import { useSession } from "@/lib/auth/session-context";
 import { dateTime, label } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { useListProjectsQuery } from "../hooks/use-projects-queries";
+import { projectStatusSchema } from "../schemas/projects.schema";
 
 export function ProjectsPage() {
   const { session } = useSession();
   const filters = useUrlFilters();
   const status = projectStatusSchema.safeParse(filters.get("status"));
+  const scope = useListProjectsQuery({ pageSize: 100 });
   const query = useListProjectsQuery({
     q: filters.get("q") || undefined,
     status: status.success ? status.data : undefined,
@@ -30,7 +33,7 @@ export function ProjectsPage() {
       <PageHeader
         title="Dự án"
         actions={
-          hasPermission(session, "PROJECT_CREATE") && (
+          canVisit(session?.user.systemRole, "/projects/new") && (
             <ButtonLink href="/projects/new" primary>
               Tạo dự án
             </ButtonLink>
@@ -68,10 +71,10 @@ export function ProjectsPage() {
             onChange={(e) => filters.set("unitId", e.target.value)}
           >
             <option value="">Tất cả trong quyền</option>
-            {query.data &&
+            {scope.data &&
               [
                 ...new Map(
-                  query.data.items.map((p) => [p.unit.id, p.unit]),
+                  scope.data.items.map((p) => [p.unit.id, p.unit]),
                 ).values(),
               ].map((u) => (
                 <option key={u.id} value={u.id}>
@@ -81,6 +84,12 @@ export function ProjectsPage() {
           </select>
         </label>
       </section>
+      {scope.isError && (
+        <QueryErrorState
+          error={scope.error}
+          retry={() => void scope.refetch()}
+        />
+      )}
       {query.isPending && <PageSkeleton variant="table" />}
       {query.isError && (
         <QueryErrorState

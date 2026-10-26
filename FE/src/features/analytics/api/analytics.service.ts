@@ -1,84 +1,126 @@
-import type { AnalyticsApi } from "@/features/analytics/api/analytics.contract";
-import { analysisSchema } from "@/features/analytics/schemas/analysis-detail.schema";
-import { feedbackSchema } from "@/features/analytics/schemas/analysis-feedback.schema";
-import { jobSchema } from "@/features/analytics/schemas/analysis-job.schema";
-import { bottlenecksSchema } from "@/features/analytics/schemas/bottlenecks.schema";
-import { dashboardSchema } from "@/features/analytics/schemas/dashboard.schema";
-import { risksSchema } from "@/features/analytics/schemas/risks.schema";
-import { summarySchema } from "@/features/analytics/schemas/summary.schema";
-import { workloadSchema } from "@/features/analytics/schemas/workload.schema";
-import {
-  type AnalyticsQuery,
-  type CreateJobInput,
-  type FeedbackInput,
-  type FilterOptionsQuery,
-} from "@/features/analytics/types/analytics.types";
 import { entityLabelSchema, page } from "@/lib/validation/common.schema";
-import type { MutationOptions, RequestOptions } from "@/services/api-client";
-import { apiClient, parseResponse } from "@/services/api-client";
-export const analyticsService: AnalyticsApi = {
-  getDashboard(query: AnalyticsQuery, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>("/dashboard", { ...options, params: query })
-      .then(parseResponse(dashboardSchema));
+import {
+  type MutationOptions,
+  type RequestOptions,
+  apiClient,
+} from "@/services/api-client";
+import { analysisSchema } from "../schemas/analysis-detail.schema";
+import { feedbackSchema } from "../schemas/analysis-feedback.schema";
+import { jobSchema } from "../schemas/analysis-job.schema";
+import { bottlenecksSchema } from "../schemas/bottlenecks.schema";
+import { dashboardSchema } from "../schemas/dashboard.schema";
+import { risksSchema } from "../schemas/risks.schema";
+import { summarySchema } from "../schemas/summary.schema";
+import { workloadSchema } from "../schemas/workload.schema";
+import type {
+  AnalysisDto,
+  AnalyticsQuery,
+  BottlenecksDto,
+  CreateJobInput,
+  DashboardDto,
+  FeedbackDto,
+  FeedbackInput,
+  FilterList,
+  FilterOptionsQuery,
+  JobDto,
+  RisksDto,
+  SummaryDto,
+  WorkloadDto,
+} from "../types/analytics.types";
+
+export const analyticsService = {
+  async getDashboard(query: AnalyticsQuery, options: RequestOptions = {}) {
+    const response = await apiClient.get<DashboardDto>("/dashboard", {
+      ...options,
+      params: query,
+      schema: dashboardSchema,
+    });
+    return response.data;
   },
-  getDeadlineRisks(query: AnalyticsQuery, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>("/analytics/risks", { ...options, params: query })
-      .then(parseResponse(risksSchema));
+
+  async getDeadlineRisks(query: AnalyticsQuery, options: RequestOptions = {}) {
+    const response = await apiClient.get<RisksDto>("/analytics/risks", {
+      ...options,
+      params: query,
+      schema: risksSchema,
+    });
+    return response.data;
   },
-  getWorkload(query: AnalyticsQuery, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>("/analytics/workload", { ...options, params: query })
-      .then(parseResponse(workloadSchema));
+
+  async getWorkload(query: AnalyticsQuery, options: RequestOptions = {}) {
+    const response = await apiClient.get<WorkloadDto>("/analytics/workload", {
+      ...options,
+      params: query,
+      schema: workloadSchema,
+    });
+    return response.data;
   },
-  getBottlenecks(query: AnalyticsQuery, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>("/analytics/bottlenecks", { ...options, params: query })
-      .then(parseResponse(bottlenecksSchema));
+
+  async getBottlenecks(query: AnalyticsQuery, options: RequestOptions = {}) {
+    const response = await apiClient.get<BottlenecksDto>(
+      "/analytics/bottlenecks",
+      { ...options, params: query, schema: bottlenecksSchema },
+    );
+    return response.data;
   },
-  getAnalysisSummary(query: AnalyticsQuery, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>("/analytics/summary", { ...options, params: query })
-      .then(parseResponse(summarySchema));
+
+  async getAnalysisSummary(
+    query: AnalyticsQuery,
+    options: RequestOptions = {},
+  ) {
+    const response = await apiClient.get<SummaryDto>("/analytics/summary", {
+      ...options,
+      params: query,
+      schema: summarySchema,
+    });
+    return response.data;
   },
-  createAnalysisJob(payload: CreateJobInput, options: MutationOptions) {
-    return apiClient
-      .post<unknown>("/analytics/jobs", payload, options)
-      .then(parseResponse(jobSchema));
+
+  async createAnalysisJob(payload: CreateJobInput, options: MutationOptions) {
+    const response = await apiClient.post<JobDto>("/analytics/jobs", payload, {
+      ...options,
+      schema: jobSchema,
+    });
+    return response.data;
   },
-  getAnalysisJob(jobId: string, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>(`/analytics/jobs/${encodeURIComponent(jobId)}`, options)
-      .then(parseResponse(jobSchema));
+
+  async getAnalysisJob(jobId: string, options: RequestOptions = {}) {
+    const response = await apiClient.get<JobDto>(
+      `/analytics/jobs/${encodeURIComponent(jobId)}`,
+      { ...options, schema: jobSchema },
+    );
+    return response.data;
   },
-  getAnalysisDetail(analysisId: string, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>(
-        `/analytics/details/${encodeURIComponent(analysisId)}`,
-        options,
-      )
-      .then(parseResponse(analysisSchema));
+
+  async getAnalysisDetail(analysisId: string, options: RequestOptions = {}) {
+    const response = await apiClient.get<AnalysisDto>(
+      `/analytics/details/${encodeURIComponent(analysisId)}`,
+      { ...options, schema: analysisSchema },
+    );
+    return response.data;
   },
-  createAnalysisFeedback(
+
+  async createAnalysisFeedback(
     analysisId: string,
     payload: FeedbackInput,
     options: MutationOptions,
   ) {
-    return apiClient
-      .post<unknown>(
-        `/analytics/details/${encodeURIComponent(analysisId)}/feedback`,
-        payload,
-        options,
-      )
-      .then(parseResponse(feedbackSchema));
+    const response = await apiClient.post<FeedbackDto>(
+      `/analytics/details/${encodeURIComponent(analysisId)}/feedback`,
+      payload,
+      { ...options, schema: feedbackSchema },
+    );
+    return response.data;
   },
-  listAnalyticsFilterOptions(
+
+  async listAnalyticsFilterOptions(
     query: FilterOptionsQuery,
     options: RequestOptions = {},
   ) {
-    return apiClient
-      .get<unknown>("/analytics/filter-options", { ...options, params: query })
-      .then(parseResponse(page(entityLabelSchema)));
+    const response = await apiClient.get<FilterList>(
+      "/analytics/filter-options",
+      { ...options, params: query, schema: page(entityLabelSchema) },
+    );
+    return response.data;
   },
 };

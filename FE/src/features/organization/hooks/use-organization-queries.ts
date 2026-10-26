@@ -1,80 +1,57 @@
 "use client";
-import { teamQuerySchema } from "@/features/organization/schemas/team.schema";
-import { unitQuerySchema } from "@/features/organization/schemas/unit.schema";
-import {
-  type TeamQuery,
-  type UnitQuery,
-} from "@/features/organization/types/organization.types";
+
 import { useSession } from "@/lib/auth/session-context";
-import type { QueryOptions } from "@/lib/query/use-query-access";
 import { useQueryAccess } from "@/lib/query/use-query-access";
-import { queryIdSchema } from "@/lib/validation/request.schema";
 import { useQuery } from "@tanstack/react-query";
 import { organizationKeys } from "../api/organization.keys";
 import { organizationService } from "../api/organization.service";
+import { teamQuerySchema } from "../schemas/team.schema";
+import { unitQuerySchema } from "../schemas/unit.schema";
+import { type TeamQuery, type UnitQuery } from "../types/organization.types";
 
-export function useListUnitsQuery(
-  query: UnitQuery = {},
-  options: QueryOptions = {},
-) {
-  const { session } = useSession();
-  const parsed = unitQuerySchema.safeParse(query);
-  const filters = parsed.success ? parsed.data : query;
+export function useListUnitsQuery(query: UnitQuery = {}) {
+  const viewerId = useSession().session?.user.id;
+
+  const filters = unitQuerySchema.safeParse(query).data ?? query;
   const result = useQuery({
-    queryKey: parsed.success
-      ? organizationKeys.listUnits(session?.user.id ?? "anonymous", filters)
-      : [
-          "organization",
-          session?.user.id ?? "anonymous",
-          "listUnits",
-          "invalid-query",
-        ],
+    queryKey: organizationKeys.listUnits(viewerId, filters),
     queryFn: ({ signal }) => organizationService.listUnits(filters, { signal }),
-    enabled: options.enabled !== false && Boolean(session) && parsed.success,
+    enabled: Boolean(viewerId),
     staleTime: 30000,
   });
   return useQueryAccess(result, "organization");
 }
-export function useGetUnitQuery(unitId: string, options: QueryOptions = {}) {
-  const id = queryIdSchema.parse(unitId);
-  const { session } = useSession();
+
+export function useGetUnitQuery(unitId: string) {
+  const viewerId = useSession().session?.user.id;
   const result = useQuery({
-    queryKey: organizationKeys.getUnit(session?.user.id ?? "anonymous", id),
-    queryFn: ({ signal }) => organizationService.getUnit(id, { signal }),
-    enabled: options.enabled !== false && Boolean(session) && Boolean(id),
+    queryKey: organizationKeys.getUnit(viewerId, unitId),
+    queryFn: ({ signal }) => organizationService.getUnit(unitId, { signal }),
+    enabled: Boolean(viewerId && unitId),
     staleTime: 10000,
   });
   return useQueryAccess(result, "organization");
 }
-export function useListTeamsQuery(
-  query: TeamQuery = {},
-  options: QueryOptions = {},
-) {
-  const { session } = useSession();
-  const parsed = teamQuerySchema.safeParse(query);
-  const filters = parsed.success ? parsed.data : query;
+
+export function useListTeamsQuery(query: TeamQuery = {}) {
+  const viewerId = useSession().session?.user.id;
+
+  const filters = teamQuerySchema.safeParse(query).data ?? query;
   const result = useQuery({
-    queryKey: parsed.success
-      ? organizationKeys.listTeams(session?.user.id ?? "anonymous", filters)
-      : [
-          "organization",
-          session?.user.id ?? "anonymous",
-          "listTeams",
-          "invalid-query",
-        ],
+    queryKey: organizationKeys.listTeams(viewerId, filters),
     queryFn: ({ signal }) => organizationService.listTeams(filters, { signal }),
-    enabled: options.enabled !== false && Boolean(session) && parsed.success,
+    enabled: Boolean(viewerId),
     staleTime: 30000,
   });
   return useQueryAccess(result, "organization");
 }
-export function useGetTeamQuery(teamId: string, options: QueryOptions = {}) {
-  const id = queryIdSchema.parse(teamId);
-  const { session } = useSession();
+
+export function useGetTeamQuery(teamId: string) {
+  const viewerId = useSession().session?.user.id;
   const result = useQuery({
-    queryKey: organizationKeys.getTeam(session?.user.id ?? "anonymous", id),
-    queryFn: ({ signal }) => organizationService.getTeam(id, { signal }),
-    enabled: options.enabled !== false && Boolean(session) && Boolean(id),
+    queryKey: organizationKeys.getTeam(viewerId, teamId),
+    queryFn: ({ signal }) => organizationService.getTeam(teamId, { signal }),
+    enabled: Boolean(viewerId && teamId),
     staleTime: 10000,
   });
   return useQueryAccess(result, "organization");

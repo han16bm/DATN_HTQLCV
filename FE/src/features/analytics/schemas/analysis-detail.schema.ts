@@ -1,9 +1,9 @@
-import { explanationStateSchema } from "@/features/analytics/schemas/analysis-explanation.schema";
-import { feedbackSchema } from "@/features/analytics/schemas/analysis-feedback.schema";
-import { analysisSnapshotSchema } from "@/features/analytics/schemas/analysis-snapshot.schema";
 import { checkAnalysisDetail } from "@/lib/validation/contract-refinements";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
+import { explanationStateSchema } from "./analysis-explanation.schema";
+import { feedbackSchema } from "./analysis-feedback.schema";
+import { analysisSnapshotSchema } from "./analysis-snapshot.schema";
 export const freshnessSchema = z.object({
   status: z.enum(["CURRENT", "OUTDATED"]),
   latestAnalysisId: idSchema.nullable(),

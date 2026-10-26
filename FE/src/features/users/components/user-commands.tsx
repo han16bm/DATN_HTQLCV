@@ -1,70 +1,58 @@
 "use client";
-import type { FormField } from "@/components/forms/form.types";
-import { SchemaForm } from "@/components/forms/schema-form";
-import { Panel } from "@/components/ui/page";
+
+import { Form, type FormProps } from "@/components/forms/form";
 import {
-  resetPasswordSchema,
-  userLockSchema,
-} from "@/features/users/schemas/user-form.schema";
-import { type UserDto } from "@/features/users/types/users.types";
+  FormInput,
+  FormSelect,
+  FormTextarea,
+} from "@/components/forms/form-field";
+import { ReasonForm } from "@/components/forms/reason-form";
+import { Panel } from "@/components/ui/page";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
-import { reasonSchema } from "@/lib/validation/common.schema";
+import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
+import { validationMessage } from "@/lib/forms/validation-message";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import {
   useLockUserMutation,
   useResetUserPasswordMutation,
   useUnlockUserMutation,
 } from "../hooks/use-users-mutations";
-const reason: FormField = {
-  name: "reason",
-  label: "Lý do",
-  type: "textarea",
-  required: true,
-};
-export function UserCommands({ user }: { user: UserDto }) {
+import {
+  resetPasswordSchema,
+  userLockSchema,
+} from "../schemas/user-form.schema";
+import type {
+  LockUserInput,
+  ResetUserPasswordInput,
+  UserDto,
+} from "../types/users.types";
+
+export function UserCommands({
+  user,
+  reload,
+}: {
+  user: UserDto;
+  reload: () => Promise<{ data?: UserDto }>;
+}) {
   const [mode, setMode] = useState<"lock" | "password" | null>(null);
   const lock = useLockUserMutation();
   const unlock = useUnlockUserMutation();
   const reset = useResetUserPasswordMutation();
-  const isLocked = user.status === "LOCKED";
-  const fields: FormField[] =
-    mode === "password"
-      ? [
-          {
-            name: "temporaryPassword",
-            label: "Mật khẩu tạm",
-            type: "password",
-            required: true,
-          },
-          reason,
-        ]
-      : isLocked
-        ? [reason]
-        : [
-            {
-              name: "mode",
-              label: "Chế độ khóa",
-              type: "select",
-              options: [
-                {
-                  value: "NORMAL",
-                  label: "Thông thường — sau khi bàn giao",
-                },
-                {
-                  value: "EMERGENCY",
-                  label: "Khẩn cấp — thu hồi phiên ngay",
-                },
-              ],
-              required: true,
-            },
-            reason,
-          ];
-  const actionProps = {
-    fields,
-    defaults: mode === "lock" && !isLocked ? { mode: "NORMAL" } : {},
+  const snapshot = useEditSnapshot(user);
+  const isLocked = (mode === "lock" ? snapshot.base : user).status === "LOCKED";
+  const target = { userId: user.id, version: snapshot.base.version };
+  const conflict = {
+    onConflictReload: () => snapshot.load(reload),
+    onConflictAccept: snapshot.accept,
+    compareFields: [
+      { name: "displayName", label: "Họ tên" },
+      { name: "status", label: "Trạng thái" },
+      { name: "systemRole", label: "Vai trò hệ thống" },
+    ],
   };
-  const target = { userId: user.id, version: user.version };
   const onSaved = () => {
     toast.success("Đã cập nhật quyền truy cập.");
     setMode(null);
@@ -74,16 +62,20 @@ export function UserCommands({ user }: { user: UserDto }) {
       <div className="actions">
         <button
           onClick={async () => {
-            if (await confirmDiscard())
+            if (await confirmDiscard()) {
+              snapshot.saved(user);
               setMode(mode === "lock" ? null : "lock");
+            }
           }}
         >
           {isLocked ? "Mở khóa tài khoản" : "Khóa tài khoản"}
         </button>
         <button
           onClick={async () => {
-            if (await confirmDiscard())
+            if (await confirmDiscard()) {
+              snapshot.saved(user);
               setMode(mode === "password" ? null : "password");
+            }
           }}
         >
           Cấp lại mật khẩu
@@ -95,38 +87,98 @@ export function UserCommands({ user }: { user: UserDto }) {
           cập ngay.
         </p>
       )}
-      {mode &&
-        (mode === "password" ? (
-          <SchemaForm
-            key={`${mode}-${user.status}`}
-            {...actionProps}
-            schema={resetPasswordSchema}
-            onSubmit={async (values) => {
-              await reset.mutateAsync({ ...target, payload: values });
-              onSaved();
-            }}
-          />
-        ) : isLocked ? (
-          <SchemaForm
-            key={`${mode}-${user.status}`}
-            {...actionProps}
-            schema={reasonSchema}
-            onSubmit={async (values) => {
-              await unlock.mutateAsync({ ...target, payload: values });
+      {mode === "password" ? (
+        <PasswordResetForm
+          {...conflict}
+          onSubmit={async (payload) => {
+            await reset.mutateAsync({ ...target, payload });
+            onSaved();
+          }}
+        />
+      ) : (
+        mode === "lock" &&
+        (isLocked ? (
+          <ReasonForm
+            {...conflict}
+            onSubmit={async (payload) => {
+              await unlock.mutateAsync({ ...target, payload });
               onSaved();
             }}
           />
         ) : (
-          <SchemaForm
-            key={`${mode}-${user.status}`}
-            {...actionProps}
-            schema={userLockSchema}
-            onSubmit={async (values) => {
-              await lock.mutateAsync({ ...target, payload: values });
+          <LockForm
+            {...conflict}
+            onSubmit={async (payload) => {
+              await lock.mutateAsync({ ...target, payload });
               onSaved();
             }}
           />
-        ))}
+        ))
+      )}
     </Panel>
+  );
+}
+
+function PasswordResetForm({
+  onSubmit,
+  ...conflict
+}: Pick<
+  FormProps<ResetUserPasswordInput>,
+  "onSubmit" | "onConflictReload" | "onConflictAccept" | "compareFields"
+>) {
+  const form = useForm({
+    resolver: zodResolver(resetPasswordSchema, { error: validationMessage }),
+    defaultValues: { temporaryPassword: "", reason: "" },
+  });
+  return (
+    <Form compact form={form} onSubmit={onSubmit} {...conflict}>
+      <FormInput
+        label="Mật khẩu tạm"
+        type="password"
+        autoComplete="new-password"
+        required
+        {...form.register("temporaryPassword")}
+        error={form.formState.errors.temporaryPassword}
+      />
+      <FormTextarea
+        label="Lý do"
+        required
+        {...form.register("reason")}
+        error={form.formState.errors.reason}
+      />
+    </Form>
+  );
+}
+
+function LockForm({
+  onSubmit,
+  ...conflict
+}: Pick<
+  FormProps<LockUserInput>,
+  "onSubmit" | "onConflictReload" | "onConflictAccept" | "compareFields"
+>) {
+  const form = useForm<LockUserInput>({
+    resolver: zodResolver(userLockSchema, { error: validationMessage }),
+    defaultValues: { mode: "NORMAL", reason: "" },
+  });
+  return (
+    <Form compact form={form} onSubmit={onSubmit} {...conflict}>
+      <FormSelect
+        label="Chế độ khóa"
+        required
+        options={[
+          { value: "NORMAL", label: "Thông thường — sau khi bàn giao" },
+          { value: "EMERGENCY", label: "Khẩn cấp — thu hồi phiên ngay" },
+        ]}
+        {...form.register("mode")}
+        error={form.formState.errors.mode}
+      />
+      <FormTextarea
+        label="Lý do"
+        required
+        {...form.register("reason")}
+        error={form.formState.errors.reason}
+      />
+    </Form>
   );
 }

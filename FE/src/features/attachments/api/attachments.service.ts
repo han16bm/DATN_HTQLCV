@@ -1,36 +1,57 @@
-import type { AttachmentsApi } from "@/features/attachments/api/attachments.contract";
+import {
+  type MutationOptions,
+  type RequestOptions,
+  apiClient,
+} from "@/services/api-client";
 import {
   attachmentSchema,
   uploadPolicySchema,
-} from "@/features/attachments/schemas/attachments.schema";
-import { type UploadAttachmentInput } from "@/features/attachments/types/attachments.types";
-import type { MutationOptions, RequestOptions } from "@/services/api-client";
-import { apiClient, parseFile, parseResponse } from "@/services/api-client";
-export const attachmentsService: AttachmentsApi = {
-  getUploadPolicy(options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>("/attachments/policy", options)
-      .then(parseResponse(uploadPolicySchema));
+} from "../schemas/attachments.schema";
+import type {
+  AttachmentDto,
+  UploadAttachmentInput,
+  UploadPolicyDto,
+} from "../types/attachments.types";
+
+export const attachmentsService = {
+  async getUploadPolicy(options: RequestOptions = {}) {
+    const response = await apiClient.get<UploadPolicyDto>(
+      "/attachments/policy",
+      { ...options, schema: uploadPolicySchema },
+    );
+    return response.data;
   },
-  uploadAttachment(payload: UploadAttachmentInput, options: MutationOptions) {
+
+  async uploadAttachment(
+    payload: UploadAttachmentInput,
+    options: MutationOptions,
+  ) {
     const form = new FormData();
     form.set("taskId", payload.taskId);
     form.set("file", payload.file);
-    return apiClient
-      .post<unknown>("/attachments", form, options)
-      .then(parseResponse(attachmentSchema));
+    const response = await apiClient.post<AttachmentDto>("/attachments", form, {
+      ...options,
+      schema: attachmentSchema,
+    });
+    return response.data;
   },
-  getAttachment(attachmentId: string, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>(`/attachments/${encodeURIComponent(attachmentId)}`, options)
-      .then(parseResponse(attachmentSchema));
+
+  async getAttachment(attachmentId: string, options: RequestOptions = {}) {
+    const response = await apiClient.get<AttachmentDto>(
+      `/attachments/${encodeURIComponent(attachmentId)}`,
+      { ...options, schema: attachmentSchema },
+    );
+    return response.data;
   },
-  downloadAttachment(attachmentId: string, options: RequestOptions = {}) {
-    return apiClient
-      .get<Blob>(`/attachments/${encodeURIComponent(attachmentId)}/content`, {
+
+  async downloadAttachment(attachmentId: string, options: RequestOptions = {}) {
+    const response = await apiClient.get<Blob>(
+      `/attachments/${encodeURIComponent(attachmentId)}/content`,
+      {
         ...options,
         responseType: "blob",
-      })
-      .then(parseFile);
+      },
+    );
+    return response.data;
   },
 };

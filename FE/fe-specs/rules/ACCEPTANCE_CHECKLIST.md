@@ -5,7 +5,7 @@
 | Đợt | Phạm vi | Kết quả phải có trước đợt tiếp |
 |---|---|---|
 | 1 | Shell, routing, login, users, organization | Menu theo quyền; loading/empty/error/forbidden; đổi phiên xóa cache; không có dữ liệu mẫu import trực tiếp |
-| 2 | Projects, members, permissions | PLANNED/ACTIVE/closed; owner và thành viên hợp lệ; closure checks và cảnh báo chặn |
+| 2 | Projects, members, roles | PLANNED/ACTIVE/closed; owner và thành viên hợp lệ; closure checks và cảnh báo chặn |
 | 3 | Task list/board/detail/create/edit/assign/execution | Các command riêng, đúng state machine; không cho patch status; deadline UTC/giờ Việt Nam |
 | 4 | Time logs, attachments, submissions, review | Giờ công thủ công; VOID có lý do; upload READY; không tự duyệt; một lần nộp đang chờ |
 | 5 | Reports | Kỳ Việt Nam, duplicate handling, nháp riêng tư, snapshot bất biến, không cộng giờ hai lần |

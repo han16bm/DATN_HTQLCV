@@ -1,19 +1,15 @@
-import { metaSchema } from "@/lib/validation/common.schema";
 import { z } from "zod";
 
-export const errorEnvelopeSchema = z.object({
-  error: z.object({
-    code: z.string().min(1),
-    message: z.string().min(1),
-    fieldErrors: z
-      .array(z.object({ path: z.array(z.string()), message: z.string() }))
-      .optional(),
-    details: z.json().optional(),
-  }),
-  meta: metaSchema,
+export const errorResponseSchema = z.object({
+  code: z.string().min(1),
+  message: z.string().min(1),
+  fieldErrors: z
+    .array(z.object({ path: z.array(z.string()), message: z.string() }))
+    .optional(),
+  details: z.json().optional(),
 });
 export type FieldError = NonNullable<
-  z.output<typeof errorEnvelopeSchema>["error"]["fieldErrors"]
+  z.output<typeof errorResponseSchema>["fieldErrors"]
 >[number];
 export class ApiError extends Error {
   constructor(
@@ -21,7 +17,7 @@ export class ApiError extends Error {
     public code: string,
     message: string,
     public fields: FieldError[] = [],
-    public details?: z.output<typeof errorEnvelopeSchema>["error"]["details"],
+    public details?: z.output<typeof errorResponseSchema>["details"],
   ) {
     super(message);
     this.name = "ApiError";

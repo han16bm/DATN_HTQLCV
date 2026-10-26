@@ -1,5 +1,15 @@
 # Rà soát fe-specs
 
+## Điều chỉnh role ngày 26/10/2026
+
+Điều chỉnh theo yêu cầu người dùng: Membership và Session bỏ permissions; PATCH membership nhận projectRole/reason, S13 trở thành dialog trong danh sách thành viên. Role MANAGER kết hợp OWNER/MANAGER trên dự án quyết định thao tác, Admin đọc tổng quan và quản trị hệ thống. Đã cập nhật API catalog, DTO, model mẫu, bản đồ màn và ma trận hook; quy tắc gốc trái với điều chỉnh này được thay bằng [ARCHITECTURE.md](ARCHITECTURE.md#điều-chỉnh-role-ngày-26102026).
+
+Theo yêu cầu cách viết service như vietcd, 82 hàm của 12 service dùng async/await, Axios generic DTO và trả response.data. Validation response nằm ở interceptor theo schema trong config; kiểm tra binary và chuẩn hóa lỗi cũng ở HTTP client. Không đổi route/payload/JSON DTO, version/idempotency, quyền hoặc cách lưu token; loại bỏ helper parseResponse/parseFile. Các quy tắc nghiệp vụ và kiểm tra JSON tại ranh giới HTTP tiếp tục được giữ.
+
+Theo yêu cầu người dùng ngày 25/10/2026, JSON thành công trả DTO trực tiếp, danh sách là {items, pagination}, lỗi là {code, message, fieldErrors?, details?}. Bỏ các lớp bọc data/meta và error/meta, cùng requestId/serverTime không có màn dùng. Đã cập nhật API client, schema lỗi, mock response/replay và đặc tả; schema nghiệp vụ, route, HTTP status, quyền/version/idempotency không đổi. Binary tiếp tục trả byte tệp với header hiện có. Đây là điều chỉnh thay quy ước response của contract ban đầu.
+
+Điều chỉnh avatar theo luồng vietcd ngày 25/10/2026: chọn tệp mở dialog kéo/zoom/cắt ảnh; xác nhận gửi ảnh đã cắt qua PATCH /auth/me multipart hiện có, hủy/đóng không cảnh báo bỏ lưu. Không thêm route/DTO/model hoặc gửi tọa độ cắt; quyền, version, idempotency và giới hạn ảnh giữ nguyên. Form thông tin và mật khẩu tiếp tục có dirty guard.
+
 Ngày 24/10/2026. Nguồn có trong workspace: tài liệu FE 0.4, contract đề xuất 0.3.0, 43 mã màn/biểu mẫu, 24 PNG, 79 operation, 93 schema gốc. Báo cáo nguồn DOCX 70 trang được tài liệu nhắc đến không có trong workspace; rà soát này đối chiếu bộ FE hiện có và mô tả đề tài của người dùng, không khẳng định đã đọc lại DOCX nguồn.
 
 ## Kết luận

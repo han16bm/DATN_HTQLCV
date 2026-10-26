@@ -1,12 +1,10 @@
-import { systemRoleSchema } from "@/features/users/schemas/user.schema";
+import { reasonSchema } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
+import { systemRoleSchema } from "./user.schema";
 export const resetPasswordSchema = z
   .object({
-    temporaryPassword: z
-      .string()
-      .min(8, "Vui lòng nhập thông tin bắt buộc")
-      .max(128),
+    temporaryPassword: z.string().min(8).max(128),
     reason: z
       .string()
       .trim()
@@ -19,7 +17,7 @@ export const createUserSchema = z
     username: z
       .string()
       .trim()
-      .min(3, "Vui lòng nhập thông tin bắt buộc")
+      .min(3)
       .max(64)
       .regex(/^[a-zA-Z0-9._-]+$/),
     displayName: z
@@ -30,10 +28,7 @@ export const createUserSchema = z
     email: z.string().trim().toLowerCase().email(),
     unitId: idSchema,
     systemRole: systemRoleSchema,
-    initialPassword: z
-      .string()
-      .min(8, "Vui lòng nhập thông tin bắt buộc")
-      .max(128),
+    initialPassword: z.string().min(8).max(128),
   })
   .strict();
 export const userLockSchema = z
@@ -46,25 +41,10 @@ export const userLockSchema = z
     mode: z.enum(["NORMAL", "EMERGENCY"]),
   })
   .strict();
-export const updateUserSchema = z
-  .object({
-    displayName: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(255)
-      .optional(),
-    email: z.string().trim().toLowerCase().email().optional(),
-    unitId: idSchema.optional(),
-    systemRole: systemRoleSchema.optional(),
-    reason: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(2000)
-      .optional(),
-  })
-  .strict();
+export const updateUserSchema = createUserSchema
+  .omit({ username: true, initialPassword: true })
+  .partial()
+  .extend({ reason: reasonSchema.shape.reason.optional() });
 export const resetUserPasswordResultSchema = z.object({
   ok: z.literal(true),
 });

@@ -1,6 +1,7 @@
 "use client";
-import { Badge, DataTable, DetailLink } from "@/components/ui/page";
+
 import { PageSkeleton } from "@/components/ui/loading";
+import { Badge, DataTable, DetailLink } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { dateTime } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";

@@ -1,8 +1,8 @@
-import { evidenceSchema } from "@/features/analytics/schemas/analysis-explanation.schema";
-import { qualitySchema } from "@/features/analytics/schemas/analysis-meta.schema";
-import { analyticsQuerySchema } from "@/features/analytics/schemas/analytics-query.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
+import { evidenceSchema } from "./analysis-explanation.schema";
+import { qualitySchema } from "./analysis-meta.schema";
+import { analyticsQuerySchema } from "./analytics-query.schema";
 export const measureSchema = z.object({
   id: idSchema,
   label: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),

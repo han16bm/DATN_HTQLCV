@@ -21,7 +21,6 @@ const fields: Record<string, string> = {
   owner: "Người phụ trách",
   assignee: "Người thực hiện",
   projectRole: "Vai trò dự án",
-  permissions: "Quyền nghiệp vụ",
 };
 type Value = AuditDto["before"];
 function valueText(value: Value | undefined, field: string): string {

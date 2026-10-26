@@ -261,11 +261,12 @@ describe("reports and evidence through HTTP", () => {
     );
     expect(db.timeLogs.length).toBe(count);
   });
-  it("blocks self-review even when the submitter holds review permission", async () => {
+  it("blocks self-review even when the submitter manages the project", async () => {
+    db.users.find((user) => user.id === "u-huy")!.systemRole = "MANAGER";
+    db.members.find(
+      (m) => m.userId === "u-huy" && m.projectId === "p-main",
+    )!.projectRole = "MANAGER";
     await login("huy");
-    db.members
-      .find((m) => m.userId === "u-huy" && m.projectId === "p-main")!
-      .permissions.push("TASKS_REVIEW");
     const s = db.submissions.find((s) => s.id === "s-pending")!;
     await expect(
       submissionsService.approveSubmission(

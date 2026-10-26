@@ -1,6 +1,10 @@
 "use client";
-import { SchemaForm } from "@/components/forms/schema-form";
+import { canManage } from "@/lib/auth/access";
+
+import { Form } from "@/components/forms/form";
+import { FormSelect } from "@/components/forms/form-field";
 import { HashDialog } from "@/components/ui/dialog";
+import { PageSkeleton } from "@/components/ui/loading";
 import {
   Badge,
   DataTable,
@@ -9,22 +13,21 @@ import {
   PageHeader,
   Pagination,
 } from "@/components/ui/page";
-import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListProjectMembersQuery } from "@/features/project-members/hooks/use-project-members-queries";
 import { useListProjectsQuery } from "@/features/projects/hooks/use-projects-queries";
-import {
-  prioritySchema,
-  taskStatusSchema,
-} from "@/features/tasks/schemas/task.schema";
-import { hasPermission, useSession } from "@/lib/auth/session-context";
+import { useSession } from "@/lib/auth/session-context";
 import { dateTime, label } from "@/lib/format";
 import { useHashDialog } from "@/lib/forms/use-hash-dialog";
+import { validationMessage } from "@/lib/forms/validation-message";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useListTasksQuery } from "../hooks/use-tasks-queries";
+import { prioritySchema, taskStatusSchema } from "../schemas/task.schema";
 
 export function TaskListPage({ personal = false }: { personal?: boolean }) {
   const { session } = useSession();
@@ -36,7 +39,11 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
   const priority = prioritySchema.safeParse(filters.get("priority"));
   const projectId = filters.get("projectId");
   const projects = useListProjectsQuery({ pageSize: 100 });
-  const members = useListProjectMembersQuery(projectId, { pageSize: 100 });
+  const members = useListProjectMembersQuery(
+    projectId,
+    { pageSize: 100 },
+    { enabled: !personal },
+  );
   const query = useListTasksQuery({
     q: filters.get("q") || undefined,
     projectId: projectId || undefined,
@@ -52,8 +59,7 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
   const board = filters.get("view") === "board";
   const manageable =
     projects.data?.items.filter(
-      (p) =>
-        p.status === "ACTIVE" && hasPermission(session, "TASKS_MANAGE", p.id),
+      (p) => p.status === "ACTIVE" && canManage(session, p.id),
     ) ?? [];
   const data = query.data;
   const setView = (view: string) => {
@@ -62,6 +68,13 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
     else next.delete("view");
     router.replace(`?${next}`, { scroll: false });
   };
+  const form = useForm({
+    resolver: zodResolver(z.object({ projectId: z.string().min(1) }).strict(), {
+      error: validationMessage,
+    }),
+    defaultValues: {},
+  });
+  const { errors } = form.formState;
   return (
     <>
       <PageHeader
@@ -167,6 +180,18 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
           </select>
         </label>
       </section>
+      {projects.isError && (
+        <QueryErrorState
+          error={projects.error}
+          retry={() => void projects.refetch()}
+        />
+      )}
+      {!personal && members.isError && (
+        <QueryErrorState
+          error={members.error}
+          retry={() => void members.refetch()}
+        />
+      )}
       {query.isError && (
         <QueryErrorState
           error={query.error}
@@ -252,23 +277,23 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
         </>
       )}
       <HashDialog name="choose-task-project" title="Chọn dự án tạo công việc">
-        <SchemaForm
-          schema={z.object({ projectId: z.string().min(1) }).strict()}
-          fields={[
-            {
-              name: "projectId",
-              label: "Dự án đang triển khai",
-              type: "select",
-              options: manageable.map((p) => ({ value: p.id, label: p.name })),
-              required: true,
-            },
-          ]}
+        <Form
+          compact
+          form={form}
           onSubmit={async (values) => {
             dialog.close();
             router.push(`/projects/${values.projectId}/tasks/new`);
           }}
           submitLabel="Mở biểu mẫu"
-        />
+        >
+          <FormSelect
+            label="Dự án đang triển khai"
+            required
+            options={manageable.map((p) => ({ value: p.id, label: p.name }))}
+            {...form.register("projectId")}
+            error={errors.projectId}
+          />
+        </Form>
       </HashDialog>
     </>
   );

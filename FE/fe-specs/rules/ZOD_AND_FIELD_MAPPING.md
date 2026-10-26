@@ -1,8 +1,10 @@
 # Quy tắc Zod, chuẩn hóa và trường thay đổi
 
+Theo yêu cầu refactor ngày 25/10/2026: mỗi feature form khai báo `useForm` có kiểu và `zodResolver`, không dùng bộ dựng field hoặc resolver metadata chung. Schema sửa tái sử dụng whitelist/constraint của schema tạo; `changedFields` trả patch có kiểu từ output đã kiểm tra nên không parse lại patch. Service chỉ gửi HTTP; API client kiểm tra response một lần. Hook danh sách chuẩn hóa filter một lần cho cả key và HTTP; filter không hợp lệ vẫn nhận lỗi API thay vì bị tắt vô thời hạn. Xem [bảng từng luồng](../../docs/REFACTOR_REVIEW.md).
+
 ## API nào dùng Zod
 
-**Tất cả 79 API đều dùng Zod tại ranh giới dữ liệu.** Codex phải tạo params, query, body và response schema cho từng contract theo bảng DTO. GET không có body nghiệp vụ; params/query vẫn được kiểm tra dù object rỗng. Mutation JSON/multipart có thêm body validation. Error JSON dùng ErrorSchema. Success JSON dùng successEnvelope(response schema).
+**Tất cả API đều dùng Zod tại ranh giới dữ liệu.** Codex phải tạo params, query, body và response schema cho từng contract theo bảng DTO. GET không có body nghiệp vụ; params/query vẫn được kiểm tra dù object rỗng. Mutation JSON/multipart có thêm body validation. Theo yêu cầu ngày 25/10/2026, Error JSON dùng schema phẳng code/message/fieldErrors?/details?, success JSON kiểm tra trực tiếp bằng response schema; không có lớp bọc data/meta hoặc error/meta.
 
 Ngoại lệ về response: `downloadAttachment` trả binary. API này kiểm tra ID bằng Zod và kiểm tra error JSON bằng ErrorSchema; success dùng HTTP status, Content-Type và Blob, không JSON.parse hoặc ép file thành object Zod. Upload kiểm tra File/metadata và policy trước khi gửi, BE vẫn kiểm tra nội dung và tính hợp lệ của tệp.
 
@@ -11,7 +13,7 @@ Ngoại lệ về response: `downloadAttachment` trả binary. API này kiểm t
 | Login/refresh/logout/me | Object đúng contract | LoginSchema; command body rỗng | LoginResponse/Session/Ok | Phiên, khóa tài khoản, giới hạn đăng nhập do BE |
 | Users | ID, filter trạng thái/đơn vị/vai trò | Create/Patch/Lock/Reset schema riêng | User/Ok/Page<User> | Duy nhất, cấp quyền, bàn giao trước khóa |
 | Organization | ID, page, đơn vị | Unit/Team và members schema riêng | Unit/Team/Page | Chu trình, đơn vị hoạt động, thành viên hợp lệ |
-| Projects/members | ID đúng tầng tài nguyên | Schema create/patch/permissions/command | Project/Membership/Closure | Duy trì owner, thời hạn, quyền và điều kiện kết thúc |
+| Projects/members | ID đúng tầng tài nguyên | Schema create/patch/member role/command | Project/Membership/Closure | Duy trì owner, thời hạn, quyền và điều kiện kết thúc |
 | Tasks | ID, status/priority/deadline/overdue/page | Create/Patch/Assign/Remaining và command riêng | Task/Page/Audit | Trạng thái, người nhận, hạn dự án, lý do đổi kế hoạch |
 | Time logs | Task/log ID, page | Create/Patch/Void | TimeLog + Task | Phân công, ngày Việt Nam, tổng phút/ngày, quyền sở hữu |
 | Submissions/reviews | Task/submission ID, page | Nộp, chấp nhận, yêu cầu sửa có schema riêng | Submission + Task | Lần mới nhất, không tự duyệt, giờ công và minh chứng |
@@ -27,7 +29,7 @@ Danh sách theo từng operation nằm trong `api/API_CATALOG.md` và `api/ZOD_R
 1. **Form schema:** nhận giá trị do control tạo ra. Ví dụ số phút đang là string, datetime-local chưa có múi giờ. React Hook Form dùng `z.input` cho đầu vào và `z.output` cho kết quả đã transform.
 2. **Mapper:** chỉ chuyển trường cho phép; chuyển giờ Việt Nam sang UTC và chuỗi số thành số nguyên. Không thay đổi các ID/trạng thái do server quản lý.
 3. **Request DTO schema:** strict object, kiểm tra payload cuối ngay trước request. Create, patch và command dùng schema khác nhau.
-4. **Response schema:** xác minh envelope, trường cần thiết, enum, kiểu và khả năng null trước khi dữ liệu vào cache. Response thêm field được bỏ qua ở các object mặc định của Zod; field bắt buộc sai hoặc thiếu phải thành ContractError.
+4. **Response schema:** xác minh DTO trực tiếp từ response.data, trường cần thiết, enum, kiểu và khả năng null trước khi dữ liệu vào cache. Response thêm field được bỏ qua ở các object mặc định của Zod; field bắt buộc sai hoặc thiếu phải thành ContractError.
 
 Refinement dựa trên giá trị khác trong payload dùng refine/superRefine phù hợp. Điều kiện phụ thuộc TaskDTO hoặc project/session hiện tại dùng policy có context, ví dụ `validateTaskPlanChange`; BE kiểm tra lại trong giao dịch. Không biến dữ liệu cached thành bằng chứng đủ quyền thực hiện.
 
@@ -47,7 +49,7 @@ Refinement dựa trên giá trị khác trong payload dùng refine/superRefine p
 | overdue trên URL | Chỉ nhận literal `true`/`false`; chuyển đúng boolean | z.coerce.boolean trên string `false` |
 | page/pageSize | Chuỗi số trên URL → số nguyên; mặc định 1/20, tối đa 100 | Tự gửi offset khi contract đang dùng page |
 | links | URL HTTP/HTTPS, số lượng theo schema | Thực thi URL javascript/data hoặc coi liên kết là lệnh |
-| permissions/memberIds/attachmentIds | Mảng ID/enum, kiểm tra trùng, kiểm tra phạm vi tại BE | Gửi boolean form thay mảng nếu DTO cần mảng |
+| memberIds/attachmentIds | Mảng ID/enum, kiểm tra trùng, kiểm tra phạm vi tại BE | Gửi boolean form thay mảng nếu DTO cần mảng |
 | status | Chỉ API command có quyền được đổi theo state machine | Đưa status vào TaskPatch hoặc tự đặt Hoàn thành |
 | actualMinutes/riskLevel/snapshot/handledBy/createdAt/version | Đọc từ response; gửi version qua If-Match nếu yêu cầu | Gửi lại trong body để tự ghi đè server |
 

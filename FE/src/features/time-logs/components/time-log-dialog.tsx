@@ -1,42 +1,52 @@
 "use client";
-import type { FormField } from "@/components/forms/form.types";
-import { VersionedSchemaForm } from "@/components/forms/versioned-schema-form";
+
+import { Form } from "@/components/forms/form";
+import { FormInput, FormTextarea } from "@/components/forms/form-field";
+import { ReasonForm } from "@/components/forms/reason-form";
 import { HashDialog } from "@/components/ui/dialog";
 import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
-import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
-import { useGetTaskQuery } from "@/features/tasks/hooks/use-tasks-queries";
 import { type TaskDto } from "@/features/tasks/types/tasks.types";
-import {
-  createTimeLogSchema,
-  updateTimeLogSchema,
-} from "@/features/time-logs/schemas/time-logs.schema";
-import { type TimeLogDto } from "@/features/time-logs/types/time-logs.types";
 import { useSession } from "@/lib/auth/session-context";
 import { changedFields } from "@/lib/format";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
+import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
 import { useHashDialog } from "@/lib/forms/use-hash-dialog";
-import { reasonSchema } from "@/lib/validation/common.schema";
+import { validationMessage } from "@/lib/forms/validation-message";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
 import {
   useCreateTimeLogMutation,
   useUpdateTimeLogMutation,
   useVoidTimeLogMutation,
 } from "../hooks/use-time-logs-mutations";
 import { useListTimeLogsQuery } from "../hooks/use-time-logs-queries";
+import {
+  createTimeLogSchema,
+  updateTimeLogSchema,
+} from "../schemas/time-logs.schema";
+import { type TimeLogDto } from "../types/time-logs.types";
 
-export function TimeLogDialog({ taskId }: { taskId: string }) {
+export function TimeLogDialog({
+  task,
+  active,
+  reload,
+}: {
+  task: TaskDto;
+  active: boolean;
+  reload: () => Promise<{ data?: TaskDto }>;
+}) {
   const dialog = useHashDialog();
   const search = useSearchParams();
   const { session } = useSession();
-  const task = useGetTaskQuery(taskId);
-  const project = useGetProjectQuery(task.data?.projectId ?? "");
   const logId = search.get("timeLogId");
   const page = Math.max(1, Number(search.get("logPage")) || 1);
   const logs = useListTimeLogsQuery(
-    taskId,
+    task.id,
     { page },
     { enabled: dialog.name === "time-log" && Boolean(logId) },
   );
@@ -47,11 +57,9 @@ export function TimeLogDialog({ taskId }: { taskId: string }) {
       title={logId ? "Chỉnh sửa hoặc loại giờ công" : "Ghi nhận thời gian"}
       description="Số phút được ghi riêng, không tự suy từ thời gian chạy trạng thái."
     >
-      {!task.data ? (
-        <PageSkeleton variant="form" />
-      ) : task.data.assigneeId !== session?.user.id ||
-        task.data.status !== "IN_PROGRESS" ||
-        project.data?.status !== "ACTIVE" ? (
+      {task.assigneeId !== session?.user.id ||
+      task.status !== "IN_PROGRESS" ||
+      !active ? (
         <p>
           Bạn chỉ được ghi hoặc sửa giờ khi đang là người nhận hiện tại và công
           việc đang thực hiện trong dự án hoạt động.
@@ -71,7 +79,7 @@ export function TimeLogDialog({ taskId }: { taskId: string }) {
       ) : (
         <LogForm
           key={selected?.id ?? "new"}
-          task={task.data}
+          task={task}
           log={selected}
           reload={async () =>
             logId
@@ -80,13 +88,14 @@ export function TimeLogDialog({ taskId }: { taskId: string }) {
                     (l) => l.id === logId,
                   ),
                 }
-              : task.refetch()
+              : reload()
           }
         />
       )}
     </HashDialog>
   );
 }
+
 function LogForm({
   task,
   log,
@@ -94,51 +103,18 @@ function LogForm({
 }: {
   task: TaskDto;
   log?: TimeLogDto;
-  reload: () => Promise<{
-    data?: TaskDto | TimeLogDto;
-  }>;
+  reload: () => Promise<{ data?: TaskDto | TimeLogDto }>;
 }) {
   const [action, setAction] = useState("EDIT");
-  const create = useCreateTimeLogMutation();
-  const update = useUpdateTimeLogMutation();
   const remove = useVoidTimeLogMutation();
+  const snapshot = useEditSnapshot(log ?? task);
   const dialog = useHashDialog();
   const router = useRouter();
-  const fields: FormField[] =
-    action === "VOID"
-      ? [
-          {
-            name: "reason",
-            label: "Lý do loại khỏi tổng",
-            type: "textarea",
-            required: true,
-          },
-        ]
-      : [
-          {
-            name: "workDate",
-            label: "Ngày làm việc (Việt Nam)",
-            type: "date",
-            required: true,
-          },
-          { name: "minutes", label: "Số phút", type: "number", required: true },
-          {
-            name: "description",
-            label: "Nội dung thực hiện",
-            type: "textarea",
-            required: true,
-          },
-          ...(log
-            ? [
-                {
-                  name: "reason",
-                  label: "Lý do chỉnh sửa",
-                  type: "textarea" as const,
-                  required: true,
-                },
-              ]
-            : []),
-        ];
+  function done(message: string) {
+    toast.success(message);
+    dialog.close();
+    router.push(`/tasks/${task.id}/time-logs`);
+  }
   return (
     <>
       {log && (
@@ -146,8 +122,8 @@ function LogForm({
           Thao tác
           <select
             value={action}
-            onChange={async (e) => {
-              const value = e.target.value;
+            onChange={async (event) => {
+              const value = event.target.value;
               if (await confirmDiscard()) setAction(value);
             }}
           >
@@ -157,66 +133,126 @@ function LogForm({
         </label>
       )}
       <div className="section-gap">
-        <VersionedSchemaForm
-          initial={log ?? task}
-          reload={reload}
-          key={action}
-          schema={
-            action === "VOID"
-              ? reasonSchema
-              : log
-                ? updateTimeLogSchema
-                : createTimeLogSchema
-          }
-          fields={fields}
-          defaults={
-            log && action !== "VOID"
-              ? {
-                  workDate: log.workDate,
-                  minutes: log.minutes,
-                  description: log.description,
-                }
-              : {}
-          }
-          onSubmit={async (values, base) => {
-            if (log && "reason" in values) {
-              const input = { timeLogId: log.id, version: base.version };
-              if (action === "VOID")
-                await remove.mutateAsync({
-                  ...input,
-                  payload: { reason: values.reason },
-                });
-              else
-                await update.mutateAsync({
-                  ...input,
-                  payload: updateTimeLogSchema.parse({
-                    ...changedFields(base, values, [
-                      "workDate",
-                      "minutes",
-                      "description",
-                    ]),
-                    reason: values.reason,
-                  }),
-                });
-            } else if (!("reason" in values))
-              await create.mutateAsync({
-                taskId: task.id,
-                payload: values,
-                version: base.version,
+        {action === "VOID" && log ? (
+          <ReasonForm
+            label="Lý do loại khỏi tổng"
+            submitLabel="Xác nhận loại khỏi tổng"
+            onConflictReload={() => snapshot.load(reload)}
+            onConflictAccept={snapshot.accept}
+            onSubmit={async (payload) => {
+              await remove.mutateAsync({
+                timeLogId: log.id,
+                payload,
+                version: snapshot.base.version,
               });
-            toast.success(
-              action === "VOID"
-                ? "Đã loại nhật ký khỏi tổng, vẫn giữ lịch sử."
-                : "Đã lưu giờ công.",
-            );
-            dialog.close();
-            router.push(`/tasks/${task.id}/time-logs`);
-          }}
-          submitLabel={
-            action === "VOID" ? "Xác nhận loại khỏi tổng" : "Lưu nhật ký"
-          }
-        />
+              done("Đã loại nhật ký khỏi tổng, vẫn giữ lịch sử.");
+            }}
+          />
+        ) : (
+          <LogEditor
+            key={action}
+            task={task}
+            log={log}
+            reload={reload}
+            onSaved={() => done("Đã lưu giờ công.")}
+          />
+        )}
       </div>
     </>
+  );
+}
+
+function LogEditor({
+  task,
+  log,
+  reload,
+  onSaved,
+}: {
+  task: TaskDto;
+  log?: TimeLogDto;
+  reload: () => Promise<{ data?: TaskDto | TimeLogDto }>;
+  onSaved: () => void;
+}) {
+  const create = useCreateTimeLogMutation();
+  const update = useUpdateTimeLogMutation();
+  const snapshot = useEditSnapshot(log ?? task);
+  const schema = createTimeLogSchema.extend({
+    reason: log ? updateTimeLogSchema.shape.reason : z.string(),
+  });
+  const form = useForm<z.input<typeof schema>>({
+    resolver: zodResolver(schema, { error: validationMessage }),
+    defaultValues: {
+      workDate: log?.workDate ?? "",
+      minutes: log?.minutes,
+      description: log?.description ?? "",
+      reason: "",
+    },
+  });
+  const { errors } = form.formState;
+  return (
+    <Form
+      compact={!log}
+      form={form}
+      submitLabel="Lưu nhật ký"
+      compareFields={[
+        { name: "workDate", label: "Ngày làm việc" },
+        { name: "minutes", label: "Số phút" },
+        { name: "description", label: "Nội dung thực hiện" },
+      ]}
+      onConflictReload={() => snapshot.load(reload)}
+      onConflictAccept={snapshot.accept}
+      onSubmit={async ({ reason, ...values }) => {
+        const base = snapshot.base;
+        if (log)
+          await update.mutateAsync({
+            timeLogId: log.id,
+            payload: {
+              ...changedFields(base, values, [
+                "workDate",
+                "minutes",
+                "description",
+              ]),
+              reason,
+            },
+            version: base.version,
+          });
+        else
+          await create.mutateAsync({
+            taskId: task.id,
+            payload: values,
+            version: base.version,
+          });
+        onSaved();
+      }}
+    >
+      <FormInput
+        label="Ngày làm việc (Việt Nam)"
+        type="date"
+        required
+        {...form.register("workDate")}
+        error={errors.workDate}
+      />
+      <FormInput
+        label="Số phút"
+        type="number"
+        required
+        {...form.register("minutes", { valueAsNumber: true })}
+        error={errors.minutes}
+      />
+      <FormTextarea
+        label="Nội dung thực hiện"
+        required
+        {...form.register("description")}
+        error={errors.description}
+      />
+      {log && (
+        <FormTextarea
+          label="Lý do chỉnh sửa"
+          required
+          {...form.register("reason")}
+          error={errors.reason}
+        />
+      )}
+    </Form>
   );
 }

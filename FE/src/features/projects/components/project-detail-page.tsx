@@ -1,4 +1,7 @@
 "use client";
+
+import { HistoryTable } from "@/components/ui/history-table";
+import { PageSkeleton } from "@/components/ui/loading";
 import {
   Badge,
   ButtonLink,
@@ -6,9 +9,7 @@ import {
   DetailLink,
   Panel,
 } from "@/components/ui/page";
-import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
-import { HistoryTable } from "@/components/ui/history-table";
 import { useListTasksQuery } from "@/features/tasks/hooks/use-tasks-queries";
 import { dateTime } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";

@@ -1,3 +1,5 @@
+import { type Page } from "@/types/common";
+import { type z } from "zod";
 import type {
   approveSchema,
   createSubmissionSchema,
@@ -8,9 +10,7 @@ import type {
   submissionResultSchema,
   submissionRowSchema,
   submissionSchema,
-} from "@/features/submissions/schemas/submissions.schema";
-import { type Page } from "@/types/common";
-import { type z } from "zod";
+} from "../schemas/submissions.schema";
 export type SubmissionDto = z.output<typeof submissionSchema>;
 export type SubmissionQuery = z.input<typeof submissionQuerySchema>;
 export type SubmissionRow = z.output<typeof submissionRowSchema>;

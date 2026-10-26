@@ -99,13 +99,13 @@ S12. Thành viên dự án
   Kiểu: Màn chính có PNG; feature=project-members.
   Use Case: UC-P04.
   API: listProjectMembers, addProjectMember, endProjectMembership.
-  Điểm đi tiếp: Thêm thành viên → S12; Bàn giao công việc → S20; Phân quyền → S13; Kết thúc thành viên → S12.
-S13. Quyền trên dự án
-  Route: /projects/[projectId]/permissions
+  Điểm đi tiếp: Thêm thành viên → S12; Bàn giao công việc → S20; Đổi vai trò → S13; Kết thúc thành viên → S12.
+S13. Đổi vai trò thành viên
+  Route: /projects/[projectId]/members#member-role
   Kiểu: Biểu mẫu/hộp thoại/chi tiết phụ đặc tả bằng văn bản; feature=project-members.
   Use Case: UC-P05.
-  API: updateProjectMemberPermissions.
-  Điểm đi tiếp: Lưu quyền → S12.
+  API: updateProjectMemberRole.
+  Điểm đi tiếp: Lưu vai trò → S12.
 
 TASKS
 S15. Công việc

@@ -1,6 +1,7 @@
 import {
   entityLabelSchema,
   listQuerySchema,
+  reasonSchema,
 } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
@@ -21,22 +22,10 @@ export const teamMembersSchema = z
       .max(2000),
   })
   .strict();
-export const updateTeamSchema = z
-  .object({
-    name: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(255)
-      .optional(),
-    unitId: idSchema.optional(),
-    reason: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(2000),
-  })
-  .strict();
+export const updateTeamSchema = createTeamSchema
+  .omit({ memberIds: true })
+  .partial()
+  .extend({ reason: reasonSchema.shape.reason });
 export const teamSchema = z.object({
   id: idSchema,
   version: z.number().int().safe().positive(),

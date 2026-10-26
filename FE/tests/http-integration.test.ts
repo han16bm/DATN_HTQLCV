@@ -5,6 +5,7 @@ import { projectsService } from "@/features/projects/api/projects.service";
 import { submissionsService } from "@/features/submissions/api/submissions.service";
 import { tasksService } from "@/features/tasks/api/tasks.service";
 import { timeLogsService } from "@/features/time-logs/api/time-logs.service";
+import { usersService } from "@/features/users/api/users.service";
 import { db, setClock } from "@/mocks/db";
 import { resetMockState, server } from "@/mocks/node";
 import { apiClient, registerRefresh, token } from "@/services/api-client";
@@ -55,6 +56,13 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
     }
   });
   it("projects history with readable people and only compared fields while preserving internal audit facts", async () => {
+    await signIn("admin");
+    const user = await usersService.getUser("u-huy");
+    await usersService.updateUser(
+      user.id,
+      { systemRole: "MANAGER", reason: "Bổ nhiệm quản lý dự án" },
+      { version: user.version, key: "promote-owner" },
+    );
     await signIn("minh");
     const project = await projectsService.getProject("p-main");
     await projectsService.updateProject(
@@ -63,16 +71,14 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
       { version: project.version, key: "history-owner-change" },
     );
     const result = await apiClient.get<{
-      data: {
-        items: {
-          actor: { displayName: string };
-          before: object;
-          after: object;
-          action: string;
-        }[];
-      };
+      items: {
+        actor: { displayName: string };
+        before: object;
+        after: object;
+        action: string;
+      }[];
     }>(`/projects/${project.id}/history`);
-    const audit = result.data.data.items.find(
+    const audit = result.data.items.find(
       (item) => item.action === "Điều chỉnh kế hoạch",
     )!;
     expect(audit.actor.displayName).toBe("Nguyễn Minh");
@@ -90,10 +96,14 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
   it("sends compact list rows over HTTP before the client parses the response", async () => {
     const check = async (path: string, fields: string[]) => {
       const response = await apiClient.get<{
-        data: { items: Record<string, unknown>[] };
+        items: Record<string, unknown>[];
       }>(path);
-      expect(response.data.data.items.length, path).toBeGreaterThan(0);
-      for (const item of response.data.data.items) {
+      expect(Object.keys(response.data).sort(), path).toEqual([
+        "items",
+        "pagination",
+      ]);
+      expect(response.data.items.length, path).toBeGreaterThan(0);
+      for (const item of response.data.items) {
         expect(Object.keys(item).sort(), path).toEqual(fields.toSorted());
       }
     };
@@ -171,9 +181,10 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
   it("keeps private model facts out of session, attachment and task responses", async () => {
     await signIn("lan");
     const session = await apiClient.get<{
-      data: { user: object; projectAccess: object[] };
+      user: object;
+      projectAccess: object[];
     }>("/auth/me");
-    expect(Object.keys(session.data.data.user).sort()).toEqual([
+    expect(Object.keys(session.data.user).sort()).toEqual([
       "avatarUrl",
       "displayName",
       "email",
@@ -184,14 +195,12 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
       "username",
       "version",
     ]);
-    expect(Object.keys(session.data.data.projectAccess[0]).sort()).toEqual([
-      "permissions",
+    expect(Object.keys(session.data.projectAccess[0]).sort()).toEqual([
       "projectId",
+      "projectRole",
     ]);
-    const file = await apiClient.get<{ data: object }>(
-      "/attachments/a-criteria",
-    );
-    expect(Object.keys(file.data.data).sort()).toEqual([
+    const file = await apiClient.get<object>("/attachments/a-criteria");
+    expect(Object.keys(file.data).sort()).toEqual([
       "filename",
       "id",
       "sizeBytes",
@@ -204,15 +213,13 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
       uploadedBy: "u-lan",
       mimeType: "application/pdf",
     });
-    const task = await apiClient.get<{ data: Record<string, unknown> }>(
-      "/tasks/t-3",
-    );
+    const task = await apiClient.get<Record<string, unknown>>("/tasks/t-3");
     for (const field of ["updatedAt", "statusChangedAt", "completedAt"]) {
-      expect(task.data.data).not.toHaveProperty(field);
+      expect(task.data).not.toHaveProperty(field);
       expect(db.tasks.find((item) => item.id === "t-3")).toHaveProperty(field);
     }
     const storedTask = db.tasks.find((item) => item.id === "t-3")!;
-    expect(task.data.data).toMatchObject({
+    expect(task.data).toMatchObject({
       id: "t-3",
       version: 1,
       createdAt: storedTask.createdAt,
@@ -227,9 +234,9 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
     };
     const dashboard = await analyticsService.getDashboard(scope);
     const snapshot = await apiClient.get<{
-      data: { snapshot: { scope: object } };
+      snapshot: { scope: object };
     }>(`/analytics/details/${dashboard.overviewRef.analysisId}`);
-    expect(Object.keys(snapshot.data.data.snapshot.scope).sort()).toEqual([
+    expect(Object.keys(snapshot.data.snapshot.scope).sort()).toEqual([
       "from",
       "projectId",
       "to",
@@ -237,7 +244,7 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
     const stored = db.details.get(dashboard.overviewRef.analysisId)!;
     expect(stored.snapshot.scope.assigneeId).toBe("u-lan");
     for (const field of ["sourceRevision", "subject", "expiresAt"]) {
-      expect(snapshot.data.data.snapshot).not.toHaveProperty(field);
+      expect(snapshot.data.snapshot).not.toHaveProperty(field);
       expect(stored.snapshot).toHaveProperty(field);
     }
   });
@@ -502,6 +509,40 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
     expect(session).not.toHaveProperty("refreshToken");
     expect(token.get()).toMatch(/^mock-u-lan-/);
   });
+  it("returns flat authentication and validation errors as HTTP JSON", async () => {
+    for (const [payload, status, code, keys] of [
+      [
+        { username: "lan", password: "wrong-password" },
+        401,
+        "INVALID_CREDENTIALS",
+        ["code", "message"],
+      ],
+      [
+        { username: "lan" },
+        422,
+        "VALIDATION_ERROR",
+        ["code", "fieldErrors", "message"],
+      ],
+    ] as const) {
+      const response = await fetch(`${apiClient.defaults.baseURL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      expect(response.status).toBe(status);
+      expect(response.headers.get("content-type")).toContain(
+        "application/json",
+      );
+      const body = await response.json();
+      expect(Object.keys(body).sort()).toEqual(keys);
+      expect(body).toMatchObject({ code, message: expect.any(String) });
+      if (status === 422)
+        expect(body.fieldErrors).toContainEqual({
+          path: ["password"],
+          message: expect.any(String),
+        });
+    }
+  });
   it("validates response JSON before it reaches a Query cache", async () => {
     await signIn("lan");
     const task = await tasksService.getTask("t-3");
@@ -510,21 +551,38 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
         scenario: "invalid-response",
       }),
     ).rejects.toBeInstanceOf(ContractError);
-    const meta = {
-      requestId: "contract-test",
-      serverTime: "2026-10-24T00:00:00.000Z",
-    };
     for (const body of [
       { data: task },
-      { meta },
-      { data: { ...task, version: 0 }, meta },
-      { data: task, meta: { ...meta, serverTime: "invalid" } },
+      {},
+      { ...task, version: 0 },
+      { ...task, firstStartedAt: "invalid" },
+      null,
+      [task],
     ]) {
       server.use(http.get("*/api/tasks/t-3", () => HttpResponse.json(body)));
       await expect(tasksService.getTask("t-3")).rejects.toBeInstanceOf(
         ContractError,
       );
     }
+    for (const body of [
+      { code: "VALIDATION_ERROR" },
+      { error: { code: "VALIDATION_ERROR", message: "Invalid request" } },
+    ]) {
+      server.use(
+        http.get("*/api/tasks/t-3", () =>
+          HttpResponse.json(body, { status: 422 }),
+        ),
+      );
+      await expect(tasksService.getTask("t-3")).rejects.toBeInstanceOf(
+        ContractError,
+      );
+    }
+    server.use(
+      http.get("*/api/tasks/t-3", () =>
+        HttpResponse.json({ ...task, privateNote: "Not part of TaskDto" }),
+      ),
+    );
+    expect(await tasksService.getTask("t-3")).toEqual(task);
   });
   it("rejects stale versions over HTTP without changing the task", async () => {
     await signIn("lan");

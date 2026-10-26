@@ -26,10 +26,8 @@ const key = () => crypto.randomUUID();
 describe("Member profiles via HTTP/MSW", () => {
   it("lets signed-in employees read minimal profile data without admin access", async () => {
     await authService.login({ username: "lan", password: "Mock@12345" });
-    const response = await apiClient.get<{ data: ProfileDto }>(
-      "/users/u-lan/profile",
-    );
-    const profile = response.data.data;
+    const response = await apiClient.get<ProfileDto>("/users/u-lan/profile");
+    const profile = response.data;
     expect(Object.keys(profile).sort()).toEqual([
       "avatarUrl",
       "displayName",

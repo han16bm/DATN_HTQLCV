@@ -1,19 +1,19 @@
+import type { reasonSchema } from "@/lib/validation/common.schema";
+import { type Page } from "@/types/common";
+import { type z } from "zod";
+import type { profileSchema } from "../schemas/profile.schema";
 import type {
   createUserSchema,
   resetPasswordSchema,
   resetUserPasswordResultSchema,
   updateUserSchema,
   userLockSchema,
-} from "@/features/users/schemas/user-form.schema";
+} from "../schemas/user-form.schema";
 import type {
   userQuerySchema,
   userRowSchema,
   userSchema,
-} from "@/features/users/schemas/user.schema";
-import type { reasonSchema } from "@/lib/validation/common.schema";
-import { type Page } from "@/types/common";
-import { type z } from "zod";
-import type { profileSchema } from "../schemas/profile.schema";
+} from "../schemas/user.schema";
 export type ProfileDto = z.output<typeof profileSchema>;
 export type UserDto = z.output<typeof userSchema>;
 export type UserQuery = z.input<typeof userQuerySchema>;

@@ -30,13 +30,9 @@ export function useQueryAccess<T>(
   const error = query.error;
   const denied = error instanceof ApiError && [403, 410].includes(error.status);
   useEffect(() => {
-    if (!denied) return;
+    if (!denied || !viewerId) return;
     if (error.status === 403) void handleError(error);
-    else {
-      const filters = { queryKey: [feature, viewerId] };
-      void client.cancelQueries(filters);
-      client.removeQueries(filters);
-    }
+    else void removeViewerData(client, viewerId, feature);
   }, [denied, error, client, feature, viewerId, handleError]);
   return { ...query, data: denied ? undefined : query.data };
 }

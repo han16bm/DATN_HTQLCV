@@ -1,13 +1,19 @@
 "use client";
-import { SchemaForm } from "@/components/forms/schema-form";
+
+import { Form } from "@/components/forms/form";
+import { FormInput } from "@/components/forms/form-field";
 import { ButtonLink, PageHeader } from "@/components/ui/page";
 import { useSession } from "@/lib/auth/session-context";
 import { label } from "@/lib/format";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
+import { validationMessage } from "@/lib/forms/validation-message";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Image as ImageIcon, KeyRound, Mail, UserRound } from "lucide-react";
 import { useId, useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import type { z } from "zod";
 import { useUpdateProfileMutation } from "../hooks/use-auth-mutations";
 import { profileInfoSchema } from "../schemas/profile.schema";
 import type { SessionDto, UpdateProfileInput } from "../types/auth.types";
@@ -25,6 +31,7 @@ export function ProfilePage() {
   const { session } = useSession();
   return session ? <ProfileDetails user={session.user} /> : null;
 }
+
 function ProfileDetails({ user }: { user: SessionDto["user"] }) {
   const id = useId();
   const { refresh } = useSession();
@@ -142,29 +149,10 @@ function ProfileDetails({ user }: { user: SessionDto["user"] }) {
                   autoComplete="email"
                 />
               </div>
-              <SchemaForm
-                schema={profileInfoSchema}
-                fields={[
-                  {
-                    name: "displayName",
-                    label: "Họ tên",
-                    required: true,
-                    width: "full",
-                  },
-                  {
-                    name: "username",
-                    label: "Tên đăng nhập",
-                    required: true,
-                    width: "full",
-                  },
-                ]}
-                defaults={{
-                  displayName: snapshot.base.displayName,
-                  username: snapshot.base.username,
-                }}
-                submitLabel="Lưu hồ sơ"
-                {...conflict}
+              <ProfileInfoForm
+                user={snapshot.base}
                 onSubmit={onSubmit}
+                {...conflict}
               />
               <p className="small muted">
                 {user.unit.name} · {label(user.systemRole)}
@@ -182,5 +170,50 @@ function ProfileDetails({ user }: { user: SessionDto["user"] }) {
         </div>
       </section>
     </>
+  );
+}
+
+function ProfileInfoForm({
+  user,
+  onSubmit,
+  ...conflict
+}: {
+  user: SessionDto["user"];
+  onSubmit: (values: z.output<typeof profileInfoSchema>) => Promise<void>;
+  onConflictReload: () => Promise<SessionDto["user"]>;
+  onConflictAccept: () => void;
+}) {
+  const form = useForm<z.input<typeof profileInfoSchema>>({
+    resolver: zodResolver(profileInfoSchema, { error: validationMessage }),
+    defaultValues: { displayName: user.displayName, username: user.username },
+  });
+  const { errors } = form.formState;
+  return (
+    <Form
+      compact
+      form={form}
+      onSubmit={onSubmit}
+      submitLabel="Lưu hồ sơ"
+      {...conflict}
+      compareFields={[
+        { name: "displayName", label: "Họ tên" },
+        { name: "username", label: "Tên đăng nhập" },
+      ]}
+    >
+      <FormInput
+        label="Họ tên"
+        required
+        width="full"
+        {...form.register("displayName")}
+        error={errors.displayName}
+      />
+      <FormInput
+        label="Tên đăng nhập"
+        required
+        width="full"
+        {...form.register("username")}
+        error={errors.username}
+      />
+    </Form>
   );
 }

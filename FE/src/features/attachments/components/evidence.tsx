@@ -1,7 +1,7 @@
 "use client";
+
 import { Spinner } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
-import { type AttachmentDto } from "@/features/attachments/types/attachments.types";
 import { fileSize } from "@/lib/format";
 import { useUI } from "@/stores/ui-store";
 import { useEffect, useId, useState } from "react";
@@ -11,6 +11,7 @@ import {
   useGetUploadPolicyQuery,
 } from "../hooks/use-attachments-queries";
 import { useDownloadAttachment } from "../hooks/use-download-attachment";
+import { type AttachmentDto } from "../types/attachments.types";
 const formats: Record<string, string> = {
   "application/pdf": "PDF",
   "image/png": "PNG",
@@ -119,6 +120,7 @@ export function EvidenceUploader({
     </div>
   );
 }
+
 export function EvidenceFile({ attachmentId }: { attachmentId: string }) {
   const query = useGetAttachmentQuery(attachmentId);
   const { pending, error, download } = useDownloadAttachment();

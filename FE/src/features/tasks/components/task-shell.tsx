@@ -1,14 +1,18 @@
 "use client";
+import { canManage } from "@/lib/auth/access";
+
+import { PageSkeleton } from "@/components/ui/loading";
 import {
   Badge,
   ButtonLink,
   PageHeader,
   SectionSelect,
 } from "@/components/ui/page";
-import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
-import { hasPermission, useSession } from "@/lib/auth/session-context";
+import { SubmitResultDialog } from "@/features/submissions/components/submit-result-dialog";
+import { TimeLogDialog } from "@/features/time-logs/components/time-log-dialog";
+import { useSession } from "@/lib/auth/session-context";
 import { label } from "@/lib/format";
 import { useHashDialog } from "@/lib/forms/use-hash-dialog";
 import { usePathname } from "next/navigation";
@@ -38,7 +42,7 @@ export function TaskShell({
   const active = project.data?.status === "ACTIVE";
   const editable =
     active && ["NEW", "TODO", "IN_PROGRESS"].includes(task.status);
-  const manage = hasPermission(session, "TASKS_MANAGE", task.projectId);
+  const manage = canManage(session, task.projectId);
   const own = task.assigneeId === session?.user.id;
   return (
     <>
@@ -120,12 +124,22 @@ export function TaskShell({
           error={project.error}
           retry={() => void project.refetch()}
         />
-      )}{" "}
+      )}
       {children}
       {editable && manage && (
         <TaskAssignmentDialog task={task} reload={query.refetch} />
-      )}{" "}
+      )}
       {editable && <TaskExecutionDialog task={task} reload={query.refetch} />}
+      {project.data && (
+        <>
+          <TimeLogDialog task={task} active={active} reload={query.refetch} />
+          <SubmitResultDialog
+            task={task}
+            active={active}
+            reload={query.refetch}
+          />
+        </>
+      )}
     </>
   );
 }

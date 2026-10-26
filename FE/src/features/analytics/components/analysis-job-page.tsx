@@ -1,8 +1,8 @@
 "use client";
-import { PermissionGate } from "@/components/layout/permission-gate";
+
 import { ActionButton } from "@/components/ui/action-button";
-import { Badge, ButtonLink, PageHeader, Panel } from "@/components/ui/page";
 import { PageSkeleton, Spinner } from "@/components/ui/loading";
+import { Badge, ButtonLink, PageHeader, Panel } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { dateTime } from "@/lib/format";
 import { useRouter } from "next/navigation";
@@ -11,9 +11,9 @@ import { useCreateAnalysisJobMutation } from "../hooks/use-analytics-mutations";
 import { useGetAnalysisDetailQuery } from "../hooks/use-analytics-queries";
 export function AnalysisJobPage({ jobId }: { jobId: string }) {
   return (
-    <PermissionGate permission="ANALYTICS_VIEW">
+    <>
       <JobContent key={jobId} jobId={jobId} />
-    </PermissionGate>
+    </>
   );
 }
 

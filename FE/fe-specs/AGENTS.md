@@ -4,6 +4,8 @@
 
 Đây là bộ đặc tả để triển khai hệ thống quản lý dự án và công việc tích hợp AI. Trước khi code, đọc README.md, 00_SCOPE_AND_DECISIONS.md, screens/SCREEN_SPECIFICATIONS.md, screens/UI_STATES.txt, mock/MOCK_MODELS.txt, các rule và toàn bộ API/DTO liên quan. Phạm vi là 27 Use Case, không xây ERD hoặc thiết kế dữ liệu tổng thể.
 
+Điều chỉnh theo yêu cầu người dùng đến ngày 26/10/2026: cấu trúc, HTTP/Axios, form, role và DTO hiện hành theo `../AGENTS.md`, `../docs/ARCHITECTURE.md` và `../docs/REFACTOR_REVIEW.md`. Không tạo lại shared/model, barrel công khai, registry, generator, file contract lặp service hoặc quyền cấp lẻ từ ví dụ gốc bên dưới. Quy tắc UI/luồng/tham số được cập nhật tại `../docs/UI_REVIEW.md`; route và whitelist hiện hành ở API_CATALOG.md. Giữ các ràng buộc nghiệp vụ, version/idempotency, validation tại biên server và phạm vi dữ liệu không trái với điều chỉnh mới.
+
 ## Thứ tự thực hiện
 
 1. Dùng 24 ảnh màn chính và screens/MAIN_SCREENS.md; triển khai đủ đặc tả S01–S43, điều hướng/state theo các TXT trong screens/. Hoàn thiện shell, routing, permission states và các trạng thái tải/rỗng/lỗi trước.

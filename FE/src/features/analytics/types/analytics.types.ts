@@ -1,36 +1,36 @@
-import type { analysisSchema } from "@/features/analytics/schemas/analysis-detail.schema";
-import type { evidenceSchema } from "@/features/analytics/schemas/analysis-explanation.schema";
+import { type EntityLabelDto, type Page } from "@/types/common";
+import { type z } from "zod";
+import type { analysisSchema } from "../schemas/analysis-detail.schema";
+import type { evidenceSchema } from "../schemas/analysis-explanation.schema";
 import type {
   feedbackInputSchema,
   feedbackSchema,
-} from "@/features/analytics/schemas/analysis-feedback.schema";
+} from "../schemas/analysis-feedback.schema";
 import type {
   createJobSchema,
   jobErrorSchema,
   jobSchema,
-} from "@/features/analytics/schemas/analysis-job.schema";
+} from "../schemas/analysis-job.schema";
 import type {
   analysisMetaSchema,
   qualitySchema,
-} from "@/features/analytics/schemas/analysis-meta.schema";
+} from "../schemas/analysis-meta.schema";
 import type {
   contextItemSchema,
   measureSchema,
-} from "@/features/analytics/schemas/analysis-snapshot.schema";
+} from "../schemas/analysis-snapshot.schema";
 import type {
   analyticsQuerySchema,
   filterOptionsQuerySchema,
-} from "@/features/analytics/schemas/analytics-query.schema";
-import type { bottlenecksSchema } from "@/features/analytics/schemas/bottlenecks.schema";
+} from "../schemas/analytics-query.schema";
+import type { bottlenecksSchema } from "../schemas/bottlenecks.schema";
 import type {
   dashboardSchema,
   metricSchema,
-} from "@/features/analytics/schemas/dashboard.schema";
-import type { risksSchema } from "@/features/analytics/schemas/risks.schema";
-import type { summarySchema } from "@/features/analytics/schemas/summary.schema";
-import type { workloadSchema } from "@/features/analytics/schemas/workload.schema";
-import { type EntityLabelDto, type Page } from "@/types/common";
-import { type z } from "zod";
+} from "../schemas/dashboard.schema";
+import type { risksSchema } from "../schemas/risks.schema";
+import type { summarySchema } from "../schemas/summary.schema";
+import type { workloadSchema } from "../schemas/workload.schema";
 export type AnalysisErrorDto = z.output<typeof jobErrorSchema>;
 export type JobDto = z.output<typeof jobSchema>;
 export type QualityDto = z.output<typeof qualitySchema>;

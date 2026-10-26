@@ -106,16 +106,17 @@ export function utcDateTime(value: string) {
 }
 export const options = (values: readonly string[]) =>
   values.map((value) => ({ value, label: label(value) }));
-export function changedFields(
+export function changedFields<
+  T extends Record<string, unknown>,
+  K extends keyof T,
+>(
   original: Record<string, unknown>,
-  next: Record<string, unknown>,
-  allowed: readonly string[],
-) {
-  return Object.fromEntries(
-    allowed
-      .filter(
-        (key) => JSON.stringify(original[key]) !== JSON.stringify(next[key]),
-      )
-      .map((key) => [key, next[key]]),
-  );
+  next: T,
+  allowed: readonly K[],
+): Partial<Pick<T, K>> {
+  const patch: Partial<Pick<T, K>> = {};
+  for (const key of allowed)
+    if (JSON.stringify(original[String(key)]) !== JSON.stringify(next[key]))
+      patch[key] = next[key];
+  return patch;
 }

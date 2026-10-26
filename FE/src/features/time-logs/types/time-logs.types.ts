@@ -1,13 +1,13 @@
+import type { reasonSchema } from "@/lib/validation/common.schema";
+import { type Page } from "@/types/common";
+import { type z } from "zod";
 import type {
   createTimeLogSchema,
   timeLogChangeResultSchema,
   timeLogQuerySchema,
   timeLogSchema,
   updateTimeLogSchema,
-} from "@/features/time-logs/schemas/time-logs.schema";
-import type { reasonSchema } from "@/lib/validation/common.schema";
-import { type Page } from "@/types/common";
-import { type z } from "zod";
+} from "../schemas/time-logs.schema";
 export type TimeLogDto = z.output<typeof timeLogSchema>;
 export type TimeLogQuery = z.input<typeof timeLogQuerySchema>;
 export type TimeLogList = Page<TimeLogDto>;

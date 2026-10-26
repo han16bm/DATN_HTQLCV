@@ -1,22 +1,16 @@
 "use client";
-import { PermissionGate } from "@/components/layout/permission-gate";
-import { DataTable, DetailLink, PageHeader } from "@/components/ui/page";
+import { canManage } from "@/lib/auth/access";
+
 import { PageSkeleton } from "@/components/ui/loading";
+import { DataTable, DetailLink, PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListProjectsQuery } from "@/features/projects/hooks/use-projects-queries";
-import { hasPermission, useSession } from "@/lib/auth/session-context";
+import { useSession } from "@/lib/auth/session-context";
 import { dateTime } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { useListReviewQueueQuery } from "../hooks/use-submissions-queries";
-export function ReviewsPage() {
-  return (
-    <PermissionGate permission="TASKS_REVIEW">
-      <ReviewQueue />
-    </PermissionGate>
-  );
-}
 
-function ReviewQueue() {
+export function ReviewsPage() {
   const f = useUrlFilters();
   const q = useListReviewQueueQuery({
     projectId: f.get("projectId") || undefined,
@@ -36,7 +30,7 @@ function ReviewQueue() {
           >
             <option value="">Tất cả dự án có quyền xét</option>
             {projects.data?.items
-              .filter((p) => hasPermission(session, "TASKS_REVIEW", p.id))
+              .filter((p) => canManage(session, p.id))
               .map((p) => (
                 <option value={p.id} key={p.id}>
                   {p.name}
@@ -45,6 +39,12 @@ function ReviewQueue() {
           </select>
         </label>
       </div>
+      {projects.isError && (
+        <QueryErrorState
+          error={projects.error}
+          retry={() => void projects.refetch()}
+        />
+      )}
       {q.isError ? (
         <QueryErrorState error={q.error} retry={() => void q.refetch()} />
       ) : !q.data ? (

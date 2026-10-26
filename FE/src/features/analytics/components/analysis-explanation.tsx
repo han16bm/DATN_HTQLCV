@@ -1,4 +1,5 @@
 "use client";
+
 import { dateTime } from "@/lib/format";
 import type { AnalysisDto } from "../types/analytics.types";
 import { DomainActionLink } from "./analysis-links";

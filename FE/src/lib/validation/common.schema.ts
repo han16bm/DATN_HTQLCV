@@ -1,21 +1,6 @@
 import { checkAction } from "@/lib/validation/contract-refinements";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
-export const metaSchema = z.object({
-  requestId: z.string().min(1),
-  serverTime: z.iso.datetime(),
-});
-export const permissionSchema = z.enum([
-  "USERS_MANAGE",
-  "ORGANIZATION_MANAGE",
-  "PROJECT_CREATE",
-  "PROJECT_MANAGE",
-  "MEMBERS_MANAGE",
-  "TASKS_MANAGE",
-  "TASKS_REVIEW",
-  "ANALYTICS_VIEW",
-  "ALERTS_MANAGE",
-]);
 export const paginationSchema = z.object({
   page: z.number().int().safe().min(1),
   pageSize: z.number().int().safe().min(1).max(100),

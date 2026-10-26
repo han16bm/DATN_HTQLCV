@@ -54,7 +54,7 @@ export const alertHandlers = [
           operation: "updateAlert",
           feature: "alerts",
           viewer,
-          permission: "ALERTS_MANAGE",
+          action: "ALERTS_MANAGE",
           params: { alertId },
           payload,
         },

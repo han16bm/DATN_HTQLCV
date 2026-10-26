@@ -1,75 +1,52 @@
 "use client";
-import {
-  reportPreviewQuerySchema,
-  reportQuerySchema,
-} from "@/features/reports/schemas/reports.schema";
-import {
-  type ReportPreviewQuery,
-  type ReportQuery,
-} from "@/features/reports/types/reports.types";
+
 import { useSession } from "@/lib/auth/session-context";
-import type { QueryOptions } from "@/lib/query/use-query-access";
 import { useQueryAccess } from "@/lib/query/use-query-access";
-import { queryIdSchema } from "@/lib/validation/request.schema";
 import { useQuery } from "@tanstack/react-query";
 import { reportsKeys } from "../api/reports.keys";
 import { reportsService } from "../api/reports.service";
+import {
+  reportPreviewQuerySchema,
+  reportQuerySchema,
+} from "../schemas/reports.schema";
+import {
+  type ReportPreviewQuery,
+  type ReportQuery,
+} from "../types/reports.types";
 
-export function useListReportsQuery(
-  query: ReportQuery = {},
-  options: QueryOptions = {},
-) {
-  const { session } = useSession();
-  const parsed = reportQuerySchema.safeParse(query);
-  const filters = parsed.success ? parsed.data : query;
+export function useListReportsQuery(query: ReportQuery = {}) {
+  const viewerId = useSession().session?.user.id;
+
+  const filters = reportQuerySchema.safeParse(query).data ?? query;
   const result = useQuery({
-    queryKey: parsed.success
-      ? reportsKeys.listReports(session?.user.id ?? "anonymous", filters)
-      : [
-          "reports",
-          session?.user.id ?? "anonymous",
-          "listReports",
-          "invalid-query",
-        ],
+    queryKey: reportsKeys.listReports(viewerId, filters),
     queryFn: ({ signal }) => reportsService.listReports(filters, { signal }),
-    enabled: options.enabled !== false && Boolean(session) && parsed.success,
+    enabled: Boolean(viewerId),
     staleTime: 30000,
   });
   return useQueryAccess(result, "reports");
 }
-export function useGetReportPreviewQuery(
-  query: ReportPreviewQuery,
-  options: QueryOptions = {},
-) {
-  const { session } = useSession();
-  const parsed = reportPreviewQuerySchema.safeParse(query);
-  const filters = parsed.success ? parsed.data : query;
+
+export function useGetReportPreviewQuery(query: ReportPreviewQuery) {
+  const viewerId = useSession().session?.user.id;
+
+  const filters = reportPreviewQuerySchema.safeParse(query).data ?? query;
   const result = useQuery({
-    queryKey: parsed.success
-      ? reportsKeys.getReportPreview(session?.user.id ?? "anonymous", filters)
-      : [
-          "reports",
-          session?.user.id ?? "anonymous",
-          "getReportPreview",
-          "invalid-query",
-        ],
+    queryKey: reportsKeys.getReportPreview(viewerId, filters),
     queryFn: ({ signal }) =>
       reportsService.getReportPreview(filters, { signal }),
-    enabled: options.enabled !== false && Boolean(session) && parsed.success,
+    enabled: Boolean(viewerId),
     staleTime: 10000,
   });
   return useQueryAccess(result, "reports");
 }
-export function useGetReportQuery(
-  reportId: string,
-  options: QueryOptions = {},
-) {
-  const id = queryIdSchema.parse(reportId);
-  const { session } = useSession();
+
+export function useGetReportQuery(reportId: string) {
+  const viewerId = useSession().session?.user.id;
   const result = useQuery({
-    queryKey: reportsKeys.getReport(session?.user.id ?? "anonymous", id),
-    queryFn: ({ signal }) => reportsService.getReport(id, { signal }),
-    enabled: options.enabled !== false && Boolean(session) && Boolean(id),
+    queryKey: reportsKeys.getReport(viewerId, reportId),
+    queryFn: ({ signal }) => reportsService.getReport(reportId, { signal }),
+    enabled: Boolean(viewerId && reportId),
     staleTime: 10000,
   });
   return useQueryAccess(result, "reports");

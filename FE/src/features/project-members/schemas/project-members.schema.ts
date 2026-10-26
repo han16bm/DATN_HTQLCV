@@ -1,22 +1,20 @@
 import {
   listQuerySchema,
-  permissionSchema,
   personRefSchema,
 } from "@/lib/validation/common.schema";
 import { checkProjection } from "@/lib/validation/contract-refinements";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
+export const projectRoleSchema = z.enum(["OWNER", "MANAGER", "MEMBER"]);
 export const addMemberSchema = z
   .object({
     userId: idSchema,
-    projectRole: z.enum(["MANAGER", "MEMBER"]),
-    permissions: z.array(permissionSchema),
+    projectRole: projectRoleSchema.exclude(["OWNER"]),
   })
   .strict();
-export const memberPermissionsSchema = z
+export const memberRoleSchema = z
   .object({
-    projectRole: z.enum(["MANAGER", "MEMBER"]),
-    permissions: z.array(permissionSchema),
+    projectRole: projectRoleSchema.exclude(["OWNER"]),
     reason: z
       .string()
       .trim()
@@ -29,8 +27,7 @@ export const membershipSchema = z
     id: idSchema,
     version: z.number().int().safe().positive(),
     userId: idSchema,
-    projectRole: z.enum(["OWNER", "MANAGER", "MEMBER"]),
-    permissions: z.array(permissionSchema),
+    projectRole: projectRoleSchema,
     endedAt: z.iso.datetime().nullable(),
     user: personRefSchema,
   })

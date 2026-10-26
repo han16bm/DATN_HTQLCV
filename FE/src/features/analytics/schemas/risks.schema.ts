@@ -1,13 +1,10 @@
 import {
-  analysisMetaSchema,
-  qualitySchema,
-} from "@/features/analytics/schemas/analysis-meta.schema";
-import {
   analysisRefSchema,
   personRefSchema,
 } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
+import { analysisMetaSchema, qualitySchema } from "./analysis-meta.schema";
 export const riskItemSchema = z.object({
   taskId: idSchema,
   taskTitle: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),

@@ -1,6 +1,7 @@
 "use client";
-import { ButtonLink, PageHeader, Panel } from "@/components/ui/page";
+
 import { PageSkeleton } from "@/components/ui/loading";
+import { ButtonLink, PageHeader, Panel } from "@/components/ui/page";
 import { ProfileHeader } from "@/components/ui/profile-header";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useSession } from "@/lib/auth/session-context";

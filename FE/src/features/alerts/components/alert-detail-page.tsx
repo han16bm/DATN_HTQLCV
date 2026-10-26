@@ -1,22 +1,16 @@
 "use client";
-import { PermissionGate } from "@/components/layout/permission-gate";
-import { Badge, ButtonLink, PageHeader, Panel } from "@/components/ui/page";
+import { canManage } from "@/lib/auth/access";
+
 import { PageSkeleton } from "@/components/ui/loading";
+import { Badge, ButtonLink, PageHeader, Panel } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
-import { AlertForm } from "@/features/alerts/components/alert-form";
 import { AnalysisLink } from "@/features/analytics/components/analysis-links";
-import { hasPermission, useSession } from "@/lib/auth/session-context";
+import { useSession } from "@/lib/auth/session-context";
 import { dateTime, label } from "@/lib/format";
 import { useGetAlertQuery } from "../hooks/use-alerts-queries";
-export function AlertDetailPage({ alertId }: { alertId: string }) {
-  return (
-    <PermissionGate permission="ANALYTICS_VIEW">
-      <AlertDetail alertId={alertId} />
-    </PermissionGate>
-  );
-}
+import { AlertForm } from "./alert-form";
 
-function AlertDetail({ alertId }: { alertId: string }) {
+export function AlertDetailPage({ alertId }: { alertId: string }) {
   const q = useGetAlertQuery(alertId);
   const { session } = useSession();
   if (q.isError)
@@ -85,7 +79,7 @@ function AlertDetail({ alertId }: { alertId: string }) {
           </dl>
         </Panel>
       </div>
-      {hasPermission(session, "ALERTS_MANAGE", a.projectId) && (
+      {canManage(session, a.projectId) && (
         <AlertForm key={a.id} value={a} reload={() => q.refetch()} />
       )}
     </>

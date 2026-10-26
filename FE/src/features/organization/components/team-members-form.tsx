@@ -1,12 +1,17 @@
 "use client";
+
+import { Form } from "@/components/forms/form";
+import { FormMultiSelect, FormTextarea } from "@/components/forms/form-field";
 import type { FormOption } from "@/components/forms/form.types";
-import { SchemaForm } from "@/components/forms/schema-form";
-import { teamMembersSchema } from "@/features/organization/schemas/team.schema";
-import { type TeamDto } from "@/features/organization/types/organization.types";
 import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
+import { validationMessage } from "@/lib/forms/validation-message";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { ReactNode } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useReplaceTeamMembersMutation } from "../hooks/use-organization-mutations";
-import type { ReactNode } from "react";
+import { teamMembersSchema } from "../schemas/team.schema";
+import { type TeamDto } from "../types/organization.types";
 export function TeamMembersForm({
   team,
   people,
@@ -24,25 +29,24 @@ export function TeamMembersForm({
 }) {
   const snapshot = useEditSnapshot(team);
   const mutation = useReplaceTeamMembersMutation();
+  const form = useForm({
+    resolver: zodResolver(teamMembersSchema, { error: validationMessage }),
+    defaultValues: { memberIds: team.memberIds },
+  });
+  const { errors } = form.formState;
   return (
-    <SchemaForm
-      schema={teamMembersSchema}
-      cancel={cancel}
-      fields={[
+    <Form
+      compact
+      form={form}
+      compareFields={[
         {
           name: "memberIds",
           label: "Thành viên",
-          type: "multi",
           options: people.filter((p) => p.parentValue === snapshot.base.unitId),
         },
-        {
-          name: "reason",
-          label: "Lý do thay đổi thành viên",
-          type: "textarea",
-          required: true,
-        },
+        { name: "reason", label: "Lý do thay đổi thành viên" },
       ]}
-      defaults={{ memberIds: team.memberIds }}
+      cancel={cancel}
       onConflictReload={reload ? () => snapshot.load(reload) : undefined}
       onConflictAccept={snapshot.accept}
       onSubmit={async (values) => {
@@ -57,6 +61,27 @@ export function TeamMembersForm({
         onDone();
       }}
       submitLabel="Lưu thành viên"
-    />
+    >
+      <Controller
+        name="memberIds"
+        control={form.control}
+        render={({ field }) => (
+          <FormMultiSelect
+            label="Thành viên"
+            options={people.filter(
+              (p) => p.parentValue === snapshot.base.unitId,
+            )}
+            {...field}
+            error={errors.memberIds}
+          />
+        )}
+      />
+      <FormTextarea
+        label="Lý do thay đổi thành viên"
+        required
+        {...form.register("reason")}
+        error={errors.reason}
+      />
+    </Form>
   );
 }

@@ -1,4 +1,4 @@
-import { listQuerySchema } from "@/lib/validation/common.schema";
+import { listQuerySchema, reasonSchema } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 export const createUnitSchema = z
@@ -8,23 +8,9 @@ export const createUnitSchema = z
     managerId: idSchema.nullable(),
   })
   .strict();
-export const updateUnitSchema = z
-  .object({
-    name: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(255)
-      .optional(),
-    parentId: idSchema.nullable().optional(),
-    managerId: idSchema.nullable().optional(),
-    reason: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(2000),
-  })
-  .strict();
+export const updateUnitSchema = createUnitSchema
+  .partial()
+  .extend({ reason: reasonSchema.shape.reason });
 export const unitQuerySchema = z
   .object({
     ...listQuerySchema.shape,

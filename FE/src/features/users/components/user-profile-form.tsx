@@ -1,24 +1,34 @@
 "use client";
-import type { FormField, FormOption } from "@/components/forms/form.types";
-import { SchemaForm } from "@/components/forms/schema-form";
-import { Badge, ButtonLink, Panel } from "@/components/ui/page";
-import { Avatar } from "@/components/ui/avatar";
+
+import { Form } from "@/components/forms/form";
 import {
-  createUserSchema,
-  updateUserSchema,
-} from "@/features/users/schemas/user-form.schema";
-import { systemRoleSchema } from "@/features/users/schemas/user.schema";
-import { type UserDto } from "@/features/users/types/users.types";
+  FormInput,
+  FormSelect,
+  FormTextarea,
+} from "@/components/forms/form-field";
+import type { FormOption } from "@/components/forms/form.types";
+import { Avatar } from "@/components/ui/avatar";
+import { Badge, ButtonLink, Panel } from "@/components/ui/page";
 import { changedFields, dateTime, label, options } from "@/lib/format";
-import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
+import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
+import { validationMessage } from "@/lib/forms/validation-message";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
 import {
   useCreateUserMutation,
   useUpdateUserMutation,
 } from "../hooks/use-users-mutations";
+import {
+  createUserSchema,
+  updateUserSchema,
+} from "../schemas/user-form.schema";
+import { systemRoleSchema } from "../schemas/user.schema";
+import { type UserDto } from "../types/users.types";
 export function UserProfileForm({
   user,
   units,
@@ -34,92 +44,47 @@ export function UserProfileForm({
   const create = useCreateUserMutation();
   const update = useUpdateUserMutation();
   const snapshot = useEditSnapshot(user);
-  const base = snapshot.base;
+
   const [open, setOpen] = useState(false);
   const cancel = async () => {
     if (!(await confirmDiscard("Bỏ thay đổi tài khoản chưa lưu?"))) return;
+    form.reset(defaults);
     setOpen(false);
   };
-  const fields: FormField[] = [
-    ...(!user
-      ? [
-          {
-            name: "username",
-            label: "Tên đăng nhập",
-            required: true,
-            width: "short" as const,
-          },
-        ]
-      : []),
-    {
-      name: "displayName",
-      label: "Họ tên",
-      required: true,
-      width: user ? "medium" : "long",
-    },
-    {
-      name: "email",
-      label: "Email",
-      type: "email",
-      required: true,
-      width: "medium",
-    },
-    {
-      name: "unitId",
-      label: "Đơn vị",
-      type: "select",
-      options: units,
-      required: true,
-    },
-    {
-      name: "systemRole",
-      label: "Vai trò hệ thống",
-      type: "select",
-      options: options(systemRoleSchema.options),
-      required: true,
-    },
-    ...(user
-      ? [
-          {
-            name: "reason",
-            label: "Lý do",
-            type: "textarea" as const,
-            required: false,
-            emptyAsUndefined: true,
-            hint: "Bắt buộc khi thay đổi vai trò.",
-          },
-        ]
-      : [
-          {
-            name: "initialPassword",
-            label: "Mật khẩu khởi tạo",
-            type: "password" as const,
-            required: true,
-            hint: "Tối thiểu 8 ký tự. Chỉ chuyển cho người nhận qua kênh nội bộ phù hợp.",
-          },
-        ]),
-  ];
-  const formProps = {
-    fields,
-    defaults: user
-      ? {
-          displayName: user.displayName,
-          email: user.email,
-          unitId: user.unitId,
-          systemRole: user.systemRole,
-        }
-      : { systemRole: "EMPLOYEE", unitId: units[0]?.value ?? "" },
-    onConflictReload: () => snapshot.load(reload),
-    onConflictAccept: snapshot.accept,
-    cancel: user ? (
-      <button type="button" onClick={cancel}>
-        Hủy
-      </button>
-    ) : (
-      <ButtonLink href="/admin/users">Hủy</ButtonLink>
-    ),
-    submitLabel: user ? "Lưu thông tin" : "Tạo tài khoản",
-  };
+  const schema = user
+    ? updateUserSchema
+        .required({
+          displayName: true,
+          email: true,
+          unitId: true,
+          systemRole: true,
+        })
+        .extend({ reason: z.string().trim().max(2000).optional() })
+    : createUserSchema;
+  type Values = z.input<typeof schema>;
+  const defaults: Values = user
+    ? {
+        displayName: user.displayName,
+        email: user.email,
+        unitId: user.unitId,
+        systemRole: user.systemRole,
+        reason: "",
+      }
+    : {
+        username: "",
+        displayName: "",
+        email: "",
+        unitId: units[0]?.value ?? "",
+        systemRole: "EMPLOYEE",
+        initialPassword: "",
+      };
+  const form = useForm<Values>({
+    resolver: zodResolver<Values, unknown, Values>(schema, {
+      error: validationMessage,
+    }),
+    defaultValues: defaults,
+  });
+  const { errors } = form.formState;
   return (
     <Panel
       title="Thông tin tài khoản"
@@ -129,6 +94,7 @@ export function UserProfileForm({
             type="button"
             onClick={() => {
               snapshot.saved(user);
+              form.reset(defaults);
               setOpen(true);
             }}
           >
@@ -168,40 +134,113 @@ export function UserProfileForm({
             </div>
           </dl>
         </>
-      ) : base ? (
-        <SchemaForm
-          {...formProps}
-          schema={updateUserSchema}
-          onSubmit={async (values) => {
-            const patch = changedFields(base, values, [
-              "displayName",
-              "email",
-              "unitId",
-              "systemRole",
-            ]);
-            await update.mutateAsync({
-              userId: base.id,
-              payload: updateUserSchema.parse({
-                ...patch,
-                ...(values.reason ? { reason: values.reason } : {}),
-              }),
-              version: base.version,
-            });
-            toast.success("Đã lưu tài khoản.");
-            router.push("/admin/users");
-          }}
-        />
       ) : (
-        <SchemaForm
-          {...formProps}
-          schema={createUserSchema}
+        <Form
+          form={form}
+          submitLabel={user ? "Lưu thông tin" : "Tạo tài khoản"}
+          cancel={
+            user ? (
+              <button type="button" onClick={cancel}>
+                Hủy
+              </button>
+            ) : (
+              <ButtonLink href="/admin/users">Hủy</ButtonLink>
+            )
+          }
+          compareFields={[
+            { name: "displayName", label: "Họ tên" },
+            { name: "email", label: "Email" },
+            { name: "unitId", label: "Đơn vị", options: units },
+            {
+              name: "systemRole",
+              label: "Vai trò hệ thống",
+              options: options(systemRoleSchema.options),
+            },
+          ]}
+          onConflictReload={() => snapshot.load(reload)}
+          onConflictAccept={snapshot.accept}
           onSubmit={async (values) => {
-            await create.mutateAsync(values);
-            toast.success("Đã cấp tài khoản.");
-
+            if ("username" in values) {
+              await create.mutateAsync(values);
+              toast.success("Đã cấp tài khoản.");
+            } else {
+              const base = snapshot.base!;
+              await update.mutateAsync({
+                userId: base.id,
+                payload: {
+                  ...changedFields(base, values, [
+                    "displayName",
+                    "email",
+                    "unitId",
+                    "systemRole",
+                  ]),
+                  ...(values.reason ? { reason: values.reason } : {}),
+                },
+                version: base.version,
+              });
+              toast.success("Đã lưu tài khoản.");
+            }
             router.push("/admin/users");
           }}
-        />
+        >
+          {!user && (
+            <FormInput
+              label="Tên đăng nhập"
+              required
+              width="short"
+              {...form.register("username")}
+              error={form.getFieldState("username", form.formState).error}
+            />
+          )}
+          <FormInput
+            label="Họ tên"
+            required
+            width={user ? "medium" : "long"}
+            {...form.register("displayName")}
+            error={errors.displayName}
+          />
+          <FormInput
+            label="Email"
+            type="email"
+            required
+            {...form.register("email")}
+            error={errors.email}
+          />
+          <FormSelect
+            label="Đơn vị"
+            required
+            options={units}
+            {...form.register("unitId")}
+            error={errors.unitId}
+          />
+          <FormSelect
+            label="Vai trò hệ thống"
+            required
+            options={options(systemRoleSchema.options)}
+            {...form.register("systemRole")}
+            error={errors.systemRole}
+          />
+          {user ? (
+            <FormTextarea
+              label="Lý do"
+              hint="Bắt buộc khi thay đổi vai trò."
+              {...form.register("reason")}
+              error={form.getFieldState("reason", form.formState).error}
+            />
+          ) : (
+            <FormInput
+              label="Mật khẩu khởi tạo"
+              type="password"
+              autoComplete="new-password"
+              required
+              hint="Tối thiểu 8 ký tự. Chỉ chuyển cho người nhận qua kênh nội bộ phù hợp."
+              {...form.register("initialPassword")}
+              error={
+                form.getFieldState("initialPassword", form.formState).error
+              }
+            />
+          )}
+        </Form>
       )}
     </Panel>
   );

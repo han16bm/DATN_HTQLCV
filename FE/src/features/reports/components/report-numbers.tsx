@@ -1,8 +1,9 @@
 "use client";
+
 import { Badge, DataTable, DetailLink } from "@/components/ui/page";
-import { type ReportPreviewDto } from "@/features/reports/types/reports.types";
 import { dateTime, hours } from "@/lib/format";
 import type { ReactNode } from "react";
+import { type ReportPreviewDto } from "../types/reports.types";
 export function ReportNumbers({
   value,
   frozen = false,

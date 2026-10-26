@@ -36,15 +36,14 @@ export const reportQuerySchema = z
     to: z.iso.date().optional(),
   })
   .strict();
-export const updateReportSchema = z
-  .object({
-    achievements: z.string().trim().max(10000).optional(),
-    blockers: z.string().trim().max(10000).optional(),
-    nextPlan: z.string().trim().max(10000).optional(),
-    selectedTaskIds: z.array(idSchema).optional(),
-    zeroTimeReason: z.string().trim().nullable().optional(),
+export const updateReportSchema = createReportSchema
+  .pick({
+    achievements: true,
+    blockers: true,
+    nextPlan: true,
+    selectedTaskIds: true,
   })
-  .strict();
+  .extend({ zeroTimeReason: z.string().trim().nullable().optional() });
 export const reportPreviewQuerySchema = z
   .object({
     projectId: idSchema,

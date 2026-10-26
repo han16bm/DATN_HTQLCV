@@ -1,3 +1,5 @@
+import { type Page } from "@/types/common";
+import { type z } from "zod";
 import type {
   createReportSchema,
   reportPreviewQuerySchema,
@@ -7,9 +9,7 @@ import type {
   reportSchema,
   reportSubmitSchema,
   updateReportSchema,
-} from "@/features/reports/schemas/reports.schema";
-import { type Page } from "@/types/common";
-import { type z } from "zod";
+} from "../schemas/reports.schema";
 export type ReportPreviewDto = z.output<typeof reportPreviewSchema>;
 export type ReportDto = z.output<typeof reportSchema>;
 export type ReportQuery = z.input<typeof reportQuerySchema>;

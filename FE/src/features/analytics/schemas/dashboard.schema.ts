@@ -1,8 +1,8 @@
-import { analysisMetaSchema } from "@/features/analytics/schemas/analysis-meta.schema";
 import { taskStatusSchema } from "@/features/tasks/schemas/task.schema";
 import { analysisRefSchema } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
+import { analysisMetaSchema } from "./analysis-meta.schema";
 export const metricSchema = z.object({
   code: z.enum([
     "K01",

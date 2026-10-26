@@ -2,6 +2,7 @@ import { taskSchema } from "@/features/tasks/schemas/task.schema";
 import {
   listQuerySchema,
   personRefSchema,
+  reasonSchema,
 } from "@/lib/validation/common.schema";
 import { checkProjection } from "@/lib/validation/contract-refinements";
 import { idSchema } from "@/lib/validation/request.schema";
@@ -17,23 +18,9 @@ export const createTimeLogSchema = z
       .max(2000),
   })
   .strict();
-export const updateTimeLogSchema = z
-  .object({
-    workDate: z.iso.date().optional(),
-    minutes: z.number().int().safe().max(1440).positive().optional(),
-    description: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(2000)
-      .optional(),
-    reason: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(2000),
-  })
-  .strict();
+export const updateTimeLogSchema = createTimeLogSchema
+  .partial()
+  .extend({ reason: reasonSchema.shape.reason });
 export const timeLogSchema = z
   .object({
     id: idSchema,

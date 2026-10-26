@@ -63,8 +63,8 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
   });
   it("gives ADMIN a global dashboard with unit filters and read-only drilldowns", async () => {
     const session = await login("admin");
-    expect(session.systemPermissions).toContain("ANALYTICS_VIEW");
-    expect(session.systemPermissions).not.toContain("TASKS_MANAGE");
+    expect(session.user.systemRole).toBe("ADMIN");
+    expect(session).not.toHaveProperty("systemPermissions");
     const query = { from: scope.from, to: scope.to };
     const all = await analyticsService.getDashboard(query);
     expect(
@@ -343,18 +343,12 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
     const stored = db.details.get(id)!;
     expect(stored).not.toHaveProperty("freshness");
     expect(stored).not.toHaveProperty("feedback");
-    const member = db.members.find(
-      (item) => item.userId === "u-pm" && item.projectId === "p-main",
-    )!;
-    const permissions = member.permissions;
-    member.permissions = permissions.filter(
-      (value) => value !== "ALERTS_MANAGE",
-    );
+    await authService.login({ username: "admin", password: "Mock@12345" });
     expect(
       (await analyticsService.getAnalysisDetail(id)).feedback.canSubmit,
     ).toBe(false);
     expect(detail.feedback.canSubmit).toBe(true);
-    member.permissions = permissions;
+    await login();
     db.revision++;
     const stale = await analyticsService.getAnalysisDetail(id);
     expect(stale.snapshot).toEqual(detail.snapshot);
@@ -369,7 +363,7 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
       ),
     ).rejects.toMatchObject({ status: 409 });
   });
-  it("denies old analysis/job access after permission loss and expires snapshots", async () => {
+  it("denies old analysis/job access after project role loss and expires snapshots", async () => {
     await login();
     const a = await analyticsService.getDashboard(scope);
     const id = a.overviewRef.analysisId;
@@ -381,7 +375,7 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
     );
     db.members.find(
       (m) => m.userId === "u-pm" && m.projectId === "p-main",
-    )!.permissions = [];
+    )!.projectRole = "MEMBER";
     await expect(analyticsService.getAnalysisDetail(id)).rejects.toMatchObject({
       status: 403,
     });
@@ -390,7 +384,7 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
     );
     db.members.find(
       (m) => m.userId === "u-pm" && m.projectId === "p-main",
-    )!.permissions = ["ANALYTICS_VIEW"];
+    )!.projectRole = "OWNER";
     setClock("2026-12-01T00:00:00.000Z");
     await login();
     await expect(analyticsService.getAnalysisDetail(id)).rejects.toMatchObject({

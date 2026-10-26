@@ -1,15 +1,17 @@
-import type { loginSchema } from "@/features/auth/schemas/login.schema";
+import { type z } from "zod";
+import type { loginSchema } from "../schemas/login.schema";
 import type {
   changePasswordSchema,
   passwordResultSchema,
-} from "@/features/auth/schemas/password.schema";
-import type { updateProfileSchema } from "@/features/auth/schemas/profile.schema";
+} from "../schemas/password.schema";
+import type { updateProfileSchema } from "../schemas/profile.schema";
 import type {
+  loginResponseSchema,
   logoutResultSchema,
   sessionSchema,
-} from "@/features/auth/schemas/session.schema";
-import { type z } from "zod";
+} from "../schemas/session.schema";
 export type SessionDto = z.output<typeof sessionSchema>;
+export type LoginResponse = z.output<typeof loginResponseSchema>;
 export type LoginInput = z.input<typeof loginSchema>;
 export type LogoutResult = z.output<typeof logoutResultSchema>;
 export type ChangePasswordInput = z.input<typeof changePasswordSchema>;

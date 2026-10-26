@@ -1,4 +1,7 @@
 "use client";
+import { canVisit } from "@/lib/auth/access";
+
+import { PageSkeleton, Skeleton } from "@/components/ui/loading";
 import {
   Badge,
   ButtonLink,
@@ -6,12 +9,11 @@ import {
   DetailLink,
   PageHeader,
 } from "@/components/ui/page";
-import { PageSkeleton, Skeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListReportsQuery } from "@/features/reports/hooks/use-reports-queries";
 import { useListReviewQueueQuery } from "@/features/submissions/hooks/use-submissions-queries";
 import { useListTasksQuery } from "@/features/tasks/hooks/use-tasks-queries";
-import { hasPermission, useSession } from "@/lib/auth/session-context";
+import { useSession } from "@/lib/auth/session-context";
 import { dateTime } from "@/lib/format";
 import Link from "next/link";
 import { useListProjectsQuery } from "../hooks/use-projects-queries";
@@ -19,7 +21,7 @@ import { useListProjectsQuery } from "../hooks/use-projects-queries";
 export function WorkspaceOverview() {
   const { session } = useSession();
   const userId = session?.user.id ?? "";
-  const canReview = hasPermission(session, "TASKS_REVIEW");
+  const canReview = canVisit(session?.user.systemRole, "/reviews");
   const projects = useListProjectsQuery({ pageSize: 4 });
   const drafts = useListReportsQuery({
     authorId: userId,
@@ -66,7 +68,7 @@ export function WorkspaceOverview() {
         title={`Chào ${session?.user.displayName.split(" ").at(-1) ?? "bạn"},`}
         actions={
           <>
-            {hasPermission(session, "ANALYTICS_VIEW") && (
+            {canVisit(session?.user.systemRole, "/dashboard") && (
               <ButtonLink href="/dashboard" primary>
                 Mở bảng tổng quan
               </ButtonLink>

@@ -1,6 +1,8 @@
 {
   "clock": "2026-10-23T10:05:00.000Z",
-  "analysisPolicy": { "retentionDays": 7 },
+  "analysisPolicy": {
+    "retentionDays": 7
+  },
   "password": "Mock@12345",
   "metricFormulas": {
     "K01": "Số công việc được theo dõi, không tính công việc đã hủy.",
@@ -84,7 +86,7 @@
       "displayName": "Người dùng dự án khác",
       "email": "other@example.test",
       "unitId": "unit-tech",
-      "systemRole": "EMPLOYEE",
+      "systemRole": "MANAGER",
       "status": "ACTIVE"
     },
     {
@@ -172,14 +174,6 @@
       "projectId": "p-main",
       "userId": "u-pm",
       "projectRole": "OWNER",
-      "permissions": [
-        "PROJECT_MANAGE",
-        "MEMBERS_MANAGE",
-        "TASKS_MANAGE",
-        "TASKS_REVIEW",
-        "ANALYTICS_VIEW",
-        "ALERTS_MANAGE"
-      ],
       "endedAt": null
     },
     {
@@ -188,7 +182,6 @@
       "projectId": "p-main",
       "userId": "u-lan",
       "projectRole": "MEMBER",
-      "permissions": [],
       "endedAt": null
     },
     {
@@ -197,7 +190,6 @@
       "projectId": "p-main",
       "userId": "u-huy",
       "projectRole": "MEMBER",
-      "permissions": [],
       "endedAt": null
     },
     {
@@ -206,14 +198,6 @@
       "projectId": "p-other",
       "userId": "u-other",
       "projectRole": "OWNER",
-      "permissions": [
-        "PROJECT_MANAGE",
-        "MEMBERS_MANAGE",
-        "TASKS_MANAGE",
-        "TASKS_REVIEW",
-        "ANALYTICS_VIEW",
-        "ALERTS_MANAGE"
-      ],
       "endedAt": null
     },
     {
@@ -222,14 +206,6 @@
       "projectId": "p-planned",
       "userId": "u-pm",
       "projectRole": "OWNER",
-      "permissions": [
-        "PROJECT_MANAGE",
-        "MEMBERS_MANAGE",
-        "TASKS_MANAGE",
-        "TASKS_REVIEW",
-        "ANALYTICS_VIEW",
-        "ALERTS_MANAGE"
-      ],
       "endedAt": null
     }
   ],

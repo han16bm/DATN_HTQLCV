@@ -1,16 +1,19 @@
 "use client";
+import { Spinner } from "@/components/ui/loading";
+import { QueryErrorState } from "@/components/ui/query-error-state";
+import { canVisit } from "@/lib/auth/access";
 import { useSession } from "@/lib/auth/session-context";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import { useUI } from "@/stores/ui-store";
+import { ApiError } from "@/types/api/error";
 import * as Dialog from "@radix-ui/react-dialog";
+import { useIsFetching } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Menu, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useEffect, type ReactNode } from "react";
+import { AvatarMenu } from "./avatar-menu";
 import { DirtyNavigationGuard } from "./dirty-navigation-guard";
 import { SidebarContent } from "./sidebar-content";
-import { AvatarMenu } from "./avatar-menu";
-import { Spinner } from "@/components/ui/loading";
-import { useIsFetching } from "@tanstack/react-query";
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
   const fetching = useIsFetching({
@@ -139,7 +142,21 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             </div>
           </header>
           <main className="content">
-            <div className="page-surface">{children}</div>
+            <div className="page-surface">
+              {canVisit(session.user.systemRole, pathname) ? (
+                children
+              ) : (
+                <QueryErrorState
+                  error={
+                    new ApiError(
+                      403,
+                      "FORBIDDEN",
+                      "Vai trò của bạn không được truy cập trang này.",
+                    )
+                  }
+                />
+              )}
+            </div>
           </main>
         </div>
       </div>

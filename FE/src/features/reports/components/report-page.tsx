@@ -1,13 +1,14 @@
 "use client";
-import { Badge, ButtonLink, PageHeader, Panel } from "@/components/ui/page";
+
 import { PageSkeleton } from "@/components/ui/loading";
+import { Badge, ButtonLink, PageHeader, Panel } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
-import { ReportEditor } from "@/features/reports/components/report-editor";
-import { ReportNumbers } from "@/features/reports/components/report-numbers";
 import { useSession } from "@/lib/auth/session-context";
 import { label } from "@/lib/format";
 import { useGetReportQuery } from "../hooks/use-reports-queries";
+import { ReportEditor } from "./report-editor";
+import { ReportNumbers } from "./report-numbers";
 export function ReportPage({
   reportId,
   edit = false,

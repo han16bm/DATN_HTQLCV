@@ -1,4 +1,5 @@
 "use client";
+
 import { Panel } from "@/components/ui/page";
 import { dateTime, label, metricValue } from "@/lib/format";
 import {

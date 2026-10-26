@@ -27,7 +27,7 @@ Lịch sử: contract 0.1.0 → 0.2.0 (tài liệu 0.3), sau đó 0.3.0 (tài li
 |---|---|---|
 | UserDTO | unit | login/refresh/getSession và list/get/create/update/lock/unlock user trả User |
 | ProjectDTO | owner, unit | list/get/create/update/activate/complete/cancel project |
-| MembershipDTO | user | list/add/update permissions/end member |
+| MembershipDTO | user | list/add/update role/end member |
 | TaskDTO | assignee nullable, project | list/get/create/update/assign/start/pause/cancel/remaining; response tổng hợp giờ công và nộp/nghiệm thu |
 | TimeLogDTO | user | list/create/update/void log |
 | SubmissionDTO | submitter, reviewer nullable | list/get/create/approve/revision/review queue |

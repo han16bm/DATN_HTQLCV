@@ -1,8 +1,8 @@
 "use client";
+import { label } from "@/lib/format";
 import { ApiError } from "@/types/api/error";
 import { useState, type Dispatch, type SetStateAction } from "react";
-import { z } from "zod";
-import type { FormField } from "./form.types";
+import type { CompareField } from "./form.types";
 export function FormError({
   error,
   setError,
@@ -12,12 +12,11 @@ export function FormError({
 }: {
   error: Error;
   setError: Dispatch<SetStateAction<Error | null>>;
-  fields: FormField[];
-  onConflictReload?: () => Promise<unknown>;
+  fields: CompareField[];
+  onConflictReload?: () => Promise<Record<string, unknown>>;
   onConflictAccept?: () => void;
 }) {
-  const [comparison, setComparison] = useState<unknown>(undefined);
-  const values = z.record(z.string(), z.unknown()).safeParse(comparison);
+  const [comparison, setComparison] = useState<Record<string, unknown>>();
   return (
     <div className="notice error wide" role="alert">
       <p>{error.message}</p>
@@ -46,14 +45,20 @@ export function FormError({
           <summary>Bản mới nhất — nội dung bạn nhập được giữ lại</summary>
           <dl>
             {fields.map((config) => {
-              if (!values.success || !(config.name in values.data)) return null;
-              const value = values.data[config.name];
+              if (!(config.name in comparison)) return null;
+              const value = comparison[config.name];
+              const text = (value: unknown) =>
+                config.options?.find((option) => option.value === value)
+                  ?.label ?? label(String(value));
               return (
                 <div key={config.name}>
                   <dt>{config.label}</dt>
                   <dd>
-                    {config.options?.find((o) => o.value === value)?.label ??
-                      (value === null ? "Không có" : String(value))}
+                    {value === null || value === undefined
+                      ? "Không có"
+                      : Array.isArray(value)
+                        ? value.map(text).join(", ") || "Không có"
+                        : text(value)}
                   </dd>
                 </div>
               );

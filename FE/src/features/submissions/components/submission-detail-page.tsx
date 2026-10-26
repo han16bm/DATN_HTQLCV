@@ -1,14 +1,16 @@
 "use client";
-import { Badge, PageHeader, Panel } from "@/components/ui/page";
+import { canManage } from "@/lib/auth/access";
+
 import { PageSkeleton } from "@/components/ui/loading";
+import { Badge, PageHeader, Panel } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { EvidenceFile } from "@/features/attachments/components/evidence";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
-import { ReviewForm } from "@/features/submissions/components/review-form";
 import { useGetTaskQuery } from "@/features/tasks/hooks/use-tasks-queries";
-import { hasPermission, useSession } from "@/lib/auth/session-context";
+import { useSession } from "@/lib/auth/session-context";
 import { dateTime, hours } from "@/lib/format";
 import { useGetSubmissionQuery } from "../hooks/use-submissions-queries";
+import { ReviewForm } from "./review-form";
 export function SubmissionDetailPage({
   taskId,
   submissionId,
@@ -23,7 +25,14 @@ export function SubmissionDetailPage({
   if (q.isError)
     return <QueryErrorState error={q.error} retry={() => void q.refetch()} />;
   if (task.isError) return <QueryErrorState error={task.error} />;
-  if (!q.data || !task.data) return <PageSkeleton />;
+  if (project.isError)
+    return (
+      <QueryErrorState
+        error={project.error}
+        retry={() => void project.refetch()}
+      />
+    );
+  if (!q.data || !task.data || !project.data) return <PageSkeleton />;
   const s = q.data;
   const t = task.data;
   const canReview =
@@ -31,7 +40,7 @@ export function SubmissionDetailPage({
     t.latestSubmissionId === s.id &&
     t.status === "PENDING_REVIEW" &&
     s.submittedBy !== session?.user.id &&
-    hasPermission(session, "TASKS_REVIEW", t.projectId) &&
+    canManage(session, t.projectId) &&
     project.data?.status === "ACTIVE";
   return (
     <>
@@ -81,12 +90,7 @@ export function SubmissionDetailPage({
           ))}
         </Panel>
         {canReview && (
-          <ReviewForm
-            key={s.id}
-            taskId={taskId}
-            submissionId={s.id}
-            version={s.version}
-          />
+          <ReviewForm key={s.id} submission={s} reload={q.refetch} />
         )}
       </div>
       {s.reviewedAt && (

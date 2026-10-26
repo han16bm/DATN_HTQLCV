@@ -1,6 +1,7 @@
 "use client";
-import { Badge, ButtonLink, DataTable, PageHeader } from "@/components/ui/page";
+
 import { PageSkeleton } from "@/components/ui/loading";
+import { Badge, ButtonLink, DataTable, PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
 import { useGetTaskQuery } from "@/features/tasks/hooks/use-tasks-queries";

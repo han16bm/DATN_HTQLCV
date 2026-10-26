@@ -1,14 +1,15 @@
 "use client";
-import { DataTable } from "@/components/ui/page";
+
 import { PageSkeleton } from "@/components/ui/loading";
+import { DataTable } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
-import { Metadata } from "@/features/analytics/components/analysis-metadata";
 import { hours, number } from "@/lib/format";
 import Link from "next/link";
 import { useGetWorkloadQuery } from "../hooks/use-analytics-queries";
 import { useAnalyticsScope } from "../hooks/use-analytics-scope";
 import { AnalysisLink } from "./analysis-links";
+import { Metadata } from "./analysis-metadata";
 import { AnalyticsFrame } from "./analytics-frame";
 export function WorkloadPage() {
   const scope = useAnalyticsScope();

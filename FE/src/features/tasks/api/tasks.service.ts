@@ -1,121 +1,139 @@
-import type { TasksApi } from "@/features/tasks/api/tasks.contract";
-import {
-  taskRowSchema,
-  taskSchema,
-} from "@/features/tasks/schemas/task.schema";
-import {
-  type AssignTaskInput,
-  type CancelTaskInput,
-  type CreateTaskInput,
-  type PauseTaskInput,
-  type TaskHistoryQuery,
-  type TaskQuery,
-  type UpdateRemainingEstimateInput,
-  type UpdateTaskInput,
-} from "@/features/tasks/types/tasks.types";
 import { auditSchema, page } from "@/lib/validation/common.schema";
-import type {
-  MutationOptions,
-  RequestOptions,
-  VersionOptions,
+import {
+  type MutationOptions,
+  type RequestOptions,
+  type VersionOptions,
+  apiClient,
 } from "@/services/api-client";
-import { apiClient, parseResponse } from "@/services/api-client";
-export const tasksService: TasksApi = {
-  listTasks(query: TaskQuery = {}, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>("/tasks", { ...options, params: query })
-      .then(parseResponse(page(taskRowSchema)));
+import { taskRowSchema, taskSchema } from "../schemas/task.schema";
+import type {
+  AssignTaskInput,
+  CancelTaskInput,
+  CreateTaskInput,
+  PauseTaskInput,
+  TaskDto,
+  TaskHistoryList,
+  TaskHistoryQuery,
+  TaskList,
+  TaskQuery,
+  UpdateRemainingEstimateInput,
+  UpdateTaskInput,
+} from "../types/tasks.types";
+
+export const tasksService = {
+  async listTasks(query: TaskQuery = {}, options: RequestOptions = {}) {
+    const response = await apiClient.get<TaskList>("/tasks", {
+      ...options,
+      params: query,
+      schema: page(taskRowSchema),
+    });
+    return response.data;
   },
-  getTask(taskId: string, options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>(`/tasks/${encodeURIComponent(taskId)}`, options)
-      .then(parseResponse(taskSchema));
+
+  async getTask(taskId: string, options: RequestOptions = {}) {
+    const response = await apiClient.get<TaskDto>(
+      `/tasks/${encodeURIComponent(taskId)}`,
+      { ...options, schema: taskSchema },
+    );
+    return response.data;
   },
-  createTask(
+
+  async createTask(
     projectId: string,
     payload: CreateTaskInput,
     options: MutationOptions,
   ) {
-    return apiClient
-      .post<unknown>(
-        `/projects/${encodeURIComponent(projectId)}/tasks`,
-        payload,
-        options,
-      )
-      .then(parseResponse(taskSchema));
+    const response = await apiClient.post<TaskDto>(
+      `/projects/${encodeURIComponent(projectId)}/tasks`,
+      payload,
+      { ...options, schema: taskSchema },
+    );
+    return response.data;
   },
-  updateTask(
+
+  async updateTask(
     taskId: string,
     payload: UpdateTaskInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .patch<unknown>(`/tasks/${encodeURIComponent(taskId)}`, payload, options)
-      .then(parseResponse(taskSchema));
+    const response = await apiClient.patch<TaskDto>(
+      `/tasks/${encodeURIComponent(taskId)}`,
+      payload,
+      { ...options, schema: taskSchema },
+    );
+    return response.data;
   },
-  assignTask(
+
+  async assignTask(
     taskId: string,
     payload: AssignTaskInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .post<unknown>(
-        `/tasks/${encodeURIComponent(taskId)}/assignments`,
-        payload,
-        options,
-      )
-      .then(parseResponse(taskSchema));
+    const response = await apiClient.post<TaskDto>(
+      `/tasks/${encodeURIComponent(taskId)}/assignments`,
+      payload,
+      { ...options, schema: taskSchema },
+    );
+    return response.data;
   },
-  startTask(taskId: string, options: VersionOptions) {
-    return apiClient
-      .post<unknown>(`/tasks/${encodeURIComponent(taskId)}/start`, {}, options)
-      .then(parseResponse(taskSchema));
+
+  async startTask(taskId: string, options: VersionOptions) {
+    const response = await apiClient.post<TaskDto>(
+      `/tasks/${encodeURIComponent(taskId)}/start`,
+      {},
+      { ...options, schema: taskSchema },
+    );
+    return response.data;
   },
-  pauseTask(taskId: string, payload: PauseTaskInput, options: VersionOptions) {
-    return apiClient
-      .post<unknown>(
-        `/tasks/${encodeURIComponent(taskId)}/pause`,
-        payload,
-        options,
-      )
-      .then(parseResponse(taskSchema));
+
+  async pauseTask(
+    taskId: string,
+    payload: PauseTaskInput,
+    options: VersionOptions,
+  ) {
+    const response = await apiClient.post<TaskDto>(
+      `/tasks/${encodeURIComponent(taskId)}/pause`,
+      payload,
+      { ...options, schema: taskSchema },
+    );
+    return response.data;
   },
-  cancelTask(
+
+  async cancelTask(
     taskId: string,
     payload: CancelTaskInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .post<unknown>(
-        `/tasks/${encodeURIComponent(taskId)}/cancel`,
-        payload,
-        options,
-      )
-      .then(parseResponse(taskSchema));
+    const response = await apiClient.post<TaskDto>(
+      `/tasks/${encodeURIComponent(taskId)}/cancel`,
+      payload,
+      { ...options, schema: taskSchema },
+    );
+    return response.data;
   },
-  updateRemainingEstimate(
+
+  async updateRemainingEstimate(
     taskId: string,
     payload: UpdateRemainingEstimateInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .patch<unknown>(
-        `/tasks/${encodeURIComponent(taskId)}/remaining-estimate`,
-        payload,
-        options,
-      )
-      .then(parseResponse(taskSchema));
+    const response = await apiClient.patch<TaskDto>(
+      `/tasks/${encodeURIComponent(taskId)}/remaining-estimate`,
+      payload,
+      { ...options, schema: taskSchema },
+    );
+    return response.data;
   },
-  listTaskHistory(
+
+  async listTaskHistory(
     taskId: string,
     query: TaskHistoryQuery = {},
     options: RequestOptions = {},
   ) {
-    return apiClient
-      .get<unknown>(`/tasks/${encodeURIComponent(taskId)}/history`, {
-        ...options,
-        params: query,
-      })
-      .then(parseResponse(page(auditSchema)));
+    const response = await apiClient.get<TaskHistoryList>(
+      `/tasks/${encodeURIComponent(taskId)}/history`,
+      { ...options, params: query, schema: page(auditSchema) },
+    );
+    return response.data;
   },
 };

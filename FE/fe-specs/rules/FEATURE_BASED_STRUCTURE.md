@@ -1,5 +1,7 @@
 # Cấu trúc FE theo feature
 
+Áp dụng tổ chức hiện hành theo yêu cầu refactor ngày 25/10/2026 tại [ARCHITECTURE.md](../../docs/ARCHITECTURE.md) và [REFACTOR_REVIEW.md](../../docs/REFACTOR_REVIEW.md). Feature dùng `api`, `schemas`, `types`, `hooks`, `components`; import nội bộ tương đối, import trực tiếp và không có barrel/registry/generator. Không tạo interface `*.contract.ts` lặp chữ ký service. Form có `useForm` + `zodResolver` và field trực tiếp; phần dùng chung chỉ giữ control, hiển thị, dirty và lỗi/xung đột. Các bố cục `shared/model/contract` trong ví dụ gốc bên dưới được thay bằng cấu trúc hiện hành này; nghiệp vụ vẫn theo catalog.
+
 ## Kiến trúc được chọn
 
 FE là một ứng dụng Next.js App Router, chia module theo năng lực nghiệp vụ. Mọi request nghiệp vụ đi tới public API của Gateway. BE quyết định service đích; FE không chứa URL nội bộ của từng microservice. Trong development, MSW chặn cùng request đó và trả response theo cùng DTO.
@@ -27,7 +29,7 @@ Giai đoạn đầu dùng App Router cho routing/layout và React Query trong cl
 | `src/features/alerts` | Xem, ghi nhận và xử lý cảnh báo | Thay nghiệp vụ công việc khi đóng cảnh báo |
 | `src/shared/ui` | Component nền dùng chung, shadcn/ui | Fetch dữ liệu feature |
 | `src/shared/api` | HTTP transport, lỗi chuẩn, request headers | Endpoint/domain schema cụ thể |
-| `src/shared/contracts` | Scalar, thời gian, pagination, envelope, audit | Phụ thuộc vào feature |
+| `src/shared/contracts` | Scalar, thời gian, pagination, HTTP error, audit | Phụ thuộc vào feature |
 | `src/contracts` | Tuỳ chọn khi dự án cần hợp nhất contract để export/check | Import vào component để tùy chọn endpoint động |
 | `src/mocks` | Interception, fixture, mô phỏng mutation | Import vào luồng production |
 | `src/providers` | QueryClientProvider, khởi động mock, UI providers | Quy tắc nghiệm thu/phân công |

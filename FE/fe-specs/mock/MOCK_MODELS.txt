@@ -75,13 +75,9 @@ Kế hoạch/trạng thái dự án, liên kết ownerId/unitId.
 Tư cách thành viên theo projectId/userId; endedAt null đang hiệu lực.
   - id: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Định danh do BE sinh, không tự đổi.
   - version: integer; bắt buộc=Có. > 0; Phiên bản đọc; gửi qua If-Match nếu contract yêu cầu.
-  - createdAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm tạo UTC.
-  - updatedAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm cập nhật UTC; không dùng thay thời điểm chuyển trạng thái.
   - projectId: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; ID dự án; không đồng nghĩa ID service.
   - userId: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Tài khoản của thành viên/người ghi theo đúng model.
-  - projectRole: enum(OWNER, MANAGER, MEMBER); bắt buộc=Có. Nhãn vai trò trên một dự án; quyền thực tế nằm trong permissions.
-  - permissions: array<enum(USERS_MANAGE, ORGANIZATION_MANAGE, PROJECT_CREATE, PROJECT_MANAGE, MEMBERS_MANAGE, TASKS_MANAGE, TASKS_REVIEW, ANALYTICS_VIEW, ALERTS_MANAGE)>; bắt buộc=Có. Mảng enum quyền trong thẩm quyền; không gửi boolean từ form trực tiếp.
-  - joinedAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Bắt đầu tư cách thành viên.
+  - projectRole: enum(OWNER, MANAGER, MEMBER); bắt buộc=Có. Vai trò xác định thao tác cố định theo role hệ thống và phạm vi dự án.
   - endedAt: string · UTC ISO 8601 có Z / null; bắt buộc=Có. Kết thúc tư cách; null khi đang hiệu lực.
 
 3.6. tasks: array<TaskModel>
@@ -325,7 +321,7 @@ Các giá trị sau là mẫu cố định để triển khai. Các quan hệ đ
     "displayName": "Người dùng dự án khác",
     "email": "other@example.test",
     "unitId": "unit-tech",
-    "systemRole": "EMPLOYEE",
+    "systemRole": "MANAGER",
     "status": "ACTIVE"
   },
   {
@@ -424,63 +420,41 @@ Các giá trị sau là mẫu cố định để triển khai. Các quan hệ đ
   {
     "id": "m-pm",
     "version": 1,
-    "createdAt": "2026-10-01T02:00:00.000Z",
-    "updatedAt": "2026-10-01T02:00:00.000Z",
     "projectId": "p-main",
     "userId": "u-pm",
     "projectRole": "OWNER",
-    "permissions": [
-      "PROJECT_MANAGE",
-      "MEMBERS_MANAGE",
-      "TASKS_MANAGE",
-      "TASKS_REVIEW",
-      "ANALYTICS_VIEW",
-      "ALERTS_MANAGE"
-    ],
-    "joinedAt": "2026-10-01T02:00:00.000Z",
     "endedAt": null
   },
   {
     "id": "m-lan",
     "version": 1,
-    "createdAt": "2026-10-01T02:00:00.000Z",
-    "updatedAt": "2026-10-01T02:00:00.000Z",
     "projectId": "p-main",
     "userId": "u-lan",
     "projectRole": "MEMBER",
-    "permissions": [],
-    "joinedAt": "2026-10-01T02:00:00.000Z",
     "endedAt": null
   },
   {
     "id": "m-huy",
     "version": 1,
-    "createdAt": "2026-10-01T02:00:00.000Z",
-    "updatedAt": "2026-10-01T02:00:00.000Z",
     "projectId": "p-main",
     "userId": "u-huy",
     "projectRole": "MEMBER",
-    "permissions": [],
-    "joinedAt": "2026-10-01T02:00:00.000Z",
     "endedAt": null
   },
   {
     "id": "m-other",
     "version": 1,
-    "createdAt": "2026-10-01T02:00:00.000Z",
-    "updatedAt": "2026-10-01T02:00:00.000Z",
     "projectId": "p-other",
     "userId": "u-other",
     "projectRole": "OWNER",
-    "permissions": [
-      "PROJECT_MANAGE",
-      "MEMBERS_MANAGE",
-      "TASKS_MANAGE",
-      "TASKS_REVIEW",
-      "ANALYTICS_VIEW",
-      "ALERTS_MANAGE"
-    ],
-    "joinedAt": "2026-10-01T02:00:00.000Z",
+    "endedAt": null
+  },
+  {
+    "id": "m-pm-planned",
+    "version": 1,
+    "projectId": "p-planned",
+    "userId": "u-pm",
+    "projectRole": "OWNER",
     "endedAt": null
   }
 ]
@@ -847,8 +821,8 @@ MINIMAL là căn cứ model dễ đối chiếu; FULL là mặc định để Co
 8. CÁC SCENARIO BẮT BUỘC
 - empty: list trả items=[], total=0; không đổi detail 404 thành entity rỗng.
 - slow: chậm khoảng 1,5 giây; xem loading và pending.
-- server-error: 503 ErrorEnvelope; giữ form nếu là mutation.
-- rate-limit: 429 ErrorEnvelope; không vòng retry vô hạn.
+- server-error: 503 ErrorDTO phẳng; giữ form nếu là mutation.
+- rate-limit: 429 ErrorDTO phẳng; không vòng retry vô hạn.
 - invalid-response: 200 nhưng sai một trường bắt buộc; phải thành ContractError, không vào cache.
 - forbidden: dùng admin không membership hoặc other để nhận 403, không lộ dữ liệu p-main.
 - expired-session: token không tồn tại, 401; auth adapter chỉ refresh single-flight một lần.
@@ -876,7 +850,7 @@ MINIMAL là căn cứ model dễ đối chiếu; FULL là mặc định để Co
 - AI chỉ trả phân tích/đề xuất, không tự đổi Task/assignment/deadline.
 
 10. THỨ TỰ HANDLER SAU KHI CODEX TRIỂN KHAI
-Parse path/query/body -> lấy phiên -> kiểm tra phạm vi/quyền -> kiểm tra If-Match/idempotency -> kiểm tra trạng thái và invariant -> thay model đồng bộ -> thêm audit -> validate response -> trả envelope.
+Parse path/query/body -> lấy phiên -> kiểm tra phạm vi/quyền -> kiểm tra If-Match/idempotency -> kiểm tra trạng thái và invariant -> thay model đồng bộ -> thêm audit -> validate response -> trả JSON DTO trực tiếp.
 GET không làm thay đổi nghiệp vụ hoặc tiến trình job. Scheduler/clock điều khiển mô phỏng job nền; không dùng số lần poll để chuyển state.
 
 11. RESET VÀ ĐỐI CHIẾU
@@ -3041,4 +3015,4 @@ FULL bổ sung Audit t-6 cho lần hủy: actor u-pm, at=2026-10-22T09:00:00.000
   Nếu query không có unitId/projectId, BE dùng đơn vị mặc định của phiên nếu có quyền; không có mặc định hợp lệ thì trả 422, không tự mở phạm vi toàn hệ thống. S39 giữ unit/project/kỳ từ nguồn; SUMMARY snapshot PROJECT hoặc UNIT phải trùng scope.
   Trong FULL hiện tại, đơn vị gồm p-main và p-planned; dự án kế tiếp chưa có việc nên tổng 6 task/5 không hủy/1 hoàn thành/360 phút, tỷ lệ 20%. Summary đơn vị phải ghi hai dự án và một dự án chưa có việc, không gọi đó là snapshot p-main.
   Scenario feedback-confirmed (không thuộc seed ban đầu): POST /analytics/details/an-bottleneck-t4-001/feedback body {"verdict":"CONFIRMED","comment":"Đã đối chiếu lần nộp; kết quả vẫn đang chờ nghiệm thu tại mốc dữ liệu."}.
-  Response data mẫu: {"id":"fb-bottleneck-001","analysisId":"an-bottleneck-t4-001","snapshotId":"snap-bottleneck-t4-001","verdict":"CONFIRMED","comment":"Đã đối chiếu lần nộp; kết quả vẫn đang chờ nghiệm thu tại mốc dữ liệu.","actorId":"u-pm","actor":{"id":"u-pm","displayName":"Nguyễn Minh"},"createdAt":"2026-10-23T10:05:00.000Z"}. Envelope thêm meta theo chuẩn. GET detail của viewer này có feedback.latest bằng receipt đó; viewer khác không được nhận phản hồi riêng của người trước như của mình.
+  Response JSON mẫu: {"id":"fb-bottleneck-001","analysisId":"an-bottleneck-t4-001","snapshotId":"snap-bottleneck-t4-001","verdict":"CONFIRMED","comment":"Đã đối chiếu lần nộp; kết quả vẫn đang chờ nghiệm thu tại mốc dữ liệu.","actorId":"u-pm","actor":{"id":"u-pm","displayName":"Nguyễn Minh"},"createdAt":"2026-10-23T10:05:00.000Z"}. DTO được trả trực tiếp. GET detail của viewer này có feedback.latest bằng receipt đó; viewer khác không được nhận phản hồi riêng của người trước như của mình.

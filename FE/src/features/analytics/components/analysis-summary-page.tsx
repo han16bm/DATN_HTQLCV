@@ -1,12 +1,13 @@
 "use client";
-import { Badge, DataTable, Panel } from "@/components/ui/page";
+
 import { PageSkeleton } from "@/components/ui/loading";
+import { Badge, DataTable, Panel } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
-import { Metadata } from "@/features/analytics/components/analysis-metadata";
+import { metricValue } from "@/lib/format";
 import { useGetAnalysisSummaryQuery } from "../hooks/use-analytics-queries";
 import { useAnalyticsScope } from "../hooks/use-analytics-scope";
 import { AnalysisLink } from "./analysis-links";
-import { metricValue } from "@/lib/format";
+import { Metadata } from "./analysis-metadata";
 import { AnalyticsFrame } from "./analytics-frame";
 export function AnalysisSummaryPage() {
   const scope = useAnalyticsScope();

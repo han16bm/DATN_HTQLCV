@@ -5,7 +5,7 @@ import { tasksService } from "@/features/tasks/api/tasks.service";
 import { usersService } from "@/features/users/api/users.service";
 import { db } from "@/mocks/db";
 import { resetMockState, server } from "@/mocks/node";
-import { registerRefresh, token } from "@/services/api-client";
+import { apiClient, registerRefresh, token } from "@/services/api-client";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 beforeAll(() => {
   server.listen({ onUnhandledRequest: "error" });
@@ -34,6 +34,12 @@ const newPlan = () => ({
 });
 describe("S08–S14 projects and memberships", () => {
   it("creates an owner membership and activates then closes an empty project", async () => {
+    await expect(
+      projectsService.createProject(
+        { ...newPlan(), ownerId: "u-huy" },
+        { key: key() },
+      ),
+    ).rejects.toMatchObject({ code: "INVALID_OWNER" });
     let project = await projectsService.createProject(newPlan(), {
       key: key(),
     });
@@ -134,7 +140,7 @@ describe("S08–S14 projects and memberships", () => {
       ),
     ).rejects.toMatchObject({ code: "PROJECT_HAS_PENDING_WORK" });
   });
-  it("creates members without project permissions, validates grants and keeps membership history", async () => {
+  it("derives project actions from roles, revokes replays after demotion and keeps membership history", async () => {
     await login("admin");
     const user = await usersService.createUser(
       {
@@ -152,41 +158,120 @@ describe("S08–S14 projects and memberships", () => {
     await login("minh");
     let member = await projectMembersService.addProjectMember(
       "p-main",
-      { userId: user.id, projectRole: "MEMBER", permissions: [] },
+      { userId: user.id, projectRole: "MEMBER" },
       {
         key: key(),
       },
     );
-    expect(member.permissions).toEqual([]);
+    expect(member).not.toHaveProperty("permissions");
     await expect(
-      projectMembersService.updateProjectMemberPermissions(
+      apiClient.patch(
+        `/projects/p-main/members/${member.id}`,
+        {
+          projectRole: "MEMBER",
+          permissions: ["TASKS_MANAGE"],
+          reason: "Không hỗ trợ cấp quyền riêng",
+        },
+        { version: member.version, key: key() },
+      ),
+    ).rejects.toMatchObject({ status: 422 });
+    await expect(
+      projectMembersService.updateProjectMemberRole(
         "p-main",
         member.id,
         {
           projectRole: "MANAGER",
-          permissions: ["USERS_MANAGE"],
-          reason: "Thử vượt quyền",
+          reason: "Thử giao quản lý cho nhân viên",
         },
         {
           version: member.version,
           key: key(),
         },
       ),
-    ).rejects.toMatchObject({ code: "PERMISSION_ESCALATION" });
-    member = await projectMembersService.updateProjectMemberPermissions(
+    ).rejects.toMatchObject({ code: "INVALID_PROJECT_ROLE" });
+    const signInMember = () =>
+      authService.login({
+        username: user.username,
+        password: "Start@12345",
+      });
+    await signInMember();
+    const task = {
+      title: "Công việc do quản lý tạo",
+      acceptanceCriteria: "Đạt yêu cầu",
+      priority: "NORMAL" as const,
+      dueAt: "2026-11-01T10:00:00.000Z",
+      estimatedMinutes: 60,
+    };
+    await expect(
+      tasksService.createTask("p-main", task, { key: key() }),
+    ).rejects.toMatchObject({ status: 403 });
+    await login("admin");
+    const manager = await usersService.updateUser(
+      user.id,
+      {
+        systemRole: "MANAGER",
+        reason: "Bổ nhiệm Leader",
+      },
+      { version: user.version, key: key() },
+    );
+    await signInMember();
+    // A system role alone never grants management of every project.
+    await expect(
+      tasksService.createTask("p-main", task, { key: key() }),
+    ).rejects.toMatchObject({ status: 403 });
+    await login("minh");
+    const oldVersion = member.version;
+    member = await projectMembersService.updateProjectMemberRole(
       "p-main",
       member.id,
       {
-        projectRole: "MEMBER",
-        permissions: ["TASKS_REVIEW"],
-        reason: "Ủy quyền nghiệm thu",
+        projectRole: "MANAGER",
+        reason: "Bổ nhiệm quản lý dự án",
       },
       {
         version: member.version,
         key: key(),
       },
     );
-    expect(member.permissions).toEqual(["TASKS_REVIEW"]);
+    expect(member.projectRole).toBe("MANAGER");
+    await expect(
+      projectMembersService.updateProjectMemberRole(
+        "p-main",
+        member.id,
+        { projectRole: "MEMBER", reason: "Phiên bản cũ" },
+        { version: oldVersion, key: key() },
+      ),
+    ).rejects.toMatchObject({ status: 412 });
+    const session = await signInMember();
+    expect(session.projectAccess).toContainEqual({
+      projectId: "p-main",
+      projectRole: "MANAGER",
+    });
+    const taskKey = key();
+    await tasksService.createTask("p-main", task, { key: taskKey });
+    await expect(
+      tasksService.createTask("p-other", task, { key: key() }),
+    ).rejects.toMatchObject({ status: 403 });
+    await login("admin");
+    await expect(
+      usersService.updateUser(
+        user.id,
+        { systemRole: "EMPLOYEE", reason: "Chưa bàn giao" },
+        { version: manager.version, key: key() },
+      ),
+    ).rejects.toMatchObject({ code: "HANDOVER_REQUIRED" });
+    await login("minh");
+    member = await projectMembersService.updateProjectMemberRole(
+      "p-main",
+      member.id,
+      { projectRole: "MEMBER", reason: "Bàn giao quản lý dự án" },
+      { version: member.version, key: key() },
+    );
+    await signInMember();
+    await expect(
+      tasksService.createTask("p-main", task, { key: taskKey }),
+    ).rejects.toMatchObject({ status: 403 });
+    await login("minh");
     member = await projectMembersService.endProjectMembership(
       "p-main",
       member.id,
@@ -198,6 +283,12 @@ describe("S08–S14 projects and memberships", () => {
     );
     expect(member.endedAt).not.toBeNull();
     expect(db.members.some((m) => m.id === member.id)).toBe(true);
+    const rejoined = await projectMembersService.addProjectMember(
+      "p-main",
+      { userId: user.id, projectRole: "MEMBER" },
+      { key: key() },
+    );
+    expect(rejoined.id).not.toBe(member.id);
   });
   it("blocks ending the owner or someone still responsible for open work and checks scope", async () => {
     const list = await projectMembersService.listProjectMembers("p-main", {});

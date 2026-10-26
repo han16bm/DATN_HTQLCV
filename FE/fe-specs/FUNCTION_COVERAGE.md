@@ -23,7 +23,7 @@ Chỉ xuất 24 ảnh màn chính. Toàn bộ 43 màn/biểu mẫu/hộp thoại
 | FR-P02 / **UC-P02 Cập nhật và kết thúc dự án** · tr. 25 | S10, S11, S14 | `updateProject`, `activateProject`, `getProjectClosureChecks`, `completeProject`, `cancelProject`, `listProjectHistory` | Điều chỉnh có lý do; không rút hạn sai hạn task; closure checks, xử lý pending review và báo cáo trước đóng/hủy. |
 | FR-P03 / **UC-P03 Xem danh sách và chi tiết dự án** · tr. 26 | S02, S08, S10 | `listProjects`, `getProject` | Danh sách/lọc/chi tiết trong quyền; dự án đã đóng chỉ đọc; lỗi/rỗng/mất quyền. |
 | FR-P04 / **UC-P04 Quản lý thành viên dự án** · tr. 27 | S12 | `listProjectMembers`, `addProjectMember`, `endProjectMembership` | Thêm/kết thúc membership, không trùng, bàn giao trước rời; giữ lịch sử, không loại owner cuối. |
-| FR-P05 / **UC-P05 Phân quyền trong dự án** · tr. 28 | S13 | `updateProjectMemberPermissions` | Quyền được cấp/thu hồi trong thẩm quyền, có lý do/audit; người xét vẫn khác người nộp. |
+| FR-P05 / **UC-P05 Đổi vai trò trong dự án** · tr. 28 | S13 | `updateProjectMemberRole` | Đổi MEMBER/MANAGER có lý do/audit; vai trò quản lý yêu cầu tài khoản Leader/PM. Người xét vẫn khác người nộp. |
 | FR-T01 / **UC-T01 Tạo công việc** · tr. 29 | S17 | `createTask` | Tên/tiêu chí/hạn đủ giờ/phút dự kiến/ưu tiên; NEW chưa có assignee, có thể chuyển phân công riêng. |
 | FR-T02 / **UC-T02 Giao và phân công lại công việc** · tr. 30 | S20 | `assignTask` | Một người nhận hiện tại, thành viên hoạt động; bàn giao giữ assignment/giờ lịch sử và kiểm tra version. |
 | FR-T03 / **UC-T03 Chỉnh sửa và hủy công việc** · tr. 31 | S19, S21 | `updateTask`, `cancelTask` | Whitelist sửa/hủy, lý do đổi kế hoạch sau giao, giữ gốc; không sửa/hủy pending hoặc trạng thái đóng. |
@@ -58,7 +58,7 @@ Chỉ xuất 24 ảnh màn chính. Toàn bộ 43 màn/biểu mẫu/hộp thoại
 ## Các lựa chọn thay đổi hoặc cần đối chiếu BE
 
 - Theo yêu cầu mới của người dùng, AI dùng LLM có sẵn để diễn giải snapshot. Các phần đào tạo/so sánh mô hình dự báo trong chương 10 là phương án mở rộng có điều kiện; không giao Codex dựng mô hình dự báo riêng hoặc chế tạo xác suất từ LLM.
-- Snapshot, public Gateway `/api`, Bearer/refresh cookie, DTO/envelope, If-Match, idempotency, job, lookup và feedback endpoint là contract FE đề xuất để khép kín các luồng nguồn; chưa phải OpenAPI đã được BE triển khai. Các giá trị cần chốt có ở 00_SCOPE_AND_DECISIONS.md.
+- Snapshot, public Gateway `/api`, Bearer/refresh cookie, DTO/JSON response, If-Match, idempotency, job, lookup và feedback endpoint là contract FE đề xuất để khép kín các luồng nguồn; chưa phải OpenAPI đã được BE triển khai. Các giá trị cần chốt có ở 00_SCOPE_AND_DECISIONS.md.
 - Bàn giao IN_PROGRESS về TODO là lựa chọn D06 để mock nhất quán; nguồn yêu cầu lưu lịch sử và kiểm tra trạng thái nhưng chưa chốt đầy đủ chuyển đổi này.
 - Không thêm thiết kế dữ liệu tổng thể/ERD của người 3. Mock model và projection chỉ mô tả dữ liệu cần cho nghiệp vụ/HTTP.
 - Không thêm chat, lương/chi phí, đăng ký công khai, inbox thông báo hoặc AI tự điều hành. Notification delivery là trách nhiệm BE sau commit; không phải một màn mới.

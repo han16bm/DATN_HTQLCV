@@ -35,7 +35,7 @@ export const attachmentHandlers = [
           operation: "uploadAttachment",
           feature: "attachments",
           viewer,
-          permission: null,
+          action: null,
           params: {},
           payload,
         },

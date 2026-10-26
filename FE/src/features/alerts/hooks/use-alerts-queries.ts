@@ -1,49 +1,32 @@
 "use client";
-import { alertQuerySchema } from "@/features/alerts/schemas/alerts.schema";
-import { type AlertQuery } from "@/features/alerts/types/alerts.types";
-import { hasPermission, useSession } from "@/lib/auth/session-context";
-import type { QueryOptions } from "@/lib/query/use-query-access";
+
+import { useSession } from "@/lib/auth/session-context";
 import { useQueryAccess } from "@/lib/query/use-query-access";
-import { queryIdSchema } from "@/lib/validation/request.schema";
 import { useQuery } from "@tanstack/react-query";
 import { alertsKeys } from "../api/alerts.keys";
 import { alertsService } from "../api/alerts.service";
+import { alertQuerySchema } from "../schemas/alerts.schema";
+import { type AlertQuery } from "../types/alerts.types";
 
-export function useListAlertsQuery(
-  query: AlertQuery = {},
-  options: QueryOptions = {},
-) {
-  const { session } = useSession();
-  const parsed = alertQuerySchema.safeParse(query);
-  const filters = parsed.success ? parsed.data : query;
+export function useListAlertsQuery(query: AlertQuery = {}) {
+  const viewerId = useSession().session?.user.id;
+
+  const filters = alertQuerySchema.safeParse(query).data ?? query;
   const result = useQuery({
-    queryKey: parsed.success
-      ? alertsKeys.listAlerts(session?.user.id ?? "anonymous", filters)
-      : [
-          "alerts",
-          session?.user.id ?? "anonymous",
-          "listAlerts",
-          "invalid-query",
-        ],
+    queryKey: alertsKeys.listAlerts(viewerId, filters),
     queryFn: ({ signal }) => alertsService.listAlerts(filters, { signal }),
-    enabled:
-      options.enabled !== false &&
-      parsed.success &&
-      hasPermission(session, "ANALYTICS_VIEW", filters.projectId),
+    enabled: Boolean(viewerId),
     staleTime: 30000,
   });
   return useQueryAccess(result, "alerts");
 }
-export function useGetAlertQuery(alertId: string, options: QueryOptions = {}) {
-  const id = queryIdSchema.parse(alertId);
-  const { session } = useSession();
+
+export function useGetAlertQuery(alertId: string) {
+  const viewerId = useSession().session?.user.id;
   const result = useQuery({
-    queryKey: alertsKeys.getAlert(session?.user.id ?? "anonymous", id),
-    queryFn: ({ signal }) => alertsService.getAlert(id, { signal }),
-    enabled:
-      options.enabled !== false &&
-      Boolean(id) &&
-      hasPermission(session, "ANALYTICS_VIEW"),
+    queryKey: alertsKeys.getAlert(viewerId, alertId),
+    queryFn: ({ signal }) => alertsService.getAlert(alertId, { signal }),
+    enabled: Boolean(viewerId && alertId),
     staleTime: 10000,
   });
   return useQueryAccess(result, "alerts");

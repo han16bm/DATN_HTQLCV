@@ -2,6 +2,7 @@ import {
   entityLabelSchema,
   listQuerySchema,
   personRefSchema,
+  reasonSchema,
 } from "@/lib/validation/common.schema";
 import { checkProjection } from "@/lib/validation/contract-refinements";
 import { idSchema } from "@/lib/validation/request.schema";
@@ -11,7 +12,7 @@ export const createProjectSchema = z
     code: z
       .string()
       .trim()
-      .min(2, "Vui lòng nhập thông tin bắt buộc")
+      .min(2)
       .max(32)
       .regex(/^[A-Z0-9_-]+$/),
     name: z.string().trim().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
@@ -39,30 +40,10 @@ export const projectQuerySchema = z
     status: projectStatusSchema.optional(),
   })
   .strict();
-export const updateProjectSchema = z
-  .object({
-    name: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(255)
-      .optional(),
-    objective: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(2000)
-      .optional(),
-    ownerId: idSchema.optional(),
-    startDate: z.iso.date().optional(),
-    dueAt: z.iso.datetime().optional(),
-    changeReason: z
-      .string()
-      .trim()
-      .min(1, "Vui lòng nhập thông tin bắt buộc")
-      .max(2000),
-  })
-  .strict();
+export const updateProjectSchema = createProjectSchema
+  .omit({ code: true, unitId: true })
+  .partial()
+  .extend({ changeReason: reasonSchema.shape.reason });
 export const projectSchema = z
   .object({
     id: idSchema,

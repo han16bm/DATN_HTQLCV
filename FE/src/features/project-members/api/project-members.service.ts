@@ -1,70 +1,71 @@
-import type { ProjectMembersApi } from "@/features/project-members/api/project-members.contract";
-import { membershipSchema } from "@/features/project-members/schemas/project-members.schema";
-import {
-  type AddProjectMemberInput,
-  type EndProjectMembershipInput,
-  type ProjectMemberQuery,
-  type UpdateProjectMemberPermissionsInput,
-} from "@/features/project-members/types/project-members.types";
 import { page } from "@/lib/validation/common.schema";
-import type {
-  MutationOptions,
-  RequestOptions,
-  VersionOptions,
+import {
+  type MutationOptions,
+  type RequestOptions,
+  type VersionOptions,
+  apiClient,
 } from "@/services/api-client";
-import { apiClient, parseResponse } from "@/services/api-client";
-export const projectMembersService: ProjectMembersApi = {
-  listProjectMembers(
+import { membershipSchema } from "../schemas/project-members.schema";
+import type {
+  AddProjectMemberInput,
+  EndProjectMembershipInput,
+  MembershipDto,
+  ProjectMemberList,
+  ProjectMemberQuery,
+  UpdateProjectMemberRoleInput,
+} from "../types/project-members.types";
+
+export const projectMembersService = {
+  async listProjectMembers(
     projectId: string,
     query: ProjectMemberQuery = {},
     options: RequestOptions = {},
   ) {
-    return apiClient
-      .get<unknown>(`/projects/${encodeURIComponent(projectId)}/members`, {
-        ...options,
-        params: query,
-      })
-      .then(parseResponse(page(membershipSchema)));
+    const response = await apiClient.get<ProjectMemberList>(
+      `/projects/${encodeURIComponent(projectId)}/members`,
+      { ...options, params: query, schema: page(membershipSchema) },
+    );
+    return response.data;
   },
-  addProjectMember(
+
+  async addProjectMember(
     projectId: string,
     payload: AddProjectMemberInput,
     options: MutationOptions,
   ) {
-    return apiClient
-      .post<unknown>(
-        `/projects/${encodeURIComponent(projectId)}/members`,
-        payload,
-        options,
-      )
-      .then(parseResponse(membershipSchema));
+    const response = await apiClient.post<MembershipDto>(
+      `/projects/${encodeURIComponent(projectId)}/members`,
+      payload,
+      { ...options, schema: membershipSchema },
+    );
+    return response.data;
   },
-  updateProjectMemberPermissions(
+
+  async updateProjectMemberRole(
     projectId: string,
     membershipId: string,
-    payload: UpdateProjectMemberPermissionsInput,
+    payload: UpdateProjectMemberRoleInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .patch<unknown>(
-        `/projects/${encodeURIComponent(projectId)}/members/${encodeURIComponent(membershipId)}`,
-        payload,
-        options,
-      )
-      .then(parseResponse(membershipSchema));
+    const response = await apiClient.patch<MembershipDto>(
+      `/projects/${encodeURIComponent(projectId)}/members/${encodeURIComponent(membershipId)}`,
+      payload,
+      { ...options, schema: membershipSchema },
+    );
+    return response.data;
   },
-  endProjectMembership(
+
+  async endProjectMembership(
     projectId: string,
     membershipId: string,
     payload: EndProjectMembershipInput,
     options: VersionOptions,
   ) {
-    return apiClient
-      .post<unknown>(
-        `/projects/${encodeURIComponent(projectId)}/members/${encodeURIComponent(membershipId)}/end`,
-        payload,
-        options,
-      )
-      .then(parseResponse(membershipSchema));
+    const response = await apiClient.post<MembershipDto>(
+      `/projects/${encodeURIComponent(projectId)}/members/${encodeURIComponent(membershipId)}/end`,
+      payload,
+      { ...options, schema: membershipSchema },
+    );
+    return response.data;
   },
 };

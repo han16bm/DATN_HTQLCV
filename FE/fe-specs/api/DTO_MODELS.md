@@ -10,9 +10,6 @@ Contract 0.3.0. Các bảng là đặc tả văn bản để Codex tạo schema/
 | Version | integer dương, an toàn trong JavaScript; gửi bằng If-Match, không đặt trong body |
 | UTC | ISO 8601 đầy đủ ngày/giờ, hậu tố Z |
 | LocalDate | YYYY-MM-DD, ý nghĩa ngày tại Asia/Ho_Chi_Minh |
-| SuccessEnvelope<T> | data: T; meta: MetaDTO |
-| MetaDTO | requestId: string không rỗng; serverTime: UTC |
-| ErrorEnvelope | error: ErrorDTO; meta: MetaDTO |
 | ErrorDTO | code: string không rỗng; message: string không rỗng; fieldErrors?: array<{path: string[], message: string}>; details?: JSON value |
 | PageDTO<T> | items: T[]; pagination: {page: integer ≥1, pageSize: integer ≥1, total: integer ≥0} |
 | EmptyDTO | object rỗng; request strict, không nhận field ngoài contract |
@@ -21,6 +18,8 @@ Contract 0.3.0. Các bảng là đặc tả văn bản để Codex tạo schema/
 | Permission | USERS_MANAGE, ORGANIZATION_MANAGE, PROJECT_CREATE, PROJECT_MANAGE, MEMBERS_MANAGE, TASKS_MANAGE, TASKS_REVIEW, ANALYTICS_VIEW, ALERTS_MANAGE |
 
 Với object/mảng lồng nhau, tên có dấu chấm hoặc [] là đường dẫn của trường; không gửi nguyên chuỗi đường dẫn đó làm key JSON. Bắt buộc tại trường con được hiểu khi object cha hiện diện. Các điều kiện theo trạng thái/quyền/kỳ phải áp dụng thêm rule nghiệp vụ; bảng kiểu không thay thế các điều kiện đó.
+
+Điều chỉnh response theo yêu cầu ngày 25/10/2026: success body là DTO được khai báo của endpoint; collection trả PageDTO<T> trực tiếp. Error body là ErrorDTO phẳng, không bọc error. Bỏ lớp bọc data/meta, requestId và serverTime; status/header/binary và các trường nghiệp vụ trong DTO giữ nguyên.
 
 ## Danh mục kiểu
 
@@ -53,7 +52,7 @@ Với object/mảng lồng nhau, tên có dấu chấm hoặc [] là đường d
 - [Projects.ProjectDTO](#projectsprojectdto)
 - [Projects.ProjectStatusDTO](#projectsprojectstatusdto)
 - [Members.MemberCreateDTO](#membersmembercreatedto)
-- [Members.MemberPermissionsDTO](#membersmemberpermissionsdto)
+- [Members.MemberRoleDTO](#membersmemberroledto)
 - [Members.MembershipDTO](#membersmembershipdto)
 - [Tasks.AssignTaskDTO](#tasksassigntaskdto)
 - [Tasks.AuditDTO](#tasksauditdto)
@@ -211,14 +210,14 @@ Với object/mảng lồng nhau, tên có dấu chấm hoặc [] là đường d
 
 ## Auth.SessionDTO
 
+Theo yêu cầu điều hướng bằng role ngày 25/10/2026, response hiện hành chỉ có user rút gọn và projectAccess theo session.schema.ts. Không trả systemPermissions hoặc membershipId không được FE sử dụng; quyền mở trang lấy từ user.systemRole, quyền tác vụ/phạm vi dự án vẫn do API kiểm tra.
+
 | Trường | Kiểu | Bắt buộc | Ràng buộc / ý nghĩa |
 |---|---|---|---|
 | `user` | Users.UserDTO | Có | Thông tin hiển thị chỉ đọc, user.id phải bằng userId. |
-| `systemPermissions` | array<enum(USERS_MANAGE, ORGANIZATION_MANAGE, PROJECT_CREATE, PROJECT_MANAGE, MEMBERS_MANAGE, TASKS_MANAGE, TASKS_REVIEW, ANALYTICS_VIEW, ALERTS_MANAGE)> | Có | Quyền cấp hệ thống, không tự mở quyền dự án. |
-| `projectAccess` | array<object> | Có | Tập quyền theo từng dự án và membershipId. |
+| `projectAccess` | array<object> | Có | Tư cách đang hoạt động theo từng dự án; không có quyền cấp lẻ, không dùng làm quyền mở trang. |
 | `projectAccess[].projectId` | string | Có | độ dài ≥ 1; độ dài ≤ 100; ID dự án; không đồng nghĩa ID service. |
-| `projectAccess[].membershipId` | string | Có | độ dài ≥ 1; độ dài ≤ 100 |
-| `projectAccess[].permissions` | array<enum(USERS_MANAGE, ORGANIZATION_MANAGE, PROJECT_CREATE, PROJECT_MANAGE, MEMBERS_MANAGE, TASKS_MANAGE, TASKS_REVIEW, ANALYTICS_VIEW, ALERTS_MANAGE)> | Có | Mảng enum quyền trong thẩm quyền; không gửi boolean từ form trực tiếp. |
+| `projectAccess[].projectRole` | enum(OWNER, MANAGER, MEMBER) | Có | Vai trò của tư cách đang hoạt động; kết hợp systemRole để xác định thao tác trong dự án. |
 
 ## Organization.TeamCreateDTO
 
@@ -358,15 +357,13 @@ Với object/mảng lồng nhau, tên có dấu chấm hoặc [] là đường d
 | Trường | Kiểu | Bắt buộc | Ràng buộc / ý nghĩa |
 |---|---|---|---|
 | `userId` | string | Có | độ dài ≥ 1; độ dài ≤ 100; Tài khoản của thành viên/người ghi theo đúng model. |
-| `projectRole` | enum(MANAGER, MEMBER) | Có | Nhãn vai trò trên một dự án; quyền thực tế nằm trong permissions. |
-| `permissions` | array<enum(USERS_MANAGE, ORGANIZATION_MANAGE, PROJECT_CREATE, PROJECT_MANAGE, MEMBERS_MANAGE, TASKS_MANAGE, TASKS_REVIEW, ANALYTICS_VIEW, ALERTS_MANAGE)> | Có | Mảng enum quyền trong thẩm quyền; không gửi boolean từ form trực tiếp. |
+| `projectRole` | enum(MANAGER, MEMBER) | Có | Vai trò xác định thao tác cố định trong dự án; OWNER/MANAGER chỉ dành cho tài khoản Leader/PM. |
 
-## Members.MemberPermissionsDTO
+## Members.MemberRoleDTO
 
 | Trường | Kiểu | Bắt buộc | Ràng buộc / ý nghĩa |
 |---|---|---|---|
-| `projectRole` | enum(MANAGER, MEMBER) | Có | Nhãn vai trò trên một dự án; quyền thực tế nằm trong permissions. |
-| `permissions` | array<enum(USERS_MANAGE, ORGANIZATION_MANAGE, PROJECT_CREATE, PROJECT_MANAGE, MEMBERS_MANAGE, TASKS_MANAGE, TASKS_REVIEW, ANALYTICS_VIEW, ALERTS_MANAGE)> | Có | Mảng enum quyền trong thẩm quyền; không gửi boolean từ form trực tiếp. |
+| `projectRole` | enum(MANAGER, MEMBER) | Có | Vai trò xác định thao tác cố định trong dự án; OWNER/MANAGER chỉ dành cho tài khoản Leader/PM. |
 | `reason` | string | Có | độ dài ≥ 1; độ dài ≤ 2000; Lý do của thao tác; ghi audit, không mass assign vào entity. |
 
 ## Members.MembershipDTO
@@ -375,13 +372,8 @@ Với object/mảng lồng nhau, tên có dấu chấm hoặc [] là đường d
 |---|---|---|---|
 | `id` | string | Có | độ dài ≥ 1; độ dài ≤ 100; Định danh do BE sinh, không tự đổi. |
 | `version` | integer | Có | > 0; Phiên bản đọc; gửi qua If-Match nếu contract yêu cầu. |
-| `createdAt` | string · UTC ISO 8601 có Z | Có | Thời điểm tạo UTC. |
-| `updatedAt` | string · UTC ISO 8601 có Z | Có | Thời điểm cập nhật UTC; không dùng thay thời điểm chuyển trạng thái. |
-| `projectId` | string | Có | độ dài ≥ 1; độ dài ≤ 100; ID dự án; không đồng nghĩa ID service. |
 | `userId` | string | Có | độ dài ≥ 1; độ dài ≤ 100; Tài khoản của thành viên/người ghi theo đúng model. |
-| `projectRole` | enum(OWNER, MANAGER, MEMBER) | Có | Nhãn vai trò trên một dự án; quyền thực tế nằm trong permissions. |
-| `permissions` | array<enum(USERS_MANAGE, ORGANIZATION_MANAGE, PROJECT_CREATE, PROJECT_MANAGE, MEMBERS_MANAGE, TASKS_MANAGE, TASKS_REVIEW, ANALYTICS_VIEW, ALERTS_MANAGE)> | Có | Mảng enum quyền trong thẩm quyền; không gửi boolean từ form trực tiếp. |
-| `joinedAt` | string · UTC ISO 8601 có Z | Có | Bắt đầu tư cách thành viên. |
+| `projectRole` | enum(OWNER, MANAGER, MEMBER) | Có | Vai trò xác định thao tác cố định trong dự án; OWNER/MANAGER chỉ dành cho tài khoản Leader/PM. |
 | `endedAt` | string · UTC ISO 8601 có Z / null | Có | Kết thúc tư cách; null khi đang hiệu lực. |
 | `user` | Shared.PersonRefDTO | Có | Thông tin hiển thị chỉ đọc, user.id phải bằng userId. |
 

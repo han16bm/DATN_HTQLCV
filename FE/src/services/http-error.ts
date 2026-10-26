@@ -1,7 +1,7 @@
 import {
   ApiError,
   ContractError,
-  errorEnvelopeSchema,
+  errorResponseSchema,
 } from "@/types/api/error";
 import axios, { type AxiosError } from "axios";
 
@@ -24,9 +24,9 @@ export async function normalizeHttpError(
       data = null;
     }
   }
-  const parsed = errorEnvelopeSchema.safeParse(data);
+  const parsed = errorResponseSchema.safeParse(data);
   if (!parsed.success) return new ContractError();
-  const body = parsed.data.error;
+  const body = parsed.data;
   return new ApiError(
     error.response.status,
     body.code,

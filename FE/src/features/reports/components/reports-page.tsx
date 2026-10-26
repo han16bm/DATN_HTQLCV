@@ -1,4 +1,7 @@
 "use client";
+import { canManage } from "@/lib/auth/access";
+
+import { PageSkeleton } from "@/components/ui/loading";
 import {
   Badge,
   ButtonLink,
@@ -6,24 +9,32 @@ import {
   DetailLink,
   PageHeader,
 } from "@/components/ui/page";
-import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { useListProjectMembersQuery } from "@/features/project-members/hooks/use-project-members-queries";
 import { useListProjectsQuery } from "@/features/projects/hooks/use-projects-queries";
-import { periodTypeSchema } from "@/features/reports/schemas/reports.schema";
-import { hasPermission, useSession } from "@/lib/auth/session-context";
+import { useSession } from "@/lib/auth/session-context";
 import { hours, label, options } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { z } from "zod";
 import { useListReportsQuery } from "../hooks/use-reports-queries";
+import { periodTypeSchema } from "../schemas/reports.schema";
 export function ReportsPage() {
   const f = useUrlFilters();
-  const projects = useListProjectsQuery({ pageSize: 100 });
-  const members = useListProjectMembersQuery(f.get("projectId"), {
-    pageSize: 100,
-  });
   const { session } = useSession();
+  const projectId = f.get("projectId");
+  const filterAuthors = Boolean(
+    projectId &&
+    (session?.user.systemRole === "ADMIN" || canManage(session, projectId)),
+  );
+  const projects = useListProjectsQuery({ pageSize: 100 });
+  const members = useListProjectMembersQuery(
+    projectId,
+    {
+      pageSize: 100,
+    },
+    { enabled: filterAuthors },
+  );
   const period = periodTypeSchema.safeParse(f.get("periodType"));
   const status = z.enum(["DRAFT", "SUBMITTED"]).safeParse(f.get("status"));
   const q = useListReportsQuery({
@@ -50,7 +61,9 @@ export function ReportsPage() {
           Dự án
           <select
             value={f.get("projectId")}
-            onChange={(e) => f.set("projectId", e.target.value)}
+            onChange={(e) =>
+              f.setMany({ projectId: e.target.value, authorId: "" })
+            }
           >
             <option value="">Tất cả</option>
             {projects.data?.items.map((p) => (
@@ -85,23 +98,22 @@ export function ReportsPage() {
             <option value="SUBMITTED">Đã gửi</option>
           </select>
         </label>
-        {f.get("projectId") &&
-          hasPermission(session, "ANALYTICS_VIEW", f.get("projectId")) && (
-            <label>
-              Người lập
-              <select
-                value={f.get("authorId")}
-                onChange={(e) => f.set("authorId", e.target.value)}
-              >
-                <option value="">Tất cả trong phạm vi</option>
-                {members.data?.items.map((m) => (
-                  <option key={m.id} value={m.userId}>
-                    {m.user.displayName}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
+        {filterAuthors && (
+          <label>
+            Người lập
+            <select
+              value={f.get("authorId")}
+              onChange={(e) => f.set("authorId", e.target.value)}
+            >
+              <option value="">Tất cả trong phạm vi</option>
+              {members.data?.items.map((m) => (
+                <option key={m.id} value={m.userId}>
+                  {m.user.displayName}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label>
           Từ ngày
           <input
@@ -119,6 +131,18 @@ export function ReportsPage() {
           />
         </label>
       </section>
+      {projects.isError && (
+        <QueryErrorState
+          error={projects.error}
+          retry={() => void projects.refetch()}
+        />
+      )}
+      {filterAuthors && members.isError && (
+        <QueryErrorState
+          error={members.error}
+          retry={() => void members.refetch()}
+        />
+      )}
       {q.isError ? (
         <QueryErrorState error={q.error} retry={() => void q.refetch()} />
       ) : !q.data ? (

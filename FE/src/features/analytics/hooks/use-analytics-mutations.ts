@@ -1,53 +1,57 @@
 "use client";
-import { analyticsKeys } from "@/features/analytics/api/analytics.keys";
+
+import { useSession } from "@/lib/auth/session-context";
+import { useIdempotentRequest } from "@/lib/query/use-idempotent-request";
+import { useAccessErrorHandler } from "@/lib/query/use-query-access";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { analyticsKeys } from "../api/analytics.keys";
+import { analyticsService } from "../api/analytics.service";
 import {
   type CreateJobInput,
   type FeedbackArgs,
-} from "@/features/analytics/types/analytics.types";
-import { useSession } from "@/lib/auth/session-context";
-import { useMutationAttempt } from "@/lib/query/use-mutation-attempt";
-import { useAccessErrorHandler } from "@/lib/query/use-query-access";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { analyticsService } from "../api/analytics.service";
+} from "../types/analytics.types";
 
 export function useCreateAnalysisJobMutation() {
   const client = useQueryClient();
-  const { session } = useSession();
-  const viewerId = session?.user.id ?? "anonymous";
+  const viewerId = useSession().session?.user.id;
   const handleError = useAccessErrorHandler();
-  const attempt = useMutationAttempt();
+  const run = useIdempotentRequest();
   return useMutation({
-    mutationKey: ["analytics", viewerId, "createAnalysisJob"],
-    mutationFn: async (input: CreateJobInput) =>
-      analyticsService.createAnalysisJob(input, {
-        key: await attempt.keyFor(input),
-      }),
-    retry: false,
+    mutationKey: [...analyticsKeys.viewer(viewerId), "createAnalysisJob"],
+    mutationFn: (input: CreateJobInput) =>
+      run(input, (key) =>
+        analyticsService.createAnalysisJob(input, {
+          key,
+        }),
+      ),
     onError: handleError,
     onSuccess: async () => {
-      attempt.reset();
       await client.invalidateQueries({
         queryKey: analyticsKeys.viewer(viewerId),
       });
     },
   });
 }
+
 export function useCreateAnalysisFeedbackMutation() {
   const client = useQueryClient();
-  const { session } = useSession();
-  const viewerId = session?.user.id ?? "anonymous";
+  const viewerId = useSession().session?.user.id;
   const handleError = useAccessErrorHandler();
-  const attempt = useMutationAttempt();
+  const run = useIdempotentRequest();
   return useMutation({
-    mutationKey: ["analytics", viewerId, "createAnalysisFeedback"],
-    mutationFn: async (input: FeedbackArgs) =>
-      analyticsService.createAnalysisFeedback(input.analysisId, input.payload, {
-        key: await attempt.keyFor(input),
-      }),
-    retry: false,
+    mutationKey: [...analyticsKeys.viewer(viewerId), "createAnalysisFeedback"],
+    mutationFn: (input: FeedbackArgs) =>
+      run(input, (key) =>
+        analyticsService.createAnalysisFeedback(
+          input.analysisId,
+          input.payload,
+          {
+            key,
+          },
+        ),
+      ),
     onError: handleError,
     onSuccess: async () => {
-      attempt.reset();
       await client.invalidateQueries({
         queryKey: analyticsKeys.viewer(viewerId),
       });

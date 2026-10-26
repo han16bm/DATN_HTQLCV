@@ -1,3 +1,6 @@
+import type { reasonSchema } from "@/lib/validation/common.schema";
+import { type AuditDto, type Page } from "@/types/common";
+import { type z } from "zod";
 import type {
   createProjectSchema,
   getProjectClosureChecksResultSchema,
@@ -6,10 +9,7 @@ import type {
   projectRowSchema,
   projectSchema,
   updateProjectSchema,
-} from "@/features/projects/schemas/projects.schema";
-import type { reasonSchema } from "@/lib/validation/common.schema";
-import { type AuditDto, type Page } from "@/types/common";
-import { type z } from "zod";
+} from "../schemas/projects.schema";
 export type ProjectDto = z.output<typeof projectSchema>;
 export type ProjectQuery = z.input<typeof projectQuerySchema>;
 export type ProjectRow = z.output<typeof projectRowSchema>;

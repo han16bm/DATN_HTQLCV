@@ -1,23 +1,32 @@
 "use client";
-import { ProjectForm } from "./project-form";
 
-import { PermissionGate } from "@/components/layout/permission-gate";
-import { ButtonLink, PageHeader } from "@/components/ui/page";
 import { PageSkeleton } from "@/components/ui/loading";
+import { ButtonLink, PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListProjectMembersQuery } from "@/features/project-members/hooks/use-project-members-queries";
+import { canManage } from "@/lib/auth/access";
+import { useSession } from "@/lib/auth/session-context";
+import { ApiError } from "@/types/api/error";
 import { useGetProjectQuery } from "../hooks/use-projects-queries";
+import { ProjectForm } from "./project-form";
 
 export function ProjectEditorPage({ projectId }: { projectId?: string }) {
-  return (
-    <PermissionGate
-      permission={projectId ? "PROJECT_MANAGE" : "PROJECT_CREATE"}
-      projectId={projectId}
-    >
-      <EditorLoader projectId={projectId} />
-    </PermissionGate>
+  const { session } = useSession();
+  return projectId && !canManage(session, projectId) ? (
+    <QueryErrorState
+      error={
+        new ApiError(
+          403,
+          "FORBIDDEN",
+          "Bạn không được chỉnh sửa kế hoạch của dự án này.",
+        )
+      }
+    />
+  ) : (
+    <EditorLoader projectId={projectId} />
   );
 }
+
 function EditorLoader({ projectId }: { projectId?: string }) {
   const query = useGetProjectQuery(projectId ?? "");
   const members = useListProjectMembersQuery(projectId ?? "", {
@@ -27,7 +36,15 @@ function EditorLoader({ projectId }: { projectId?: string }) {
     return (
       <QueryErrorState error={query.error} retry={() => void query.refetch()} />
     );
-  if (projectId && !query.data) return <PageSkeleton variant="form" />;
+  if (projectId && members.isError)
+    return (
+      <QueryErrorState
+        error={members.error}
+        retry={() => void members.refetch()}
+      />
+    );
+  if (projectId && (!query.data || !members.data))
+    return <PageSkeleton variant="form" />;
   return (
     <>
       <PageHeader
@@ -43,7 +60,7 @@ function EditorLoader({ projectId }: { projectId?: string }) {
         project={query.data}
         owners={
           members.data?.items
-            .filter((m) => !m.endedAt)
+            .filter((m) => !m.endedAt && m.projectRole !== "MEMBER")
             .map((m) => ({ value: m.userId, label: m.user.displayName })) ?? []
         }
         reload={() => query.refetch()}

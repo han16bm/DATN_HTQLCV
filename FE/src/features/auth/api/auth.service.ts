@@ -1,75 +1,84 @@
-import type { AuthApi } from "@/features/auth/api/auth.contract";
+import {
+  type MutationOptions,
+  type RequestOptions,
+  type VersionOptions,
+  apiClient,
+  token,
+} from "@/services/api-client";
+import { passwordResultSchema } from "../schemas/password.schema";
 import {
   loginResponseSchema,
   logoutResultSchema,
   sessionSchema,
-} from "@/features/auth/schemas/session.schema";
+} from "../schemas/session.schema";
 import type {
-  LoginInput,
-  UpdateProfileInput,
   ChangePasswordInput,
-} from "@/features/auth/types/auth.types";
-import { passwordResultSchema } from "../schemas/password.schema";
-import type {
-  RequestOptions,
-  VersionOptions,
-  MutationOptions,
-} from "@/services/api-client";
-import {
-  apiClient,
-  parseResponse,
-  skipAuthRefreshConfig,
-  token,
-} from "@/services/api-client";
-export const authService: AuthApi = {
-  async login(payload: LoginInput, options: RequestOptions = {}) {
-    const result = await apiClient
-      .post<unknown>("/auth/login", payload, {
-        ...options,
-        ...skipAuthRefreshConfig,
-      })
-      .then(parseResponse(loginResponseSchema));
-    token.set(result.accessToken);
-    return result.session;
+  ChangePasswordResult,
+  LoginInput,
+  LoginResponse,
+  LogoutResult,
+  SessionDto,
+  UpdateProfileInput,
+} from "../types/auth.types";
+
+export const authService = {
+  async login(payload: LoginInput) {
+    const response = await apiClient.post<LoginResponse>(
+      "/auth/login",
+      payload,
+      { skipAuthRefresh: true, schema: loginResponseSchema },
+    );
+    token.set(response.data.accessToken);
+    return response.data.session;
   },
-  logout(options: RequestOptions = {}) {
-    return apiClient
-      .post<unknown>(
-        "/auth/logout",
-        {},
-        { ...options, ...skipAuthRefreshConfig },
-      )
-      .then(parseResponse(logoutResultSchema));
+
+  async logout() {
+    const response = await apiClient.post<LogoutResult>(
+      "/auth/logout",
+      {},
+      { skipAuthRefresh: true, schema: logoutResultSchema },
+    );
+    return response.data;
   },
-  async refreshSession(options: RequestOptions = {}) {
-    const result = await apiClient
-      .post<unknown>(
-        "/auth/refresh",
-        {},
-        { ...options, ...skipAuthRefreshConfig },
-      )
-      .then(parseResponse(loginResponseSchema));
-    token.set(result.accessToken);
-    return result.session;
+
+  async refreshSession() {
+    const response = await apiClient.post<LoginResponse>(
+      "/auth/refresh",
+      {},
+      { skipAuthRefresh: true, schema: loginResponseSchema },
+    );
+    token.set(response.data.accessToken);
+    return response.data.session;
   },
-  getSession(options: RequestOptions = {}) {
-    return apiClient
-      .get<unknown>("/auth/me", { ...options, ...skipAuthRefreshConfig })
-      .then(parseResponse(sessionSchema));
+
+  async getSession(options: RequestOptions = {}) {
+    const response = await apiClient.get<SessionDto>("/auth/me", {
+      ...options,
+      skipAuthRefresh: true,
+      schema: sessionSchema,
+    });
+    return response.data;
   },
-  updateProfile(payload: UpdateProfileInput, options: VersionOptions) {
+
+  async updateProfile(payload: UpdateProfileInput, options: VersionOptions) {
     const form = new FormData();
     if (payload.username !== undefined) form.set("username", payload.username);
     if (payload.displayName !== undefined)
       form.set("displayName", payload.displayName);
     if (payload.avatar) form.set("avatar", payload.avatar);
-    return apiClient
-      .patch<unknown>("/auth/me", form, options)
-      .then(parseResponse(sessionSchema));
+    const response = await apiClient.patch<SessionDto>("/auth/me", form, {
+      ...options,
+      schema: sessionSchema,
+    });
+    return response.data;
   },
-  changePassword(payload: ChangePasswordInput, options: MutationOptions) {
-    return apiClient
-      .put<unknown>("/auth/me/password", payload, options)
-      .then(parseResponse(passwordResultSchema));
+
+  async changePassword(payload: ChangePasswordInput, options: MutationOptions) {
+    const response = await apiClient.put<ChangePasswordResult>(
+      "/auth/me/password",
+      payload,
+      { ...options, schema: passwordResultSchema },
+    );
+    return response.data;
   },
 };

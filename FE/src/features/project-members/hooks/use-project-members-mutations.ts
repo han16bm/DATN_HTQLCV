@@ -1,34 +1,34 @@
 "use client";
+
 import { authKeys } from "@/features/auth/api/auth.keys";
-import { projectMembersKeys } from "@/features/project-members/api/project-members.keys";
+import { tasksKeys } from "@/features/tasks/api/tasks.keys";
+import { useSession } from "@/lib/auth/session-context";
+import { useIdempotentRequest } from "@/lib/query/use-idempotent-request";
+import { useAccessErrorHandler } from "@/lib/query/use-query-access";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { projectMembersKeys } from "../api/project-members.keys";
+import { projectMembersService } from "../api/project-members.service";
 import {
   type AddProjectMemberArgs,
   type EndProjectMembershipArgs,
-  type UpdateProjectMemberPermissionsArgs,
-} from "@/features/project-members/types/project-members.types";
-import { tasksKeys } from "@/features/tasks/api/tasks.keys";
-import { useSession } from "@/lib/auth/session-context";
-import { useMutationAttempt } from "@/lib/query/use-mutation-attempt";
-import { useAccessErrorHandler } from "@/lib/query/use-query-access";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { projectMembersService } from "../api/project-members.service";
+  type UpdateProjectMemberRoleArgs,
+} from "../types/project-members.types";
 
 export function useAddProjectMemberMutation() {
   const client = useQueryClient();
-  const { session } = useSession();
-  const viewerId = session?.user.id ?? "anonymous";
+  const viewerId = useSession().session?.user.id;
   const handleError = useAccessErrorHandler();
-  const attempt = useMutationAttempt();
+  const run = useIdempotentRequest();
   return useMutation({
-    mutationKey: ["project-members", viewerId, "addProjectMember"],
-    mutationFn: async (input: AddProjectMemberArgs) =>
-      projectMembersService.addProjectMember(input.projectId, input.payload, {
-        key: await attempt.keyFor(input),
-      }),
-    retry: false,
+    mutationKey: [...projectMembersKeys.viewer(viewerId), "addProjectMember"],
+    mutationFn: (input: AddProjectMemberArgs) =>
+      run(input, (key) =>
+        projectMembersService.addProjectMember(input.projectId, input.payload, {
+          key,
+        }),
+      ),
     onError: handleError,
     onSuccess: async () => {
-      attempt.reset();
       await Promise.all([
         client.invalidateQueries({
           queryKey: projectMembersKeys.viewer(viewerId),
@@ -38,29 +38,28 @@ export function useAddProjectMemberMutation() {
     },
   });
 }
-export function useUpdateProjectMemberPermissionsMutation() {
+
+export function useUpdateProjectMemberRoleMutation() {
   const client = useQueryClient();
-  const { session } = useSession();
-  const viewerId = session?.user.id ?? "anonymous";
+  const viewerId = useSession().session?.user.id;
   const handleError = useAccessErrorHandler();
-  const attempt = useMutationAttempt();
+  const run = useIdempotentRequest();
   return useMutation({
     mutationKey: [
-      "project-members",
-      viewerId,
-      "updateProjectMemberPermissions",
+      ...projectMembersKeys.viewer(viewerId),
+      "updateProjectMemberRole",
     ],
-    mutationFn: async (input: UpdateProjectMemberPermissionsArgs) =>
-      projectMembersService.updateProjectMemberPermissions(
-        input.projectId,
-        input.membershipId,
-        input.payload,
-        { version: input.version, key: await attempt.keyFor(input) },
+    mutationFn: (input: UpdateProjectMemberRoleArgs) =>
+      run(input, (key) =>
+        projectMembersService.updateProjectMemberRole(
+          input.projectId,
+          input.membershipId,
+          input.payload,
+          { version: input.version, key },
+        ),
       ),
-    retry: false,
     onError: handleError,
     onSuccess: async () => {
-      attempt.reset();
       await Promise.all([
         client.invalidateQueries({
           queryKey: projectMembersKeys.viewer(viewerId),
@@ -70,25 +69,28 @@ export function useUpdateProjectMemberPermissionsMutation() {
     },
   });
 }
+
 export function useEndProjectMembershipMutation() {
   const client = useQueryClient();
-  const { session } = useSession();
-  const viewerId = session?.user.id ?? "anonymous";
+  const viewerId = useSession().session?.user.id;
   const handleError = useAccessErrorHandler();
-  const attempt = useMutationAttempt();
+  const run = useIdempotentRequest();
   return useMutation({
-    mutationKey: ["project-members", viewerId, "endProjectMembership"],
-    mutationFn: async (input: EndProjectMembershipArgs) =>
-      projectMembersService.endProjectMembership(
-        input.projectId,
-        input.membershipId,
-        input.payload,
-        { version: input.version, key: await attempt.keyFor(input) },
+    mutationKey: [
+      ...projectMembersKeys.viewer(viewerId),
+      "endProjectMembership",
+    ],
+    mutationFn: (input: EndProjectMembershipArgs) =>
+      run(input, (key) =>
+        projectMembersService.endProjectMembership(
+          input.projectId,
+          input.membershipId,
+          input.payload,
+          { version: input.version, key },
+        ),
       ),
-    retry: false,
     onError: handleError,
     onSuccess: async () => {
-      attempt.reset();
       await Promise.all([
         client.invalidateQueries({
           queryKey: projectMembersKeys.viewer(viewerId),

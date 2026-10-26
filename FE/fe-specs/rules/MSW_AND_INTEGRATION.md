@@ -2,6 +2,8 @@
 
 ## Cách mock hoạt động
 
+Theo yêu cầu ngày 25/10/2026, MSW trả JSON DTO trực tiếp như backend: success là ResponseDTO, collection là {items, pagination}, lỗi là ErrorDTO phẳng code/message/fieldErrors?/details?. Bỏ data/meta, error/meta và metadata requestId/serverTime. Giữ kiểm tra response, HTTP status/header, độ trễ, binary và idempotency replay với cùng body ban đầu.
+
 Điều chỉnh hiện hành: API dùng tiền tố /api cho client, handler và tài nguyên ảnh. mockHandler chung thêm độ trễ sau khi xử lý response, áp dụng success/error/binary. NEXT_PUBLIC_MSW_DELAY là số ms, mặc định development 400 và test 0; scenario slow là 1500. Có thể đặt 0 để tắt độ trễ, không thêm delay vào service/component. Handler chỉ parse HTTP và gọi mocks/db.ts theo cấu trúc hiện hành tại docs/ARCHITECTURE.md.
 
 Component vẫn gọi API feature qua fetch wrapper. MSW khớp method/path, parse request theo contract, kiểm tra quyền/trạng thái/version rồi thực hiện mutation trên database trong bộ nhớ. Response được kiểm tra đúng schema trước khi trả. Lỗi request và lỗi response có mã khác nhau; không trả một JSON thành công cố định cho mọi thao tác.

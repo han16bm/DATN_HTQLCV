@@ -71,7 +71,7 @@ import type {
   EndProjectMembershipInput,
   MembershipDto,
   ProjectMemberQuery,
-  UpdateProjectMemberPermissionsInput,
+  UpdateProjectMemberRoleInput,
 } from "@/features/project-members/types/project-members.types";
 import { projectSchema } from "@/features/projects/schemas/projects.schema";
 import type {
@@ -283,14 +283,14 @@ const entity = (id = crypto.randomUUID()) => ({
   id,
   version: 1,
 });
-const projectPermissions = [
+const projectActions = new Set([
   "PROJECT_MANAGE",
   "MEMBERS_MANAGE",
   "TASKS_MANAGE",
   "TASKS_REVIEW",
   "ANALYTICS_VIEW",
   "ALERTS_MANAGE",
-] as const;
+]);
 function createDatabase() {
   const users = z.array(userModel).parse(seed.users);
   const attachments = z.array(attachmentModel).parse(seed.attachments);
@@ -365,23 +365,22 @@ function touch(v: { version: number; updatedAt?: string }) {
   if ("updatedAt" in v) v.updatedAt = now();
   db.revision++;
 }
-const systemPermissions = (user: User): SessionDto["systemPermissions"] =>
-  user.systemRole === "ADMIN"
-    ? ["USERS_MANAGE", "ORGANIZATION_MANAGE", "ANALYTICS_VIEW"]
-    : user.systemRole === "MANAGER"
-      ? ["PROJECT_CREATE"]
-      : [];
-const can = (u: User, permission: string, projectId?: string) =>
-  (u.systemRole === "ADMIN" && permission === "ANALYTICS_VIEW") ||
-  (projectId
-    ? db.members.some(
-        (m) =>
-          m.projectId === projectId &&
-          m.userId === u.id &&
-          !m.endedAt &&
-          m.permissions.some((p) => p === permission),
-      )
-    : systemPermissions(u).some((p) => p === permission));
+const manages = (user: User, projectId: string) =>
+  user.systemRole === "MANAGER" &&
+  db.members.some(
+    (member) =>
+      member.projectId === projectId &&
+      member.userId === user.id &&
+      !member.endedAt &&
+      member.projectRole !== "MEMBER",
+  );
+function can(user: User, action: string, projectId?: string) {
+  if (action === "USERS_MANAGE" || action === "ORGANIZATION_MANAGE")
+    return user.systemRole === "ADMIN";
+  if (action === "PROJECT_CREATE") return user.systemRole === "MANAGER";
+  if (action === "ANALYTICS_VIEW" && user.systemRole === "ADMIN") return true;
+  return projectActions.has(action) && !!projectId && manages(user, projectId);
+}
 const inProject = (u: User, projectId: string) =>
   db.members.some(
     (m) => m.projectId === projectId && m.userId === u.id && !m.endedAt,
@@ -390,9 +389,7 @@ function visibleTask(u: User, t: Task) {
   if (u.systemRole === "ADMIN") return true;
   return (
     inProject(u, t.projectId) &&
-    (can(u, "TASKS_MANAGE", t.projectId) ||
-      can(u, "TASKS_REVIEW", t.projectId) ||
-      can(u, "ANALYTICS_VIEW", t.projectId) ||
+    (manages(u, t.projectId) ||
       t.assigneeId === u.id ||
       db.assignments.some((a) => a.taskId === t.id && a.userId === u.id))
   );
@@ -505,7 +502,6 @@ const memberDTO = (member: (typeof db.members)[number]): MembershipDto => ({
   version: member.version,
   userId: member.userId,
   projectRole: member.projectRole,
-  permissions: member.permissions,
   endedAt: member.endedAt,
   user: person(member.userId),
 });
@@ -611,12 +607,11 @@ function sessionDTO(user: User): SessionDto {
       unit: unitRef(user.unitId),
       systemRole: user.systemRole,
     },
-    systemPermissions: systemPermissions(user),
     projectAccess: db.members
       .filter((member) => member.userId === user.id && !member.endedAt)
       .map((member) => ({
         projectId: member.projectId,
-        permissions: member.permissions,
+        projectRole: member.projectRole,
       })),
   };
 }
@@ -823,9 +818,9 @@ export const authDb = {
 // Đơn vị và nhóm.
 function requireAdmin(
   user: User,
-  permission: "USERS_MANAGE" | "ORGANIZATION_MANAGE",
+  action: "USERS_MANAGE" | "ORGANIZATION_MANAGE",
 ) {
-  if (!can(user, permission))
+  if (!can(user, action))
     throw new ApiError(
       403,
       "FORBIDDEN",
@@ -1217,6 +1212,25 @@ export const usersDb = {
           "Không được tự thay đổi vai trò của mình.",
         );
       protectLastAdmin(user);
+      if (
+        user.systemRole === "MANAGER" &&
+        db.members.some(
+          (member) =>
+            member.userId === user.id &&
+            !member.endedAt &&
+            member.projectRole !== "MEMBER" &&
+            db.projects.some(
+              (project) =>
+                project.id === member.projectId &&
+                ["PLANNED", "ACTIVE"].includes(project.status),
+            ),
+        )
+      )
+        throw new ApiError(
+          409,
+          "HANDOVER_REQUIRED",
+          "Cần bàn giao vai trò quản lý dự án trước khi đổi vai trò hệ thống.",
+        );
     }
     if (patch.unitId && patch.unitId !== user.unitId) {
       activeUnit(patch.unitId);
@@ -1365,11 +1379,15 @@ function validateProjectPlan(
 ) {
   activeUnit(unitId);
   const owner = requireUser(ownerId);
-  if (owner.status !== "ACTIVE" || owner.unitId !== unitId)
+  if (
+    owner.status !== "ACTIVE" ||
+    owner.unitId !== unitId ||
+    owner.systemRole !== "MANAGER"
+  )
     throw new ApiError(
       422,
       "INVALID_OWNER",
-      "Người phụ trách cần hoạt động trong đúng đơn vị.",
+      "Người phụ trách phải là Leader/PM đang hoạt động trong đơn vị.",
     );
   if (
     (requireFuture && dueAt <= now()) ||
@@ -1388,7 +1406,6 @@ function ensureOwner(projectId: string, ownerId: string) {
   );
   if (member) {
     member.projectRole = "OWNER";
-    member.permissions = [...projectPermissions];
     touch(member);
   } else
     db.members.push({
@@ -1396,7 +1413,6 @@ function ensureOwner(projectId: string, ownerId: string) {
       projectId,
       userId: ownerId,
       projectRole: "OWNER",
-      permissions: [...projectPermissions],
       endedAt: null,
     });
 }
@@ -1429,30 +1445,26 @@ function requireClosure(projectId: string) {
       checks,
     );
 }
-function validateGrant(actor: User, projectId: string, permissions: string[]) {
-  const membership = db.members.find(
-    (m) => m.projectId === projectId && m.userId === actor.id && !m.endedAt,
-  );
-  if (
-    new Set(permissions).size !== permissions.length ||
-    permissions.some(
-      (p) =>
-        !membership?.permissions.some((granted) => granted === p) ||
-        !projectPermissions.some((granted) => granted === p),
-    )
-  )
+function validateMemberRole(user: User, role: "MANAGER" | "MEMBER") {
+  if (role === "MANAGER" && user.systemRole !== "MANAGER")
     throw new ApiError(
-      403,
-      "PERMISSION_ESCALATION",
-      "Không được cấp quyền ngoài thẩm quyền trên dự án.",
+      422,
+      "INVALID_PROJECT_ROLE",
+      "Vai trò quản lý dự án chỉ dành cho tài khoản Leader/PM.",
+      [
+        {
+          path: ["projectRole"],
+          message: "Tài khoản này chưa có vai trò Leader/PM.",
+        },
+      ],
     );
 }
-function requireProject(user: User, id: string, permission?: string) {
+function requireProject(user: User, id: string, action?: string) {
   const project = db.projects.find((p) => p.id === id);
   if (!project) throw new ApiError(404, "NOT_FOUND", "Không tìm thấy dự án.");
   if (
     (!inProject(user, id) && user.systemRole !== "ADMIN") ||
-    (permission && !can(user, permission, id))
+    (action && !can(user, action, id))
   )
     throw new ApiError(
       403,
@@ -1733,7 +1745,7 @@ export const projectMembersDb = {
         "ALREADY_MEMBER",
         "Người này đang là thành viên dự án.",
       );
-    validateGrant(viewer, project.id, body.permissions);
+    validateMemberRole(user, body.projectRole);
     const value = {
       ...entity(),
       projectId: project.id,
@@ -1747,11 +1759,11 @@ export const projectMembersDb = {
     });
     return memberDTO(value);
   },
-  updateProjectMemberPermissions(
+  updateProjectMemberRole(
     viewer: User,
     projectId: string,
     membershipId: string,
-    body: UpdateProjectMemberPermissionsInput,
+    body: UpdateProjectMemberRoleInput,
     expectedVersion: string | null,
   ) {
     const project = requireProject(viewer, projectId, "MEMBERS_MANAGE");
@@ -1770,23 +1782,18 @@ export const projectMembersDb = {
         "MEMBERSHIP_ENDED",
         "Thành viên đã kết thúc tư cách.",
       );
-    validateGrant(viewer, project.id, body.permissions);
-    const before = {
-      permissions: value.permissions,
-      projectRole: value.projectRole,
-    };
-    value.permissions = body.permissions;
+    validateMemberRole(requireUser(value.userId), body.projectRole);
+    const before = { projectRole: value.projectRole };
     value.projectRole = body.projectRole;
     touch(value);
     audit(
       viewer.id,
       "PROJECT",
       project.id,
-      "Thay đổi quyền thành viên",
+      "Thay đổi vai trò thành viên",
       before,
       {
         userId: value.userId,
-        permissions: value.permissions,
         projectRole: value.projectRole,
       },
       body.reason,
@@ -4124,7 +4131,7 @@ export const analyticsDb = {
 // Kiểm tra quyền khi gửi lại yêu cầu.
 export function authorizeReplay(
   operation: string,
-  permission: string | null,
+  action: string | null,
   user: User,
   params: Record<string, string>,
   payload: Record<string, unknown>,
@@ -4152,7 +4159,7 @@ export function authorizeReplay(
   const task = taskId ? db.tasks.find((t) => t.id === taskId) : undefined;
   if (
     task &&
-    (!visibleTask(user, task) || (!permission && task.assigneeId !== user.id))
+    (!visibleTask(user, task) || (!action && task.assigneeId !== user.id))
   )
     throw new ApiError(
       403,
@@ -4175,11 +4182,11 @@ export function authorizeReplay(
     projectId = db.details.get(analysisId)?.snapshot.scope.projectId;
   const analysisProjects =
     typeof analysisId === "string" ? analysisProjectIds(analysisId) : [];
-  const scopedCan = (permission: string) =>
+  const scopedCan = (action: string) =>
     analysisProjects.length
-      ? analysisProjects.every((id) => can(user, permission, id))
-      : can(user, permission, projectId);
-  if (permission && !scopedCan(permission))
+      ? analysisProjects.every((id) => can(user, action, id))
+      : can(user, action, projectId);
+  if (action && !scopedCan(action))
     throw new ApiError(
       403,
       "FORBIDDEN",

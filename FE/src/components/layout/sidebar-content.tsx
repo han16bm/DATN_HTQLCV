@@ -1,6 +1,6 @@
 "use client";
 import type { SessionDto } from "@/features/auth/types/auth.types";
-import { hasPermission } from "@/lib/auth/session-context";
+import { canVisit } from "@/lib/auth/access";
 import {
   Bell,
   Building2,
@@ -24,7 +24,6 @@ type NavItem = {
   href: string;
   label: string;
   icon: LucideIcon;
-  permission?: string;
 };
 const groups: { id: string; label: string; items: NavItem[] }[] = [
   {
@@ -38,7 +37,6 @@ const groups: { id: string; label: string; items: NavItem[] }[] = [
         href: "/reviews",
         label: "Chờ nghiệm thu",
         icon: CircleCheckBig,
-        permission: "TASKS_REVIEW",
       },
       { href: "/reports", label: "Báo cáo công việc", icon: FileChartColumn },
     ],
@@ -51,19 +49,16 @@ const groups: { id: string; label: string; items: NavItem[] }[] = [
         href: "/dashboard",
         label: "Bảng tổng quan",
         icon: LayoutDashboard,
-        permission: "ANALYTICS_VIEW",
       },
       {
         href: "/analytics/risks",
         label: "Phân tích & AI",
         icon: ChartNoAxesCombined,
-        permission: "ANALYTICS_VIEW",
       },
       {
         href: "/alerts",
         label: "Cảnh báo",
         icon: Bell,
-        permission: "ANALYTICS_VIEW",
       },
     ],
   },
@@ -75,19 +70,16 @@ const groups: { id: string; label: string; items: NavItem[] }[] = [
         href: "/admin/users",
         label: "Tài khoản người dùng",
         icon: Users,
-        permission: "USERS_MANAGE",
       },
       {
         href: "/admin/organization",
         label: "Cơ cấu đơn vị",
         icon: Building2,
-        permission: "ORGANIZATION_MANAGE",
       },
       {
         href: "/admin/teams",
         label: "Nhóm nhân sự",
         icon: UsersRound,
-        permission: "ORGANIZATION_MANAGE",
       },
     ],
   },
@@ -132,9 +124,8 @@ export function SidebarContent({
       </div>
       <nav className="sidebar-nav" aria-label="Điều hướng chính">
         {groups.map((group) => {
-          const items = group.items.filter(
-            (item) =>
-              !item.permission || hasPermission(session, item.permission),
+          const items = group.items.filter((item) =>
+            canVisit(session.user.systemRole, item.href),
           );
           if (!items.length) return null;
           const expanded = collapsed || !closed.includes(group.id);

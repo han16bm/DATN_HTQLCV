@@ -2,59 +2,60 @@
 
 Contract 0.3.0; cập nhật LLM và màn S43.
 
-Đây là quy tắc triển khai cho Codex. Mỗi operation phải có một API function cố định và schema theo API_CATALOG.md; các tên hook ở đây là tên đích, chưa phải file code được cung cấp.
+Đây là quy tắc triển khai cho Codex. Mỗi operation phải có một API function cố định và schema theo API_CATALOG.md; tên hook/adapter và key dưới đây đối chiếu với code hiện hành; các nhóm invalidation là nhóm dữ liệu, không yêu cầu tách thêm hook hoặc feature.
 
 ## Quy tắc chung
 
 - Đọc dữ liệu JSON: useQuery, queryFn truyền AbortSignal cho wrapper; validate trước khi trả DTO vào cache.
-- Thao tác nghiệp vụ: useMutation, retry mặc định false; chặn gửi lặp trong UI. GET download vẫn là useMutation theo click vì là tải tệp có chủ ý. refreshSession chạy trong auth adapter single-flight, không tạo useQuery hoặc vòng refresh định kỳ.
+- Thao tác nghiệp vụ: useMutation, retry mặc định false; chặn gửi lặp trong UI. GET download chạy theo click qua useDownloadAttachment, giữ pending/error cục bộ và không cache Blob. refreshSession chạy trong auth adapter single-flight, không tạo useQuery hoặc vòng refresh định kỳ.
 - viewerId bắt buộc trong key. ID tài nguyên và tất cả filter/query chuẩn hóa ảnh hưởng response phải nằm trong key. Không chứa accessToken, mật khẩu, Blob hoặc dữ liệu nhạy cảm dạng credential.
-- enabled: phiên đã sẵn sàng + đủ ID/path + filter đã parse hợp lệ + quyền UI tương ứng. Đây là điều kiện giảm request sai, không thay quyền BE.
+- Hook dùng trực tiếp resourceId trong key và service, không parse rồi tạo alias id/parentId. ID phiên lấy một lần bằng useSession().session?.user.id để tách cache, không gửi lên API nếu không thuộc contract. ID rỗng chờ dependency; ID sai không rỗng nhận lỗi từ HTTP handler, không bị đổi thành rỗng để tắt query.
+- enabled: phiên đã sẵn sàng, đủ ID/path và phụ thuộc tải dữ liệu. Trang/menu đã kiểm tra role tại WorkspaceShell; query không xét quyền mở trang lần nữa. Filter danh sách không hợp lệ vẫn gửi API để nhận lỗi 422, không tắt query vô thời hạn. Analytics chỉ mount phần nội dung khi useAnalyticsScope kiểm tra URL hợp lệ. Lookup phụ có thể tắt khi control không hiển thị.
 - gcTime dự kiến 5 phút. staleTime cho từng query ở bảng dưới. Chỉ retry tối đa 1 lần cho lỗi network/502/503/504 của query; không retry 401/403/404/409/412/422/contract error. Đổi phiên phải cancel rồi clear cache.
 - background refetch giữ nội dung cũ có chỉ báo đang làm mới; lỗi refetch có banner và thời điểm dữ liệu. Không thay toàn bộ trang bằng skeleton nếu đã có dữ liệu hợp lệ.
 - Response Zod lỗi: ContractError, không ghi dữ liệu vào cache. Mutation có thể đã thành công trên server: đọc lại hoặc retry cùng idempotency key, không tạo thao tác mới bằng key mới.
 
-## Ma trận 79 API
+## Ma trận 83 endpoint HTTP
 
 | Operation | Hook / adapter | Zod kiểm tra | Query key / cache | Điều kiện / staleTime |
 |---|---|---|---|---|
 | `login` | `useLoginMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: all-session-cache | Theo thao tác hợp lệ; retry false |
-| `logout` | `useLogoutMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: all-session-cache | Theo thao tác hợp lệ; retry false |
+| `logout` | `AuthObserver.signOut` · thao tác đăng xuất | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: all-session-cache | Theo thao tác hợp lệ; retry false |
 | `refreshSession` | `refreshSessionSingleFlight` · Auth adapter single-flight; không tạo query định kỳ | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: auth | Auth adapter single-flight, tối đa một lượt replay |
-| `getSession` | `useGetSessionQuery` · useQuery | params + query + success/error JSON | ['auth', viewerId, 'getSession'] | Phiên/ID/filter/quyền hợp lệ; staleTime 0 ms |
-| `listUsers` | `useListUsersQuery` · useQuery | params + query + success/error JSON | ['users', viewerId, 'listUsers', normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 30.000 ms |
-| `getUser` | `useGetUserQuery` · useQuery | params + query + success/error JSON; kiểm tra nhãn đọc khớp ID | ['users', viewerId, 'getUser', userId] | Phiên/ID/filter/quyền hợp lệ; staleTime 10.000 ms |
+| `getSession` | `AuthObserver` · useQuery | params + query + success/error JSON | ['auth', viewerId, 'getSession'] | Phiên/ID và phụ thuộc dữ liệu; staleTime 0 ms |
+| `listUsers` | `useListUsersQuery` · useQuery | params + query + success/error JSON | ['users', viewerId, 'listUsers', normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 30.000 ms |
+| `getUser` | `useGetUserQuery` · useQuery | params + query + success/error JSON; kiểm tra nhãn đọc khớp ID | ['users', viewerId, 'getUser', userId] | Phiên/ID và phụ thuộc dữ liệu; staleTime 10.000 ms |
 | `createUser` | `useCreateUserMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: users | Theo thao tác hợp lệ; retry false |
 | `updateUser` | `useUpdateUserMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: users, auth, project-members | Theo thao tác hợp lệ; retry false |
 | `lockUser` | `useLockUserMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: users, auth, tasks, project-members | Theo thao tác hợp lệ; retry false |
 | `unlockUser` | `useUnlockUserMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: users, auth | Theo thao tác hợp lệ; retry false |
 | `resetUserPassword` | `useResetUserPasswordMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: users, auth | Theo thao tác hợp lệ; retry false |
-| `listUnits` | `useListUnitsQuery` · useQuery | params + query + success/error JSON | ['organization', viewerId, 'listUnits', normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 30.000 ms |
-| `getUnit` | `useGetUnitQuery` · useQuery | params + query + success/error JSON | ['organization', viewerId, 'getUnit', unitId] | Phiên/ID/filter/quyền hợp lệ; staleTime 10.000 ms |
+| `listUnits` | `useListUnitsQuery` · useQuery | params + query + success/error JSON | ['organization', viewerId, 'listUnits', normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 30.000 ms |
+| `getUnit` | `useGetUnitQuery` · useQuery | params + query + success/error JSON | ['organization', viewerId, 'getUnit', unitId] | Phiên/ID và phụ thuộc dữ liệu; staleTime 10.000 ms |
 | `createUnit` | `useCreateUnitMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: organization | Theo thao tác hợp lệ; retry false |
 | `updateUnit` | `useUpdateUnitMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: organization | Theo thao tác hợp lệ; retry false |
 | `deactivateUnit` | `useDeactivateUnitMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: organization | Theo thao tác hợp lệ; retry false |
-| `listTeams` | `useListTeamsQuery` · useQuery | params + query + success/error JSON | ['organization', viewerId, 'listTeams', normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 30.000 ms |
-| `getTeam` | `useGetTeamQuery` · useQuery | params + query + success/error JSON | ['organization', viewerId, 'getTeam', teamId] | Phiên/ID/filter/quyền hợp lệ; staleTime 10.000 ms |
+| `listTeams` | `useListTeamsQuery` · useQuery | params + query + success/error JSON | ['organization', viewerId, 'listTeams', normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 30.000 ms |
+| `getTeam` | `useGetTeamQuery` · useQuery | params + query + success/error JSON | ['organization', viewerId, 'getTeam', teamId] | Phiên/ID và phụ thuộc dữ liệu; staleTime 10.000 ms |
 | `createTeam` | `useCreateTeamMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: organization | Theo thao tác hợp lệ; retry false |
 | `updateTeam` | `useUpdateTeamMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: organization | Theo thao tác hợp lệ; retry false |
 | `replaceTeamMembers` | `useReplaceTeamMembersMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: organization | Theo thao tác hợp lệ; retry false |
 | `deactivateTeam` | `useDeactivateTeamMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: organization | Theo thao tác hợp lệ; retry false |
-| `listProjects` | `useListProjectsQuery` · useQuery | params + query + success/error JSON | ['projects', viewerId, 'listProjects', normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 30.000 ms |
-| `getProject` | `useGetProjectQuery` · useQuery | params + query + success/error JSON; kiểm tra nhãn đọc khớp ID | ['projects', viewerId, 'getProject', projectId] | Phiên/ID/filter/quyền hợp lệ; staleTime 10.000 ms |
+| `listProjects` | `useListProjectsQuery` · useQuery | params + query + success/error JSON | ['projects', viewerId, 'listProjects', normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 30.000 ms |
+| `getProject` | `useGetProjectQuery` · useQuery | params + query + success/error JSON; kiểm tra nhãn đọc khớp ID | ['projects', viewerId, 'getProject', projectId] | Phiên/ID và phụ thuộc dữ liệu; staleTime 10.000 ms |
 | `createProject` | `useCreateProjectMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: projects, project-members, auth | Theo thao tác hợp lệ; retry false |
 | `updateProject` | `useUpdateProjectMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: projects, project-members, auth, analytics | Theo thao tác hợp lệ; retry false |
 | `activateProject` | `useActivateProjectMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: projects | Theo thao tác hợp lệ; retry false |
-| `getProjectClosureChecks` | `useGetProjectClosureChecksQuery` · useQuery | params + query + success/error JSON | ['projects', viewerId, 'getProjectClosureChecks', projectId] | Phiên/ID/filter/quyền hợp lệ; staleTime 0 ms |
+| `getProjectClosureChecks` | `useGetProjectClosureChecksQuery` · useQuery | params + query + success/error JSON | ['projects', viewerId, 'getProjectClosureChecks', projectId] | Phiên/ID và phụ thuộc dữ liệu; staleTime 0 ms |
 | `completeProject` | `useCompleteProjectMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: projects, tasks, reports, analytics | Theo thao tác hợp lệ; retry false |
 | `cancelProject` | `useCancelProjectMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: projects, tasks, reports, analytics | Theo thao tác hợp lệ; retry false |
-| `listProjectHistory` | `useListProjectHistoryQuery` · useQuery | params + query + success/error JSON | ['projects', viewerId, 'listProjectHistory', projectId, normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 30.000 ms |
-| `listProjectMembers` | `useListProjectMembersQuery` · useQuery | params + query + success/error JSON | ['project-members', viewerId, 'listProjectMembers', projectId, normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 30.000 ms |
+| `listProjectHistory` | `useListProjectHistoryQuery` · useQuery | params + query + success/error JSON | ['projects', viewerId, 'listProjectHistory', projectId, normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 30.000 ms |
+| `listProjectMembers` | `useListProjectMembersQuery` · useQuery | params + query + success/error JSON | ['project-members', viewerId, 'listProjectMembers', projectId, normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 30.000 ms |
 | `addProjectMember` | `useAddProjectMemberMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: project-members, auth | Theo thao tác hợp lệ; retry false |
-| `updateProjectMemberPermissions` | `useUpdateProjectMemberPermissionsMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: project-members, auth | Theo thao tác hợp lệ; retry false |
+| `updateProjectMemberRole` | `useUpdateProjectMemberRoleMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: project-members, auth | Theo thao tác hợp lệ; retry false |
 | `endProjectMembership` | `useEndProjectMembershipMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: project-members, auth, tasks | Theo thao tác hợp lệ; retry false |
-| `listTasks` | `useListTasksQuery` · useQuery | params + query + success/error JSON | ['tasks', viewerId, 'listTasks', normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 30.000 ms |
-| `getTask` | `useGetTaskQuery` · useQuery | params + query + success/error JSON; kiểm tra nhãn đọc khớp ID | ['tasks', viewerId, 'getTask', taskId] | Phiên/ID/filter/quyền hợp lệ; staleTime 10.000 ms |
+| `listTasks` | `useListTasksQuery` · useQuery | params + query + success/error JSON | ['tasks', viewerId, 'listTasks', normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 30.000 ms |
+| `getTask` | `useGetTaskQuery` · useQuery | params + query + success/error JSON; kiểm tra nhãn đọc khớp ID | ['tasks', viewerId, 'getTask', taskId] | Phiên/ID và phụ thuộc dữ liệu; staleTime 10.000 ms |
 | `createTask` | `useCreateTaskMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: tasks, projects, analytics | Theo thao tác hợp lệ; retry false |
 | `updateTask` | `useUpdateTaskMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: tasks, projects, analytics, alerts | Theo thao tác hợp lệ; retry false |
 | `assignTask` | `useAssignTaskMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: tasks, project-members, analytics, alerts | Theo thao tác hợp lệ; retry false |
@@ -62,41 +63,46 @@ Contract 0.3.0; cập nhật LLM và màn S43.
 | `pauseTask` | `usePauseTaskMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: tasks, analytics | Theo thao tác hợp lệ; retry false |
 | `cancelTask` | `useCancelTaskMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: tasks, projects, analytics, alerts | Theo thao tác hợp lệ; retry false |
 | `updateRemainingEstimate` | `useUpdateRemainingEstimateMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: tasks, analytics, alerts | Theo thao tác hợp lệ; retry false |
-| `listTaskHistory` | `useListTaskHistoryQuery` · useQuery | params + query + success/error JSON | ['tasks', viewerId, 'listTaskHistory', taskId, normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 30.000 ms |
-| `listTimeLogs` | `useListTimeLogsQuery` · useQuery | params + query + success/error JSON | ['time-logs', viewerId, 'listTimeLogs', taskId, normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 30.000 ms |
+| `listTaskHistory` | `useListTaskHistoryQuery` · useQuery | params + query + success/error JSON | ['tasks', viewerId, 'listTaskHistory', taskId, normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 30.000 ms |
+| `listTimeLogs` | `useListTimeLogsQuery` · useQuery | params + query + success/error JSON | ['time-logs', viewerId, 'listTimeLogs', taskId, normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 30.000 ms |
 | `createTimeLog` | `useCreateTimeLogMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: time-logs, tasks, reports, report-preview, analytics | Theo thao tác hợp lệ; retry false |
 | `updateTimeLog` | `useUpdateTimeLogMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: time-logs, tasks, reports, report-preview, analytics | Theo thao tác hợp lệ; retry false |
 | `voidTimeLog` | `useVoidTimeLogMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: time-logs, tasks, reports, report-preview, analytics | Theo thao tác hợp lệ; retry false |
-| `listSubmissions` | `useListSubmissionsQuery` · useQuery | params + query + success/error JSON | ['submissions', viewerId, 'listSubmissions', taskId, normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 30.000 ms |
-| `getSubmission` | `useGetSubmissionQuery` · useQuery | params + query + success/error JSON; kiểm tra nhãn đọc khớp ID | ['submissions', viewerId, 'getSubmission', taskId, submissionId] | Phiên/ID/filter/quyền hợp lệ; staleTime 10.000 ms |
+| `listSubmissions` | `useListSubmissionsQuery` · useQuery | params + query + success/error JSON | ['submissions', viewerId, 'listSubmissions', taskId, normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 30.000 ms |
+| `getSubmission` | `useGetSubmissionQuery` · useQuery | params + query + success/error JSON; kiểm tra nhãn đọc khớp ID | ['submissions', viewerId, 'getSubmission', taskId, submissionId] | Phiên/ID và phụ thuộc dữ liệu; staleTime 10.000 ms |
 | `createSubmission` | `useCreateSubmissionMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: submissions, tasks, reviews, analytics, alerts | Theo thao tác hợp lệ; retry false |
 | `approveSubmission` | `useApproveSubmissionMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: submissions, tasks, reviews, projects, analytics, alerts | Theo thao tác hợp lệ; retry false |
 | `requestSubmissionRevision` | `useRequestSubmissionRevisionMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: submissions, tasks, reviews, analytics, alerts | Theo thao tác hợp lệ; retry false |
-| `listReviewQueue` | `useListReviewQueueQuery` · useQuery | params + query + success/error JSON | ['submissions', viewerId, 'listReviewQueue', normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 30.000 ms |
-| `listReports` | `useListReportsQuery` · useQuery | params + query + success/error JSON | ['reports', viewerId, 'listReports', normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 30.000 ms |
-| `getReportPreview` | `useGetReportPreviewQuery` · useQuery | params + query + success/error JSON | ['reports', viewerId, 'getReportPreview', normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 0 ms |
-| `getReport` | `useGetReportQuery` · useQuery | params + query + success/error JSON; kiểm tra nhãn đọc khớp ID | ['reports', viewerId, 'getReport', reportId] | Phiên/ID/filter/quyền hợp lệ; staleTime 10.000 ms |
+| `listReviewQueue` | `useListReviewQueueQuery` · useQuery | params + query + success/error JSON | ['submissions', viewerId, 'listReviewQueue', normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 30.000 ms |
+| `listReports` | `useListReportsQuery` · useQuery | params + query + success/error JSON | ['reports', viewerId, 'listReports', normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 30.000 ms |
+| `getReportPreview` | `useGetReportPreviewQuery` · useQuery | params + query + success/error JSON | ['reports', viewerId, 'getReportPreview', normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 10.000 ms |
+| `getReport` | `useGetReportQuery` · useQuery | params + query + success/error JSON; kiểm tra nhãn đọc khớp ID | ['reports', viewerId, 'getReport', reportId] | Phiên/ID và phụ thuộc dữ liệu; staleTime 10.000 ms |
 | `createReportDraft` | `useCreateReportDraftMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: reports | Theo thao tác hợp lệ; retry false |
 | `updateReportDraft` | `useUpdateReportDraftMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: reports | Theo thao tác hợp lệ; retry false |
 | `refreshReportDraft` | `useRefreshReportDraftMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: report-preview | Theo thao tác hợp lệ; retry false |
 | `submitReport` | `useSubmitReportMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: reports, report-preview, analytics | Theo thao tác hợp lệ; retry false |
-| `getUploadPolicy` | `useGetUploadPolicyQuery` · useQuery | params + query + success/error JSON | ['attachments', viewerId, 'getUploadPolicy'] | Phiên/ID/filter/quyền hợp lệ; staleTime 300.000 ms |
+| `getUploadPolicy` | `useGetUploadPolicyQuery` · useQuery | params + query + success/error JSON | ['attachments', viewerId, 'getUploadPolicy'] | Phiên/ID và phụ thuộc dữ liệu; staleTime 10.000 ms |
 | `uploadAttachment` | `useUploadAttachmentMutation` · useMutation | params + query + multipart/File theo policy + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: attachments | Theo thao tác hợp lệ; retry false |
-| `getAttachment` | `useGetAttachmentQuery` · useQuery | params + query + success/error JSON | ['attachments', viewerId, 'getAttachment', attachmentId] | Phiên/ID/filter/quyền hợp lệ; staleTime 10.000 ms |
-| `downloadAttachment` | `useDownloadAttachmentMutation` · useMutation theo click (GET binary); không cache Blob | params + error JSON; success: status/Content-Type/Blob | Không có query key cho kết quả thao tác. | Theo thao tác hợp lệ; retry false |
-| `getDashboard` | `useGetDashboardQuery` · useQuery | params + query + success/error JSON; thêm refinement ID/snapshot/citation/state | ['analytics', viewerId, 'getDashboard', normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 60.000 ms |
-| `getDeadlineRisks` | `useGetDeadlineRisksQuery` · useQuery | params + query + success/error JSON; thêm refinement ID/snapshot/citation/state | ['analytics', viewerId, 'getDeadlineRisks', normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 60.000 ms |
-| `getWorkload` | `useGetWorkloadQuery` · useQuery | params + query + success/error JSON; thêm refinement ID/snapshot/citation/state | ['analytics', viewerId, 'getWorkload', normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 60.000 ms |
-| `getBottlenecks` | `useGetBottlenecksQuery` · useQuery | params + query + success/error JSON; thêm refinement ID/snapshot/citation/state | ['analytics', viewerId, 'getBottlenecks', normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 60.000 ms |
-| `getAnalysisSummary` | `useGetAnalysisSummaryQuery` · useQuery | params + query + success/error JSON; thêm refinement ID/snapshot/citation/state | ['analytics', viewerId, 'getAnalysisSummary', normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 60.000 ms |
+| `getAttachment` | `useGetAttachmentQuery` · useQuery | params + query + success/error JSON | ['attachments', viewerId, 'getAttachment', attachmentId] | Phiên/ID và phụ thuộc dữ liệu; staleTime 10.000 ms |
+| `downloadAttachment` | `useDownloadAttachment` · GET binary theo click; pending/error cục bộ, không cache Blob | params + error JSON; success: status/Content-Type/Blob | Không có query key cho kết quả thao tác. | Theo thao tác hợp lệ; retry false |
+| `getDashboard` | `useGetDashboardQuery` · useQuery | params + query + success/error JSON; thêm refinement ID/snapshot/citation/state | ['analytics', viewerId, 'getDashboard', normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 10.000 ms |
+| `getDeadlineRisks` | `useGetDeadlineRisksQuery` · useQuery | params + query + success/error JSON; thêm refinement ID/snapshot/citation/state | ['analytics', viewerId, 'getDeadlineRisks', normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 10.000 ms |
+| `getWorkload` | `useGetWorkloadQuery` · useQuery | params + query + success/error JSON; thêm refinement ID/snapshot/citation/state | ['analytics', viewerId, 'getWorkload', normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 10.000 ms |
+| `getBottlenecks` | `useGetBottlenecksQuery` · useQuery | params + query + success/error JSON; thêm refinement ID/snapshot/citation/state | ['analytics', viewerId, 'getBottlenecks', normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 10.000 ms |
+| `getAnalysisSummary` | `useGetAnalysisSummaryQuery` · useQuery | params + query + success/error JSON; thêm refinement ID/snapshot/citation/state | ['analytics', viewerId, 'getAnalysisSummary', normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 10.000 ms |
 | `createAnalysisJob` | `useCreateAnalysisJobMutation` · useMutation | params + query + body + success/error JSON; thêm refinement ID/snapshot/citation/state | Không có query key cho kết quả thao tác. Nhóm làm mới: analysis-detail, analytics-jobs | Một REUSE_OR_CREATE khi mở chi tiết nếu NOT_REQUESTED và allowed; không tự thử lại sau FAILED |
-| `getAnalysisJob` | `useGetAnalysisJobQuery` · useQuery | params + query + success/error JSON; thêm refinement ID/snapshot/citation/state | ['analytics', viewerId, 'job', jobId] | Phiên/quyền/jobId hợp lệ: đọc lần đầu cả khi chưa biết status; chỉ poll QUEUED/RUNNING theo pollAfterMs |
-| `listAlerts` | `useListAlertsQuery` · useQuery | params + query + success/error JSON | ['alerts', viewerId, 'listAlerts', normalizedQuery] | Phiên/ID/filter/quyền hợp lệ; staleTime 30.000 ms |
-| `getAlert` | `useGetAlertQuery` · useQuery | params + query + success/error JSON | ['alerts', viewerId, 'getAlert', alertId] | Phiên/ID/filter/quyền hợp lệ; staleTime 10.000 ms |
+| `getAnalysisJob` | `useGetAnalysisJobQuery` · useQuery | params + query + success/error JSON; thêm refinement ID/snapshot/citation/state | ['analytics', viewerId, 'getAnalysisJob', jobId] | Phiên/jobId hợp lệ: đọc lần đầu cả khi chưa biết status; chỉ poll QUEUED/RUNNING mỗi 2 giây khi đang chạy |
+| `listAlerts` | `useListAlertsQuery` · useQuery | params + query + success/error JSON | ['alerts', viewerId, 'listAlerts', normalizedQuery] | Phiên/ID và phụ thuộc dữ liệu; staleTime 30.000 ms |
+| `getAlert` | `useGetAlertQuery` · useQuery | params + query + success/error JSON | ['alerts', viewerId, 'getAlert', alertId] | Phiên/ID và phụ thuộc dữ liệu; staleTime 10.000 ms |
 | `updateAlert` | `useUpdateAlertMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: alerts, analytics | Theo thao tác hợp lệ; retry false |
-| `getAnalysisDetail` | `useGetAnalysisDetailQuery` · useQuery | params + query + success/error JSON; thêm refinement ID/snapshot/citation/state | ['analytics', viewerId, 'detail', analysisId] | enabled khi mở S43 và analysisId hợp lệ; staleTime 0; giữ số liệu khi AI cập nhật |
+| `getAnalysisDetail` | `useGetAnalysisDetailQuery` · useQuery | params + query + success/error JSON; thêm refinement ID/snapshot/citation/state | ['analytics', viewerId, 'getAnalysisDetail', analysisId] | enabled khi mở S43 và analysisId hợp lệ; staleTime 0; giữ số liệu khi AI cập nhật |
 | `createAnalysisFeedback` | `useCreateAnalysisFeedbackMutation` · useMutation | params + query + strict body + success/error JSON; kiểm tra actor/analysis/snapshot | Không có query key; refetch đúng detail của người xem | Click xác nhận/bác bỏ BOTTLENECK, CURRENT, canSubmit; retry=false; Idempotency-Key |
-| `listAnalyticsFilterOptions` | `useListAnalyticsFilterOptionsQuery` · useQuery | strict params/query + Page<EntityLabel> success/error JSON | ['analytics-options', viewerId, normalizedQuery] | Phiên/quyền/query hợp lệ; staleTime 60.000 ms; search/page theo server |
+| `listAnalyticsFilterOptions` | `useListAnalyticsFilterOptionsQuery` · useQuery | strict params/query + Page<EntityLabel> success/error JSON | ['analytics-options', viewerId, normalizedQuery] | Phiên/quyền/query hợp lệ; staleTime 30.000 ms; search/page theo server |
+
+| `updateProfile` | `useUpdateProfileMutation` | multipart whitelist + SessionDTO | Cập nhật auth.getSession; invalidate dữ liệu cùng viewer | If-Match từ user.version; giữ draft/crop khi 412 |
+| `changePassword` | `useChangePasswordMutation` | currentPassword/newPassword + kết quả ok | Không lưu mật khẩu trong Query cache | Click; không If-Match, có idempotency |
+| `getProfile` | `useGetProfileQuery` | userId + hồ sơ nhận diện/email | ['users', viewerId, 'getProfile', userId] | Phiên/ID; staleTime 0 ms |
+| `getAvatar` | Browser tải URL ảnh từ DTO | avatarId ở handler; binary ảnh | URL ảnh có ID riêng; không Query cache Blob | GET /api/avatars/:avatarId; không có service/hook chuyển tiếp |
 
 ## Từ nhóm invalidation sang query thực tế
 
@@ -129,7 +135,7 @@ Time-log mutation còn phải làm mới report-preview của người ghi trong
 - logout thực hiện API rồi dọn phiên; nếu request lỗi vẫn dọn dữ liệu client theo lựa chọn đăng xuất, đồng thời thể hiện nếu BE chưa xác nhận thu hồi.
 - uploadAttachment dùng useMutation; validate File theo getUploadPolicy. Không hiển thị phần trăm giả nếu transport không cung cấp tiến trình thật. upload thành công lấy attachmentId READY.
 - downloadAttachment dùng useMutation gọi GET khi click, response Blob dùng ngắn hạn rồi giải phóng object URL; không cache toàn bộ tệp.
-- createAnalysisJob chỉ tạo lời diễn giải cho snapshot đã có. getAnalysisJob poll theo pollAfterMs và tối đa 2 phút trong một lượt theo dõi; terminal refetch detail đúng analysisId. Quá thời gian theo dõi chỉ tạm dừng, không tự gán FAILED.
+- createAnalysisJob chỉ tạo lời diễn giải cho snapshot đã có. getAnalysisJob poll mỗi 2 giây khi đang chạy và tối đa 2 phút trong một lượt theo dõi; terminal refetch detail đúng analysisId. Quá thời gian theo dõi chỉ tạm dừng, không tự gán FAILED.
 - refreshReportDraft là POST trả projection đọc nên dùng useMutation; kết quả dùng để cập nhật preview nháp sau validate, không thay snapshot đã gửi.
 
 ## Nguồn kỹ thuật đã đối chiếu
@@ -143,7 +149,7 @@ Các lựa chọn staleTime, tên key/hook, thời gian poll và phạm vi inval
 
 ## Cache và luồng LLM trên S43
 
-1. Click analysisRef → GET detail bằng key ['analytics', viewerId, 'detail', analysisId]. Không tạo job trong queryFn/select hoặc mỗi lần refetch.
+1. Click analysisRef → GET detail bằng key ['analytics', viewerId, 'getAnalysisDetail', analysisId]. Không tạo job trong queryFn/select hoặc mỗi lần refetch.
 2. READY hiển thị lastSuccess ngay; QUEUED/RUNNING theo dõi activeJobId; NOT_REQUESTED+generation.allowed kích hoạt đúng một mutation REUSE_OR_CREATE cho lượt mở chủ động. Dùng mutex/attempt key ổn định qua React StrictMode; BE coalesce và idempotency là lớp đảm bảo cuối.
 3. FAILED/UNAVAILABLE/OUTDATED không tự tạo lại. Chỉ nút Thử lại/Phân tích lại hoặc Xem dữ liệu mới mới bắt đầu thao tác được đặc tả. Refocus/tab mount/đổi layout không phải lý do phát sinh thêm lượt gọi LLM.
 4. Job trả kết quả snapshot cũ sau khi người dùng đã mở analysisId khác: chỉ cập nhật cache key của analysisId cũ; không ghép narrative cũ với metrics mới. Dùng AbortSignal cho request đọc, không coi abort ở FE là hủy job BE.

@@ -5,6 +5,10 @@ import { DataTable } from "@/components/ui/page";
 import { ReportsPage } from "@/features/reports/components/reports-page";
 import { UsersPage } from "@/features/users/components/users-page";
 import { UserEditorPage } from "@/features/users/components/user-editor-page";
+import { usersService } from "@/features/users/api/users.service";
+import { usersKeys } from "@/features/users/api/users.keys";
+import { organizationService } from "@/features/organization/api/organization.service";
+import { ProjectsPage } from "@/features/projects/components/projects-page";
 import { MemberProfilePage } from "@/features/users/components/member-profile-page";
 import { ReviewsPage } from "@/features/submissions/components/reviews-page";
 import { OrganizationPage } from "@/features/organization/components/organization-page";
@@ -20,10 +24,12 @@ import { authService } from "@/features/auth/api/auth.service";
 import { authKeys } from "@/features/auth/api/auth.keys";
 import { type SessionDto } from "@/features/auth/types/auth.types";
 import { useListProjectMembersQuery } from "@/features/project-members/hooks/use-project-members-queries";
+import { ProjectMembersPage } from "@/features/project-members/components/project-members-page";
+import { projectMembersService } from "@/features/project-members/api/project-members.service";
 import { reportsService } from "@/features/reports/api/reports.service";
 import { ReportPage } from "@/features/reports/components/report-page";
-import { SubmitResultDialog } from "@/features/submissions/components/submit-result-dialog";
 import { ReviewForm } from "@/features/submissions/components/review-form";
+import { submissionsService } from "@/features/submissions/api/submissions.service";
 import { SubmissionDetailPage } from "@/features/submissions/components/submission-detail-page";
 import { TaskHistoryPage } from "@/features/tasks/components/task-history-page";
 import { TaskDetailPage } from "@/features/tasks/components/task-detail-page";
@@ -32,7 +38,17 @@ import { TaskShell } from "@/features/tasks/components/task-shell";
 import { tasksKeys } from "@/features/tasks/api/tasks.keys";
 import { tasksService } from "@/features/tasks/api/tasks.service";
 import { TaskEditorPage } from "@/features/tasks/components/task-editor-page";
+import { useUpdateTaskMutation } from "@/features/tasks/hooks/use-tasks-mutations";
+import { timeLogsService } from "@/features/time-logs/api/time-logs.service";
+import { AlertDetailPage } from "@/features/alerts/components/alert-detail-page";
+import { alertsService } from "@/features/alerts/api/alerts.service";
+import { alertsKeys } from "@/features/alerts/api/alerts.keys";
+import { useGetAlertQuery } from "@/features/alerts/hooks/use-alerts-queries";
+import { analyticsKeys } from "@/features/analytics/api/analytics.keys";
+import { useGetAnalysisDetailQuery } from "@/features/analytics/hooks/use-analytics-queries";
+import { DashboardPage } from "@/features/analytics/components/dashboard-page";
 import { ProjectShell } from "@/features/projects/components/project-shell";
+import { ProjectEditorPage } from "@/features/projects/components/project-editor-page";
 import { WorkspaceOverview } from "@/features/projects/components/workspace-overview";
 import {
   useGetTaskQuery,
@@ -53,6 +69,7 @@ import {
 import {
   act,
   cleanup,
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -82,7 +99,6 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 beforeAll(() => {
-  vi.stubGlobal("crypto", webcrypto);
   server.listen({ onUnhandledRequest: "error" });
 });
 afterAll(() => {
@@ -90,6 +106,7 @@ afterAll(() => {
   vi.unstubAllGlobals();
 });
 beforeEach(() => {
+  vi.stubGlobal("crypto", webcrypto);
   resetMockState();
   server.resetHandlers();
   token.set(null);
@@ -104,9 +121,46 @@ afterEach(() => {
   cleanup();
   for (const client of clients) client.clear();
   clients.length = 0;
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 const login = (username: string) =>
   authService.login({ username, password: "Mock@12345" });
+// JSDOM has no image decoder, layout or canvas; keep the cropper and HTTP real.
+function avatarBrowser() {
+  const create = vi.fn(() => `blob:http://localhost/${crypto.randomUUID()}`);
+  const revoke = vi.fn();
+  vi.stubGlobal(
+    "URL",
+    class extends URL {
+      static createObjectURL = create;
+      static revokeObjectURL = revoke;
+    },
+  );
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
+    new DOMRect(0, 0, 400, 400),
+  );
+  vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(
+    800,
+  );
+  vi.spyOn(HTMLImageElement.prototype, "naturalHeight", "get").mockReturnValue(
+    400,
+  );
+  const draw = vi.fn();
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+    drawImage: draw,
+  } as unknown as CanvasRenderingContext2D);
+  const bytes = new TextEncoder().encode("RIFF0000WEBPcropped");
+  const encode = vi
+    .spyOn(HTMLCanvasElement.prototype, "toBlob")
+    .mockImplementation((done) =>
+      done(new Blob([bytes], { type: "image/webp" })),
+    );
+  const file = new File(["original image"], "avatar.png", {
+    type: "image/png",
+  });
+  return { create, revoke, draw, encode, file, bytes };
+}
 it("shows loading feedback before listing actual start dates from the task response", async () => {
   const session = await login("minh");
   const result = await tasksService.listTasks();
@@ -273,8 +327,9 @@ it("edits the signed-in profile through HTTP and immediately updates the avatar 
     version: session.user.version + 2,
   });
 });
-it("uploads the selected avatar with the profile and renders the returned image URL", async () => {
+it("drags and zooms an avatar, uploads only the cropped image and updates the avatar menu", async () => {
   const session = await login("admin");
+  const browser = avatarBrowser();
   show(
     <WorkspaceShell>
       <ProfilePage />
@@ -283,17 +338,51 @@ it("uploads the selected avatar with the profile and renders the returned image 
   );
   const user = userEvent.setup();
   await user.click(screen.getByRole("tab", { name: "Ảnh đại diện" }));
-  const file = new File(
-    [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0])],
-    "avatar.png",
-    { type: "image/png" },
+  await user.upload(screen.getByLabelText("Chọn ảnh"), browser.file);
+  const dialog = await screen.findByRole("dialog", { name: "Chỉnh sửa ảnh" });
+  const image = within(dialog).getByAltText("Ảnh đang cắt");
+  fireEvent.load(image);
+  fireEvent.change(
+    within(dialog).getByRole("slider", { name: "Thu phóng ảnh" }),
+    { target: { value: "2" } },
   );
-  await user.upload(screen.getByLabelText("Chọn ảnh"), file);
-  expect(screen.getByText("avatar.png")).toBeTruthy();
-  await user.click(screen.getByRole("button", { name: "Cập nhật ảnh" }));
-  await screen.findByRole("button", { name: "Lưu hồ sơ" });
+  const initial = image.style.transform;
+  fireEvent.mouseDown(image.parentElement!, { clientX: 200, clientY: 200 });
+  fireEvent.mouseMove(document, { clientX: 260, clientY: 200 });
+  await waitFor(() => expect(image.style.transform).not.toBe(initial));
+  fireEvent.mouseUp(document);
+  expect(useUI.getState().dirtyForms).toEqual([]);
+  expect((await authService.getSession()).user.version).toBe(
+    session.user.version,
+  );
+  await user.click(within(dialog).getByRole("button", { name: "Cập nhật" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(browser.draw).toHaveBeenCalledWith(
+    image,
+    240,
+    100,
+    200,
+    200,
+    0,
+    0,
+    512,
+    512,
+  );
+  expect(browser.revoke).toHaveBeenCalledWith(
+    browser.create.mock.results[0].value,
+  );
+  expect(
+    screen
+      .getByRole("tab", { name: "Ảnh đại diện" })
+      .getAttribute("aria-selected"),
+  ).toBe("true");
   const updated = await authService.getSession();
   expect(updated.user.avatarUrl).toBeTruthy();
+  const uploaded = await fetch(`http://gateway.test${updated.user.avatarUrl}`);
+  expect(uploaded.headers.get("content-type")).toBe("image/webp");
+  expect(Array.from(new Uint8Array(await uploaded.arrayBuffer()))).toEqual(
+    Array.from(browser.bytes),
+  );
   const src = screen
     .getByRole("button", { name: "Mở menu tài khoản" })
     .querySelector("img")
@@ -331,7 +420,7 @@ it("retains a profile draft through a version conflict and saves after compariso
     "Bản đang sửa",
   );
 });
-it("explains an oversized avatar and asks before discarding the selected file", async () => {
+it("rejects oversized avatars before cropping and leaves the avatar section without a discard prompt", async () => {
   const session = await login("lan");
   show(<ProfilePage />, session);
   const user = userEvent.setup();
@@ -342,27 +431,103 @@ it("explains an oversized avatar and asks before discarding the selected file", 
       type: "image/png",
     }),
   );
-  await user.click(screen.getByRole("button", { name: "Cập nhật ảnh" }));
   await screen.findByText("Ảnh không được vượt quá 2 MB.");
+  expect(screen.queryByRole("dialog")).toBeNull();
   expect((await authService.getSession()).user.version).toBe(
     session.user.version,
   );
   await user.click(screen.getByRole("tab", { name: "Thông tin cá nhân" }));
-  const dialog = await screen.findByRole("alertdialog");
-  await user.click(within(dialog).getByRole("button", { name: "Ở lại" }));
-  expect(screen.getByLabelText("Chọn ảnh")).toHaveProperty("files.length", 1);
-  expect(
-    screen
-      .getByRole("tab", { name: "Ảnh đại diện" })
-      .getAttribute("aria-selected"),
-  ).toBe("true");
-  await user.click(screen.getByRole("tab", { name: "Thông tin cá nhân" }));
+  await screen.findByRole("button", { name: "Lưu hồ sơ" });
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+});
+it("cancels avatar cropping without saving or prompting and allows selecting the same file again", async () => {
+  const session = await login("lan");
+  const browser = avatarBrowser();
+  show(<ProfilePage />, session);
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("tab", { name: "Ảnh đại diện" }));
+  await user.upload(screen.getByLabelText("Chọn ảnh"), browser.file);
   await user.click(
-    within(await screen.findByRole("alertdialog")).getByRole("button", {
-      name: "Bỏ thay đổi",
+    within(await screen.findByRole("dialog")).getByRole("button", {
+      name: "Hủy",
     }),
   );
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+  expect(browser.revoke).toHaveBeenCalledTimes(1);
+  await user.upload(screen.getByLabelText("Chọn ảnh"), browser.file);
+  await screen.findByRole("dialog");
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(browser.revoke).toHaveBeenCalledTimes(2);
+  expect(browser.encode).not.toHaveBeenCalled();
+  expect((await authService.getSession()).user.version).toBe(
+    session.user.version,
+  );
+  expect(useUI.getState().dirtyForms).toEqual([]);
+  await user.click(screen.getByRole("tab", { name: "Thông tin cá nhân" }));
   await screen.findByRole("button", { name: "Lưu hồ sơ" });
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+});
+it("keeps the crop and zoom after a version conflict and retries with the accepted profile version", async () => {
+  const session = await login("lan");
+  const browser = avatarBrowser();
+  show(<ProfilePage />, session);
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("tab", { name: "Ảnh đại diện" }));
+  await user.upload(screen.getByLabelText("Chọn ảnh"), browser.file);
+  const dialog = await screen.findByRole("dialog");
+  fireEvent.load(within(dialog).getByAltText("Ảnh đang cắt"));
+  const slider = within(dialog).getByRole("slider", { name: "Thu phóng ảnh" });
+  fireEvent.change(slider, { target: { value: "1.5" } });
+  await authService.updateProfile(
+    { displayName: "Tên mới từ phiên khác" },
+    { version: session.user.version, key: crypto.randomUUID() },
+  );
+  await user.click(within(dialog).getByRole("button", { name: "Cập nhật" }));
+  await user.click(
+    await screen.findByRole("button", { name: "Tải bản mới để đối chiếu" }),
+  );
+  await user.click(
+    await screen.findByRole("button", {
+      name: "Đã đối chiếu, tiếp tục chỉnh sửa",
+    }),
+  );
+  expect(slider).toHaveProperty("value", "1.5");
+  expect(browser.revoke).not.toHaveBeenCalled();
+  await user.click(within(dialog).getByRole("button", { name: "Cập nhật" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect((await authService.getSession()).user).toMatchObject({
+    displayName: "Tên mới từ phiên khác",
+    version: session.user.version + 2,
+  });
+  expect(browser.draw.mock.calls[0]).toEqual(browser.draw.mock.calls[1]);
+});
+it("retains the selected crop when image encoding fails and permits retrying", async () => {
+  const session = await login("lan");
+  const browser = avatarBrowser();
+  browser.encode.mockImplementationOnce((done) => done(null));
+  show(<ProfilePage />, session);
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("tab", { name: "Ảnh đại diện" }));
+  await user.upload(screen.getByLabelText("Chọn ảnh"), browser.file);
+  const dialog = await screen.findByRole("dialog");
+  fireEvent.load(within(dialog).getByAltText("Ảnh đang cắt"));
+  fireEvent.change(within(dialog).getByRole("slider"), {
+    target: { value: "1.5" },
+  });
+  await user.click(within(dialog).getByRole("button", { name: "Cập nhật" }));
+  await within(dialog).findByText("Không cắt được ảnh. Vui lòng thử lại.");
+  expect((await authService.getSession()).user.version).toBe(
+    session.user.version,
+  );
+  expect(browser.revoke).not.toHaveBeenCalled();
+  expect(within(dialog).getByRole("slider")).toHaveProperty("value", "1.5");
+  await user.click(within(dialog).getByRole("button", { name: "Cập nhật" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect((await authService.getSession()).user.version).toBe(
+    session.user.version + 1,
+  );
 });
 it("changes the password in its own profile section and keeps credentials out of mutation state", async () => {
   const session = await login("lan");
@@ -663,7 +828,7 @@ it("groups navigation, keeps nested routes active and preserves links when the s
   await user.click(screen.getByRole("button", { name: "Công việc" }));
   expect(screen.getByRole("link", { name: "Dự án" })).toBeTruthy();
 });
-it("opens an accessible mobile menu, filters permissions and restores focus after Escape", async () => {
+it("opens an accessible mobile menu, filters roles and restores focus after Escape", async () => {
   const session = await login("lan");
   show(
     <WorkspaceShell>
@@ -731,7 +896,12 @@ it("keeps account actions in the avatar menu and shows the signed-in profile", a
 it("preserves an unsaved form when cancelling a mode switch and applies the selected mode after confirmation", async () => {
   const session = await login("minh");
   show(
-    <ReviewForm taskId="t-4" submissionId="s-pending" version={1} />,
+    <ReviewForm
+      submission={await submissionsService.getSubmission("t-4", "s-pending")}
+      reload={async () => ({
+        data: await submissionsService.getSubmission("t-4", "s-pending"),
+      })}
+    />,
     session,
   );
   const user = userEvent.setup();
@@ -790,7 +960,7 @@ it("selects submissions on a nested submission detail route", async () => {
   expect(select).toHaveProperty("value", "/tasks/t-4/submissions");
   expect(screen.queryByRole("link", { name: "Các lần nộp" })).toBeNull();
 });
-it("selects project history from the URL and keeps permission-dependent navigation scoped", async () => {
+it("selects project history from the URL without a separate permissions page", async () => {
   const session = await login("admin");
   history.replaceState(null, "", "/projects/p-main?tab=history&page=2");
   show(
@@ -808,6 +978,62 @@ it("selects project history from the URL and keeps permission-dependent navigati
   expect(screen.queryByText(/Kế hoạch dự án/)).toBeNull();
   await userEvent.setup().selectOptions(select, "/tasks?projectId=p-main");
   expect(nav.push).toHaveBeenCalledWith("/tasks?projectId=p-main");
+});
+it("changes a project role from the member list and preserves the draft through a version conflict", async () => {
+  db.users.find((user) => user.id === "u-lan")!.systemRole = "MANAGER";
+  const session = await login("minh");
+  history.replaceState(null, "", "/projects/p-main/members");
+  show(<ProjectMembersPage projectId="p-main" />, session);
+  const row = (
+    await screen.findByRole("link", {
+      name: "Xem hồ sơ công khai của Trần Lan",
+    })
+  ).closest("tr")!;
+  expect(
+    screen.queryByRole("columnheader", { name: "Quyền nghiệp vụ" }),
+  ).toBeNull();
+  const owner = screen
+    .getByRole("link", { name: "Xem hồ sơ công khai của Nguyễn Minh" })
+    .closest("tr")!;
+  expect(
+    within(owner).queryByRole("button", { name: "Đổi vai trò" }),
+  ).toBeNull();
+  const user = userEvent.setup();
+  await user.click(within(row).getByRole("button", { name: "Đổi vai trò" }));
+  const dialog = within(
+    await screen.findByRole("dialog", { name: "Đổi vai trò thành viên" }),
+  );
+  const select = dialog.getByRole("combobox", { name: "Vai trò dự án *" });
+  await user.selectOptions(select, "MANAGER");
+  await user.type(
+    dialog.getByRole("textbox", { name: "Lý do thay đổi *" }),
+    "Hỗ trợ quản lý dự án",
+  );
+  const member = db.members.find(
+    (member) => member.projectId === "p-main" && member.userId === "u-lan",
+  )!;
+  await projectMembersService.updateProjectMemberRole(
+    "p-main",
+    member.id,
+    { projectRole: "MEMBER", reason: "Cập nhật đồng thời" },
+    { version: member.version, key: "concurrent-role" },
+  );
+  await user.click(dialog.getByRole("button", { name: "Lưu vai trò" }));
+  await user.click(
+    await dialog.findByRole("button", { name: "Tải bản mới để đối chiếu" }),
+  );
+  await dialog.findByText("Bản mới nhất — nội dung bạn nhập được giữ lại");
+  expect(select).toHaveProperty("value", "MANAGER");
+  await user.click(
+    dialog.getByRole("button", { name: "Đã đối chiếu, tiếp tục chỉnh sửa" }),
+  );
+  await user.click(dialog.getByRole("button", { name: "Lưu vai trò" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  const saved = (
+    await projectMembersService.listProjectMembers("p-main")
+  ).items.find((member) => member.userId === "u-lan")!;
+  expect(saved.projectRole).toBe("MANAGER");
+  expect(saved).not.toHaveProperty("permissions");
 });
 it("keeps a task edit draft when cancelling dropdown navigation and leaves only after confirmation", async () => {
   const session = await login("minh");
@@ -1128,15 +1354,9 @@ it("displays the upload policy from HTTP and rejects oversized files before post
   server.use(
     http.get("*/api/attachments/policy", () =>
       HttpResponse.json({
-        data: {
-          maxBytes: 1024 ** 2,
-          maxAttachments: 2,
-          allowedMimeTypes: ["text/plain"],
-        },
-        meta: {
-          requestId: "upload-policy",
-          serverTime: "2026-10-24T00:00:00.000Z",
-        },
+        maxBytes: 1024 ** 2,
+        maxAttachments: 2,
+        allowedMimeTypes: ["text/plain"],
       }),
     ),
   );
@@ -1258,7 +1478,7 @@ it("shares one cache entry and HTTP request for equivalent normalized task filte
     server.events.removeListener("request:start", observe);
   }
 });
-it("uses normalized opaque IDs and empty filters for both cache keys and HTTP paths", async () => {
+it("uses received IDs for cache and HTTP, skips empty IDs and reports malformed IDs through the API", async () => {
   const session = await login("minh");
   const paths: string[] = [];
   const observe = ({ request }: { request: Request }) => {
@@ -1266,7 +1486,15 @@ it("uses normalized opaque IDs and empty filters for both cache keys and HTTP pa
   };
   function Task({ id }: { id: string }) {
     const query = useGetTaskQuery(id);
-    return <span>{query.data ? "task-ready" : "task-waiting"}</span>;
+    return (
+      <span>
+        {query.isError
+          ? "task-error"
+          : query.data
+            ? "task-ready"
+            : "task-waiting"}
+      </span>
+    );
   }
   function Members({ id, q }: { id: string; q?: string }) {
     const query = useListProjectMembersQuery(id, { q });
@@ -1276,11 +1504,11 @@ it("uses normalized opaque IDs and empty filters for both cache keys and HTTP pa
   try {
     const client = show(
       <>
-        <Task id=" t-3 " />
+        <Task id="t-3" />
         <Task id="t-3" />
         <Task id="" />
         <Task id={"x".repeat(101)} />
-        <Members id=" p-main " q="   " />
+        <Members id="p-main" q="   " />
         <Members id="p-main" />
       </>,
       session,
@@ -1291,13 +1519,18 @@ it("uses normalized opaque IDs and empty filters for both cache keys and HTTP pa
     await waitFor(() =>
       expect(screen.getAllByText("members-ready")).toHaveLength(2),
     );
+    await screen.findByText("task-error");
     expect(paths).toEqual(
       expect.arrayContaining([
         "/api/tasks/t-3",
+        `/api/tasks/${"x".repeat(101)}`,
         "/api/projects/p-main/members",
       ]),
     );
-    expect(paths).toHaveLength(2);
+    expect(paths).toHaveLength(3);
+    expect(
+      client.getQueryState(tasksKeys.getTask(session.user.id, "x".repeat(101))),
+    ).toMatchObject({ status: "error", error: { status: 422 } });
     expect(
       client
         .getQueryCache()
@@ -1448,7 +1681,12 @@ it("submits the current assignee's result from the dialog through HTTP and relea
   const session = await login("lan");
   const user = userEvent.setup();
   history.replaceState(null, "", "/tasks/t-3#submit");
-  show(<SubmitResultDialog taskId="t-3" />, session);
+  show(
+    <TaskShell taskId="t-3">
+      <p>Công việc</p>
+    </TaskShell>,
+    session,
+  );
   await user.type(
     await screen.findByLabelText("Tóm tắt kết quả *"),
     "Đã hoàn tất biểu mẫu và đối chiếu tiêu chí.",
@@ -1471,7 +1709,12 @@ it("keeps submission text after a stale version conflict and retries only after 
   const session = await login("lan");
   const user = userEvent.setup();
   history.replaceState(null, "", "/tasks/t-3#submit");
-  const client = show(<SubmitResultDialog taskId="t-3" />, session);
+  const client = show(
+    <TaskShell taskId="t-3">
+      <p>Công việc</p>
+    </TaskShell>,
+    session,
+  );
   const input = await screen.findByLabelText("Tóm tắt kết quả *");
   await user.type(input, "Kết quả được giữ khi có xung đột.");
   await act(async () => {
@@ -1505,3 +1748,717 @@ it("keeps submission text after a stale version conflict and retries only after 
     expect(db.tasks.find((t) => t.id === "t-3")?.status).toBe("PENDING_REVIEW"),
   );
 });
+
+it("returns invalid list filters as an HTTP error instead of leaving a query disabled", async () => {
+  const session = await login("minh");
+  function InvalidList() {
+    const query = useListTasksQuery({ pageSize: 101 });
+    return <span>{query.isError ? query.error.message : "waiting"}</span>;
+  }
+  show(<InvalidList />, session);
+  await waitFor(() => expect(screen.queryByText("waiting")).toBeNull());
+  expect(screen.getByText(/Thông tin/)).toBeTruthy();
+});
+
+it("assigns a task without an unnecessary handover reason", async () => {
+  const session = await login("minh");
+  history.replaceState(null, "", "/tasks/t-1");
+  show(
+    <TaskShell taskId="t-1">
+      <span />
+    </TaskShell>,
+    session,
+  );
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Giao việc" }));
+  await user.selectOptions(
+    await screen.findByLabelText("Người nhận mới *"),
+    "u-lan",
+  );
+  await user.click(screen.getByRole("button", { name: "Xác nhận phân công" }));
+  await waitFor(() =>
+    expect(db.tasks.find((task) => task.id === "t-1")).toMatchObject({
+      assigneeId: "u-lan",
+      status: "TODO",
+      version: 2,
+    }),
+  );
+  await waitFor(() => expect(useUI.getState().dirtyForms).toEqual([]));
+});
+
+it("starts and pauses a task through the keyed action form", async () => {
+  const session = await login("lan");
+  history.replaceState(null, "", "/tasks/t-2");
+  show(
+    <TaskShell taskId="t-2">
+      <span />
+    </TaskShell>,
+    session,
+  );
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Bắt đầu" }));
+  await user.click(await screen.findByRole("button", { name: "Xác nhận" }));
+  await user.click(
+    await screen.findByRole("button", { name: "Tạm dừng / hủy" }),
+  );
+  const firstStartedAt = db.tasks.find(
+    (task) => task.id === "t-2",
+  )!.firstStartedAt;
+  expect(firstStartedAt).toBeTruthy();
+  await user.type(
+    await screen.findByLabelText("Lý do tạm dừng *"),
+    "Chờ xác nhận yêu cầu.",
+  );
+  await user.click(screen.getByRole("button", { name: "Xác nhận" }));
+  await screen.findByRole("button", { name: "Bắt đầu" });
+  expect(db.tasks.find((task) => task.id === "t-2")).toMatchObject({
+    status: "TODO",
+    firstStartedAt,
+    version: 3,
+  });
+});
+
+it("creates, edits and voids a time log while retaining the correct version source", async () => {
+  const session = await login("lan");
+  const task = await tasksService.getTask("t-2");
+  const started = await tasksService.startTask(task.id, {
+    version: task.version,
+    key: "form-start",
+  });
+  history.replaceState(null, "", "/tasks/t-2#time-log");
+  show(
+    <TaskShell taskId={task.id}>
+      <p>Công việc</p>
+    </TaskShell>,
+    session,
+  );
+  const user = userEvent.setup();
+  const date = await screen.findByLabelText("Ngày làm việc (Việt Nam) *");
+  fireEvent.change(date, {
+    target: { value: started.firstStartedAt!.slice(0, 10) },
+  });
+  await user.type(screen.getByLabelText("Số phút *"), "30");
+  await user.type(
+    screen.getByLabelText("Nội dung thực hiện *"),
+    "Kiểm tra quyền truy cập.",
+  );
+  await user.click(screen.getByRole("button", { name: "Lưu nhật ký" }));
+  await waitFor(() =>
+    expect(nav.push).toHaveBeenCalledWith("/tasks/t-2/time-logs"),
+  );
+  const log = (await timeLogsService.listTimeLogs(task.id)).items[0];
+  expect(log.minutes).toBe(30);
+  async function reopen() {
+    await act(async () => {
+      history.replaceState(null, "", `/tasks/t-2?timeLogId=${log.id}#time-log`);
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+  }
+  await reopen();
+  const minutes = await screen.findByLabelText("Số phút *");
+  await user.clear(minutes);
+  await user.type(minutes, "45");
+  await user.type(
+    screen.getByLabelText("Lý do chỉnh sửa *"),
+    "Bổ sung thời gian kiểm tra.",
+  );
+  await user.click(screen.getByRole("button", { name: "Lưu nhật ký" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect((await timeLogsService.listTimeLogs(task.id)).items[0]).toMatchObject({
+    minutes: 45,
+    version: log.version + 1,
+  });
+  await reopen();
+  await user.selectOptions(await screen.findByLabelText("Thao tác"), "VOID");
+  await user.type(
+    await screen.findByLabelText("Lý do loại khỏi tổng *"),
+    "Nhật ký bị ghi trùng.",
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Xác nhận loại khỏi tổng" }),
+  );
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect((await timeLogsService.listTimeLogs(task.id)).items[0]).toMatchObject({
+    status: "VOID",
+    version: log.version + 2,
+  });
+  expect((await tasksService.getTask(task.id)).actualMinutes).toBe(0);
+});
+
+it("marks an alert as read without requiring a resolution note", async () => {
+  const session = await login("minh");
+  show(<AlertDetailPage alertId="alert-1" />, session);
+  const user = userEvent.setup();
+  await user.click(
+    await screen.findByRole("button", { name: "Cập nhật xử lý" }),
+  );
+  await user.click(screen.getByRole("button", { name: "Lưu thông tin" }));
+  await waitFor(() => expect(nav.push).toHaveBeenCalledWith("/alerts"));
+  expect((await alertsService.getAlert("alert-1")).status).toBe("READ");
+});
+
+it("reuses an idempotency key after a failed request and releases it after success", async () => {
+  const session = await login("minh");
+  const task = await tasksService.getTask("t-1");
+  const keys: string[] = [];
+  let fail = true;
+  server.use(
+    http.patch("*/api/tasks/t-1", ({ request }) => {
+      keys.push(request.headers.get("Idempotency-Key")!);
+      if (fail) {
+        fail = false;
+        return HttpResponse.error();
+      }
+    }),
+  );
+  function UpdateTask() {
+    const mutation = useUpdateTaskMutation();
+    return (
+      <button
+        disabled={mutation.isPending}
+        onClick={() =>
+          void mutation
+            .mutateAsync({
+              taskId: task.id,
+              version: task.version,
+              payload: { title: "Công việc được cập nhật an toàn" },
+            })
+            .catch(() => {})
+        }
+      >
+        {mutation.isError ? "Thử lại" : "Lưu"}
+      </button>
+    );
+  }
+  show(<UpdateTask />, session);
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Lưu" }));
+  await user.click(await screen.findByRole("button", { name: "Thử lại" }));
+  await waitFor(() =>
+    expect(db.tasks.find((value) => value.id === task.id)?.version).toBe(
+      task.version + 1,
+    ),
+  );
+  expect(keys).toHaveLength(2);
+  expect(keys[0]).toBe(keys[1]);
+  // The same input is now a new attempt; the stale version must still be rejected.
+  const save = await screen.findByRole("button", { name: "Lưu" });
+  await waitFor(() => expect(save).toHaveProperty("disabled", false));
+  await user.click(save);
+  await screen.findByRole("button", { name: "Thử lại" });
+  expect(keys).toHaveLength(3);
+  expect(keys[2]).not.toBe(keys[1]);
+  expect(db.tasks.find((value) => value.id === task.id)?.version).toBe(
+    task.version + 1,
+  );
+});
+
+it("edits only project fields shown in the form and preserves immutable legacy data", async () => {
+  const session = await login("minh");
+  const project = db.projects.find((value) => value.id === "p-main")!;
+  project.code = "x";
+  let body: unknown;
+  server.use(
+    http.patch("*/api/projects/p-main", async ({ request }) => {
+      body = await request.clone().json();
+    }),
+  );
+  show(<ProjectEditorPage projectId={project.id} />, session);
+  const user = userEvent.setup();
+  const name = await screen.findByLabelText("Tên dự án *");
+  expect(screen.queryByLabelText("Mã dự án *")).toBeNull();
+  expect(screen.queryByLabelText("Đơn vị *")).toBeNull();
+  await user.clear(name);
+  await user.type(name, "Dự án đã đổi tên");
+  await user.type(
+    screen.getByLabelText("Lý do điều chỉnh *"),
+    "Điều chỉnh tên kế hoạch.",
+  );
+  await user.click(screen.getByRole("button", { name: "Lưu kế hoạch" }));
+  await waitFor(() =>
+    expect(nav.push).toHaveBeenCalledWith("/projects/p-main"),
+  );
+  expect(body).toEqual({
+    name: "Dự án đã đổi tên",
+    changeReason: "Điều chỉnh tên kế hoạch.",
+  });
+  expect(project.code).toBe("x");
+});
+
+it("shows management pages from role even without individually assigned page permissions", async () => {
+  const session = await login("minh");
+  session.projectAccess = [];
+  history.replaceState(null, "", "/workspace");
+  show(
+    <WorkspaceShell>
+      <span>Không gian làm việc</span>
+    </WorkspaceShell>,
+    session,
+  );
+  const sidebar = screen.getByRole("complementary", {
+    name: "Thanh điều hướng",
+  });
+  for (const name of [
+    "Bảng tổng quan",
+    "Phân tích & AI",
+    "Cảnh báo",
+    "Chờ nghiệm thu",
+  ])
+    expect(within(sidebar).getByRole("link", { name })).toBeTruthy();
+  expect(
+    within(sidebar).queryByRole("link", { name: "Tài khoản người dùng" }),
+  ).toBeNull();
+});
+
+it.each([
+  { username: "lan", path: "/dashboard", page: <DashboardPage /> },
+  { username: "lan", path: "/reviews", page: <ReviewsPage /> },
+  { username: "minh", path: "/admin/users", page: <UsersPage /> },
+  { username: "admin", path: "/projects/new", page: <ProjectEditorPage /> },
+])(
+  "blocks direct access to $path for $username before mounting its data queries",
+  async ({ username, path, page }) => {
+    const session = await login(username);
+    session.projectAccess = session.projectAccess.map((project) => ({
+      ...project,
+      projectRole: "OWNER",
+    }));
+    history.replaceState(null, "", path);
+    const requests: string[] = [];
+    const observe = ({ request }: { request: Request }) => {
+      requests.push(request.url);
+    };
+    server.events.on("request:start", observe);
+    try {
+      show(<WorkspaceShell>{page}</WorkspaceShell>, session);
+      expect(
+        await screen.findByText(
+          "Vai trò của bạn không được truy cập trang này.",
+        ),
+      ).toBeTruthy();
+      expect(requests).toEqual([]);
+      if (username === "lan") {
+        const sidebar = screen.getByRole("complementary", {
+          name: "Thanh điều hướng",
+        });
+        expect(
+          within(sidebar).queryByRole("link", { name: "Bảng tổng quan" }),
+        ).toBeNull();
+        expect(
+          within(sidebar).queryByRole("link", { name: "Chờ nghiệm thu" }),
+        ).toBeNull();
+      }
+    } finally {
+      server.events.removeListener("request:start", observe);
+    }
+  },
+);
+
+it("shows an API scope denial, clears old data and retains the error without refetching forever", async () => {
+  const session = await login("minh");
+  let reads = 0;
+  const observe = ({ request }: { request: Request }) => {
+    if (new URL(request.url).pathname === "/api/alerts/alert-1") reads++;
+  };
+  function AlertProbe() {
+    const query = useGetAlertQuery("alert-1");
+    return (
+      <span>
+        {query.isError
+          ? query.error.message
+          : query.data
+            ? "alert-ready"
+            : "waiting"}
+      </span>
+    );
+  }
+  server.events.on("request:start", observe);
+  try {
+    const client = show(<AlertProbe />, session);
+    await screen.findByText("alert-ready");
+    for (const member of db.members.filter(
+      (member) => member.userId === session.user.id,
+    ))
+      member.projectRole = "MEMBER";
+    await act(async () => {
+      await client.invalidateQueries({
+        queryKey: alertsKeys.getAlert(session.user.id, "alert-1"),
+      });
+    });
+    await screen.findByText(
+      "Không có quyền xem hoặc xử lý cảnh báo trong dự án.",
+    );
+    await waitFor(() => {
+      const current = client.getQueryData<SessionDto>(
+        authKeys.getSession(session.user.id),
+      );
+      expect(
+        current?.projectAccess.some(
+          (project) => project.projectRole !== "MEMBER",
+        ),
+      ).toBe(false);
+    });
+    await waitFor(() => expect(client.isFetching()).toBe(0));
+    expect(
+      client.getQueryState(alertsKeys.getAlert(session.user.id, "alert-1")),
+    ).toMatchObject({
+      status: "error",
+      data: undefined,
+      error: { status: 403 },
+    });
+    expect(reads).toBe(2);
+  } finally {
+    server.events.removeListener("request:start", observe);
+  }
+});
+
+it("retains an expired analysis error without repeatedly reloading the snapshot", async () => {
+  const session = await login("minh");
+  let reads = 0;
+  server.use(
+    http.get("*/api/analytics/details/expired", () => {
+      reads++;
+      return HttpResponse.json(
+        { code: "SNAPSHOT_EXPIRED", message: "Dữ liệu phân tích đã hết hạn." },
+        { status: 410 },
+      );
+    }),
+  );
+  function AnalysisProbe() {
+    const query = useGetAnalysisDetailQuery("expired");
+    return <span>{query.isError ? query.error.message : "waiting"}</span>;
+  }
+  const client = show(<AnalysisProbe />, session);
+  await screen.findByText("Dữ liệu phân tích đã hết hạn.");
+  await waitFor(() => expect(client.isFetching()).toBe(0));
+  expect(
+    client.getQueryState(
+      analyticsKeys.getAnalysisDetail(session.user.id, "expired"),
+    ),
+  ).toMatchObject({ status: "error", data: undefined, error: { status: 410 } });
+  expect(reads).toBe(1);
+});
+
+it("clears the previous report author and page when switching projects", async () => {
+  const session = await login("admin");
+  history.replaceState(
+    null,
+    "",
+    "/reports?projectId=p-main&authorId=u-lan&page=3&status=SUBMITTED",
+  );
+  show(<ReportsPage />, session);
+  const project = screen.getByRole("combobox", { name: "Dự án" });
+  await within(project).findByRole("option", { name: "Dự án ngoài phạm vi" });
+  await userEvent.setup().selectOptions(project, "p-other");
+  const params = new URLSearchParams(nav.replace.mock.calls.at(-1)?.[0]);
+  expect(params.get("projectId")).toBe("p-other");
+  expect(params.has("authorId")).toBe(false);
+  expect(params.has("page")).toBe(false);
+  expect(params.get("status")).toBe("SUBMITTED");
+});
+
+it("keeps project unit options available when search results are empty", async () => {
+  const session = await login("admin");
+  history.replaceState(null, "", "/projects?q=no-project-matches");
+  show(<ProjectsPage />, session);
+  await screen.findByText("Chưa có dữ liệu");
+  const unit = screen.getByRole("combobox", { name: "Đơn vị" });
+  expect(
+    await within(unit).findByRole("option", { name: "Phòng kỹ thuật" }),
+  ).toBeTruthy();
+  expect(
+    within(unit).getByRole("option", { name: "Phòng sản phẩm" }),
+  ).toBeTruthy();
+});
+
+it("shows an owner lookup failure before opening the project edit form", async () => {
+  const session = await login("minh");
+  server.use(
+    http.get("*/api/projects/p-main/members", () =>
+      HttpResponse.json(
+        { code: "UNAVAILABLE", message: "Không tải được thành viên dự án." },
+        { status: 503 },
+      ),
+    ),
+  );
+  show(<ProjectEditorPage projectId="p-main" />, session);
+  await screen.findByText("Không tải được thành viên dự án.");
+  expect(screen.queryByRole("textbox", { name: "Tên dự án *" })).toBeNull();
+});
+
+it.each(["lock", "unlock", "password"] as const)(
+  "keeps the version and draft for account %s until the newer data is explicitly accepted",
+  async (action) => {
+    const session = await login("admin");
+    let person = await usersService.createUser(
+      {
+        username: "conflict.user",
+        displayName: "Người kiểm thử",
+        email: "conflict.user@example.test",
+        unitId: "unit-product",
+        systemRole: "EMPLOYEE",
+        initialPassword: "Start@12345",
+      },
+      { key: "create-conflict-user" },
+    );
+    if (action === "unlock")
+      person = await usersService.lockUser(
+        person.id,
+        { mode: "NORMAL", reason: "Khóa trước khi mở lại" },
+        { key: "lock-before-test", version: person.version },
+      );
+    const client = show(<UserEditorPage userId={person.id} />, session);
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByRole("button", {
+        name:
+          action === "password"
+            ? "Cấp lại mật khẩu"
+            : action === "unlock"
+              ? "Mở khóa tài khoản"
+              : "Khóa tài khoản",
+      }),
+    );
+    if (action === "password")
+      await user.type(screen.getByLabelText("Mật khẩu tạm *"), "Reset@12345");
+    const reason = screen.getByRole("textbox", { name: "Lý do *" });
+    await user.type(reason, "Nội dung được giữ lại");
+    const updated = await usersService.updateUser(
+      person.id,
+      { displayName: "Tên từ phiên khác" },
+      { version: person.version, key: "concurrent-user-name" },
+    );
+    await act(async () => {
+      await client.invalidateQueries({
+        queryKey: usersKeys.getUser(session.user.id, person.id),
+      });
+    });
+    await user.click(screen.getByRole("button", { name: "Lưu thông tin" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Tải bản mới để đối chiếu" }),
+    );
+    await screen.findByText("Bản mới nhất — nội dung bạn nhập được giữ lại");
+    expect(reason).toHaveProperty("value", "Nội dung được giữ lại");
+    await user.click(
+      screen.getByRole("button", { name: "Đã đối chiếu, tiếp tục chỉnh sửa" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Lưu thông tin" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("textbox", { name: "Lý do *" })).toBeNull(),
+    );
+    const saved = await usersService.getUser(person.id);
+    expect(saved.version).toBeGreaterThan(updated.version);
+    expect(saved.status).toBe(action === "lock" ? "LOCKED" : "ACTIVE");
+    if (action === "password") {
+      await authService.login({
+        username: person.username,
+        password: "Reset@12345",
+      });
+    }
+  },
+);
+
+it.each(["unit", "team"] as const)(
+  "preserves the deactivation reason for %s through a version conflict",
+  async (kind) => {
+    const session = await login("admin");
+    const entity =
+      kind === "unit"
+        ? await organizationService.createUnit(
+            { name: "Đơn vị trống", parentId: null, managerId: null },
+            { key: "new-empty-unit" },
+          )
+        : await organizationService.createTeam(
+            { name: "Nhóm trống", unitId: "unit-product", memberIds: [] },
+            { key: "new-empty-team" },
+          );
+    show(
+      kind === "unit" ? (
+        <UnitEditorPage unitId={entity.id} />
+      ) : (
+        <TeamEditorPage teamId={entity.id} />
+      ),
+      session,
+    );
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByRole("button", {
+        name: kind === "unit" ? "Ngừng sử dụng đơn vị" : "Ngừng sử dụng nhóm",
+      }),
+    );
+    const reason = screen.getByRole("textbox", {
+      name: "Lý do ngừng sử dụng *",
+    });
+    await user.type(reason, "Không còn sử dụng");
+    const patch = { name: "Tên cập nhật đồng thời", reason: "Điều chỉnh tên" };
+    const options = {
+      version: entity.version,
+      key: "rename-before-deactivate",
+    };
+    if (kind === "unit")
+      await organizationService.updateUnit(entity.id, patch, options);
+    else await organizationService.updateTeam(entity.id, patch, options);
+    await user.click(
+      screen.getByRole("button", { name: "Xác nhận ngừng sử dụng" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Tải bản mới để đối chiếu" }),
+    );
+    await screen.findByText("Bản mới nhất — nội dung bạn nhập được giữ lại");
+    expect(reason).toHaveProperty("value", "Không còn sử dụng");
+    await user.click(
+      screen.getByRole("button", { name: "Đã đối chiếu, tiếp tục chỉnh sửa" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Xác nhận ngừng sử dụng" }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("textbox", { name: "Lý do ngừng sử dụng *" }),
+      ).toBeNull(),
+    );
+    const saved =
+      kind === "unit"
+        ? await organizationService.getUnit(entity.id)
+        : await organizationService.getTeam(entity.id);
+    expect(saved.status).toBe("INACTIVE");
+    expect(saved.version).toBe(entity.version + 2);
+  },
+);
+
+it("reloads the membership version before retrying an end-membership conflict", async () => {
+  const session = await login("minh");
+  const member = await projectMembersService.addProjectMember(
+    "p-main",
+    { userId: "u-other", projectRole: "MEMBER" },
+    { key: "add-ending-member" },
+  );
+  show(<ProjectMembersPage projectId="p-main" />, session);
+  const user = userEvent.setup();
+  const row = (
+    await screen.findByRole("link", {
+      name: "Xem hồ sơ công khai của Người dùng dự án khác",
+    })
+  ).closest("tr")!;
+  await user.click(within(row).getByRole("button", { name: "Kết thúc" }));
+  const reason = screen.getByRole("textbox", { name: "Lý do kết thúc *" });
+  await user.type(reason, "Hoàn tất bàn giao");
+  await projectMembersService.updateProjectMemberRole(
+    "p-main",
+    member.id,
+    { projectRole: "MANAGER", reason: "Thay đổi đồng thời" },
+    { version: member.version, key: "concurrent-member-role" },
+  );
+  await user.click(screen.getByRole("button", { name: "Xác nhận kết thúc" }));
+  await user.click(
+    await screen.findByRole("button", { name: "Tải bản mới để đối chiếu" }),
+  );
+  await screen.findByText("Bản mới nhất — nội dung bạn nhập được giữ lại");
+  expect(reason).toHaveProperty("value", "Hoàn tất bàn giao");
+  await user.click(
+    screen.getByRole("button", { name: "Đã đối chiếu, tiếp tục chỉnh sửa" }),
+  );
+  await user.click(screen.getByRole("button", { name: "Xác nhận kết thúc" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  const saved = (
+    await projectMembersService.listProjectMembers("p-main")
+  ).items.find((item) => item.id === member.id)!;
+  expect(saved.endedAt).not.toBeNull();
+  expect(saved.version).toBe(member.version + 2);
+});
+
+it("retains a review comment through 412 and uses the reloaded submission version", async () => {
+  const session = await login("minh");
+  show(<SubmissionDetailPage taskId="t-4" submissionId="s-pending" />, session);
+  const user = userEvent.setup();
+  await user.click(
+    await screen.findByRole("button", { name: "Đưa ra quyết định nghiệm thu" }),
+  );
+  const comment = screen.getByRole("textbox", { name: "Nhận xét" });
+  await user.type(comment, "Đã đối chiếu kết quả");
+  const submission = db.submissions.find((item) => item.id === "s-pending")!;
+  submission.version++;
+  await user.click(screen.getByRole("button", { name: "Xác nhận quyết định" }));
+  await user.click(
+    await screen.findByRole("button", { name: "Tải bản mới để đối chiếu" }),
+  );
+  await screen.findByText("Bản mới nhất — nội dung bạn nhập được giữ lại");
+  expect(comment).toHaveProperty("value", "Đã đối chiếu kết quả");
+  await user.click(
+    screen.getByRole("button", { name: "Đã đối chiếu, tiếp tục chỉnh sửa" }),
+  );
+  await user.click(screen.getByRole("button", { name: "Xác nhận quyết định" }));
+  await waitFor(() => expect(nav.push).toHaveBeenCalledWith("/tasks/t-4"));
+  expect(
+    db.submissions.find((item) => item.id === submission.id),
+  ).toMatchObject({
+    status: "ACCEPTED",
+    reviewComment: "Đã đối chiếu kết quả",
+    version: 3,
+  });
+});
+
+it("does not load the author lookup when the report author filter is hidden", async () => {
+  const session = await login("lan");
+  history.replaceState(null, "", "/reports?projectId=p-main");
+  const reads: string[] = [];
+  const observe = ({ request }: { request: Request }) =>
+    reads.push(new URL(request.url).pathname);
+  server.events.on("request:start", observe);
+  try {
+    show(<ReportsPage />, session);
+    await screen.findByRole("table");
+    expect(screen.queryByRole("combobox", { name: "Người lập" })).toBeNull();
+    expect(reads).not.toContain("/api/projects/p-main/members");
+  } finally {
+    server.events.removeListener("request:start", observe);
+  }
+});
+
+it("limits the assignee lookup to a team while retaining project owner options", async () => {
+  const session = await login("minh");
+  history.replaceState(
+    null,
+    "",
+    "/dashboard?projectId=p-main&teamId=team-main&from=2026-10-01&to=2026-10-25",
+  );
+  show(<DashboardPage />, session);
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Bộ lọc" }));
+  await user.click(screen.getByText("Bộ lọc khác"));
+  const owner = screen.getByRole("combobox", { name: "Phụ trách dự án" });
+  const assignee = screen.getByRole("combobox", { name: "Nhân viên" });
+  expect(
+    await within(owner).findByRole("option", { name: "Nguyễn Minh" }),
+  ).toBeTruthy();
+  await within(assignee).findByRole("option", { name: "Trần Lan" });
+  expect(
+    within(assignee).queryByRole("option", { name: "Nguyễn Minh" }),
+  ).toBeNull();
+});
+
+it.each(["unit", "team"] as const)(
+  "does not describe missing active-user labels as empty organization data for %s",
+  async (kind) => {
+    const session = await login("admin");
+    for (const person of db.users.filter((person) =>
+      ["u-pm", "u-lan", "u-huy"].includes(person.id),
+    ))
+      person.status = "LOCKED";
+    show(
+      kind === "unit" ? (
+        <UnitEditorPage unitId="unit-product" />
+      ) : (
+        <TeamEditorPage teamId="team-main" />
+      ),
+      session,
+    );
+    if (kind === "unit") {
+      await screen.findByText("Chưa tải được thông tin người quản lý");
+      expect(screen.queryByText("Chưa phân công")).toBeNull();
+    } else {
+      await screen.findByText("2 thành viên");
+      expect(screen.queryByText("Chưa có thành viên")).toBeNull();
+    }
+  },
+);

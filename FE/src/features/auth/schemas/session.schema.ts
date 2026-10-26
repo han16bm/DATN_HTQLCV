@@ -1,5 +1,5 @@
 import { userSchema } from "@/features/users/schemas/user.schema";
-import { permissionSchema } from "@/lib/validation/common.schema";
+import { projectRoleSchema } from "@/features/project-members/schemas/project-members.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 export const sessionSchema = z.object({
@@ -14,11 +14,10 @@ export const sessionSchema = z.object({
     unit: true,
     systemRole: true,
   }),
-  systemPermissions: z.array(permissionSchema),
   projectAccess: z.array(
     z.object({
       projectId: idSchema,
-      permissions: z.array(permissionSchema),
+      projectRole: projectRoleSchema,
     }),
   ),
 });

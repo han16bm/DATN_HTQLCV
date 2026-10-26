@@ -1,34 +1,34 @@
 "use client";
-import { attachmentsKeys } from "@/features/attachments/api/attachments.keys";
-import { type UploadAttachmentInput } from "@/features/attachments/types/attachments.types";
+
 import { useSession } from "@/lib/auth/session-context";
 import { createRequestTickets } from "@/lib/query/mutation-requests";
-import { useMutationAttempt } from "@/lib/query/use-mutation-attempt";
+import { useIdempotentRequest } from "@/lib/query/use-idempotent-request";
 import { useAccessErrorHandler } from "@/lib/query/use-query-access";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { attachmentsKeys } from "../api/attachments.keys";
 import { attachmentsService } from "../api/attachments.service";
+import { type UploadAttachmentInput } from "../types/attachments.types";
 
 export function useUploadAttachmentMutation() {
   const client = useQueryClient();
-  const { session } = useSession();
-  const viewerId = session?.user.id ?? "anonymous";
+  const viewerId = useSession().session?.user.id;
   const handleError = useAccessErrorHandler();
-  const attempt = useMutationAttempt();
+  const run = useIdempotentRequest();
   const [requests] = useState(() =>
-    createRequestTickets(async (input: UploadAttachmentInput) =>
-      attachmentsService.uploadAttachment(input, {
-        key: await attempt.keyFor(input),
-      }),
+    createRequestTickets((input: UploadAttachmentInput) =>
+      run(input, (key) =>
+        attachmentsService.uploadAttachment(input, {
+          key,
+        }),
+      ),
     ),
   );
   const mutation = useMutation({
-    mutationKey: ["attachments", viewerId, "uploadAttachment"],
+    mutationKey: [...attachmentsKeys.viewer(viewerId), "uploadAttachment"],
     mutationFn: requests.execute,
-    retry: false,
     onError: handleError,
     onSuccess: async () => {
-      attempt.reset();
       await client.invalidateQueries({
         queryKey: attachmentsKeys.viewer(viewerId),
       });

@@ -1,10 +1,10 @@
-import { analysisMetaSchema } from "@/features/analytics/schemas/analysis-meta.schema";
 import {
   analysisRefSchema,
   personRefSchema,
 } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
+import { analysisMetaSchema } from "./analysis-meta.schema";
 export const bottlenecksSchema = z.object({
   metadata: analysisMetaSchema,
   items: z.array(

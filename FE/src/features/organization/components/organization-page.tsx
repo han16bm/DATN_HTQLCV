@@ -1,5 +1,6 @@
 "use client";
-import { PermissionGate } from "@/components/layout/permission-gate";
+
+import { PageSkeleton } from "@/components/ui/loading";
 import {
   Badge,
   ButtonLink,
@@ -7,19 +8,11 @@ import {
   DetailLink,
   PageHeader,
 } from "@/components/ui/page";
-import { PageSkeleton } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { useListUnitsQuery } from "../hooks/use-organization-queries";
 
 export function OrganizationPage() {
-  return (
-    <PermissionGate permission="ORGANIZATION_MANAGE">
-      <UnitsList />
-    </PermissionGate>
-  );
-}
-function UnitsList() {
   const filters = useUrlFilters();
   const query = useListUnitsQuery({ page: filters.page });
   return (

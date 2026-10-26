@@ -1,7 +1,7 @@
-import { jobErrorSchema } from "@/features/analytics/schemas/analysis-job.schema";
 import { domainActionSchema } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
+import { jobErrorSchema } from "./analysis-job.schema";
 export const evidenceSchema = z.object({
   id: idSchema,
   label: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(1000),

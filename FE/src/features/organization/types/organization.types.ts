@@ -1,3 +1,6 @@
+import type { reasonSchema } from "@/lib/validation/common.schema";
+import { type Page } from "@/types/common";
+import { type z } from "zod";
 import type {
   createTeamSchema,
   teamMembersSchema,
@@ -5,17 +8,14 @@ import type {
   teamRowSchema,
   teamSchema,
   updateTeamSchema,
-} from "@/features/organization/schemas/team.schema";
+} from "../schemas/team.schema";
 import type {
   createUnitSchema,
   unitQuerySchema,
   unitRowSchema,
   unitSchema,
   updateUnitSchema,
-} from "@/features/organization/schemas/unit.schema";
-import type { reasonSchema } from "@/lib/validation/common.schema";
-import { type Page } from "@/types/common";
-import { type z } from "zod";
+} from "../schemas/unit.schema";
 export type TeamDto = z.output<typeof teamSchema>;
 export type UnitDto = z.output<typeof unitSchema>;
 export type UnitQuery = z.input<typeof unitQuerySchema>;

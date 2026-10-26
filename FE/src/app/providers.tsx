@@ -7,9 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "sonner";
 
-const mocking =
-  process.env.NODE_ENV === "development" &&
-  process.env.NEXT_PUBLIC_API_MOCKING === "enabled";
+const mocking = process.env.NEXT_PUBLIC_API_MODE === "mock";
 let workerReady: Promise<unknown> | undefined;
 export function Providers({ children }: { children: ReactNode }) {
   const [client] = useState(

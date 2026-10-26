@@ -27,7 +27,7 @@ Mật khẩu mẫu: `Mock@12345`. Chỉ dùng trong development/test. Mock token
 
 ## Browser và Next.js
 
-Trong dự án Next.js đích, chạy `npx msw init public --save`, tạo cờ `NEXT_PUBLIC_API_MOCKING=enabled` và chỉ khởi động worker khi NODE_ENV là development. Dynamic import browser mock trong Client Provider, await worker.start trước request đầu tiên, sau đó render phần cần Query. Tắt cờ mock trong production. API client nhận origin Gateway từ cấu hình; các path được đặc tả đã có `/api` nên không nối prefix thêm một lần nữa.
+Theo điều chỉnh ngày 26/10/2026, dùng `.env` như vietcd: `NEXT_PUBLIC_API_MODE=mock|http`, không kèm điều kiện NODE_ENV và không dùng `.env.development`. Dynamic import browser mock trong Client Provider, await worker.start trước request đầu tiên, sau đó render phần cần Query. Khi nối backend, đặt chế độ http và `NEXT_PUBLIC_API_BASE_URL` bằng URL API đầy đủ có /api. Với MSW, URL này là /api; service chỉ chứa path resource và không nối prefix thêm lần nữa. `.env.example` là mẫu, cần sao chép sang `.env` khi cài dự án.
 
 Browser worker chỉ chặn request phát sinh ở browser. Fetch trong Server Component/SSR cần `setupServer` được khởi động ở Node runtime hoặc một mock API server. Không import `msw/browser` vào instrumentation/server bundle. Không khởi tạo lại setupServer theo từng request; quản lý lifecycle development/test một lần và reset fixture có kiểm soát.
 

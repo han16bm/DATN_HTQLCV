@@ -1,5 +1,11 @@
 # Trạng thái triển khai
 
+## Cấu hình mock/HTTP trong .env — 26/10/2026
+
+Đã đối chiếu Providers và Axios client của vietcd. `.env` dùng NEXT_PUBLIC_API_MODE=mock|http và NEXT_PUBLIC_API_BASE_URL là URL API đầy đủ; bỏ cờ API_MOCKING, API_ORIGIN và điều kiện NODE_ENV khi bật worker. Xóa `.env.development`, tạo `.env` cục bộ bị Git bỏ qua và cập nhật `.env.example`. Giữ Promise khởi động MSW dùng chung, chờ worker trước khi mount AuthObserver/feature và hiện lỗi nếu worker không mở được. Test Node giữ URL gateway riêng và delay 0 để không lấy độ trễ phát triển từ `.env`.
+
+Next env loader xác nhận nạp `.env` và không còn development override; build xác nhận môi trường `.env`. Typecheck, lint, build, git diff --check và **167/167 tests ở 9 file đạt**. Không thay luồng service → HTTP → MSW → DB, chưa nối backend thật hoặc kiểm tra Service Worker trực tiếp trên browser.
+
 ## Điều chỉnh role ngày 26/10/2026
 
 Đã bỏ permissions khỏi seed/model/DTO/session và xóa trang phân quyền riêng. Chuyển S13 sang dialog Đổi vai trò tại danh sách thành viên; backend xét role và phạm vi cho request mới lẫn replay. Query keys nhận user ID nullable và xử lý anonymous tại hàm viewer, không còn lặp fallback trong hooks. Chi tiết tại [ARCHITECTURE.md](ARCHITECTURE.md#điều-chỉnh-role-ngày-26102026).

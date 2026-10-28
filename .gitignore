@@ -19,11 +19,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Environment secrets; retain only the checked public FE mock configuration
+# Environment files; retain only the example
 .env
 .env.*
 !.env.example
-!FE/.env.development
 *.pem
 *.key
 *.p12

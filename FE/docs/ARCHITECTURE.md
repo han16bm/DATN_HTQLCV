@@ -166,11 +166,11 @@ Kiểm tra ở FE và biên HTTP độc lập vẫn cần giữ: backend không 
 
 ## Chuyển giữa mock và backend
 
-Development dùng `NEXT_PUBLIC_API_MOCKING=enabled` trong `.env.development`. Chỉ `app/providers.tsx` dynamic import browser worker khi `NODE_ENV=development` và đợi worker sẵn sàng trước khi render feature. Test dùng MSW Node server và gọi chính feature service qua HTTP.
+Theo cấu hình vietcd, `.env` dùng `NEXT_PUBLIC_API_MODE=mock` để bật MSW hoặc `http` để gọi backend. Chế độ chỉ phụ thuộc biến này, không phụ thuộc NODE_ENV; không dùng `.env.development` để ghi đè. `.env.example` là mẫu để tạo `.env`, không được Next.js tự nạp. Chỉ `app/providers.tsx` dynamic import browser worker và đợi worker sẵn sàng trước khi render feature. Promise workerReady giữ lần khởi động dùng chung để tránh start lặp khi React Strict Mode chạy lại effect; đây không phải cấu hình chế độ. Nếu khởi động lỗi, hiển thị lỗi/tải lại thay vì gửi request trước khi MSW sẵn sàng. Test dùng MSW Node server và gọi chính feature service qua HTTP.
 
 MSW dùng mockHandler để trì hoãn response sau khi xử lý request, áp dụng cả JSON thành công, lỗi và tệp. NEXT_PUBLIC_MSW_DELAY cấu hình theo ms, mặc định development 400 và test 0; scenario slow dùng 1500. Không thêm delay trong component/service hoặc từng handler. API dùng /api cho cả client, handler, ảnh và catalog; đã bỏ thành phần phiên bản trong URL, không có alias cũ.
 
-`NEXT_PUBLIC_API_ORIGIN` là origin Gateway, ví dụ `https://gateway.example.test`; Axios client tự thêm `/api`, service chỉ dùng path như `/tasks`. Để trống biến này sẽ dùng cùng origin với FE. Khi nối BE, tắt MSW và cấu hình origin; component/hook/service tiếp tục dùng cùng luồng HTTP. Production không khởi động worker.
+`NEXT_PUBLIC_API_BASE_URL` là URL API đầy đủ, ví dụ `/api` cho MSW hoặc `https://gateway.example.test/api` cho backend; Axios dùng trực tiếp, service chỉ dùng path như `/tasks`. Khi không khai báo, base URL mặc định /api. Khi nối BE, đặt chế độ http và URL backend, kể cả khi build production; component/hook/service tiếp tục dùng cùng luồng HTTP. Khởi động lại dev server sau khi sửa `.env`; với production phải build lại vì Next.js đóng gói NEXT_PUBLIC_* lúc build.
 
 Mock DB tồn tại trong bộ nhớ và reset khi reload. Cần kiểm thử riêng auth/cookie/CORS, scheduler, lưu trữ tệp và LLM khi có Gateway thật. Mức độ hoàn thành và giới hạn QA được ghi trong `IMPLEMENTATION_STATUS.md`.
 

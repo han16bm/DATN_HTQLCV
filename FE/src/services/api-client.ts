@@ -52,7 +52,7 @@ export function refreshAuth() {
 }
 
 export const apiClient = axios.create({
-  baseURL: `${(process.env.NEXT_PUBLIC_API_ORIGIN ?? "").replace(/\/$/, "")}/api`,
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api",
   adapter: "fetch",
   withCredentials: true,
   timeout: 15000,

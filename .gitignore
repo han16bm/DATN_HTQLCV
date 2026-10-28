@@ -29,6 +29,19 @@ pnpm-debug.log*
 *.p12
 *.pfx
 
+# .NET build output (BE/)
+bin/
+obj/
+*.user
+.vs/
+
+# AI coding assistant support files
+.claude/
+.codegraph/
+.cursor/
+.windsurf/
+.aider*
+
 # Local editor and operating system files
 .idea/
 .vscode/

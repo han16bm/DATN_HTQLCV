@@ -39,6 +39,7 @@ export function TeamsPage() {
         <DataTable
           title="Danh sách nhóm"
           actions
+          widths={[28, 28, 14, 18, 12]}
           headers={[
             "Nhóm",
             "Đơn vị",

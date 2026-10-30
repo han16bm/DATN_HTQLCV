@@ -1,18 +1,29 @@
 "use client";
 import { Avatar } from "@/components/ui/avatar";
 import type { SessionDto } from "@/features/auth/types/auth.types";
+import { adminHome, canAdminister } from "@/lib/auth/access";
 import { label } from "@/lib/format";
+import type { Area } from "@/lib/navigation";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { ChevronDown, LogOut, UserRound } from "lucide-react";
+import {
+  ArrowLeftRight,
+  ChevronDown,
+  LogOut,
+  Settings,
+  UserRound,
+} from "lucide-react";
 import Link from "next/link";
 
 export function AvatarMenu({
+  area,
   session,
   onSignOut,
 }: {
+  area: Area;
   session: SessionDto;
   onSignOut: () => Promise<void>;
 }) {
+  const admin = canAdminister(session) ? adminHome(session) : null;
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -61,6 +72,24 @@ export function AvatarMenu({
               Hồ sơ cá nhân
             </Link>
           </DropdownMenu.Item>
+          {area === "admin" ? (
+            <DropdownMenu.Item asChild>
+              <Link href="/workspace" className="account-menu-item">
+                <ArrowLeftRight size={17} aria-hidden="true" />
+                Về không gian làm việc
+              </Link>
+            </DropdownMenu.Item>
+          ) : (
+            admin && (
+              <DropdownMenu.Item asChild>
+                <Link href={admin} className="account-menu-item">
+                  <Settings size={17} aria-hidden="true" />
+                  Quản trị hệ thống
+                </Link>
+              </DropdownMenu.Item>
+            )
+          )}
+          <DropdownMenu.Separator className="account-menu-separator" />
           <DropdownMenu.Item
             className="account-menu-item danger"
             onSelect={() => {

@@ -2,7 +2,7 @@
 
 import { useSession } from "@/lib/auth/session-context";
 import { useQueryAccess } from "@/lib/query/use-query-access";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { attachmentsKeys } from "../api/attachments.keys";
 import { attachmentsService } from "../api/attachments.service";
 
@@ -27,4 +27,35 @@ export function useGetAttachmentQuery(attachmentId: string) {
     staleTime: 10000,
   });
   return useQueryAccess(result, "attachments");
+}
+
+// Nội dung tệp để xem trước; chỉ tải khi người dùng mở khung xem.
+export function useGetAttachmentContentQuery(
+  attachmentId: string,
+  enabled: boolean,
+) {
+  const viewerId = useSession().session?.user.id;
+  const result = useQuery({
+    queryKey: attachmentsKeys.getContent(viewerId, attachmentId),
+    queryFn: ({ signal }) =>
+      attachmentsService.downloadAttachment(attachmentId, { signal }),
+    enabled: enabled && Boolean(viewerId && attachmentId),
+    staleTime: 60000,
+    gcTime: 60000,
+  });
+  return useQueryAccess(result, "attachments");
+}
+
+// Thông tin nhiều tệp một lượt (cùng khóa với từng tệp nên dùng chung bộ nhớ đệm).
+export function useGetAttachmentsQuery(attachmentIds: string[]) {
+  const viewerId = useSession().session?.user.id;
+  return useQueries({
+    queries: attachmentIds.map((attachmentId) => ({
+      queryKey: attachmentsKeys.getAttachment(viewerId, attachmentId),
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        attachmentsService.getAttachment(attachmentId, { signal }),
+      enabled: Boolean(viewerId),
+      staleTime: 10000,
+    })),
+  });
 }

@@ -26,7 +26,7 @@ export function AnalysisSummaryPage() {
       ) : (
         <>
           <Metadata value={query.data.metadata} />
-          <Panel title="Tổng hợp theo số liệu">
+          <Panel title="Tổng hợp theo số liệu" className="text-card">
             <p className="preserve-lines">{query.data.summaryText}</p>
             <AnalysisLink
               value={query.data.overviewRef}
@@ -36,6 +36,7 @@ export function AnalysisSummaryPage() {
           <DataTable
             title="Điểm cần chú ý"
             actions
+            widths={[26, 45, 15, 14]}
             headers={["Đối tượng", "Căn cứ", "Mức độ", "Hành động"]}
             rows={query.data.highlights.map((h) => [
               h.title,
@@ -46,6 +47,7 @@ export function AnalysisSummaryPage() {
           />
           <DataTable
             title="Thông số và dữ liệu cần bổ sung"
+            widths={[30, 15, 55]}
             headers={["Chỉ số", "Giá trị", "Ý nghĩa"]}
             rows={query.data.metrics.map((m) => [
               m.label,

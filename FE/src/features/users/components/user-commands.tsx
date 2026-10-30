@@ -57,30 +57,36 @@ export function UserCommands({
     toast.success("Đã cập nhật quyền truy cập.");
     setMode(null);
   };
+  const actions = (
+    <div className="actions">
+      <button
+        onClick={async () => {
+          if (await confirmDiscard()) {
+            snapshot.saved(user);
+            setMode(mode === "lock" ? null : "lock");
+          }
+        }}
+      >
+        {isLocked ? "Mở khóa tài khoản" : "Khóa tài khoản"}
+      </button>
+      <button
+        onClick={async () => {
+          if (await confirmDiscard()) {
+            snapshot.saved(user);
+            setMode(mode === "password" ? null : "password");
+          }
+        }}
+      >
+        Cấp lại mật khẩu
+      </button>
+    </div>
+  );
   return (
-    <Panel title="Truy cập và mật khẩu" className="account-access">
-      <div className="actions">
-        <button
-          onClick={async () => {
-            if (await confirmDiscard()) {
-              snapshot.saved(user);
-              setMode(mode === "lock" ? null : "lock");
-            }
-          }}
-        >
-          {isLocked ? "Mở khóa tài khoản" : "Khóa tài khoản"}
-        </button>
-        <button
-          onClick={async () => {
-            if (await confirmDiscard()) {
-              snapshot.saved(user);
-              setMode(mode === "password" ? null : "password");
-            }
-          }}
-        >
-          Cấp lại mật khẩu
-        </button>
-      </div>
+    <Panel
+      title="Truy cập và mật khẩu"
+      className="account-access"
+      actions={actions}
+    >
       {mode === "lock" && !isLocked && (
         <p className="small muted section-gap">
           Khóa thông thường yêu cầu bàn giao việc mở. Khóa khẩn cấp thu hồi truy

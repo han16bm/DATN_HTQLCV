@@ -1,3 +1,4 @@
+import { useUI } from "@/stores/ui-store";
 import { ApiError } from "@/types/api/error";
 import { type QueryClient } from "@tanstack/react-query";
 
@@ -6,6 +7,8 @@ export async function removeViewerData(
   viewerId: string,
   feature?: string,
 ) {
+  // Tên thực thể trong breadcrumb cũng là dữ liệu không còn được phép xem.
+  useUI.getState().clearLabels();
   const filter = {
     predicate: (q: { queryKey: readonly unknown[] }) =>
       q.queryKey[1] === viewerId &&

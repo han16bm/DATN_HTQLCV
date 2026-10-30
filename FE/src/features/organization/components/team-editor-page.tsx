@@ -1,9 +1,10 @@
 "use client";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import { ButtonLink, PageHeader } from "@/components/ui/page";
+import { PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListUsersQuery } from "@/features/users/hooks/use-users-queries";
+import { useCrumbLabel } from "@/lib/use-crumb-label";
 import { useRouter } from "next/navigation";
 import {
   useGetTeamQuery,
@@ -16,6 +17,7 @@ export function TeamEditorPage({ teamId }: { teamId?: string }) {
   const query = useGetTeamQuery(teamId ?? "");
   const units = useListUnitsQuery({ pageSize: 100 });
   const users = useListUsersQuery({ pageSize: 100, status: "ACTIVE" });
+  useCrumbLabel("team", teamId ?? "", query.data?.name);
   if (query.isError)
     return (
       <QueryErrorState error={query.error} retry={() => void query.refetch()} />
@@ -32,10 +34,7 @@ export function TeamEditorPage({ teamId }: { teamId?: string }) {
     return <PageSkeleton variant="form" />;
   return (
     <>
-      <PageHeader
-        title={teamId ? "Chi tiết nhóm" : "Tạo nhóm"}
-        actions={<ButtonLink href="/admin/teams">Danh sách nhóm</ButtonLink>}
-      />
+      <PageHeader title={teamId ? "Chi tiết nhóm" : "Tạo nhóm"} />
       <TeamForm
         key={teamId ?? "new"}
         team={query.data}

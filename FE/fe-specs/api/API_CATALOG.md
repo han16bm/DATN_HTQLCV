@@ -1151,7 +1151,7 @@ FE chỉ được gửi: Không có..
 
 ### Response DTO
 
-`PageDTO<Projects.ProjectDTO>`; gồm `items` và `pagination`. Item theo [từ điển DTO](DTO_MODELS.md#projectsprojectdto).
+`PageDTO<Projects.ProjectRow>`; gồm `items` và `pagination`. Item theo [response danh sách hiện hành](DTO_MODELS.md#projectsprojectrow): id/name/startDate/dueAt/status/owner/unit; không trả code/objective.
 
 ### Trường thay đổi phía BE / mock
 
@@ -2690,6 +2690,8 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 ## listReviewQueue
 
 `GET /api/review-queue` → HTTP 200
+
+`q` tìm theo tên công việc, trim đầu/cuối và không phân biệt hoa/thường; kết hợp projectId/quyền trước khi phân trang. Response giữ ReviewRow rút gọn hiện hành, không cần tải từng task để tìm tên.
 
 - Feature `submissions` · Màn S26 · UC UC-T08, UC-T09.
 - DTO đích: `ListReviewQueueRequestDTO`, `ListReviewQueueResponseDTO`.

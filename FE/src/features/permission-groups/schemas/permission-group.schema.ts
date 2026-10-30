@@ -1,17 +1,13 @@
-import { listQuerySchema, reasonSchema } from "@/lib/validation/common.schema";
+import {
+  listQuerySchema,
+  permissionSchema,
+  reasonSchema,
+} from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 
-export const permissionFeatureSchema = z.enum([
-  "USERS_MANAGE",
-  "ORGANIZATION_MANAGE",
-  "PROJECT_CREATE",
-  "PROJECT_MANAGE",
-  "MEMBERS_MANAGE",
-  "TASKS_MANAGE",
-  "ANALYTICS_VIEW",
-  "ALERTS_MANAGE",
-]);
+// Cùng danh sách quyền với phiên đăng nhập; nhóm quyền chỉ gán quyền cấp hệ thống.
+export const permissionFeatureSchema = permissionSchema;
 
 export const createPermissionGroupSchema = z
   .object({

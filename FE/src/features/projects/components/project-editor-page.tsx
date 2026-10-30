@@ -1,10 +1,10 @@
 "use client";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import { ButtonLink, PageHeader } from "@/components/ui/page";
+import { PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListProjectMembersQuery } from "@/features/project-members/hooks/use-project-members-queries";
-import { canManage } from "@/lib/auth/access";
+import { hasPermission } from "@/lib/auth/access";
 import { useSession } from "@/lib/auth/session-context";
 import { ApiError } from "@/types/api/error";
 import { useGetProjectQuery } from "../hooks/use-projects-queries";
@@ -12,13 +12,19 @@ import { ProjectForm } from "./project-form";
 
 export function ProjectEditorPage({ projectId }: { projectId?: string }) {
   const { session } = useSession();
-  return projectId && !canManage(session, projectId) ? (
+  // Tạo dự án là quyền hệ thống; sửa kế hoạch là quyền của đúng dự án.
+  const allowed = projectId
+    ? hasPermission(session, "PROJECT_MANAGE", projectId)
+    : hasPermission(session, "PROJECT_CREATE");
+  return !allowed ? (
     <QueryErrorState
       error={
         new ApiError(
           403,
           "FORBIDDEN",
-          "Bạn không được chỉnh sửa kế hoạch của dự án này.",
+          projectId
+            ? "Bạn không được chỉnh sửa kế hoạch của dự án này."
+            : "Bạn không được tạo dự án.",
         )
       }
     />
@@ -49,11 +55,7 @@ function EditorLoader({ projectId }: { projectId?: string }) {
     <>
       <PageHeader
         title={projectId ? "Điều chỉnh dự án" : "Tạo dự án"}
-        actions={
-          <ButtonLink href={projectId ? `/projects/${projectId}` : "/projects"}>
-            Quay lại
-          </ButtonLink>
-        }
+        level={projectId ? 2 : 1}
       />
       <ProjectForm
         key={projectId ?? "new"}

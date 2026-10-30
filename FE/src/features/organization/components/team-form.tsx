@@ -9,7 +9,7 @@ import {
 } from "@/components/forms/form-field";
 import type { FormOption } from "@/components/forms/form.types";
 import { ReasonForm } from "@/components/forms/reason-form";
-import { Badge, ButtonLink, Panel } from "@/components/ui/page";
+import { StatusField, ButtonLink, Panel } from "@/components/ui/page";
 import { changedFields } from "@/lib/format";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
@@ -77,10 +77,45 @@ export function TeamForm({
       Hủy
     </button>
   );
+  const commands = team?.status === "ACTIVE" && mode === null && (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          snapshot.saved(team);
+          form.reset(defaults);
+          setMode("info");
+        }}
+      >
+        Chỉnh sửa thông tin
+      </button>
+      <button type="button" onClick={() => setMode("members")}>
+        Chọn thành viên
+      </button>
+      <button
+        type="button"
+        className="danger"
+        onClick={() => {
+          snapshot.saved(team);
+          setMode("close");
+        }}
+      >
+        Ngừng sử dụng nhóm
+      </button>
+    </>
+  );
   return (
     <Panel
-      title={team ? team.name : "Tạo nhóm"}
-      actions={team && <Badge value={team.status} />}
+      className="record-card"
+      title={team ? team.name : "Thông tin nhóm"}
+      actions={
+        team && (
+          <div className="actions">
+            <StatusField value={team.status} />
+            {commands}
+          </div>
+        )
+      }
     >
       {!team || mode === "info" ? (
         <Form
@@ -226,33 +261,6 @@ export function TeamForm({
               ? ` và ${team.memberIds.length - names.length} thành viên khác`
               : ""}
           </p>
-          {team.status === "ACTIVE" && (
-            <div className="record-actions">
-              <button
-                type="button"
-                onClick={() => {
-                  snapshot.saved(team);
-                  form.reset(defaults);
-                  setMode("info");
-                }}
-              >
-                Chỉnh sửa thông tin
-              </button>
-              <button type="button" onClick={() => setMode("members")}>
-                Chọn thành viên
-              </button>
-              <button
-                type="button"
-                className="danger"
-                onClick={() => {
-                  snapshot.saved(team);
-                  setMode("close");
-                }}
-              >
-                Ngừng sử dụng nhóm
-              </button>
-            </div>
-          )}
         </>
       )}
     </Panel>

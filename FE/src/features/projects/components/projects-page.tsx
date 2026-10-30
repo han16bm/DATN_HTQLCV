@@ -9,9 +9,11 @@ import {
   DetailLink,
   PageHeader,
 } from "@/components/ui/page";
+import { ProjectTile } from "@/components/ui/project-tile";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { useSession } from "@/lib/auth/session-context";
+import Link from "next/link";
 import { dateTime, label } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { useListProjectsQuery } from "../hooks/use-projects-queries";
@@ -70,7 +72,7 @@ export function ProjectsPage() {
             value={filters.get("unitId")}
             onChange={(e) => filters.set("unitId", e.target.value)}
           >
-            <option value="">Tất cả trong quyền</option>
+            <option value="">Tất cả đơn vị</option>
             {scope.data &&
               [
                 ...new Map(
@@ -104,6 +106,7 @@ export function ProjectsPage() {
             onPage: (p) => filters.set("page", String(p)),
           }}
           actions
+          widths={[26, 14, 16, 11, 10, 14, 9]}
           headers={[
             "Dự án",
             "Đơn vị",
@@ -114,14 +117,11 @@ export function ProjectsPage() {
             "Hành động",
           ]}
           rows={query.data.items.map((p) => [
-            <div key="project" className="project-summary">
-              <div className="project-name">
-                <strong>{p.name}</strong>
-                <span className="small muted">{p.code}</span>
-              </div>
-              <p className="project-objective small muted" title={p.objective}>
-                {p.objective}
-              </p>
+            <div key="project" className="project-row">
+              <ProjectTile id={p.id} small />
+              <Link className="issue-link" href={`/projects/${p.id}`}>
+                {p.name}
+              </Link>
             </div>,
             p.unit.name,
             <UserBadge key="owner" name={p.owner.displayName} />,

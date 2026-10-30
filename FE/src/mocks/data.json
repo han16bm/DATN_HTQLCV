@@ -4,6 +4,40 @@
     "retentionDays": 7
   },
   "password": "Mock@12345",
+  "permissionPolicy": {
+    "system": {
+      "ADMIN": ["USERS_MANAGE", "ORGANIZATION_MANAGE"],
+      "MANAGER": ["PROJECT_CREATE"],
+      "EMPLOYEE": []
+    },
+    "project": {
+      "OWNER": [
+        "PROJECT_MANAGE",
+        "MEMBERS_MANAGE",
+        "TASKS_MANAGE",
+        "TASKS_REVIEW",
+        "ANALYTICS_VIEW",
+        "ALERTS_MANAGE"
+      ],
+      "MANAGER": [
+        "PROJECT_MANAGE",
+        "MEMBERS_MANAGE",
+        "TASKS_MANAGE",
+        "TASKS_REVIEW",
+        "ANALYTICS_VIEW",
+        "ALERTS_MANAGE"
+      ],
+      "MEMBER": []
+    },
+    "groups": [
+      {
+        "id": "pg-analytics",
+        "name": "Xem phân tích toàn hệ thống",
+        "features": ["ANALYTICS_VIEW"],
+        "memberIds": []
+      }
+    ]
+  },
   "metricFormulas": {
     "K01": "Số công việc được theo dõi, không tính công việc đã hủy.",
     "K02": "Số công việc được nghiệm thu hoàn thành trong khoảng thời gian đã chọn.",

@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useState, type ReactNode } from "react";
+import { toneOf } from "./project-tile";
 
 export function Avatar({
   name,
@@ -16,7 +17,7 @@ export function Avatar({
   const [failed, setFailed] = useState<string | null>(null);
   return (
     <span
-      className={`avatar${large ? " avatar-large" : ""}`}
+      className={`avatar tone-${toneOf(name)}${large ? " avatar-large" : ""}`}
       aria-hidden="true"
     >
       {src && failed !== src ? (

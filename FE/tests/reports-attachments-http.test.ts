@@ -26,6 +26,40 @@ const period = {
   periodStart: "2026-10-21",
 };
 describe("reports and evidence through HTTP", () => {
+  it("searches review tasks before pagination and preserves project access", async () => {
+    await login("minh");
+    const task = db.tasks.find((item) => item.id === "t-4")!;
+    const submission = db.submissions.find((item) => item.id === "s-pending")!;
+    for (const [id, title, projectId] of [
+      ["review-ui", "Kiểm thử giao diện", "p-main"],
+      ["review-hidden", "API ngoài dự án", "p-other"],
+    ]) {
+      db.tasks.push({ ...task, id, title, projectId, latestSubmissionId: id });
+      db.submissions.push({ ...submission, id, taskId: id });
+    }
+    const matched = await submissionsService.listReviewQueue({
+      q: "  API BÁO CÁO  ",
+      projectId: "p-main",
+      pageSize: 1,
+    });
+    expect(matched.items.map((item) => item.id)).toEqual(["s-pending"]);
+    expect(matched.pagination.total).toBe(1);
+    const other = await submissionsService.listReviewQueue({
+      q: "giao diện",
+      pageSize: 1,
+    });
+    expect(other.items.map((item) => item.id)).toEqual(["review-ui"]);
+    expect(other.pagination.total).toBe(1);
+    for (const query of [
+      { q: "API ngoài" },
+      { q: "API", projectId: "p-other" },
+      { q: "Không có kết quả" },
+    ]) {
+      const result = await submissionsService.listReviewQueue(query);
+      expect(result.items).toEqual([]);
+      expect(result.pagination.total).toBe(0);
+    }
+  });
   it("uploads READY evidence, preserves bytes and prevents a different file from replaying the same key", async () => {
     await login("lan");
     const policy = await attachmentsService.getUploadPolicy();

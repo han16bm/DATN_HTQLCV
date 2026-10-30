@@ -65,7 +65,10 @@ import type {
   UpdateTeamInput,
   UpdateUnitInput,
 } from "@/features/organization/types/organization.types";
-import { membershipSchema } from "@/features/project-members/schemas/project-members.schema";
+import {
+  membershipSchema,
+  projectRoleSchema,
+} from "@/features/project-members/schemas/project-members.schema";
 import type {
   AddProjectMemberInput,
   EndProjectMembershipInput,
@@ -129,7 +132,10 @@ import type {
   UpdateTimeLogInput,
   VoidTimeLogInput,
 } from "@/features/time-logs/types/time-logs.types";
-import { userSchema } from "@/features/users/schemas/user.schema";
+import {
+  systemRoleSchema,
+  userSchema,
+} from "@/features/users/schemas/user.schema";
 import type {
   CreateUserInput,
   LockUserInput,
@@ -144,6 +150,7 @@ import type {
 import {
   analysisSubjectSchema,
   auditSchema,
+  permissionSchema,
 } from "@/lib/validation/common.schema";
 import { checkAnalysisData } from "@/lib/validation/contract-refinements";
 import { idSchema } from "@/lib/validation/request.schema";
@@ -154,6 +161,7 @@ import type {
   AnalysisSubjectDto,
   AuditDto,
   DomainActionDto,
+  Permission,
 } from "@/types/common";
 import { z } from "zod";
 import seed from "./data.json";
@@ -283,19 +291,26 @@ const entity = (id = crypto.randomUUID()) => ({
   id,
   version: 1,
 });
-const projectActions = new Set([
-  "PROJECT_MANAGE",
-  "MEMBERS_MANAGE",
-  "TASKS_MANAGE",
-  "TASKS_REVIEW",
-  "ANALYTICS_VIEW",
-  "ALERTS_MANAGE",
-]);
+const accessPolicy = z
+  .object({
+    system: z.record(systemRoleSchema, z.array(permissionSchema)),
+    project: z.record(projectRoleSchema, z.array(permissionSchema)),
+    groups: z.array(
+      z.object({
+        id: idSchema,
+        name: z.string(),
+        features: z.array(permissionSchema),
+        memberIds: z.array(idSchema),
+      }),
+    ),
+  })
+  .parse(seed.permissionPolicy);
 function createDatabase() {
   const users = z.array(userModel).parse(seed.users);
   const attachments = z.array(attachmentModel).parse(seed.attachments);
   return {
     users,
+    permissionGroups: structuredClone(accessPolicy.groups),
     units: z.array(unitSchema).parse(seed.units),
     teams: z.array(teamSchema).parse(seed.teams),
     projects: z.array(projectModel).parse(seed.projects),
@@ -365,31 +380,50 @@ function touch(v: { version: number; updatedAt?: string }) {
   if ("updatedAt" in v) v.updatedAt = now();
   db.revision++;
 }
-const manages = (user: User, projectId: string) =>
-  user.systemRole === "MANAGER" &&
-  db.members.some(
-    (member) =>
-      member.projectId === projectId &&
-      member.userId === user.id &&
-      !member.endedAt &&
-      member.projectRole !== "MEMBER",
+// Quyền hiệu lực (backend thật trả trong session): hệ thống tính từ role và nhóm
+// quyền, dự án tính từ vai trò đang hoạt động. Mọi kiểm tra bên dưới dùng chung
+// hai hàm này; role không tự cấp quyền trên dự án.
+function systemPermissions(user: User): Permission[] {
+  return [
+    ...new Set([
+      ...accessPolicy.system[user.systemRole],
+      ...db.permissionGroups
+        .filter((group) => group.memberIds.includes(user.id))
+        .flatMap((group) => group.features),
+    ]),
+  ];
+}
+function projectPermissions(user: User, projectId: string): Permission[] {
+  const member = db.members.find(
+    (m) => m.projectId === projectId && m.userId === user.id && !m.endedAt,
   );
-function can(user: User, action: string, projectId?: string) {
-  if (action === "USERS_MANAGE" || action === "ORGANIZATION_MANAGE")
-    return user.systemRole === "ADMIN";
-  if (action === "PROJECT_CREATE") return user.systemRole === "MANAGER";
-  if (action === "ANALYTICS_VIEW" && user.systemRole === "ADMIN") return true;
-  return projectActions.has(action) && !!projectId && manages(user, projectId);
+  // Vai trò quản lý trong dự án chỉ có hiệu lực với tài khoản Leader/PM.
+  if (
+    !member ||
+    (member.projectRole !== "MEMBER" && user.systemRole !== "MANAGER")
+  )
+    return [];
+  return accessPolicy.project[member.projectRole];
+}
+// ANALYTICS_VIEW ở phạm vi hệ thống cho xem mọi dự án; các quyền khác theo dự án.
+const readsEveryProject = (user: User) =>
+  systemPermissions(user).includes("ANALYTICS_VIEW");
+function can(user: User, action: Permission, projectId?: string) {
+  if (!projectId) return systemPermissions(user).includes(action);
+  return (
+    (action === "ANALYTICS_VIEW" && readsEveryProject(user)) ||
+    projectPermissions(user, projectId).includes(action)
+  );
 }
 const inProject = (u: User, projectId: string) =>
   db.members.some(
     (m) => m.projectId === projectId && m.userId === u.id && !m.endedAt,
   );
 function visibleTask(u: User, t: Task) {
-  if (u.systemRole === "ADMIN") return true;
+  if (readsEveryProject(u)) return true;
   return (
     inProject(u, t.projectId) &&
-    (manages(u, t.projectId) ||
+    (projectPermissions(u, t.projectId).length > 0 ||
       t.assigneeId === u.id ||
       db.assignments.some((a) => a.taskId === t.id && a.userId === u.id))
   );
@@ -453,9 +487,7 @@ const userDTO = (user: User): UserDto => ({
 });
 const projectRow = (project: (typeof db.projects)[number]): ProjectRow => ({
   id: project.id,
-  code: project.code,
   name: project.name,
-  objective: project.objective,
   startDate: project.startDate,
   dueAt: project.dueAt,
   status: project.status,
@@ -464,6 +496,8 @@ const projectRow = (project: (typeof db.projects)[number]): ProjectRow => ({
 });
 const projectDTO = (project: (typeof db.projects)[number]): ProjectDto => ({
   ...projectRow(project),
+  code: project.code,
+  objective: project.objective,
   version: project.version,
   ownerId: project.ownerId,
 });
@@ -612,13 +646,9 @@ function sessionDTO(user: User): SessionDto {
       .map((member) => ({
         projectId: member.projectId,
         projectRole: member.projectRole,
+        permissions: projectPermissions(user, member.projectId),
       })),
-    permissions:
-      user.systemRole === "ADMIN"
-        ? ["USERS_MANAGE", "ORGANIZATION_MANAGE", "ANALYTICS_VIEW"]
-        : user.systemRole === "MANAGER"
-          ? ["PROJECT_CREATE"]
-          : [],
+    permissions: systemPermissions(user),
   };
 }
 const taskMinutes = (taskId: string) =>
@@ -1465,11 +1495,11 @@ function validateMemberRole(user: User, role: "MANAGER" | "MEMBER") {
       ],
     );
 }
-function requireProject(user: User, id: string, action?: string) {
+function requireProject(user: User, id: string, action?: Permission) {
   const project = db.projects.find((p) => p.id === id);
   if (!project) throw new ApiError(404, "NOT_FOUND", "Không tìm thấy dự án.");
   if (
-    (!inProject(user, id) && user.systemRole !== "ADMIN") ||
+    (!inProject(user, id) && !readsEveryProject(user)) ||
     (action && !can(user, action, id))
   )
     throw new ApiError(
@@ -1485,7 +1515,7 @@ export const projectsDb = {
       db.projects
         .filter(
           (p) =>
-            (viewer.systemRole === "ADMIN" || inProject(viewer, p.id)) &&
+            (readsEveryProject(viewer) || inProject(viewer, p.id)) &&
             (!query.q ||
               `${p.code} ${p.name}`
                 .toLowerCase()
@@ -2384,6 +2414,8 @@ export const submissionsDb = {
                 t.id === s.taskId &&
                 t.latestSubmissionId === s.id &&
                 can(user, "TASKS_REVIEW", t.projectId) &&
+                (!query.q ||
+                  t.title.toLowerCase().includes(query.q.toLowerCase())) &&
                 (!query.projectId || query.projectId === t.projectId),
             ),
         )
@@ -2533,7 +2565,7 @@ function validPeriod(periodType: Report["periodType"], start: string) {
     );
 }
 const canRead = (actor: User, r: Report) =>
-  (actor.systemRole === "ADMIN" || inProject(actor, r.projectId)) &&
+  (readsEveryProject(actor) || inProject(actor, r.projectId)) &&
   (r.authorId === actor.id ||
     (r.status === "SUBMITTED" &&
       (can(actor, "PROJECT_MANAGE", r.projectId) ||
@@ -2829,7 +2861,7 @@ const quality = (missingFields: string[] = []): Quality => ({
 });
 function analyticsScope(u: User, query: AnalyticsQuery) {
   const allowed = db.projects.filter((p) => can(u, "ANALYTICS_VIEW", p.id));
-  if (!allowed.length && u.systemRole !== "ADMIN")
+  if (!allowed.length && !readsEveryProject(u))
     throw new ApiError(
       403,
       "FORBIDDEN",
@@ -2855,14 +2887,14 @@ function analyticsScope(u: User, query: AnalyticsQuery) {
     (query.projectId ||
       (query.unitId &&
         !(
-          u.systemRole === "ADMIN" &&
+          readsEveryProject(u) &&
           db.units.some((unit) => unit.id === query.unitId)
         )))
   )
     throw new ApiError(403, "FORBIDDEN", "Bạn không có quyền xem phạm vi này.");
   const scope = {
     ...query,
-    ...(!query.unitId && !query.projectId && u.systemRole !== "ADMIN"
+    ...(!query.unitId && !query.projectId && !readsEveryProject(u)
       ? { unitId: u.unitId }
       : {}),
   };
@@ -3662,7 +3694,7 @@ function requireAnalysis(actor: User, id: string) {
     throw new ApiError(404, "NOT_FOUND", "Không tìm thấy bản phân tích.");
   const ids = analysisProjectIds(id);
   if (
-    (!ids.length && actor.systemRole !== "ADMIN") ||
+    (!ids.length && !readsEveryProject(actor)) ||
     ids.some((projectId) => !can(actor, "ANALYTICS_VIEW", projectId))
   )
     throw new ApiError(
@@ -4087,17 +4119,16 @@ export const analyticsDb = {
       (query.projectId ||
         (query.unitId &&
           !(
-            viewer.systemRole === "ADMIN" &&
+            readsEveryProject(viewer) &&
             db.units.some((unit) => unit.id === query.unitId)
           )))
     )
       throw new ApiError(403, "FORBIDDEN", "Không có quyền trong phạm vi lọc.");
-    const unitIds =
-      viewer.systemRole === "ADMIN"
-        ? db.units
-            .filter((unit) => !query.unitId || unit.id === query.unitId)
-            .map((unit) => unit.id)
-        : projects.map((p) => p.unitId);
+    const unitIds = readsEveryProject(viewer)
+      ? db.units
+          .filter((unit) => !query.unitId || unit.id === query.unitId)
+          .map((unit) => unit.id)
+      : projects.map((p) => p.unitId);
     const memberIds = db.members
       .filter((m) => !m.endedAt && projects.some((p) => p.id === m.projectId))
       .map((m) => m.userId);
@@ -4137,7 +4168,7 @@ export const analyticsDb = {
 // Kiểm tra quyền khi gửi lại yêu cầu.
 export function authorizeReplay(
   operation: string,
-  action: string | null,
+  action: Permission | null,
   user: User,
   params: Record<string, string>,
   payload: Record<string, unknown>,
@@ -4188,7 +4219,7 @@ export function authorizeReplay(
     projectId = db.details.get(analysisId)?.snapshot.scope.projectId;
   const analysisProjects =
     typeof analysisId === "string" ? analysisProjectIds(analysisId) : [];
-  const scopedCan = (action: string) =>
+  const scopedCan = (action: Permission) =>
     analysisProjects.length
       ? analysisProjects.every((id) => can(user, action, id))
       : can(user, action, projectId);

@@ -3,6 +3,7 @@
 import { PageSkeleton } from "@/components/ui/loading";
 import { Badge, DataTable, DetailLink, PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { AnalyticsTabs } from "@/features/analytics/components/analytics-tabs";
 import { useListAnalyticsFilterOptionsQuery } from "@/features/analytics/hooks/use-analytics-queries";
 import { label, options } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
@@ -27,7 +28,7 @@ export function AlertsPage() {
   });
   return (
     <>
-      <PageHeader title="Cảnh báo" />
+      <PageHeader title="Cảnh báo" navigation={<AnalyticsTabs />} />
       <section className="panel filters">
         <label>
           Dự án
@@ -35,7 +36,7 @@ export function AlertsPage() {
             value={f.get("projectId")}
             onChange={(e) => f.set("projectId", e.target.value)}
           >
-            <option value="">Tất cả trong quyền</option>
+            <option value="">Tất cả dự án</option>
             {projects.data?.items.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -84,6 +85,7 @@ export function AlertsPage() {
             onPage: (p) => f.set("page", String(p)),
           }}
           actions
+          widths={[22, 22, 10, 14, 21, 11]}
           headers={[
             "Vấn đề",
             "Đối tượng",

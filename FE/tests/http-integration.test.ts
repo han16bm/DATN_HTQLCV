@@ -124,9 +124,7 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
     await signIn("minh");
     await check("/projects", [
       "id",
-      "code",
       "name",
-      "objective",
       "startDate",
       "dueAt",
       "status",
@@ -196,6 +194,7 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
       "version",
     ]);
     expect(Object.keys(session.data.projectAccess[0]).sort()).toEqual([
+      "permissions",
       "projectId",
       "projectRole",
     ]);
@@ -481,7 +480,12 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
       server.events.removeListener("request:start", observe);
     }
   });
-  it("lets ADMIN inspect tasks without granting project mutations", async () => {
+  it("does not let an account administrator read projects by role, and read-only analytics access never grants mutations", async () => {
+    await signIn("admin");
+    await expect(tasksService.getTask("t-3")).rejects.toMatchObject({
+      status: 403,
+    });
+    db.permissionGroups[0].memberIds.push("u-admin");
     await signIn("admin");
     const task = await tasksService.getTask("t-3");
     expect(task.id).toBe("t-3");

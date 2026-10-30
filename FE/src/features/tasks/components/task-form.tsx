@@ -75,7 +75,7 @@ export function TaskForm({
     submitLabel: task ? "Lưu thay đổi" : "Tạo công việc",
     cancel: (
       <ButtonLink
-        href={task ? `/tasks/${task.id}` : `/tasks?projectId=${projectId}`}
+        href={task ? `/tasks/${task.id}` : `/projects/${projectId}/tasks`}
       >
         Hủy
       </ButtonLink>
@@ -158,11 +158,13 @@ export function TaskForm({
         />
         <FormTextarea
           label="Mô tả"
+          width="medium"
           {...form.register("description")}
           error={errors.description}
         />
         <FormTextarea
           label="Tiêu chí nghiệm thu"
+          width="medium"
           required
           {...form.register("acceptanceCriteria")}
           error={errors.acceptanceCriteria}

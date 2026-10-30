@@ -21,6 +21,11 @@ beforeEach(() => {
 });
 const login = (username = "minh") =>
   authService.login({ username, password: "Mock@12345" });
+// ANALYTICS_VIEW ở phạm vi hệ thống do backend cấp qua nhóm quyền, không theo role.
+const grantSystemAnalytics = (userId: string) =>
+  db.permissionGroups
+    .find((group) => group.features.includes("ANALYTICS_VIEW"))!
+    .memberIds.push(userId);
 const scope = { projectId: "p-main", from: "2026-10-01", to: "2026-10-23" };
 const waitJob = () => new Promise((resolve) => setTimeout(resolve, 1650));
 describe("analytics snapshots, jobs and alerts over HTTP", () => {
@@ -61,10 +66,27 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
       latestAnalysisId: next.overviewRef.analysisId,
     });
   });
-  it("gives ADMIN a global dashboard with unit filters and read-only drilldowns", async () => {
+  it("denies an account administrator analytics and project data until ANALYTICS_VIEW is granted", async () => {
     const session = await login("admin");
     expect(session.user.systemRole).toBe("ADMIN");
-    expect(session).not.toHaveProperty("systemPermissions");
+    expect(session.permissions).toEqual([
+      "USERS_MANAGE",
+      "ORGANIZATION_MANAGE",
+    ]);
+    expect(session.projectAccess).toEqual([]);
+    await expect(
+      analyticsService.getDashboard({ from: scope.from, to: scope.to }),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(
+      (await analyticsService.listAnalyticsFilterOptions({ kind: "PROJECT" }))
+        .items,
+    ).toEqual([]);
+  });
+  it("gives a system-wide ANALYTICS_VIEW holder a global dashboard with unit filters and read-only drilldowns", async () => {
+    grantSystemAnalytics("u-admin");
+    const session = await login("admin");
+    expect(session.permissions).toContain("ANALYTICS_VIEW");
+    expect(session.permissions).not.toContain("TASKS_REVIEW");
     const query = { from: scope.from, to: scope.to };
     const all = await analyticsService.getDashboard(query);
     expect(
@@ -115,6 +137,7 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
     ).rejects.toMatchObject({ status: 403 });
   });
   it("returns an empty dashboard for an existing unit without projects", async () => {
+    grantSystemAnalytics("u-admin");
     await login("admin");
     db.units.push({
       id: "unit-empty",
@@ -343,6 +366,7 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
     const stored = db.details.get(id)!;
     expect(stored).not.toHaveProperty("freshness");
     expect(stored).not.toHaveProperty("feedback");
+    grantSystemAnalytics("u-admin");
     await authService.login({ username: "admin", password: "Mock@12345" });
     expect(
       (await analyticsService.getAnalysisDetail(id)).feedback.canSubmit,

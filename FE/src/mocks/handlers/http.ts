@@ -1,5 +1,6 @@
 import { fingerprint } from "@/lib/crypto/fingerprint";
 import { ApiError } from "@/types/api/error";
+import type { Permission } from "@/types/common";
 import {
   HttpResponse,
   delay,
@@ -145,7 +146,7 @@ type MockCommand = {
   operation: string;
   feature: string;
   viewer: User;
-  action: string | null;
+  action: Permission | null;
   params: Record<string, string>;
   payload: Record<string, unknown>;
 };

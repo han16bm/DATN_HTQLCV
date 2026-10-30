@@ -2,13 +2,8 @@
 import { canVisit } from "@/lib/auth/access";
 
 import { PageSkeleton, Skeleton } from "@/components/ui/loading";
-import {
-  Badge,
-  ButtonLink,
-  DataTable,
-  DetailLink,
-  PageHeader,
-} from "@/components/ui/page";
+import { Badge, ButtonLink, PageHeader } from "@/components/ui/page";
+import { ProjectTile } from "@/components/ui/project-tile";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListReportsQuery } from "@/features/reports/hooks/use-reports-queries";
 import { useListReviewQueueQuery } from "@/features/submissions/hooks/use-submissions-queries";
@@ -16,13 +11,14 @@ import { useListTasksQuery } from "@/features/tasks/hooks/use-tasks-queries";
 import { useSession } from "@/lib/auth/session-context";
 import { dateTime } from "@/lib/format";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { useListProjectsQuery } from "../hooks/use-projects-queries";
 
-export function WorkspaceOverview() {
+export function WorkspaceOverview({ children }: { children?: ReactNode }) {
   const { session } = useSession();
   const userId = session?.user.id ?? "";
   const canReview = canVisit(session, "/reviews");
-  const projects = useListProjectsQuery({ pageSize: 4 });
+  const projects = useListProjectsQuery({ pageSize: 6 });
   const drafts = useListReportsQuery({
     authorId: userId,
     status: "DRAFT",
@@ -38,7 +34,6 @@ export function WorkspaceOverview() {
     pageSize: 1,
   });
   const cards = [
-    { title: "Dự án", query: projects, href: "/projects", action: "Xem dự án" },
     {
       title: "Báo cáo nháp",
       query: drafts,
@@ -65,16 +60,12 @@ export function WorkspaceOverview() {
   return (
     <>
       <PageHeader
-        title={`Chào ${session?.user.displayName.split(" ").at(-1) ?? "bạn"},`}
+        title="Công việc của tôi"
+        description={`Xin chào, ${session?.user.displayName ?? "bạn"}`}
         actions={
-          <>
-            {canVisit(session, "/dashboard") && (
-              <ButtonLink href="/dashboard" primary>
-                Mở bảng tổng quan
-              </ButtonLink>
-            )}
-            <ButtonLink href="/reports/new">Lập báo cáo</ButtonLink>
-          </>
+          canVisit(session, "/dashboard") && (
+            <ButtonLink href="/dashboard">Mở bảng phân tích</ButtonLink>
+          )
         }
       />
       <section className="overview-stats" aria-label="Số liệu cá nhân">
@@ -101,35 +92,49 @@ export function WorkspaceOverview() {
           </Link>
         ))}
       </section>
-      {projects.isError ? (
-        <QueryErrorState error={projects.error} />
-      ) : !projects.data ? (
-        <PageSkeleton variant="cards" />
-      ) : (
-        <DataTable
-          title="Dự án đang theo dõi"
-          headerActions={<ButtonLink href="/projects">Tất cả dự án</ButtonLink>}
-          actions
-          headers={[
-            "Dự án",
-            "Người phụ trách",
-            "Trạng thái",
-            "Hạn hoàn thành",
-            "Hành động",
-          ]}
-          rows={projects.data.items.map((p) => [
-            p.name,
-            p.owner.displayName,
-            <Badge key="status" value={p.status} />,
-            dateTime(p.dueAt),
-            <DetailLink
-              key="detail"
-              href={`/projects/${p.id}`}
-              label={`Xem dự án ${p.name}`}
-            />,
-          ])}
-        />
-      )}
+      <div className={children ? "workspace-grid" : undefined}>
+        {children && <section className="workspace-tasks">{children}</section>}
+        <aside className="workspace-projects" aria-label="Dự án của tôi">
+          {projects.isError ? (
+            <QueryErrorState error={projects.error} />
+          ) : !projects.data ? (
+            <PageSkeleton variant="cards" />
+          ) : (
+            <section
+              className="recent-projects"
+              aria-labelledby="recent-projects"
+            >
+              <div className="section-title">
+                <h2 id="recent-projects">Dự án của tôi</h2>
+                <Link className="text-link" href="/projects">
+                  Xem tất cả dự án
+                </Link>
+              </div>
+              {projects.data.items.length ? (
+                <ul className="project-cards">
+                  {projects.data.items.map((p) => (
+                    <li key={p.id}>
+                      <Link className="project-card" href={`/projects/${p.id}`}>
+                        <ProjectTile id={p.id} />
+                        <span className="project-card-info">
+                          <strong>{p.name}</strong>
+                          <span className="small muted">{p.unit.name}</span>
+                          <span className="small muted">
+                            Hạn {dateTime(p.dueAt)}
+                          </span>
+                        </span>
+                        <Badge value={p.status} />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted">Bạn chưa tham gia dự án nào.</p>
+              )}
+            </section>
+          )}
+        </aside>
+      </div>
     </>
   );
 }

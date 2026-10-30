@@ -8,7 +8,7 @@ import {
 } from "@/components/forms/form-field";
 import type { FormOption } from "@/components/forms/form.types";
 import { Avatar } from "@/components/ui/avatar";
-import { Badge, ButtonLink, Panel } from "@/components/ui/page";
+import { StatusField, ButtonLink, Panel } from "@/components/ui/page";
 import { changedFields, dateTime, label, options } from "@/lib/format";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
@@ -110,7 +110,7 @@ export function UserProfileForm({
             <strong>{user.displayName}</strong>
             <span className="small muted">{user.username}</span>
           </div>
-          <Badge value={user.status} />
+          <StatusField value={user.status} />
         </div>
       )}
       {user && !open ? (

@@ -112,14 +112,6 @@ export function ReportEditor({
         <PageSkeleton variant="form" />
       )}
       <Panel title="Nội dung báo cáo">
-        <label className="checkbox-label">
-          <input
-            type="checkbox"
-            checked={send}
-            onChange={(e) => setSend(e.target.checked)}
-          />
-          Gửi và chốt báo cáo sau khi lưu
-        </label>
         <Form
           form={form}
           compareFields={[
@@ -210,6 +202,14 @@ export function ReportEditor({
             {...form.register("zeroTimeReason")}
             error={errors.zeroTimeReason}
           />
+          <label className="checkbox-label wide">
+            <input
+              type="checkbox"
+              checked={send}
+              onChange={(e) => setSend(e.target.checked)}
+            />
+            Gửi và chốt báo cáo sau khi lưu
+          </label>
         </Form>
       </Panel>
     </>

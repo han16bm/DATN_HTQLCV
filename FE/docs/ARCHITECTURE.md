@@ -1,5 +1,25 @@
 # Cấu trúc frontend
 
+## Bố cục theo ảnh phản hồi — 30/10/2026
+
+AppShell/AdminShell giữ quyền và phiên, thanh trên chỉ có logo/menu tài khoản; CreateMenu đã bỏ theo yêu cầu. PageNav xếp breadcrumb trên Quay lại. Dự án/công việc/phân tích dùng SectionNav dropdown trong header, vẫn qua DirtyNavigationGuard. Danh sách/Bảng trạng thái là hai button ở bên phải các filter trong cùng hàng lọc, tách khỏi nút tạo ở header và không nằm trong dropdown. Sidebar lọc cùng /tasks và giữ tìm kiếm/dự án/chế độ xem. WorkspaceOverview ghép danh sách chính/cột dự án qua children; các thẻ cá nhân rộng tối đa 220px, không kéo giãn hàng. Nút tạo ở trang chủ có ngữ cảnh Dự án bạn quản lý, chỉ dùng quyền TASKS_MANAGE và danh sách dự án ACTIVE hiện có.
+
+Hàng lọc có padding ngang 8px, ô chọn/nhập có 12px; chiều cao vẫn 32px. Board dùng cột 188–216px, thẻ padding 8px, chữ 13px và metadata 11px, cuộn trong vùng riêng. MetricCard dùng chung: label/value 14px, ngữ cảnh/link ở hàng dưới. Bốn KPI nằm trên biểu đồ, canh phải trong hàng tối đa 960px, không ở cột bên cạnh. Giờ công/chỉ số giữ hai vùng nhưng chia 3/7; lưới chỉ số có 3 cột khi rộng và 2/1 khi hẹp. section-group bao chung hai vùng bằng nền nhẹ/viền, dùng lại ở chi tiết công việc; không chiều cao cố định hay lớp trắng thừa quanh chỉ số.
+
+ReviewsPage đưa q/projectId/page vào useListReviewQueueQuery, tái dùng listQuerySchema và service GET /review-queue. DB lọc q theo tên công việc không phân biệt hoa/thường cùng quyền/dự án trước khi paginate; handler và response không đổi. URL giữ các bộ lọc, xóa page khi đổi q/projectId; không fetch từng task hoặc lọc riêng dữ liệu trang hiện tại.
+
+Panel có section.panel trong suốt, panel-heading chứa title/actions nằm ngoài div.panel-body.card trắng. Các selector form đi qua panel-body; tên lớp/logic feature giữ ở section. DataTable tiếp tục có title ngoài table-card, dữ liệu/footer cùng thẻ. HistoryTable giữ bốn cột 21/23/38/18; công việc luôn có khung phải với lời nhắc khi chưa chọn, chỉ nút Chi tiết ở Hành động mới hiển thị Trước/Sau. Không tự chọn dòng hoặc dùng sự kiện làm nút; nội dung lấy trực tiếp từ item, không thêm query/store. Dưới 900px xếp dọc, dự án giữ Popover portal. task-overview chia nội dung/tiêu chí trái, giờ công phải; padding 12px 14px, gap 16px, chữ 13px. Giờ công dùng flex-row, label/value cách 8px, không border/space-between hoặc bị container chung ép xếp dọc. HeaderActions/HeaderTarget giữ logic tại feature. PageHeader grid đặt tên trái/actions ngoài cùng phải, các thông tin khác ở hàng dưới.
+
+UserBadge dùng chung avatar/tên ở các cột người thực hiện, người nhận, người ghi giờ, người nộp, tác giả và actor lịch sử; metadata dùng person-meta để canh avatar với thời điểm. Tái dùng PersonRef hiện có và avatar chữ cái khi chưa có URL, không thêm request theo từng người hoặc sửa DTO chỉ để dựng avatar. Dữ liệu chưa phân công vẫn hiển thị text.
+
+Nút Quyết định nghiệm thu ở actions của TaskShell, bên phải cùng hàng tên công việc. Nút mở #review tại URL hiện tại; ReviewDialog dùng HashDialog và chỉ mount query lấy lần nộp mới nhất khi mở. TaskShell xét quyền/trạng thái dự án/công việc và route lần nộp; dialog kiểm tra trạng thái/tác giả thực tế từ response. ReviewForm chỉ chứa form, tái dùng mutation và snapshot/version; hủy/Escape giữ dirty guard, 412 tải bản mới để đối chiếu. SubmissionDetailPage không tạo điểm ghi thứ hai. Không thêm route, hook API hoặc endpoint.
+
+## Quyền, điều hướng và khu quản trị — 30/10/2026
+
+Quyền hiệu lực do backend trả trong session và là nguồn duy nhất để mở menu, route, nút và biểu mẫu: `permissions` ở phạm vi hệ thống và `projectAccess[].permissions` ở từng dự án. Role chỉ là nhóm vai trò để hiển thị. Toàn bộ logic nằm ở `lib/auth/access.ts` (`hasPermission`, `hasAnyPermission`, `canVisit`, `canAdminister`, `adminHome`); quản trị tài khoản không kéo theo quyền đọc, sửa hay nghiệm thu dự án. FE chỉ phản ánh quyền đã cấp, backend vẫn kiểm tra độc lập; phiên thiếu `permissions` được xem là chưa cấp quyền.
+
+`components/layout/app-shell.tsx` là khung chung của hai khu vực. WorkspaceShell dùng menu làm việc, AdminShell (route group app/(admin), URL /admin/...) có menu riêng và liên kết Về không gian làm việc; điểm vào qua avatar. Trang chỉ mount khi canVisit cho phép, hết phiên chuyển tới /login kèm next. lib/navigation.ts quản lý menu/cây route cho PageNav; ui-store giữ nhãn/danh sách gần nhất/trang trước. Thiết kế hiện hành dùng SectionNav trong header và nút chức năng của từng màn, không có Tạo toàn cục hay TabNav.
+
 ## Điều chỉnh role ngày 26/10/2026
 
 Theo yêu cầu người dùng, bỏ quyền cấp lẻ và trang phân quyền riêng. ADMIN quản trị tài khoản/tổ chức và xem tổng quan toàn hệ thống; MANAGER quản lý dự án nơi có tư cách OWNER/MANAGER; MEMBER xử lý công việc được giao. Session chỉ trả user và projectAccess (projectId/projectRole đang hoạt động); model/DTO không còn mảng permissions. Backend giả kiểm tra role cùng phạm vi dự án, người được giao và tác giả, kể cả khi replay. S13 là dialog Đổi vai trò tại danh sách thành viên; PATCH membership chỉ nhận projectRole/reason. Người phụ trách phải là Leader/PM hoạt động trong đơn vị; bàn giao vai trò quản lý ở dự án đang mở trước khi đổi role hệ thống.
@@ -56,7 +76,7 @@ Import trực tiếp file cần dùng. Không có barrel `index.ts`, `client.ts`
 
 ## Luồng đọc và ghi dữ liệu
 
-Trang và sidebar dùng chung chính sách role trong `lib/auth/access.ts`. WorkspaceShell chặn route trước khi mount feature; không có PermissionGate hoặc hasPermission. ADMIN mở quản trị; MANAGER/ADMIN mở dashboard, phân tích, cảnh báo và hàng chờ nghiệm thu; MANAGER tạo dự án. Các form quản lý dự án/công việc cho MANAGER/ADMIN; thao tác quản lý dùng canManage theo role MANAGER và tư cách OWNER/MANAGER trong dự án; backend xét lại cùng role/phạm vi. Trang xem dự án/công việc, báo cáo và hồ sơ dành cho mọi thành viên đăng nhập. Query hook chỉ xét phiên, ID, bộ lọc và phụ thuộc tải; không kiểm tra quyền mở trang lần nữa. Session chỉ trả user và projectAccess, bỏ systemPermissions không có nơi dùng trong FE.
+Trang và sidebar dùng chung chính sách quyền trong `lib/auth/access.ts` (permission hiệu lực trong session, theo hệ thống hoặc theo dự án). AppShell chặn route trước khi mount feature; không có PermissionGate. Menu quản trị chỉ ở khu quản trị; các trang công việc/dự án/báo cáo/hồ sơ dành cho mọi thành viên đăng nhập. Thao tác trong trang dùng `hasPermission(session, quyền, projectId)` cùng điều kiện trạng thái và quy tắc không tự nghiệm thu. Query hook chỉ xét phiên, ID, bộ lọc và phụ thuộc tải; không kiểm tra quyền mở trang lần nữa.
 
 ```text
 App route → feature component → React Query hook → feature service
@@ -96,7 +116,7 @@ Model nội bộ trong db.ts mô tả dữ liệu được lưu; DTO mô tả d�
 | Upload policy                        | DTO đã có maxBytes/maxAttachments/allowedMimeTypes; lỗi nằm ở mô tả UI hardcode 20 MiB. UI hiện đọc policy thật và kiểm tra file theo cùng policy. Download trả Blob trực tiếp, không giữ alias DTO cho kiểu binary có sẵn.                                                              |
 | Form và màn cha                      | Tách user-profile-form, user-commands, unit-form, team-form, team-members-form, project-form, task-form. Màn cha ghép dữ liệu và điều hướng; form giữ RHF/snapshot và gọi mutation hook. Không tạo loader/factory chuyển tiếp riêng.                                                     |
 | Phần hiển thị phân tích              | AnalysisSources hiển thị snapshot/căn cứ/biểu đồ; AnalysisExplanation hiển thị kết quả hợp lệ và citation. Trang detail điều phối query/job/tracking. Component con không fetch lại cùng dữ liệu.                                                                                        |
-| Quyền trong UI chung                 | WorkspaceShell kiểm tra role mở trang theo access.ts; sidebar dùng cùng cấu hình, `components/ui` chỉ hiển thị. Không lưu permissions theo thành viên; role hệ thống và vai trò dự án xác định thao tác cố định. Backend kiểm tra độc lập cùng phạm vi nghiệp vụ.                                                                                   |
+| Quyền trong UI chung                 | AppShell kiểm tra `canVisit` trước khi mount trang; sidebar và thao tác dùng cùng `lib/auth/access.ts` với permission hiệu lực trong session (`permissions`, `projectAccess[].permissions`). `components/ui` chỉ hiển thị. Không lưu permissions theo thành viên; backend kiểm tra độc lập cùng phạm vi nghiệp vụ. |
 
 Các nguồn còn thiếu đã được xác định: API chọn ứng viên cho PM, lịch khả dụng/capacity và lịch báo cáo bắt buộc. Chưa tự thêm field/endpoint hoặc gán 8 giờ/ngày để lấp chỗ trống. Capacity/utilization giữ null; pendingReportCount còn dựa một phần fixture. Theo yêu cầu người dùng, response hiện hành trong schema/service/MSW dùng Row cho danh sách và DTO cho chi tiết. Catalog 0.3.0 tiếp tục là nguồn route/nghiệp vụ; các DTO đầy đủ trong đặc tả là bản gốc tham chiếu. Khi nối BE cần dùng response đã điều chỉnh này.
 
@@ -105,6 +125,8 @@ Các nguồn còn thiếu đã được xác định: API chọn ứng viên cho
 Response chỉ gửi trường có nơi dùng để hiển thị hoặc thao tác. ID/version/quyền phục vụ điều hướng, quan hệ và cập nhật vẫn cần dù không in lên màn. Trường nội bộ để kiểm tra quyền, tính tiến độ, lọc kỳ và xác thực snapshot không tự động đi vào HTTP.
 
 Danh sách dùng 9 kiểu Row trong schema/types hiện có: UserRow, ProjectRow, TaskRow, UnitRow, TeamRow, ReportRow, SubmissionRow, ReviewRow, AlertRow. Detail giữ dữ liệu cho xem/sửa. Time log dùng danh sách làm nguồn sửa nên giữ version và trường chỉnh sửa. TeamRow trả memberCount; ReportRow trả totalMinutes từ snapshot đã chốt. Danh sách cảnh báo không tạo snapshot phân tích. Không thêm model hoặc endpoint theo từng màn.
+
+ProjectRow chỉ có id/name/startDate/dueAt/status/owner/unit; bỏ code/objective khỏi schema và response DB, không chỉ ẩn trên UI. projectDTO thêm lại code/objective cho chi tiết và form. ID vẫn phục vụ link/lookup/quyền; bảng không hiển thị mã hay mục tiêu. ProjectTile chọn biểu tượng Lucide và màu ổn định theo ID, dùng chung tại bảng, trang chủ và header; không cần gửi thêm field ảnh/icon.
 
 Attachment chỉ gửi id/filename/sizeBytes/status; taskId/uploadedBy/mimeType nằm trong model để kiểm tra quyền và tải binary. Audit giữ entityType/entityId nội bộ để lọc lịch sử. Task giữ mốc thời gian cần tính tiến độ, kiểm tra ngày ghi giờ và sắp xếp. Assignment chỉ giữ taskId/userId/startedAt/endedAt; lý do bàn giao đã có trong audit. Bỏ timestamp và trường dự phòng không có nơi dùng trong model/seed.
 

@@ -3,6 +3,7 @@
 import { PageSkeleton } from "@/components/ui/loading";
 import { Badge, ButtonLink, DataTable } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { UserBadge } from "@/components/ui/user-badge";
 import { hours } from "@/lib/format";
 import Link from "next/link";
 import { useGetBottlenecksQuery } from "../hooks/use-analytics-queries";
@@ -29,6 +30,7 @@ export function BottlenecksPage() {
           <Metadata value={query.data.metadata} />
           <DataTable
             actions
+            widths={[12, 21, 14, 15, 8, 20, 10]}
             headers={[
               "Khâu xử lý",
               "Công việc",
@@ -47,7 +49,11 @@ export function BottlenecksPage() {
               >
                 {t.taskTitle}
               </Link>,
-              t.assignee?.displayName ?? "Chưa phân công",
+              t.assignee ? (
+                <UserBadge key="assignee" name={t.assignee.displayName} />
+              ) : (
+                "Chưa phân công"
+              ),
               `${hours(t.elapsedMinutes)} · ${t.calendarBasis === "CONTINUOUS" ? "Giờ liên tục" : "Theo lịch làm việc"}`,
               String(t.revisionCount),
               t.evidence.join(" "),

@@ -25,6 +25,7 @@ export function ReportNumbers({
         </p>
       }
       actions
+      widths={[44, 24, 17, 15]}
       headers={[
         frozen ? "Công việc tại lúc gửi" : "Công việc liên quan",
         frozen ? "Trạng thái tại lúc gửi" : "Trạng thái hiện tại",

@@ -4,8 +4,9 @@ import { Suspense } from "react";
 export default function Page() {
   return (
     <Suspense>
-      <WorkspaceOverview />
-      <TaskListPage personal />
+      <WorkspaceOverview>
+        <TaskListPage personal />
+      </WorkspaceOverview>
     </Suspense>
   );
 }

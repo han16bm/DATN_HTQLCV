@@ -111,6 +111,7 @@ export function UsersPage() {
             onPage: (p) => filter.set("page", String(p)),
           }}
           actions
+          widths={[36, 17, 22, 15, 10]}
           headers={[
             "Người dùng",
             "Vai trò hệ thống",

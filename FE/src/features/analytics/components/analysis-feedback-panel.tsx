@@ -3,6 +3,7 @@
 import { Form } from "@/components/forms/form";
 import { FormSelect, FormTextarea } from "@/components/forms/form-field";
 import { Badge, Panel } from "@/components/ui/page";
+import { UserBadge } from "@/components/ui/user-badge";
 import { dateTime } from "@/lib/format";
 import { validationMessage } from "@/lib/forms/validation-message";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,8 +28,9 @@ export function FeedbackPanel({ value }: { value: AnalysisDto }) {
         <>
           <Badge value={f.verdict} />
           <p className="preserve-lines">{f.comment}</p>
-          <p className="small muted">
-            {f.actor.displayName} · {dateTime(f.createdAt)}
+          <p className="small muted person-meta">
+            <UserBadge name={f.actor.displayName} />
+            <time dateTime={f.createdAt}>{dateTime(f.createdAt)}</time>
           </p>
         </>
       )}

@@ -2,7 +2,7 @@
 import { useHashDialog } from "@/lib/forms/use-hash-dialog";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import * as Dialog from "@radix-ui/react-dialog";
-import { type ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 
 export function HashDialog({
   name,
@@ -16,6 +16,7 @@ export function HashDialog({
   children: ReactNode;
 }) {
   const dialog = useHashDialog();
+  const descriptionId = useId();
   return (
     <Dialog.Root
       open={dialog.name === name}
@@ -27,14 +28,21 @@ export function HashDialog({
     >
       <Dialog.Portal>
         <Dialog.Overlay className="dialog-overlay" />
-        <Dialog.Content className="dialog-content">
+        <Dialog.Content
+          className="dialog-content"
+          aria-describedby={description ? descriptionId : undefined}
+        >
           <div className="dialog-heading">
             <Dialog.Title>{title}</Dialog.Title>
-            <Dialog.Close aria-label="Đóng biểu mẫu">×</Dialog.Close>
+            <Dialog.Close className="icon-button" aria-label="Đóng biểu mẫu">
+              ×
+            </Dialog.Close>
           </div>
-          <Dialog.Description className="muted">
-            {description ?? "Kiểm tra thông tin trước khi xác nhận."}
-          </Dialog.Description>
+          {description && (
+            <Dialog.Description id={descriptionId} className="muted">
+              {description}
+            </Dialog.Description>
+          )}
           <div className="section-gap">{children}</div>
         </Dialog.Content>
       </Dialog.Portal>

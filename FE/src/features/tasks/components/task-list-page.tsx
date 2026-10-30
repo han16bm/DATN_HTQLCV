@@ -1,10 +1,13 @@
 "use client";
-import { canManage } from "@/lib/auth/access";
+import { hasPermission } from "@/lib/auth/access";
 
 import { Form } from "@/components/forms/form";
 import { FormSelect } from "@/components/forms/form-field";
+import { Avatar } from "@/components/ui/avatar";
 import { HashDialog } from "@/components/ui/dialog";
+import { PriorityIcon } from "@/components/ui/priority-icon";
 import { PageSkeleton } from "@/components/ui/loading";
+import { HeaderActions } from "@/components/ui/header-actions";
 import {
   Badge,
   DataTable,
@@ -14,6 +17,7 @@ import {
   Pagination,
 } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { UserBadge } from "@/components/ui/user-badge";
 import { useListProjectMembersQuery } from "@/features/project-members/hooks/use-project-members-queries";
 import { useListProjectsQuery } from "@/features/projects/hooks/use-projects-queries";
 import { useSession } from "@/lib/auth/session-context";
@@ -29,7 +33,13 @@ import { z } from "zod";
 import { useListTasksQuery } from "../hooks/use-tasks-queries";
 import { prioritySchema, taskStatusSchema } from "../schemas/task.schema";
 
-export function TaskListPage({ personal = false }: { personal?: boolean }) {
+export function TaskListPage({
+  personal = false,
+  projectId: fixedProjectId,
+}: {
+  personal?: boolean;
+  projectId?: string;
+}) {
   const { session } = useSession();
   const filters = useUrlFilters();
   const search = useSearchParams();
@@ -37,7 +47,7 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
   const dialog = useHashDialog();
   const status = taskStatusSchema.safeParse(filters.get("status"));
   const priority = prioritySchema.safeParse(filters.get("priority"));
-  const projectId = filters.get("projectId");
+  const projectId = fixedProjectId ?? filters.get("projectId");
   const projects = useListProjectsQuery({ pageSize: 100 });
   const members = useListProjectMembersQuery(
     projectId,
@@ -59,8 +69,17 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
   const board = filters.get("view") === "board";
   const manageable =
     projects.data?.items.filter(
-      (p) => p.status === "ACTIVE" && canManage(session, p.id),
+      (p) =>
+        p.status === "ACTIVE" && hasPermission(session, "TASKS_MANAGE", p.id),
     ) ?? [];
+  const filtered = [
+    "q",
+    "status",
+    "overdue",
+    "priority",
+    "assigneeId",
+    ...(fixedProjectId ? [] : ["projectId"]),
+  ].some((key) => filters.get(key));
   const data = query.data;
   const setView = (view: string) => {
     const next = new URLSearchParams(search);
@@ -75,32 +94,47 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
     defaultValues: {},
   });
   const { errors } = form.formState;
+  const createButton = manageable.length > 0 && (
+    <div className="task-create">
+      {personal && <span className="small muted">Dự án bạn quản lý</span>}
+      <button
+        className="primary"
+        onClick={() =>
+          projectId && manageable.some((p) => p.id === projectId)
+            ? router.push(`/projects/${projectId}/tasks/new`)
+            : dialog.open("choose-task-project")
+        }
+      >
+        Tạo công việc
+      </button>
+    </div>
+  );
+  const viewButtons = (
+    <div className="segmented" role="group" aria-label="Chế độ xem">
+      <button type="button" aria-pressed={!board} onClick={() => setView("")}>
+        Danh sách
+      </button>
+      <button
+        type="button"
+        aria-pressed={board}
+        onClick={() => setView("board")}
+      >
+        Bảng trạng thái
+      </button>
+    </div>
+  );
   return (
     <>
-      <PageHeader
-        title={personal ? "Công việc của tôi" : "Công việc"}
-        actions={
-          <>
-            <button onClick={() => setView(board ? "" : "board")}>
-              {board ? "Dạng danh sách" : "Bảng trạng thái"}
-            </button>
-            {manageable.length > 0 && (
-              <button
-                className="primary"
-                onClick={() =>
-                  projectId && manageable.some((p) => p.id === projectId)
-                    ? router.push(`/projects/${projectId}/tasks/new`)
-                    : dialog.open("choose-task-project")
-                }
-              >
-                Tạo công việc
-              </button>
-            )}
-          </>
-        }
-      />
-      <section className="panel filters">
-        <label>
+      {!fixedProjectId && (
+        <PageHeader
+          title={personal ? "Việc của tôi" : "Công việc"}
+          level={personal ? 2 : 1}
+          actions={createButton}
+        />
+      )}
+      {fixedProjectId && <HeaderActions>{createButton}</HeaderActions>}
+      <section className="filters" aria-label="Bộ lọc công việc">
+        <label className="filter-search">
           Tìm công việc
           <input
             type="search"
@@ -109,22 +143,27 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
             onChange={(e) => filters.set("q", e.target.value)}
           />
         </label>
-        <label>
-          Dự án
-          <select
-            value={projectId}
-            onChange={(e) => {
-              filters.setMany({ projectId: e.target.value, assigneeId: "" });
-            }}
-          >
-            <option value="">Tất cả dự án</option>
-            {projects.data?.items.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        {!fixedProjectId && (
+          <label>
+            Dự án
+            <select
+              value={projectId}
+              onChange={(e) => {
+                filters.setMany({
+                  projectId: e.target.value,
+                  assigneeId: "",
+                });
+              }}
+            >
+              <option value="">Tất cả dự án</option>
+              {projects.data?.items.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label>
           Trạng thái
           <select
@@ -179,6 +218,44 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
             ))}
           </select>
         </label>
+        {!personal && (
+          <button
+            type="button"
+            className="filter-chip"
+            aria-pressed={filters.get("assigneeId") === session?.user.id}
+            onClick={() =>
+              filters.set(
+                "assigneeId",
+                filters.get("assigneeId") === session?.user.id
+                  ? ""
+                  : (session?.user.id ?? ""),
+              )
+            }
+          >
+            Việc của tôi
+          </button>
+        )}
+        {filtered && (
+          <div className="filter-tools">
+            <button
+              type="button"
+              className="link-button"
+              onClick={() =>
+                filters.setMany({
+                  q: "",
+                  status: "",
+                  overdue: "",
+                  priority: "",
+                  assigneeId: "",
+                  ...(fixedProjectId ? {} : { projectId: "" }),
+                })
+              }
+            >
+              Xóa bộ lọc
+            </button>
+          </div>
+        )}
+        {viewButtons}
       </section>
       {projects.isError && (
         <QueryErrorState
@@ -202,42 +279,63 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
       {data && !query.isError && (
         <>
           {board ? (
-            <>
-              <p className="small muted metadata">
-                Phân bố công việc trên trang hiện tại. Mở công việc để thực hiện
-                chuyển trạng thái có kiểm tra điều kiện.
-              </p>
-              <div className="board">
-                {taskStatusSchema.options.map((status) => (
-                  <section key={status} className="board-column">
-                    <h2>
-                      {label(status)} ·{" "}
-                      {data.items.filter((t) => t.status === status).length}
-                    </h2>
-                    {data.items
-                      .filter((t) => t.status === status)
-                      .map((t) => (
+            <div className="board-surface">
+              <div
+                className="board"
+                tabIndex={0}
+                role="region"
+                aria-label="Bảng trạng thái công việc"
+              >
+                {taskStatusSchema.options.map((status) => {
+                  const items = data.items.filter((t) => t.status === status);
+                  return (
+                    <section
+                      key={status}
+                      className="board-column"
+                      data-status={status}
+                      aria-label={label(status)}
+                    >
+                      <h2>
+                        {label(status)}
+                        <span className="board-count">{items.length}</span>
+                      </h2>
+                      {items.map((t) => (
                         <Link
                           key={t.id}
                           className="board-card"
                           href={`/tasks/${t.id}`}
                         >
-                          <span>{t.title}</span>
-                          <p className="muted">{t.project.name}</p>
-                          <p>{t.assignee?.displayName ?? "Chưa phân công"}</p>
-                          <p className="small">{dateTime(t.dueAt)}</p>
-                          {t.isOverdue && <Badge value="OVERDUE" />}
+                          <span className="board-card-title">{t.title}</span>
+                          {!fixedProjectId && (
+                            <span className="small muted">
+                              {t.project.name}
+                            </span>
+                          )}
+                          <span className="board-card-meta">
+                            <PriorityIcon value={t.priority} />
+                            <span
+                              className={`small ${t.isOverdue ? "task-overdue" : "muted"}`}
+                            >
+                              {dateTime(t.dueAt)}
+                            </span>
+                            {t.assignee ? (
+                              <Avatar name={t.assignee.displayName} />
+                            ) : (
+                              <span className="small muted">Chưa giao</span>
+                            )}
+                          </span>
                         </Link>
                       ))}
-                  </section>
-                ))}
+                    </section>
+                  );
+                })}
               </div>
               {!data.items.length && <Empty />}
               <Pagination
                 {...data.pagination}
                 onPage={(p) => filters.set("page", String(p))}
               />
-            </>
+            </div>
           ) : (
             <DataTable
               pagination={{
@@ -245,10 +343,17 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
                 onPage: (p) => filters.set("page", String(p)),
               }}
               actions
+              widths={
+                personal
+                  ? [33, 11, 18, 14, 14, 10]
+                  : fixedProjectId
+                    ? [28, 16, 10, 16, 11, 11, 8]
+                    : [23, 13, 14, 9, 13, 10, 10, 8]
+              }
               headers={[
                 "Công việc",
-                "Dự án",
-                "Người thực hiện",
+                ...(fixedProjectId || personal ? [] : ["Dự án"]),
+                ...(personal ? [] : ["Người thực hiện"]),
                 "Ưu tiên",
                 "Trạng thái",
                 "Ngày bắt đầu",
@@ -256,11 +361,35 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
                 "Hành động",
               ]}
               rows={data.items.map((t) => [
-                t.title,
-                t.project.name,
-                t.assignee?.displayName ?? "Chưa phân công",
-                label(t.priority),
-                <span key="state">
+                <div key="task">
+                  <Link
+                    key="title"
+                    className="issue-link"
+                    href={`/tasks/${t.id}`}
+                  >
+                    {t.title}
+                  </Link>
+                  {personal && (
+                    <span className="small muted task-project">
+                      {t.project.name}
+                    </span>
+                  )}
+                </div>,
+                ...(fixedProjectId || personal ? [] : [t.project.name]),
+                ...(personal
+                  ? []
+                  : [
+                      t.assignee ? (
+                        <UserBadge
+                          key="assignee"
+                          name={t.assignee.displayName}
+                        />
+                      ) : (
+                        "Chưa phân công"
+                      ),
+                    ]),
+                <PriorityIcon key="priority" value={t.priority} showLabel />,
+                <span key="state" className="page-status">
                   <Badge value={t.status} />
                   {t.isOverdue && <Badge value="OVERDUE" />}
                 </span>,
@@ -287,7 +416,7 @@ export function TaskListPage({ personal = false }: { personal?: boolean }) {
           submitLabel="Mở biểu mẫu"
         >
           <FormSelect
-            label="Dự án đang triển khai"
+            label="Dự án bạn quản lý"
             required
             options={manageable.map((p) => ({ value: p.id, label: p.name }))}
             {...form.register("projectId")}

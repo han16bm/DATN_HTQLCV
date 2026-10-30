@@ -1,31 +1,36 @@
 "use client";
 import { label } from "@/lib/format";
-import { confirmDiscard } from "@/lib/forms/confirm-discard";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { Check, ChevronDown } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { type ComponentProps, type ReactNode } from "react";
 export function PageHeader({
   title,
   description,
   actions,
   status,
+  navigation,
+  level = 1,
 }: {
   title: string;
   description?: ReactNode;
   actions?: ReactNode;
   status?: ReactNode;
+  navigation?: ReactNode;
+  // Phần con trong trang (ví dụ công việc cá nhân ở trang chủ) dùng h2.
+  level?: 1 | 2;
 }) {
+  const Heading = level === 1 ? "h1" : "h2";
   return (
-    <div className="page-heading">
-      <div>
-        <div className="page-title">
-          <h1>{title}</h1>
-          {status}
-        </div>
-        {description && <p className="muted">{description}</p>}
+    <header className={level === 1 ? "page-heading" : "page-heading section"}>
+      <div className="page-title">
+        <Heading>{title}</Heading>
       </div>
       {actions && <div className="actions">{actions}</div>}
-    </div>
+      {status && <div className="page-status">{status}</div>}
+      {description && <p className="muted">{description}</p>}
+      {navigation && <div className="page-header-nav">{navigation}</div>}
+    </header>
   );
 }
 export function Panel({
@@ -40,14 +45,14 @@ export function Panel({
   actions?: ReactNode;
 }) {
   return (
-    <section className={`panel card ${className}`}>
+    <section className={`panel ${className}`}>
       {(title || actions) && (
         <div className="panel-heading">
           {title && <h2>{title}</h2>}
           {actions}
         </div>
       )}
-      {children}
+      <div className="panel-body card">{children}</div>
     </section>
   );
 }
@@ -80,7 +85,7 @@ export function DetailLink({
   );
 }
 export function Empty({
-  message = "Chưa có dữ liệu phù hợp trong phạm vi này.",
+  message = "Chưa tìm thấy kết quả. Hãy thử điều chỉnh bộ lọc.",
 }: {
   message?: string;
 }) {
@@ -94,100 +99,144 @@ export function Empty({
 export function Badge({ value }: { value: string }) {
   return <span className={`badge ${value.toLowerCase()}`}>{label(value)}</span>;
 }
+export function StatusField({
+  label = "Trạng thái",
+  value,
+}: {
+  label?: string;
+  value: string;
+}) {
+  return (
+    <span className="status-field">
+      <span>{label}:</span>
+      <Badge value={value} />
+    </span>
+  );
+}
 export function DataTable({
   headers,
   rows,
   actions = false,
-  className,
   title,
   headerActions,
   description,
   pagination,
+  widths,
 }: {
   headers: string[];
   rows: ReactNode[][];
   actions?: boolean;
-  className?: string;
   title?: string;
   headerActions?: ReactNode;
   description?: ReactNode;
   pagination?: ComponentProps<typeof Pagination>;
+  widths?: number[];
 }) {
   return (
-    <Panel title={title} actions={headerActions} className="table-card">
-      {description && <div className="table-note">{description}</div>}
-      <div className="table-scroll">
-        <table className={className} aria-label={title}>
-          <thead>
-            <tr>
-              {headers.map((h, i) => (
-                <th
-                  key={i}
-                  scope="col"
-                  className={
-                    actions && i === headers.length - 1
-                      ? "table-actions"
-                      : undefined
-                  }
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, i) => (
-              <tr key={i}>
-                {row.map((cell, j) => (
-                  <td
-                    key={j}
+    <section className="data-table" data-columns={headers.length}>
+      {(title || headerActions) && (
+        <div className="table-heading">
+          {title && <h2>{title}</h2>}
+          {headerActions && <div className="actions">{headerActions}</div>}
+        </div>
+      )}
+      <div className="table-card">
+        {description && <div className="table-note">{description}</div>}
+        <div
+          className="table-scroll"
+          tabIndex={0}
+          role="region"
+          aria-label={title ?? "Bảng dữ liệu"}
+        >
+          <table aria-label={title} data-columns={headers.length}>
+            {widths && (
+              <colgroup>
+                {widths.map((width, index) => (
+                  <col key={index} style={{ width: `${width}%` }} />
+                ))}
+              </colgroup>
+            )}
+            <thead>
+              <tr>
+                {headers.map((h, i) => (
+                  <th
+                    key={i}
+                    scope="col"
                     className={
-                      actions && j === row.length - 1
+                      actions && i === headers.length - 1
                         ? "table-actions"
                         : undefined
                     }
                   >
-                    {cell}
-                  </td>
+                    {h}
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {!rows.length && <Empty />}
+            </thead>
+            <tbody>
+              {rows.map((row, i) => (
+                <tr key={i}>
+                  {row.map((cell, j) => (
+                    <td
+                      key={j}
+                      className={
+                        actions && j === row.length - 1
+                          ? "table-actions"
+                          : undefined
+                      }
+                    >
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!rows.length && <Empty />}
+        </div>
+        <Pagination {...(pagination ?? { total: rows.length })} />
       </div>
-      <Pagination {...(pagination ?? { total: rows.length })} />
-    </Panel>
+    </section>
   );
 }
-export function SectionSelect({
-  items,
-  active,
-  label,
-  suffix = "",
-}: {
-  items: { href: string; label: string }[];
-  active: string;
+type NavProps = {
   label: string;
-  suffix?: string;
-}) {
-  const router = useRouter();
+  items: { href: string; label: string; active: boolean }[];
+};
+export function SectionNav({ label, items }: NavProps) {
+  const current = items.find((item) => item.active);
   return (
-    <select
-      className="section-select"
-      aria-label={label}
-      value={active}
-      onChange={async (event) => {
-        const href = event.currentTarget.value;
-        if (await confirmDiscard()) router.push(href + suffix);
-      }}
-    >
-      {items.map((i) => (
-        <option key={i.href} value={i.href}>
-          {i.label}
-        </option>
-      ))}
-    </select>
+    <nav className="section-nav" aria-label={label}>
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger className="section-trigger" aria-label={label}>
+          {current?.label ?? items[0]?.label}
+          <ChevronDown size={16} aria-hidden="true" />
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Portal>
+          <DropdownMenu.Content
+            className="account-menu"
+            align="start"
+            sideOffset={6}
+            collisionPadding={12}
+          >
+            {items.map((item) => (
+              <DropdownMenu.Item key={item.href} asChild>
+                <Link
+                  className="account-menu-item"
+                  href={item.href}
+                  aria-current={item.active ? "page" : undefined}
+                >
+                  <span className="menu-check">
+                    {item.active && <Check size={15} aria-hidden="true" />}
+                  </span>
+                  {item.label}
+                </Link>
+              </DropdownMenu.Item>
+            ))}
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
+    </nav>
   );
 }
 export function Pagination({
@@ -201,16 +250,24 @@ export function Pagination({
   total: number;
   onPage?: (page: number) => void;
 }) {
+  const pages = Math.max(1, Math.ceil(total / pageSize));
   return (
     <div className="table-footer">
       <span className="small muted">{total} kết quả</span>
       {onPage && (total > pageSize || page > 1) && (
         <nav className="actions" aria-label="Phân trang">
-          <button disabled={page <= 1} onClick={() => onPage(page - 1)}>
+          <button
+            type="button"
+            disabled={page <= 1}
+            onClick={() => onPage(page - 1)}
+          >
             Trước
           </button>
-          <span aria-live="polite">{page}</span>
+          <span className="small" aria-live="polite">
+            Trang {page} / {pages}
+          </span>
           <button
+            type="button"
             disabled={page * pageSize >= total}
             onClick={() => onPage(page + 1)}
           >

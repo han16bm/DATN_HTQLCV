@@ -1,11 +1,13 @@
 "use client";
 
+import { BrandLogo } from "@/components/ui/brand-logo";
 import { Spinner } from "@/components/ui/loading";
 import { useSession } from "@/lib/auth/session-context";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, CircleCheckBig, LockKeyhole } from "lucide-react";
+import { ArrowRight, LockKeyhole } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { safeNext } from "@/lib/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useLoginMutation } from "../hooks/use-auth-mutations";
@@ -14,6 +16,8 @@ import type { LoginInput } from "../types/auth.types";
 
 export function LoginPage() {
   const router = useRouter();
+  const search = useSearchParams();
+  const next = safeNext(search.get("next"));
   const { session, signIn, loading } = useSession();
   const mutation = useLoginMutation();
   const busy = loading || mutation.isPending;
@@ -22,18 +26,14 @@ export function LoginPage() {
     defaultValues: { username: "", password: "" },
   });
   useEffect(() => {
-    if (session) router.replace("/workspace");
-  }, [session, router]);
+    if (session) router.replace(next);
+  }, [session, router, next]);
   return (
     <main className="login-layout">
       <div className="login-intro">
         <div className="login-brand">
-          <span className="brand-mark">
-            <CircleCheckBig size={25} />
-          </span>
-          Cổng công việc
+          <BrandLogo size={40} large />
         </div>
-        <span className="eyebrow">KẾT NỐI CÔNG VIỆC · CÙNG NHAU TIẾN XA</span>
         <h1>
           Cùng một mục tiêu.
           <br />
@@ -51,10 +51,6 @@ export function LoginPage() {
           height={440}
           loading="eager"
         />
-        <div className="login-caption">
-          <span />
-          Kế hoạch rõ ràng. Làm việc hiệu quả.
-        </div>
       </div>
       <section className="login-panel">
         <div className="login-panel-heading">
@@ -66,13 +62,19 @@ export function LoginPage() {
             <h2>Đăng nhập</h2>
           </div>
         </div>
-        <p className="muted">Sử dụng tài khoản nội bộ đã được cấp.</p>
+        {search.get("expired") && !session ? (
+          <p role="status" className="notice">
+            Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.
+          </p>
+        ) : (
+          <p className="muted">Sử dụng tài khoản nội bộ đã được cấp.</p>
+        )}
         <form
           onSubmit={form.handleSubmit(async (body) => {
             try {
               const result = await mutation.mutateAsync(body);
               await signIn(result);
-              router.replace("/workspace");
+              router.replace(next);
             } catch {
               /* Mutation error remains visible; form values are preserved. */
             }

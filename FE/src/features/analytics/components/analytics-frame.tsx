@@ -1,6 +1,6 @@
 "use client";
 
-import { PageHeader, SectionSelect } from "@/components/ui/page";
+import { PageHeader } from "@/components/ui/page";
 import {
   prioritySchema,
   taskStatusSchema,
@@ -8,10 +8,10 @@ import {
 import { label } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import * as Popover from "@radix-ui/react-popover";
-import { usePathname } from "next/navigation";
 import { type ReactNode } from "react";
 import { useListAnalyticsFilterOptionsQuery } from "../hooks/use-analytics-queries";
 import type { useAnalyticsScope } from "../hooks/use-analytics-scope";
+import { AnalyticsTabs } from "./analytics-tabs";
 
 export function AnalyticsFrame({
   title,
@@ -23,131 +23,139 @@ export function AnalyticsFrame({
   scope: ReturnType<typeof useAnalyticsScope>;
 }) {
   const f = useUrlFilters();
-  const path = usePathname();
+  const filterCount = Object.keys(scope.query).filter(
+    (key) => key !== "from" && key !== "to",
+  ).length;
   return (
     <>
-      <PageHeader title={title} />
-      <div className="section-toolbar">
-        <SectionSelect
-          label="Mục phân tích"
-          active={path}
-          suffix={scope.suffix}
-          items={[
-            { href: "/dashboard", label: "Tổng quan" },
-            { href: "/analytics/risks", label: "Nguy cơ trễ hạn" },
-            { href: "/analytics/workload", label: "Khối lượng" },
-            { href: "/analytics/bottlenecks", label: "Điểm nghẽn" },
-            { href: "/analytics/summary", label: "Tổng hợp" },
-          ]}
-        />
-        <Popover.Root>
-          <Popover.Trigger asChild>
-            <button type="button">Bộ lọc</button>
-          </Popover.Trigger>
-          <Popover.Portal>
-            <Popover.Content
-              className="analytics-filter-popover"
-              align="end"
-              sideOffset={8}
-              collisionPadding={16}
-              aria-label="Bộ lọc phân tích"
-            >
-              <div className="analytics-filter-heading">
-                <h2>Bộ lọc</h2>
-                <Popover.Close aria-label="Đóng bộ lọc">×</Popover.Close>
-              </div>
-              <div className="analytics-filter-fields">
-                <LookupFilter kind="UNIT" name="unitId" label="Đơn vị" />
-                <LookupFilter kind="PROJECT" name="projectId" label="Dự án" />
-                <label>
-                  Từ ngày
-                  <input
-                    type="date"
-                    value={scope.query.from}
-                    onChange={(e) => f.set("from", e.target.value)}
-                  />
-                </label>
-                <label>
-                  Đến ngày
-                  <input
-                    type="date"
-                    value={scope.query.to}
-                    onChange={(e) => f.set("to", e.target.value)}
-                  />
-                </label>
-              </div>
-              <details className="analytics-more-filters">
-                <summary>Bộ lọc khác</summary>
-                <div className="analytics-filter-fields">
-                  <LookupFilter kind="TEAM" name="teamId" label="Nhóm" />
-                  <LookupFilter
-                    kind="PERSON"
-                    name="ownerId"
-                    label="Phụ trách dự án"
-                  />
-                  <LookupFilter
-                    kind="PERSON"
-                    name="assigneeId"
-                    label="Nhân viên"
-                  />
-                  {[
-                    {
-                      name: "status",
-                      title: "Trạng thái",
-                      values: taskStatusSchema.options,
-                    },
-                    {
-                      name: "priority",
-                      title: "Ưu tiên",
-                      values: prioritySchema.options,
-                    },
-                  ].map((field) => (
-                    <label key={field.name}>
-                      {field.title}
-                      <select
-                        value={f.get(field.name)}
-                        onChange={(e) => f.set(field.name, e.target.value)}
-                      >
-                        <option value="">Tất cả</option>
-                        {field.values.map((v) => (
-                          <option key={v} value={v}>
-                            {label(v)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ))}
+      <PageHeader
+        title={title}
+        navigation={<AnalyticsTabs suffix={scope.suffix} />}
+        description={
+          scope.parsed.success &&
+          `${scope.query.from.split("-").reverse().join("/")} – ${scope.query.to.split("-").reverse().join("/")}`
+        }
+        actions={
+          <Popover.Root>
+            <Popover.Trigger asChild>
+              <button
+                type="button"
+                className="filter-button"
+                aria-label="Bộ lọc"
+              >
+                Bộ lọc{" "}
+                {filterCount > 0 && (
+                  <span className="filter-count" aria-hidden="true">
+                    {filterCount}
+                  </span>
+                )}
+              </button>
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Content
+                className="analytics-filter-popover"
+                align="end"
+                sideOffset={8}
+                collisionPadding={16}
+                aria-label="Bộ lọc phân tích"
+              >
+                <div className="analytics-filter-heading">
+                  <h2>Bộ lọc</h2>
+                  <Popover.Close aria-label="Đóng bộ lọc">×</Popover.Close>
                 </div>
-              </details>
-              <div className="analytics-filter-actions">
-                <button
-                  type="button"
-                  onClick={() =>
-                    f.setMany({
-                      unitId: "",
-                      projectId: "",
-                      teamId: "",
-                      ownerId: "",
-                      assigneeId: "",
-                      status: "",
-                      priority: "",
-                      from: "",
-                      to: "",
-                    })
-                  }
-                >
-                  Đặt lại
-                </button>
-                <Popover.Close asChild>
-                  <button type="button" className="primary">
-                    Xong
+                <div className="analytics-filter-fields">
+                  <LookupFilter kind="UNIT" name="unitId" label="Đơn vị" />
+                  <LookupFilter kind="PROJECT" name="projectId" label="Dự án" />
+                  <label>
+                    Từ ngày
+                    <input
+                      type="date"
+                      value={scope.query.from}
+                      onChange={(e) => f.set("from", e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Đến ngày
+                    <input
+                      type="date"
+                      value={scope.query.to}
+                      onChange={(e) => f.set("to", e.target.value)}
+                    />
+                  </label>
+                </div>
+                <details className="analytics-more-filters">
+                  <summary>Bộ lọc khác</summary>
+                  <div className="analytics-filter-fields">
+                    <LookupFilter kind="TEAM" name="teamId" label="Nhóm" />
+                    <LookupFilter
+                      kind="PERSON"
+                      name="ownerId"
+                      label="Phụ trách dự án"
+                    />
+                    <LookupFilter
+                      kind="PERSON"
+                      name="assigneeId"
+                      label="Nhân viên"
+                    />
+                    {[
+                      {
+                        name: "status",
+                        title: "Trạng thái",
+                        values: taskStatusSchema.options,
+                      },
+                      {
+                        name: "priority",
+                        title: "Ưu tiên",
+                        values: prioritySchema.options,
+                      },
+                    ].map((field) => (
+                      <label key={field.name}>
+                        {field.title}
+                        <select
+                          value={f.get(field.name)}
+                          onChange={(e) => f.set(field.name, e.target.value)}
+                        >
+                          <option value="">Tất cả</option>
+                          {field.values.map((v) => (
+                            <option key={v} value={v}>
+                              {label(v)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ))}
+                  </div>
+                </details>
+                <div className="analytics-filter-actions">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      f.setMany({
+                        unitId: "",
+                        projectId: "",
+                        teamId: "",
+                        ownerId: "",
+                        assigneeId: "",
+                        status: "",
+                        priority: "",
+                        from: "",
+                        to: "",
+                      })
+                    }
+                  >
+                    Đặt lại
                   </button>
-                </Popover.Close>
-              </div>
-            </Popover.Content>
-          </Popover.Portal>
-        </Popover.Root>
-      </div>
+                  <Popover.Close asChild>
+                    <button type="button" className="primary">
+                      Xong
+                    </button>
+                  </Popover.Close>
+                </div>
+              </Popover.Content>
+            </Popover.Portal>
+          </Popover.Root>
+        }
+      />
       {!scope.parsed.success ? (
         <p className="notice error">
           Bộ lọc không hợp lệ. Kiểm tra lại ngày và phạm vi đã chọn.

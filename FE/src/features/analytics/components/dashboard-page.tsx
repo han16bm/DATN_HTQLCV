@@ -26,24 +26,22 @@ import { AnalyticsFrame } from "./analytics-frame";
 function MetricCard({ metric }: { metric: MetricDto }) {
   return (
     <article className="metric-card" aria-label={metric.label}>
-      <div className="metric-heading">
-        <h3>{metric.label}</h3>
-        <AnalysisLink
-          value={metric.analysisRef}
-          label={`Xem chỉ số ${metric.label}`}
-        />
-      </div>
+      <h3>{metric.label}</h3>
       <p
         className={`metric-number ${metric.value === null ? "metric-missing" : ""}`}
       >
         {metricValue(metric.value, metric.unit)}
       </p>
-      <p className="small muted">
+      <p className="metric-context small muted">
         {metric.basis === "CURRENT" ? "Hiện tại" : "Trong kỳ"}
         {metric.denominator !== null
           ? ` · Tổng ${number(metric.denominator)}`
           : ""}
       </p>
+      <AnalysisLink
+        value={metric.analysisRef}
+        label={`Xem chỉ số ${metric.label}`}
+      />
     </article>
   );
 }
@@ -73,13 +71,16 @@ export function DashboardPage() {
               label="Mở phân tích tổng quan"
             />
           </p>
-          <div className="metric-grid">
+          <section
+            className="metric-grid analytics-stats"
+            aria-label="Chỉ số tổng quan"
+          >
             {["K03", "K04", "K06", "K12"].map((code) => {
               const m = data?.metrics.find((m) => m.code === code);
               return m ? <MetricCard key={m.code} metric={m} /> : null;
             })}
-          </div>
-          <div className="two-column">
+          </section>
+          <div className="two-column analytics-charts">
             <Panel title="Công việc theo trạng thái">
               <div
                 className="chart"
@@ -88,27 +89,37 @@ export function DashboardPage() {
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
+                    layout="vertical"
                     data={query.data.byStatus.map((row) => ({
                       ...row,
                       name: label(row.status),
                     }))}
-                    margin={{ bottom: 50, left: -20 }}
+                    margin={{ top: 4, right: 16, bottom: 4, left: 0 }}
                   >
-                    <CartesianGrid vertical={false} stroke="#e0e5eb" />
+                    <CartesianGrid horizontal={false} stroke="#e0e5eb" />
                     <XAxis
-                      dataKey="name"
+                      type="number"
                       fontSize={11}
-                      interval={0}
-                      angle={-18}
-                      textAnchor="end"
+                      allowDecimals={false}
+                      axisLine={false}
+                      tickLine={false}
                     />
-                    <YAxis allowDecimals={false} />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      fontSize={12}
+                      interval={0}
+                      width={116}
+                      axisLine={false}
+                      tickLine={false}
+                    />
                     <Tooltip />
                     <Bar
                       dataKey="count"
                       name="Số công việc"
-                      fill="#829db8"
-                      radius={[3, 3, 0, 0]}
+                      fill="#0c66e4"
+                      maxBarSize={22}
+                      radius={[0, 3, 3, 0]}
                     />
                   </BarChart>
                 </ResponsiveContainer>
@@ -117,6 +128,7 @@ export function DashboardPage() {
               <details>
                 <summary>Xem số liệu trạng thái</summary>
                 <DataTable
+                  widths={[70, 30]}
                   headers={["Trạng thái", "Số việc"]}
                   rows={query.data.byStatus.map((row) => [
                     label(row.status),
@@ -169,6 +181,7 @@ export function DashboardPage() {
           <DataTable
             title="So sánh dự án"
             actions
+            widths={[28, 17, 13, 10, 18, 14]}
             headers={[
               "Dự án",
               "Công việc theo dõi",
@@ -192,8 +205,8 @@ export function DashboardPage() {
               <AnalysisLink key="analysis" value={p.analysisRef} />,
             ])}
           />
-          <Panel title="Giờ công và ước lượng">
-            <div className="two-column">
+          <div className="analytics-summary section-group">
+            <Panel className="analytics-effort" title="Giờ công và ước lượng">
               <dl>
                 <div>
                   <dt>Giờ công thực tế</dt>
@@ -211,8 +224,6 @@ export function DashboardPage() {
                     {hours(query.data.timeVariance.originalEstimateMinutes)}
                   </dd>
                 </div>
-              </dl>
-              <dl>
                 <div>
                   <dt>Chênh lệch so với ước lượng hiện tại</dt>
                   <dd>{hours(query.data.timeVariance.deltaCurrentMinutes)}</dd>
@@ -221,7 +232,7 @@ export function DashboardPage() {
                   <dt>Chênh lệch so với ước lượng ban đầu</dt>
                   <dd>{hours(query.data.timeVariance.deltaOriginalMinutes)}</dd>
                 </div>
-                <div>
+                <div className="wide">
                   <dt>Nộp kết quả trong kỳ</dt>
                   <dd>
                     Đúng hạn: {query.data.submissionTimeliness.onTimeCount} ·
@@ -229,7 +240,7 @@ export function DashboardPage() {
                     {query.data.submissionTimeliness.denominator})
                   </dd>
                 </div>
-                <div>
+                <div className="wide">
                   <dt>Báo cáo đã gửi</dt>
                   <dd>
                     Ngày: {query.data.reporting.submittedDaily} · Tuần:{" "}
@@ -237,21 +248,21 @@ export function DashboardPage() {
                   </dd>
                 </div>
               </dl>
-            </div>
-            <p className="small muted">
-              Chênh lệch giờ công chưa đủ để đánh giá năng lực nhân sự. Chưa có
-              lịch yêu cầu nộp báo cáo nên chưa xác định được tỷ lệ nộp đủ.
-            </p>
-          </Panel>
-          <Panel title="Các chỉ số khác">
-            <div className="metric-grid compact">
-              {query.data.metrics
-                .filter((m) => !["K03", "K04", "K06", "K12"].includes(m.code))
-                .map((m) => (
-                  <MetricCard key={m.code} metric={m} />
-                ))}
-            </div>
-          </Panel>
+              <p className="small muted">
+                Chênh lệch giờ công chưa đủ để đánh giá năng lực nhân sự. Chưa
+                có lịch yêu cầu nộp báo cáo nên chưa xác định được tỷ lệ nộp đủ.
+              </p>
+            </Panel>
+            <Panel title="Các chỉ số khác" className="analytics-metrics">
+              <div className="metric-grid">
+                {query.data.metrics
+                  .filter((m) => !["K03", "K04", "K06", "K12"].includes(m.code))
+                  .map((m) => (
+                    <MetricCard key={m.code} metric={m} />
+                  ))}
+              </div>
+            </Panel>
+          </div>
         </>
       )}
     </AnalyticsFrame>

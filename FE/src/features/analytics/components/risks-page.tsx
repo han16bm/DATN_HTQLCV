@@ -3,6 +3,7 @@
 import { PageSkeleton } from "@/components/ui/loading";
 import { Badge, DataTable } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { UserBadge } from "@/components/ui/user-badge";
 import Link from "next/link";
 import { useGetDeadlineRisksQuery } from "../hooks/use-analytics-queries";
 import { useAnalyticsScope } from "../hooks/use-analytics-scope";
@@ -29,6 +30,7 @@ export function RisksPage() {
           <DataTable
             title="Nguy cơ theo dự án"
             actions
+            widths={[22, 12, 15, 13, 28, 10]}
             headers={[
               "Dự án",
               "Mức nguy cơ",
@@ -53,6 +55,7 @@ export function RisksPage() {
           <DataTable
             title="Công việc cần đối chiếu"
             actions
+            widths={[25, 16, 15, 23, 11, 10]}
             headers={[
               "Công việc",
               "Người nhận",
@@ -69,7 +72,11 @@ export function RisksPage() {
               >
                 {t.taskTitle}
               </Link>,
-              t.assignee?.displayName ?? "Chưa phân công",
+              t.assignee ? (
+                <UserBadge key="assignee" name={t.assignee.displayName} />
+              ) : (
+                "Chưa phân công"
+              ),
               <Badge key="category" value={t.category} />,
               t.evidence.join(" "),
               <Badge key="quality" value={t.quality.status} />,

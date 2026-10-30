@@ -5,10 +5,12 @@ import type {
   domainActionSchema,
   entityLabelSchema,
   paginationSchema,
+  permissionSchema,
   personRefSchema,
   reasonSchema,
 } from "@/lib/validation/common.schema";
 import { type z } from "zod";
+export type Permission = z.output<typeof permissionSchema>;
 export type ViewerId = string | null | undefined;
 export type ReasonInput = z.output<typeof reasonSchema>;
 export type EntityLabelDto = z.output<typeof entityLabelSchema>;

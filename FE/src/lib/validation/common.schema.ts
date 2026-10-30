@@ -1,6 +1,18 @@
 import { checkAction } from "@/lib/validation/contract-refinements";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
+// Hành động được phép; phạm vi (hệ thống hoặc từng dự án) do session quyết định.
+export const permissionSchema = z.enum([
+  "USERS_MANAGE",
+  "ORGANIZATION_MANAGE",
+  "PROJECT_CREATE",
+  "PROJECT_MANAGE",
+  "MEMBERS_MANAGE",
+  "TASKS_MANAGE",
+  "TASKS_REVIEW",
+  "ANALYTICS_VIEW",
+  "ALERTS_MANAGE",
+]);
 export const paginationSchema = z.object({
   page: z.number().int().safe().min(1),
   pageSize: z.number().int().safe().min(1).max(100),

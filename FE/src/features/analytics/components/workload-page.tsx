@@ -35,6 +35,7 @@ export function WorkloadPage() {
               </p>
             }
             actions
+            widths={[20, 15, 18, 12, 14, 9, 12]}
             headers={[
               "Nhân viên",
               "Đang nhận / chờ nghiệm thu",

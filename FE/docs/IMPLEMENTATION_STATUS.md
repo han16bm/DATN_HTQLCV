@@ -1,5 +1,89 @@
 # Trạng thái triển khai
 
+## Tìm công việc nghiệm thu, KPI phía trên và khung nhóm — 30/10/2026
+
+ReviewsPage thêm ô Tìm công việc, truyền q cùng projectId/page qua hook/service HTTP hiện có. Schema đã có q; mock DB nay lọc theo task.title không phân biệt hoa/thường cùng quyền/phạm vi trước phân trang. Đổi từ khóa giữ dự án và bỏ page. Không thêm DTO/endpoint hoặc request lấy từng task.
+
+Dashboard đưa KPI về hàng phía trên biểu đồ, canh phải, tối đa 960px; 4/2/1 cột theo chiều rộng. Giờ công/chỉ số vẫn hai vùng, bố trí 3/7 và lưới chỉ số 3/2/1 cột, padding gọn; bỏ khung trắng thừa quanh lưới và đường kẻ từng dòng giờ công, đặt giá trị sát nhãn. section-group có nền nhẹ/viền/bo 8px/padding 14px bao chung nhóm này và hai vùng chi tiết công việc, giữ tiêu đề ngoài phần dữ liệu.
+
+Kiểm tra: **208/208 tests ở 13 file**, typecheck, lint, build và git diff --check đạt. Thêm ca HTTP tìm kiếm trước phân trang, trim/case, kết hợp dự án và không lộ hàng ngoài phạm vi; mở rộng ca UI giữ q/projectId và bỏ page, không fetch từng task. Đã cập nhật AGENTS.md, kiến trúc/UI/site map/design system/API catalog. Chưa xác nhận trực quan vì công cụ browser vẫn báo native pipe/browser access host unavailable.
+
+## Giữ sẵn khung lịch sử và làm gọn giờ công — 30/10/2026
+
+Khung lịch sử bên phải luôn có sẵn trong HistoryTable split, chưa chọn thì hiện lời nhắc; nút Chi tiết ở Hành động chỉ đổi nội dung, không làm dịch bố cục và không tự chọn dòng. Khi không có sự kiện, khung hiển thị trạng thái chưa có hoạt động. Không đổi API hoặc dữ liệu lịch sử.
+
+Sửa task-effort bị quy tắc container chung ép nhãn/value xuống dòng: đặt rõ flex-direction:row, justify-content:flex-start, gap 8px, bỏ border từng hàng. Giữ wrap khi thật sự thiếu chỗ. Thu padding dữ liệu về 12px 14px, chữ 13px, gap hai vùng 16px; khối giờ công tối thiểu 240px khi chia cột. Tiêu đề vẫn ngoài khung trắng, giữ phân vùng trái/phải đã thống nhất.
+
+Kiểm tra: **207/207 tests ở 13 file**, typecheck, lint, build và git diff --check đạt. Ca lịch sử xác nhận khung sẵn có lời nhắc, chưa hiển thị dữ liệu thay đổi trước thao tác và cập nhật đúng nội dung sau Chi tiết. Đã cập nhật AGENTS.md và các tài liệu UI/kiến trúc/site map; kiểm thử DOM không xác nhận kích thước CSS. Chưa QA trực quan do công cụ trình duyệt chưa kết nối được.
+
+## Tiêu đề ngoài khung, header cùng hàng và lịch sử mở theo nút — 30/10/2026
+
+Panel dùng section ngoài trong suốt: panel-heading chứa title/actions, panel-body.card mới có nền trắng/viền/padding. Áp dụng chung cho kết quả đã nộp, đính kèm, thông tin và form; điều chỉnh selector giới hạn form và màu thẻ theo wrapper mới. PageHeader đổi sang grid hai cột, tên ở trái/actions ngoài cùng phải ở hàng đầu, trạng thái/mô tả/điều hướng ở các hàng dưới.
+
+task-overview chia nội dung/tiêu chí trái, giờ công phải; từng nhóm có tiêu đề ngoài vùng dữ liệu trắng. Analytics-summary tiếp tục chia 4/6 trong cùng div, từng nhóm dùng Panel có tiêu đề bên ngoài. Lịch sử công việc khôi phục bốn cột 21/23/38/18; mặc định không chọn dòng, chỉ bấm Chi tiết tại Hành động mới hiện khung Trước/Sau bên phải. Sự kiện là text; khung phải cũng có tiêu đề ngoài vùng trắng, dưới 900px xếp dọc. Không đổi route/API/nghiệp vụ nghiệm thu.
+
+Kiểm tra: **207/207 tests ở 13 file**, typecheck, lint, build và git diff --check đạt. Ca lịch sử xác nhận không tự mở khung, có Hành động/Chi tiết và chọn đúng nội dung; các ca nghiệm thu, giữ draft/412 và PDF tiếp tục đạt. Đã cập nhật AGENTS.md, ARCHITECTURE.md, UI_REVIEW.md, DESIGN_SYSTEM.md và SITE_MAP.txt. Chưa xác nhận trực quan vì công cụ browser vẫn báo native pipe/browser access host unavailable.
+
+## Avatar người thực hiện và vùng xem lịch sử bên phải — 30/10/2026
+
+Áp dụng UserBadge cho người nhận việc ở danh sách/nguy cơ/điểm nghẽn, người ghi giờ công, người nộp/nghiệm thu, tác giả báo cáo/phản hồi và actor lịch sử; dùng chung ở bảng và metadata. Tái dùng tên trong PersonRef hiện có và avatar chữ cái khi chưa có ảnh, không thêm request theo từng người hoặc trường mock. Chưa phân công vẫn hiển thị text.
+
+HistoryTable bật split cho hoạt động gần đây và trang lịch sử công việc: bảng ba cột 25/30/45 bên trái, khung Trước/Sau bên phải, tỷ lệ tổng 3/5–2/5. Chọn sự kiện cập nhật khung, không mở popup; mặc định dòng đầu của trang hiện tại, không dựng khung khi rỗng. AuditChanges inline tái dùng formatter, phân trang giữ nguyên, dưới 760px xếp dọc. Lịch sử dự án giữ bố cục/Popover hiện có.
+
+Kiểm tra: **207/207 tests ở 13 file**, typecheck, lint, build và git diff --check đạt. Cập nhật ca lịch sử qua HTTP: có avatar actor, chọn sự kiện đổi nội dung Trước/Sau đúng và không có dialog. Đã cập nhật AGENTS.md, ARCHITECTURE.md, UI_REVIEW.md, DESIGN_SYSTEM.md và SITE_MAP.txt. Chưa xác nhận trực quan do công cụ browser vẫn báo native pipe/browser access host unavailable.
+
+## Gom nội dung công việc, nghiệm thu trực tiếp và phân tích — 30/10/2026
+
+StatusField dùng chung cho nhãn trạng thái ở tiêu đề/thẻ: Nhãn: Badge, nhãn không nền; các nhóm trong header cách nhau 20px và nằm dưới tên. Nút Quyết định nghiệm thu ở bên phải cùng hàng tên công việc, mở HashDialog #review ngay tại URL hiện tại. TaskShell là điểm mở chung; ReviewDialog tải lần nộp mới nhất khi mở, hiển thị tác giả/tóm tắt và dùng ReviewForm hiện có. SubmissionDetailPage chỉ đối chiếu dữ liệu, bỏ form/query dự án trùng. Giữ kiểm tra quyền/trạng thái/không tự nghiệm thu, snapshot/version, dirty guard và đối chiếu 412; không thêm API hoặc route.
+
+Nội dung/tiêu chí công việc trở lại thẻ trắng task-overview, xếp bên trái; giờ công là các hàng nhãn/giá trị nhỏ ở bên phải cùng thẻ. PDF và metadata vẫn giữ ở vị trí hiện có. Phân tích đặt bốn KPI bên phải biểu đồ khi đủ rộng; Giờ công và ước lượng/Các chỉ số khác chung một Panel chia 4/6, tự xếp dọc theo chiều rộng nội dung. Xóa CSS form nghiệm thu bên cột phụ/inline không còn dùng.
+
+Kiểm tra: **207/207 tests ở 13 file**, typecheck, lint, build và git diff --check đạt. Cập nhật các ca mở nghiệm thu ngay từ header không đổi pathname, giữ bản nháp khi hủy thoát, đóng sau khi bỏ thay đổi, lưu qua HTTP và xử lý 412. Công cụ trình duyệt vẫn báo native pipe/browser access host unavailable nên chưa nghiệm thu trực quan bản mới. Đã cập nhật AGENTS.md, ARCHITECTURE.md, UI_REVIEW.md, DESIGN_SYSTEM.md và SITE_MAP.txt.
+
+## Rút gọn danh sách dự án và chuyển chế độ xem sang phải — 30/10/2026
+
+Bảng dự án bỏ mã và mô tả, chỉ giữ biểu tượng/tên trong ô đầu. Đã xóa code/objective khỏi ProjectRow/schema và phần dựng response GET /projects tại mock DB; giữ id cho link/lookup/quyền. DTO chi tiết vẫn có code/objective cho kế hoạch và biểu mẫu. ProjectTile dùng icon Lucide/màu ổn định theo ID tại bảng, trang chủ và header, không thêm field icon vào API. Tỷ lệ cột 26/14/16/11/10/14/9 và bỏ giới hạn chiều rộng riêng của tên; xóa CSS mô tả không còn dùng.
+
+Danh sách/Bảng trạng thái nằm sau các filter, phía bên phải hàng lọc, áp dụng chung cho trang chủ, công việc và công việc trong dự án. Vẫn giữ URL filter/view/page, nút tạo đứng riêng ở header. Không render khung thao tác lọc rỗng.
+
+Kiểm tra: **207/207 tests ở 13 file**, typecheck, lint, build và git diff --check đạt. Kiểm thử HTTP đọc JSON thô xác nhận response danh sách không thừa code/objective; các luồng chi tiết/tạo/sửa dự án, chọn dự án và chuyển chế độ xem tiếp tục đạt. Đã cập nhật AGENTS.md, tài liệu UI/kiến trúc, API catalog và từ điển ProjectRow. Chưa nghiệm thu trực quan bản mới trên browser do kết nối công cụ trình duyệt chưa khả dụng.
+
+## Tách chế độ xem khỏi nút tạo, thu gọn board và chỉ số — 30/10/2026
+
+Theo phản hồi mới nhất, Danh sách/Bảng trạng thái chuyển từ header xuống cùng hàng bộ lọc; nút Tạo công việc vẫn ở header. Trang chủ có nhãn Dự án bạn quản lý cạnh nút và trong hộp chọn; nguồn lựa chọn vẫn là các dự án ACTIVE được cấp TASKS_MANAGE, không thay chính sách quyền. Hàng lọc chừa 8px hai bên, ô input/select padding ngang 12px.
+
+Board dùng cột 188–216px, thẻ padding 8px/chữ 13px, giảm khoảng cách và kích thước avatar; giữ đủ trạng thái, liên kết và phân trang trong vùng cuộn. Nhóm thống kê trên biểu đồ và các chỉ số bên dưới dùng chung MetricCard: label/value cùng 14px, nhấn giá trị bằng màu/độ đậm, ngữ cảnh/link ở hàng dưới. Lưới tối đa 1000px; bỏ biến thể đổi cỡ chữ và Panel bao ngoài chỉ số.
+
+Kiểm tra: **207/207 tests ở 13 file**, typecheck, lint, build và git diff --check đạt. Cập nhật các ca kiểm tra trang chủ của quản lý/nhân viên, hộp chọn dự án tạo việc và chuyển chế độ xem từ hàng lọc giữ URL. Công cụ browser vẫn báo native pipe/browser access host unavailable nên chưa xác nhận trực quan bản mới. Quy tắc đã cập nhật ở AGENTS.md, ARCHITECTURE.md, UI_REVIEW.md, DESIGN_SYSTEM.md và SITE_MAP.txt; không thêm API hoặc route.
+
+## Thu gọn header, thẻ và bảng theo phản hồi tiếp theo — 30/10/2026
+
+Điều chỉnh hiện hành thay các bố cục được mô tả trong các lượt cũ bên dưới: bỏ Tạo toàn cục; SectionNav của dự án/công việc/phân tích nằm trong header. Danh sách/Bảng trạng thái vẫn là hai button riêng trong header danh sách. Thao tác tạo công việc/thêm thành viên của trang con đưa vào header dự án bằng HeaderActions, giữ nguyên logic và quyền tại feature. Các thao tác đơn vị/nhóm/truy cập tài khoản đặt cạnh tiêu đề thẻ.
+
+DataTable dùng chung tiêu đề/thao tác bên ngoài thẻ trắng, dữ liệu và phân trang bên trong. Mỗi bảng khai báo tỷ lệ cột theo nội dung; bảng ít cột giới hạn chiều rộng, bảng nhiều cột cuộn trong khung khi hẹp. Lịch sử xem nhanh dự án nằm cùng cột công việc gần đây. Mục tiêu/mô tả/tiêu chí bỏ khung trắng rộng, giới hạn chiều dài đọc. Thẻ thống kê cá nhân tối đa 220px và xuống hàng; nút/dropdown/filter dùng cùng kích thước 32px, rộng vừa nội dung. Không thêm route hoặc API.
+
+Kiểm tra: **207/207 tests ở 13 file**, typecheck, lint, build và git diff --check đạt. Bổ sung kiểm thử nút Danh sách/Bảng và thêm thành viên ở đúng header, giữ bộ lọc khi chuyển chế độ, tiêu đề bảng nằm ngoài thẻ và phân trang ở trong. Đã cập nhật AGENTS.md, ARCHITECTURE.md, UI_REVIEW.md, DESIGN_SYSTEM.md và SITE_MAP.txt. Chưa xác nhận trực quan bản mới trên browser do công cụ báo native pipe/browser access host unavailable.
+
+## Rà thiết kế và điều chỉnh theo ảnh phản hồi — 30/10/2026
+
+Đã rà các nhóm màn hiện có và điều chỉnh chung theo Jira: nhãn bộ lọc ở ngoài ô chọn, tìm kiếm bên trái/điều kiện bên phải, công tắc danh sách/bảng thẳng hàng; bố trí lại workspace với danh sách chính/cột dự án; SectionNav thu gọn công việc và phân tích; trạng thái công việc có nhãn; mô tả/tiêu chí/giờ công/metadata sắp lại theo lưới. Thẻ KPI dùng nhãn/giá trị cùng hàng. Breadcrumb nằm trên Quay lại; loại bỏ các nút Quay lại trùng. Các bảng tiếp tục có header/footer chung, lịch sử mở đối chiếu ở Popover để không giãn cột.
+
+Sidebar Tất cả/Việc của tôi/Việc quá hạn là button lọc cùng /tasks, giữ q/projectId/view, bỏ page, hỗ trợ kết hợp việc của tôi + quá hạn. Sửa text JSX manage && ( bị lộ, gom Đổi vai trò/Bàn giao việc/Kết thúc thành dropdown nhỏ. Nút Quyết định nghiệm thu dưới tên công việc dẫn thẳng tới lần nộp mới nhất#review, mở sẵn ReviewForm hiện có dưới tiêu đề; không thêm API hoặc luồng ghi thứ hai. Giữ PDF preview và các thay đổi nghiệp vụ đã có.
+
+Kiểm tra: **205/205 tests ở 13 file**, typecheck, lint, build và git diff --check đạt. Tests bao gồm bộ lọc URL, menu mục giữ scope, hủy điều hướng giữ draft, menu thành viên qua 412, nghiệm thu mở từ tiêu đề và lịch sử đối chiếu ở portal. Đã cập nhật AGENTS.md, ARCHITECTURE.md, UI_REVIEW.md, DESIGN_SYSTEM.md và SITE_MAP.txt. Lượt này chưa nghiệm thu trực quan trên browser do công cụ báo native pipe/browser access host unavailable; không dùng kết quả browser của lượt trước để khẳng định bố cục mới.
+
+## Quyền theo permission, điều hướng, khu quản trị và giao diện — 30/10/2026
+
+Đã triển khai trong code: (1) khôi phục permission trong session (`permissions` hệ thống, `projectAccess[].permissions` theo dự án) và `permissionSchema`; mọi quyết định quyền đi qua `lib/auth/access.ts`, thay `canManage`/điều kiện role; mock tính quyền từ `permissionPolicy` trong data.json. (2) `AppShell` dùng chung, `AdminShell` ở route group `(admin)` với menu riêng, mục Quản trị hệ thống trong menu avatar, `/admin` chuyển tới mục được phép. (3) Breadcrumb và Quay lại dùng chung (`PageNav`, `trailFor`, `useCrumbLabel`), giữ bộ lọc/chế độ xem/trang của danh sách; hết phiên chuyển tới /login có `next`. (4) Giao diện: topbar + sidebar phẳng, nội dung rộng, `TabNav` cho dự án/công việc/phân tích (thêm tab Cảnh báo), thanh lọc gọn kèm công tắc Danh sách/Bảng trạng thái, chi tiết công việc dạng nội dung + cột chi tiết, trang `/projects/[projectId]/tasks` trong khung dự án.
+
+Lượt thiết kế lại thứ hai theo mô hình điều hướng Jira Cloud (đã tra tài liệu Atlassian): thanh trên có tìm kiếm và nút Tạo; sidebar có Gần đây, Dự án mở rộng và Bộ lọc nhanh; trang chủ thành Công việc của tôi (thẻ dự án, số liệu cần xử lý, công việc được giao); dự án có tiêu đề kèm ô nhận diện, menu ••• và tab Danh sách/Bảng riêng; board dạng cột có độ ưu tiên và avatar; tên công việc/dự án là liên kết; thành viên dự án có ô tìm kiếm. Sơ đồ điều hướng mới ở mục 0 của fe-specs/screens/SITE_MAP.txt.
+
+Lượt tiếp theo (30/10/2026): bỏ ô tìm kiếm chung và lối tắt Lập báo cáo khỏi thanh trên; logo mới (`BrandLogo`, favicon `icon.svg`); khung xem trước PDF báo cáo cho quản lý ở chi tiết công việc và màn đối chiếu; chi tiết công việc đặt giờ công ở cột bên, bỏ dòng tên dự án lặp breadcrumb, biểu mẫu công việc đặt Mô tả cạnh Tiêu chí; màn đối chiếu kết quả và chi tiết cảnh báo chia nội dung/cột bên.
+
+Thay đổi hành vi mock: ADMIN chỉ có USERS_MANAGE và ORGANIZATION_MANAGE; không còn đọc mọi dự án/công việc/báo cáo hoặc xem phân tích toàn hệ thống. Quyền xem toàn hệ thống (ANALYTICS_VIEW) cấp qua nhóm quyền `pg-analytics` trong `permissionPolicy.groups` (seed rỗng).
+
+Kiểm tra: typecheck, lint, build và **199/199 tests ở 12 file đạt** (thêm access.test.ts, navigation.test.ts, shell-navigation.test.tsx; cập nhật các ca dropdown/role cũ sang tab/permission). Thêm 21 kiểm tra trên browser thật (Edge headless, chế độ mock) cho mở URL trực tiếp, Quay lại giữ bộ lọc/chế độ xem, nhân viên không đủ quyền, Admin chuyển giữa khu quản trị và khu làm việc, hết phiên rồi đăng nhập lại về đúng trang; không có tràn ngang ở 390/1024/1280/1440px. Chưa nối BE thật nên chưa kiểm tra quyền hiệu lực từ backend thật; chưa kiểm tra bằng thiết bị cảm ứng hay trình duyệt khác Edge.
+
 ## Cấu hình mock/HTTP trong .env — 26/10/2026
 
 Đã đối chiếu Providers và Axios client của vietcd. `.env` dùng NEXT_PUBLIC_API_MODE=mock|http và NEXT_PUBLIC_API_BASE_URL là URL API đầy đủ; bỏ cờ API_MOCKING, API_ORIGIN và điều kiện NODE_ENV khi bật worker. Xóa `.env.development`, tạo `.env` cục bộ bị Git bỏ qua và cập nhật `.env.example`. Giữ Promise khởi động MSW dùng chung, chờ worker trước khi mount AuthObserver/feature và hiện lỗi nếu worker không mở được. Test Node giữ URL gateway riêng và delay 0 để không lấy độ trễ phát triển từ `.env`.
@@ -181,6 +265,7 @@ Typecheck, lint, build, git diff --check và **152/152 tests ở 9 file đạt**
 
 ## Phần cần nghiệm thu hoặc BE xác nhận
 
+- Contract quyền còn thiếu ở BE (Identity.Api): `SessionDto.ProjectAccess` chưa có `permissions` theo dự án, và `PermissionFeatures` chưa có `TASKS_REVIEW`. Khi thiếu, FE xem như chưa cấp nên các thao tác theo dự án (sửa dự án, thành viên, giao việc, nghiệm thu, cảnh báo) bị khóa với BE thật. BE cần trả quyền hiệu lực theo dự án và quyết định việc `PermissionEvaluator` đang cấp ANALYTICS_VIEW cho ADMIN. FE không thay được kiểm tra quyền phía BE.
 - Browser QA desktop/tablet/mobile, đối chiếu đầy đủ 24 PNG, bàn phím/focus/back-forward và Service Worker thật. Ngày 25/10, công cụ xem trước dừng vì chưa hỗ trợ kiểm soát URL cho Cốc Cốc trên Windows; chưa kiểm tra layout trực tiếp trong browser. Minh họa SVG đã được render và kiểm tra riêng.
 - Lookup candidate cho PM chưa có trong contract. Tạo dự án dùng đơn vị/người dùng hiện tại; đổi owner chọn thành viên dự án; thêm thành viên dùng mã tài khoản nội bộ do admin cung cấp và API kiểm tra. Không tự thêm endpoint quản trị ngoài quyền.
 - Lịch khả dụng, lịch yêu cầu báo cáo chưa có: capacity/utilization giữ null; dashboard không trả coverage chưa có nơi hiển thị; closure-check kết hợp báo cáo nháp và fixture requiredReports.

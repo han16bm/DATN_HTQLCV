@@ -1,5 +1,5 @@
 "use client";
-import { canManage } from "@/lib/auth/access";
+import { hasPermission } from "@/lib/auth/access";
 
 import { Form } from "@/components/forms/form";
 import { FormSelect, FormTextarea } from "@/components/forms/form-field";
@@ -125,7 +125,7 @@ export function TaskExecutionDialog({ task, reload }: TaskDialogProps) {
     ...(task.assigneeId === session?.user.id && task.status === "IN_PROGRESS"
       ? [{ value: "PAUSE", label: "Tạm dừng công việc" }]
       : []),
-    ...(canManage(session, task.projectId)
+    ...(hasPermission(session, "TASKS_MANAGE", task.projectId)
       ? [{ value: "CANCEL", label: "Hủy công việc" }]
       : []),
   ];

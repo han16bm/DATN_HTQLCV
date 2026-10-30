@@ -1,9 +1,10 @@
 "use client";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import { ButtonLink, PageHeader } from "@/components/ui/page";
+import { PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListUnitsQuery } from "@/features/organization/hooks/use-organization-queries";
+import { useCrumbLabel } from "@/lib/use-crumb-label";
 import { useGetUserQuery } from "../hooks/use-users-queries";
 import { UserCommands } from "./user-commands";
 import { UserProfileForm } from "./user-profile-form";
@@ -11,6 +12,7 @@ import { UserProfileForm } from "./user-profile-form";
 export function UserEditorPage({ userId }: { userId?: string }) {
   const query = useGetUserQuery(userId ?? "");
   const units = useListUnitsQuery({ pageSize: 100, status: "ACTIVE" });
+  useCrumbLabel("user", userId ?? "", query.data?.displayName);
   if (units.isError)
     return (
       <QueryErrorState error={units.error} retry={() => void units.refetch()} />
@@ -25,9 +27,6 @@ export function UserEditorPage({ userId }: { userId?: string }) {
     <>
       <PageHeader
         title={userId ? "Chi tiết tài khoản" : "Cấp tài khoản nội bộ"}
-        actions={
-          <ButtonLink href="/admin/users">Danh sách tài khoản</ButtonLink>
-        }
       />
       <div className={query.data ? "account-layout" : undefined}>
         <UserProfileForm

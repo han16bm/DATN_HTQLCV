@@ -1,5 +1,34 @@
 # Quy tắc thiết kế giao diện doanh nghiệp
 
+## Thiết kế hiện hành — 30/10/2026
+
+Theo ảnh phản hồi, tham khảo [điều hướng Jira](https://support.atlassian.com/jira-software-cloud/docs/what-is-the-new-navigation-in-jira/) và [khoảng cách Atlassian](https://atlassian.design/foundations/spacing/). Phần này và docs/UI_REVIEW.md thay các quy tắc trình bày gốc phía dưới khi khác nhau.
+
+| Vùng | Quy tắc hiện hành |
+| --- | --- |
+| Chữ | Segoe UI/Arial, body 14px, bảng/control 13px, nhãn phụ 12px. Một H1 22px, H2 15–16px cho mục con |
+| Màu | Trang #F4F5F7, thẻ trắng, vùng phụ #F7F8F9, chữ #172B4D/phụ #626F86, viền #DCDFE4, primary #0C66E4/hover #0055CC/nền chọn #E9F2FF |
+| Khung | Topbar 48px với logo/avatar, bỏ Tạo toàn cục; sidebar 240px/56px, drawer dưới 768px. Admin có menu riêng |
+| Điều hướng | Breadcrumb trên Quay lại; dự án/công việc/phân tích dùng SectionNav trong header, giữ dirty guard/scope. Danh sách/Bảng trạng thái là hai button phía bên phải các filter cùng hàng lọc, tách khỏi nút tạo ở header, không thành option |
+| Lọc | Nhãn ngoài select/input; control/nút/dropdown dùng token 32px, viền xám, bo 4px. Hàng lọc chừa 8px hai bên, ô nhập/chọn padding ngang 12px. Trigger/select vừa text với max-width chống tên dài; điều kiện canh phải, tìm kiếm bên trái, xuống hàng khi hẹp |
+| Sidebar công việc | Button Tất cả/Việc của tôi/Việc quá hạn lọc cùng /tasks, giữ q/projectId/view, bỏ page. Có thể kết hợp việc của tôi và quá hạn |
+| Trang chủ | Thống kê cá nhân tối đa 220px/thẻ, wrap, không kéo giãn cả hàng; danh sách là vùng chính, dự án cột phụ. Dưới 1100px xếp dọc. Bảng cá nhân không lặp người thực hiện. Nút Tạo công việc có ngữ cảnh Dự án bạn quản lý và chỉ hiện theo quyền TASKS_MANAGE trong dự án ACTIVE |
+| Board | Cột 188–216px, gap 8px, thẻ padding 8px/chữ 13px, metadata 11px/avatar 20px; tiêu đề trạng thái viết thường tự nhiên, giữ màu nhận diện. Cuộn riêng khi hẹp |
+| Chi tiết | Panel có tiêu đề/actions ở ngoài div.panel-body.card trắng. task-overview chia nội dung/tiêu chí bên trái, giờ công bên phải, mỗi nhóm có tiêu đề ngoài khung. Metadata theo issue-layout. StatusField có Nhãn: và Badge nền, các cặp cách nhau 20px |
+| Nghiệm thu | Button bên phải cùng hàng tên công việc, mở HashDialog #review tại URL hiện tại; không dẫn sang lần nộp để mở form. Chỉ một ReviewForm qua TaskShell/ReviewDialog; giữ quyền/trạng thái/không tự nghiệm thu, dirty/412 và PDF |
+| Thống kê | KPI dùng chung thẻ, label/value 14px. Bốn KPI ở trên biểu đồ và canh phải, hàng tối đa 960px. Giờ công/chỉ số hai vùng 3/7, nhóm chỉ số 3/2/1 cột theo chiều rộng, padding thẻ 8px 10px; không khung trắng lồng thừa. Chưa đủ dữ liệu không đổi thành 0; biểu đồ chỉ dùng response có nguồn |
+| Nhóm hai vùng | section-group bao quanh hai vùng bằng nền nhẹ/viền/bo 8px/padding 14px, áp dụng cho chi tiết công việc và giờ công/chỉ số; tiêu đề từng vùng vẫn ở ngoài khung dữ liệu, không ép chiều cao |
+| Bảng | DataTable giữ một section chung; tiêu đề/headerActions ở ngoài thẻ trắng, dữ liệu/footer bên trong. Giới hạn chiều rộng 560/760/960/1120px theo 1–2/3/4/5 cột, widths theo nội dung tổng 100. Header/hover nhẹ, Hành động giữa, Chi tiết là chữ |
+| Danh sách dự án | Biểu tượng Lucide/màu ổn định theo ID và tên; không hiển thị mã/mô tả. Tỷ lệ cột 26/14/16/11/10/14/9, tên dùng hết ô và xuống dòng khi dài; giữ đủ chỗ cho ngày/hạn và Hành động. Không trả code/objective trong ProjectRow |
+| Lịch sử | Bảng bốn cột 21/23/38/18. Công việc luôn có khung phải, chưa chọn thì hiện lời nhắc; chỉ bấm Chi tiết trong Hành động mới hiện Trước/Sau. Không tự chọn dòng hoặc bấm sự kiện. Bảng/khung giữ tỷ lệ 3/5–2/5, dưới 900px xếp dọc; tiêu đề ngoài vùng dữ liệu trắng. Dự án giữ Popover portal |
+| Giờ công trong chi tiết | Nhãn/value cùng hàng, gap 8px, canh trái, không đường kẻ từng dòng và không space-between. Khối giờ công tối thiểu 240px; dữ liệu padding 12px 14px, chữ 13px; quy tắc container chung không ép xếp dọc |
+| Người thực hiện | UserBadge có avatar 28px và tên, dùng cả bảng lẫn metadata người nhận/người ghi/người nộp/tác giả/actor. Có URL thì dùng ảnh, chưa có thì chữ cái; chưa phân công giữ text. Không thêm request từng người |
+| Form/hồ sơ | Giữ RHF/Zod, draft và đối chiếu 412; form hồ sơ một cột, avatar kéo/zoom/cắt/upload ngay; hủy ảnh không dirty guard |
+
+Responsive theo container page/card/form; issue-layout xếp dọc dưới 900px nội dung. Bảng/board có vùng cuộn riêng; không che tràn ở body. Giữ Skeleton/Spinner, refetch không xóa dữ liệu, focus/Escape/khôi phục focus và reduced motion. Toast thành công góc phải trên, confirm ở giữa. Kiểm thử DOM/HTTP không chứng minh kích thước CSS; cần nghiệm thu trực quan 320/375/768/1024/1440px và hai trạng thái sidebar. Chỉ gom các thao tác hiện có, không thêm nút/trang ngoài phạm vi.
+
+## Thiết kế gốc — tham chiếu lịch sử
+
 Tài liệu 0.4 · 24/10/2026. Giữ font hiện tại, làm chữ dịu và giảm yếu tố trang trí; các ảnh màn chính là mẫu bố cục.
 
 ## Chữ và phân cấp

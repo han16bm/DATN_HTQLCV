@@ -1,8 +1,9 @@
 "use client";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import { Badge, ButtonLink, DataTable, PageHeader } from "@/components/ui/page";
+import { Badge, DataTable, PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { UserBadge } from "@/components/ui/user-badge";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
 import { useGetTaskQuery } from "@/features/tasks/hooks/use-tasks-queries";
 import { useSession } from "@/lib/auth/session-context";
@@ -25,14 +26,8 @@ export function TimeLogsPage({ taskId }: { taskId: string }) {
     <>
       <PageHeader
         title="Nhật ký giờ công"
+        level={2}
         description={`Tổng giờ công hợp lệ: ${number(task.data?.actualMinutes, "phút")}. Nhật ký đã loại vẫn được giữ để tra cứu.`}
-        actions={
-          editable && (
-            <ButtonLink href={`/tasks/${taskId}#time-log`} primary>
-              Ghi thời gian
-            </ButtonLink>
-          )
-        }
       />
       {query.isError ? (
         <QueryErrorState
@@ -48,6 +43,7 @@ export function TimeLogsPage({ taskId }: { taskId: string }) {
             onPage: (p) => filters.set("page", String(p)),
           }}
           actions
+          widths={[14, 19, 9, 31, 15, 12]}
           headers={[
             "Ngày làm việc",
             "Người ghi",
@@ -58,7 +54,7 @@ export function TimeLogsPage({ taskId }: { taskId: string }) {
           ]}
           rows={query.data.items.map((l) => [
             l.workDate,
-            l.user.displayName,
+            <UserBadge key="author" name={l.user.displayName} />,
             number(l.minutes),
             <div key="description">
               {l.description}

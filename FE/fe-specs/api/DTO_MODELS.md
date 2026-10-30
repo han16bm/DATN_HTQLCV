@@ -49,6 +49,7 @@ Với object/mảng lồng nhau, tên có dấu chấm hoặc [] là đường d
 - [Projects.ProjectCreateDTO](#projectsprojectcreatedto)
 - [Projects.ProjectListQueryDTO](#projectsprojectlistquerydto)
 - [Projects.ProjectPatchDTO](#projectsprojectpatchdto)
+- [Projects.ProjectRow](#projectsprojectrow)
 - [Projects.ProjectDTO](#projectsprojectdto)
 - [Projects.ProjectStatusDTO](#projectsprojectstatusdto)
 - [Members.MemberCreateDTO](#membersmembercreatedto)
@@ -326,6 +327,20 @@ Theo yêu cầu điều hướng bằng role ngày 25/10/2026, response hiện h
 | `startDate` | string · YYYY-MM-DD | Không | Ngày bắt đầu kế hoạch theo ngày Việt Nam. |
 | `dueAt` | string · UTC ISO 8601 có Z | Không | Hạn hiện tại đủ ngày/giờ, ISO UTC có Z. |
 | `changeReason` | string | Có | độ dài ≥ 1; độ dài ≤ 2000; Lý do đổi kế hoạch; bắt buộc theo điều kiện API và dữ liệu hiện tại. |
+
+## Projects.ProjectRow
+
+Response danh sách hiện hành ngày 30/10/2026, dùng cho `GET /api/projects`. Chỉ gửi các trường dưới đây; không có `code`, `objective` hoặc `version`. Chi tiết/form vẫn dùng ProjectDTO. ID không hiển thị trên bảng nhưng cần để mở chi tiết, lọc và kiểm tra quyền theo dự án.
+
+| Trường | Kiểu | Bắt buộc | Ý nghĩa |
+|---|---|---|---|
+| `id` | string | Có | ID dự án opaque, độ dài 1–100. |
+| `name` | string | Có | Tên dự án, độ dài 1–255. |
+| `startDate` | string · YYYY-MM-DD | Có | Ngày bắt đầu kế hoạch. |
+| `dueAt` | string · UTC ISO 8601 có Z | Có | Hạn hoàn thành. |
+| `status` | Projects.ProjectStatusDTO | Có | Trạng thái dự án. |
+| `owner` | Shared.PersonRefDTO | Có | Người phụ trách để hiển thị. |
+| `unit` | Shared.EntityLabelDTO | Có | Đơn vị để hiển thị và lọc. |
 
 ## Projects.ProjectDTO
 

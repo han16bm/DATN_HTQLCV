@@ -75,6 +75,7 @@ export function NewReportPage() {
           >
             <FormSelect
               label="Dự án"
+              width="full"
               required
               options={projects.data.items
                 .filter((p) => p.status === "ACTIVE")
@@ -91,6 +92,7 @@ export function NewReportPage() {
             />
             <FormInput
               label="Ngày bắt đầu kỳ"
+              width="medium"
               required
               type="date"
               {...form.register("periodStart")}

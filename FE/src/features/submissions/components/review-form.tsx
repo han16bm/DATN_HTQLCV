@@ -2,7 +2,6 @@
 
 import { Form } from "@/components/forms/form";
 import { FormTextarea } from "@/components/forms/form-field";
-import { Panel } from "@/components/ui/page";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
 import { validationMessage } from "@/lib/forms/validation-message";
@@ -21,26 +20,18 @@ import type { SubmissionDto } from "../types/submissions.types";
 export function ReviewForm({
   submission,
   reload,
+  close,
 }: {
   submission: SubmissionDto;
   reload: () => Promise<{ data?: SubmissionDto }>;
+  close: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [decision, setDecision] = useState("APPROVE");
-  const close = async () => {
-    if (await confirmDiscard("Bỏ quyết định nghiệm thu chưa lưu?"))
-      setOpen(false);
+  const cancel = async () => {
+    if (await confirmDiscard("Bỏ quyết định nghiệm thu chưa lưu?")) close();
   };
-  if (!open)
-    return (
-      <div className="actions review-actions">
-        <button type="button" className="primary" onClick={() => setOpen(true)}>
-          Đưa ra quyết định nghiệm thu
-        </button>
-      </div>
-    );
   return (
-    <Panel title="Quyết định nghiệm thu" className="review-form">
+    <div className="review-form">
       <label className="form-field review-decision">
         Quyết định
         <select
@@ -59,9 +50,10 @@ export function ReviewForm({
         decision={decision}
         submission={submission}
         reload={reload}
+        cancel={cancel}
         close={close}
       />
-    </Panel>
+    </div>
   );
 }
 
@@ -69,12 +61,14 @@ function DecisionForm({
   decision,
   submission,
   reload,
+  cancel,
   close,
 }: {
   decision: string;
   submission: SubmissionDto;
   reload: () => Promise<{ data?: SubmissionDto }>;
-  close: () => Promise<void>;
+  cancel: () => Promise<void>;
+  close: () => void;
 }) {
   const approve = useApproveSubmissionMutation();
   const revision = useRequestSubmissionRevisionMutation();
@@ -96,7 +90,7 @@ function DecisionForm({
       compact
       form={form}
       cancel={
-        <button type="button" onClick={close}>
+        <button type="button" onClick={cancel}>
           Hủy
         </button>
       }
@@ -117,6 +111,7 @@ function DecisionForm({
           await revision.mutateAsync({ ...input, payload: values });
         else await approve.mutateAsync({ ...input, payload: values });
         toast.success("Đã ghi nhận quyết định nghiệm thu.");
+        close();
         router.push(`/tasks/${submission.taskId}`);
       }}
     >

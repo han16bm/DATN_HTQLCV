@@ -5,10 +5,9 @@ import { PageSkeleton, Spinner } from "@/components/ui/loading";
 import { Badge, PageHeader, Panel } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { dateTime } from "@/lib/format";
-import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useCrumbLabel } from "@/lib/use-crumb-label";
 import { useAnalysisTracking } from "../hooks/use-analysis-tracking";
 import { useCreateAnalysisJobMutation } from "../hooks/use-analytics-mutations";
 import { useGetAnalysisDetailQuery } from "../hooks/use-analytics-queries";
@@ -35,10 +34,10 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
   const query = useGetAnalysisDetailQuery(analysisId);
   const create = useCreateAnalysisJobMutation();
   const attempted = useRef(false);
-  const router = useRouter();
   const [jobId, setJobId] = useState<string | null>(null);
   const [startError, setStartError] = useState<Error | null>(null);
   const detail = query.data;
+  useCrumbLabel("analysis", analysisId, detail?.snapshot.title);
   const tracking = useAnalysisTracking(
     detail?.explanation.activeJobId ?? jobId,
   );
@@ -79,13 +78,6 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
         description={`${typeLabel[snapshot.analysisType]} · ${snapshot.scope.from} – ${snapshot.scope.to}`}
         actions={
           <>
-            <button
-              onClick={async () => {
-                if (await confirmDiscard()) router.back();
-              }}
-            >
-              Quay lại
-            </button>
             {detail.generation.allowed &&
               explanation.status !== "NOT_REQUESTED" && (
                 <ActionButton

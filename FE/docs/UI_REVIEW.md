@@ -1,5 +1,40 @@
 # Các lỗi giao diện và quy tắc tránh lặp
 
+## Điều chỉnh theo ảnh và Jira — 30/10/2026
+
+Đây là quy tắc UI hiện hành, thay các ghi chép tab/chip/inline history cũ bên dưới. Tham khảo [điều hướng Jira](https://support.atlassian.com/jira-software-cloud/docs/what-is-the-new-navigation-in-jira/), [bảng dữ liệu Atlassian](https://atlassian.design/components/dynamic-table/) và [khoảng cách Atlassian](https://atlassian.design/foundations/spacing/); chỉ áp dụng vào các chức năng hiện có.
+
+| Vấn đề | Điều chỉnh |
+| --- | --- |
+| Công tắc danh sách/bảng lệch với bộ lọc | Danh sách/Bảng trạng thái là hai button sau các filter, ở phía bên phải cùng hàng lọc; nút tạo đứng riêng ở header. Không đổi thành option; giữ URL view/filter/page và wrap khi hẹp. |
+| Nhãn dropdown dính với giá trị và viền focus | Nhãn ở ngoài ô select, vẫn truy cập bằng label; ô chọn cao 32px và rộng vừa nội dung, không ẩn chữ bằng font-size:0. Bỏ câu Tất cả trong quyền/có quyền xét, dùng Tất cả dự án/đơn vị/người lập. |
+| Sidebar dùng lối tắt như các trang riêng | Tất cả/Việc của tôi/Việc quá hạn là button lọc /tasks; giữ q/projectId/view và xóa page. Việc của tôi và Việc quá hạn có thể kết hợp. Mục đang mở vẫn thu gọn được. |
+| Thống kê cá nhân kéo quá rộng | Mỗi thẻ tối đa 220px, flex-wrap, số/nhãn gọn cùng vùng; không phủ hết hàng. Công việc vẫn là vùng chính, dự án cột phụ; khi hẹp xếp dọc. |
+| Chi tiết công việc nhiều mục/nút và thẻ mô tả dư chỗ | task-overview là lưới nền trong suốt: nội dung/tiêu chí bên trái, giờ công gọn bên phải; mỗi nhóm có tiêu đề ngoài panel-body trắng. Metadata ở cột bên, SectionNav thu gọn mục. PageHeader grid đặt tên và actions cùng hàng, nút nghiệm thu ở ngoài cùng phải. StatusField có dấu hai chấm/khoảng cách rõ. |
+| Nghiệm thu khó tìm | Button ở bên phải cùng hàng tên công việc, mở ngay HashDialog #review trên URL hiện tại; không link sang lần nộp trước khi mở form. ReviewDialog tải lần mới nhất khi mở, giữ kiểm tra quyền/dự án/trạng thái/người nộp và snapshot/412. SubmissionDetailPage chỉ đối chiếu, không chứa form thứ hai. Không tạo trang hay API mới. |
+| Phân tích nhiều tab và KPI cao | Dùng SectionNav, giữ scope giữa các mục; nhãn/giá trị KPI nằm trên cùng hàng, link chi tiết gọn. Giữ biểu đồ có nguồn dữ liệu và trạng thái thiếu dữ liệu. |
+| Xem thay đổi lịch sử làm dịch bảng hoặc tự mở nội dung | Bảng giữ bốn cột 21/23/38/18. Khung phải luôn sẵn với lời nhắc khi chưa chọn; chỉ nút Chi tiết ở Hành động mới hiện nội dung. Không tự chọn dòng, không popup; bảng/khung giữ nguyên vị trí, dưới 900px xếp dọc. Dự án giữ Popover portal. |
+| Cột thao tác thành viên quá rộng và lộ manage && ( | Sửa JSX điều kiện; một trigger dropdown cho Đổi vai trò/Bàn giao việc/Kết thúc. Giữ snapshot version, dirty guard và đối chiếu 412. |
+| Breadcrumb nằm cạnh nút Quay lại | Breadcrumb ở hàng trên, Quay lại ở hàng dưới, cùng đích nội bộ giữ bộ lọc. |
+| Bộ lọc quá sát chữ và mép vùng chứa | Hàng lọc chừa 8px hai bên, ô input/select chừa 12px ngang, giữ chiều cao 32px. |
+| Nút tạo việc trên trang chủ thiếu ngữ cảnh | Thêm nhãn Dự án bạn quản lý cạnh nút; chỉ hiện khi có dự án ACTIVE được cấp TASKS_MANAGE, hộp chọn giữ đúng các dự án đó. Không cấp quyền theo text hoặc role hiển thị. |
+| Bảng trạng thái lớn và khó quét | Cột rộng 188–216px, gap 8px; thẻ padding 8px, tên việc 13px, metadata 11px/avatar 20px. Giữ toàn bộ trạng thái, dữ liệu và phân trang; cuộn trong board. |
+| Thẻ phân tích giãn rộng, label/value và hai nhóm khác cỡ chữ | MetricCard có label/value 14px. Bốn KPI ở hàng trên biểu đồ, canh phải tối đa 960px, không nằm cạnh biểu đồ. Giờ công/chỉ số giữ hai vùng, chia 3/7; chỉ số có 3 cột khi rộng, 2/1 khi hẹp, padding thẻ 8px 10px. Bỏ khung trắng lồng bên ngoài lưới chỉ số, không ép chiều cao bằng nhau. |
+| Bảng dự án nhiều chữ phụ, tên bị bó hẹp và response thừa | Bỏ code/objective khỏi bảng và ProjectRow/response danh sách; giữ id cho điều hướng và quyền. Chi tiết/form còn code/objective. Dùng icon/màu theo ID, bỏ ô chữ viết tắt. Cột theo tỷ lệ 26/14/16/11/10/14/9; bỏ max-width tên và CSS mô tả cũ. |
+| Nơi hiển thị người chỉ có tên, nhận diện thiếu thống nhất | Dùng UserBadge cho người nhận công việc, người ghi giờ công, người nộp/nghiệm thu, tác giả và actor lịch sử; metadata canh hàng bằng person-meta. Tận dụng PersonRef hiện có, không fetch từng người; chưa phân công giữ dạng chữ. |
+| Tiêu đề Kết quả đã nộp/Báo cáo đính kèm còn nằm trong khung | Panel dùng section ngoài trong suốt, panel-heading chứa title/actions, panel-body.card mới có nền trắng/viền/padding. Áp dụng chung cho các nhóm thông tin/form; CSS giới hạn form theo wrapper mới. |
+| Giờ công tách nhãn/value thành hai dòng và nhiều đường kẻ | Container chung dl > div ép flex-direction:column; border chung còn sót. task-effort đặt rõ flex-row/justify-start, label/value cách 8px, bỏ border. Thẻ công việc padding 12px 14px/chữ 13px, gap hai vùng 16px; giờ công tối thiểu 240px để nhãn và giá trị vừa hàng, wrap khi thật sự cần. |
+| Hai vùng chi tiết công việc nhìn rời rạc | Thêm section-group bao quanh grid hiện có: nền nhẹ, viền, bo 8px và padding 14px. Dùng cùng kiểu cho nhóm giờ công/chỉ số, giữ nhãn ngoài nội dung trắng và không thêm nút/chức năng. |
+| Nghiệm thu thiếu tìm công việc | Ô tìm cập nhật q trên URL, giữ projectId và bỏ page; DB lọc tên trước phân trang và vẫn kiểm tra phạm vi/quyền. Tái dùng query/service hiện có, không tải từng task hoặc chỉ lọc trang đang hiển thị. |
+
+Tiêu đề bảng/Panel nằm ngoài khung trắng; dữ liệu/footer bảng vẫn cùng table-card, dữ liệu thông tin/form ở panel-body.card. Bảng ít cột có giới hạn chiều rộng, widths theo nội dung tổng 100. Mục tiêu dự án dùng detail-copy; task-overview chia nội dung/tiêu chí trái, giờ công phải, tiêu đề từng nhóm ở ngoài khung. Nút/dropdown/filter dùng token 32px/viền xám/bo 4px, giữ ngoại lệ hồ sơ/đăng nhập và vùng chạm. SectionNav trong header; HeaderActions giữ logic tại feature; PageHeader grid bảo đảm tên và thao tác ở hai mép cùng hàng. Không có Tạo toàn cục/CreateMenu.
+
+Phạm vi rà code bao phủ 43 page.tsx hiện có (gồm / và /admin chuyển hướng): đăng nhập, workspace, hồ sơ riêng/công khai, tài khoản/đơn vị/nhóm, dự án/tạo/sửa/thành viên/danh sách/bảng/lịch sử, công việc/tạo/sửa/giờ công/lần nộp/nghiệm thu/lịch sử, báo cáo và toàn bộ phân tích/cảnh báo/job. Các pattern dùng chung còn áp cho dialog, lỗi, rỗng, loading và form.
+
+Giới hạn nghiệm thu lượt này: đã đối chiếu ảnh người dùng và source; công cụ xem browser báo native pipe/browser host unavailable, nên chưa xác nhận trực quan bản mới trên browser hoặc thiết bị cảm ứng. Các kết quả browser ở lượt trước bên dưới không thay cho kiểm tra bố cục mới.
+
+Kiểm tra hành vi: 208/208 tests ở 13 file, typecheck, lint, build và git diff --check đạt. Bao gồm giữ scope/filter/draft, đối chiếu 412, nghiệm thu từ header, khung lịch sử bên phải, chuyển chế độ xem từ hàng lọc, tạo việc/thêm thành viên ở đúng vị trí và tìm hàng chờ qua HTTP trước phân trang mà không lộ dữ liệu ngoài phạm vi.
+
 ## Điều chỉnh role ngày 26/10/2026
 
 Bỏ mục Phân quyền và cột Quyền nghiệp vụ. Đổi vai trò mở dialog từ hàng thành viên, có lý do, đối chiếu phiên bản và làm mới dữ liệu sau lưu. OWNER được thay ở kế hoạch; lựa chọn người phụ trách từ các quản lý đang tham gia. Chính sách hiện hành tại [ARCHITECTURE.md](ARCHITECTURE.md#điều-chỉnh-role-ngày-26102026).
@@ -108,3 +143,28 @@ Loading dùng PageSkeleton/Skeleton/Spinner chung: bảng/chi tiết/form/cards 
 | Thiếu tên bị hiển thị thành dữ liệu trống | Lookup chỉ có tài khoản hoạt động/một trang | Có ID thì không kết luận chưa phân công; nhóm vẫn đếm từ memberIds và số tên thực sự hiển thị. |
 
 Typecheck, lint, build, git diff --check và 167/167 tests đạt. Kết quả quét cả 12 feature, nguồn version và tham số cùng giới hạn lookup được ghi tại [REFACTOR_REVIEW.md](REFACTOR_REVIEW.md#rà-lại-ui-luồng-và-tham-số--26102026). Chưa nghiệm thu trực quan CSS trên trình duyệt.
+
+## Điều hướng và bố cục — 30/10/2026
+
+| Lỗi | Nguyên nhân | Quy tắc |
+| --- | --- | --- |
+| Trang con thiếu vị trí và đường về | Mỗi màn tự đặt nút Danh sách hoặc không có | `PageNav` hiển thị breadcrumb và Quay lại cho mọi trang con; không thêm nút Danh sách… ở PageHeader. Mục hiện tại không có liên kết. |
+| Quay lại ra ngoài ứng dụng hoặc mất bộ lọc | Dùng lịch sử trình duyệt | Đích là trang cha hoặc danh sách vừa rời kèm bộ lọc/chế độ xem/trang; mở bằng URL trực tiếp vẫn có đích. |
+| Breadcrumb in ID | Chỉ có ID trên URL | Trang đã tải thực thể đăng ký tên bằng `useCrumbLabel`; chưa có thì hiện dấu … . |
+| Quản trị lẫn trong menu làm việc | Cùng một sidebar | Khu quản trị có AdminShell và menu riêng; điểm vào ở menu avatar theo `canAdminister`. |
+| Mục điều hướng dạng dropdown khó thấy | Dự án/công việc/phân tích ẩn mục sau select | Dùng `TabNav`; tab là liên kết nên vẫn hỏi khi có dữ liệu chưa lưu. |
+| Nút trong PageHeader xếp dọc | Quy tắc `width: 100%` áp cho cả button | Chỉ input/select/textarea có width 100%; button theo nội dung. |
+| Khoảng trống và khối thẻ thừa | Thẻ bao ngoài mỗi trang, bo góc lớn, bóng đổ | Trang không bọc thẻ; bo góc 4–6px, không bóng đổ trừ menu nổi; bộ lọc là thanh gọn, không đóng khung. |
+| Bảng trạng thái và danh sách khó nhận biết mục | Thẻ chữ thuần, tên không phải liên kết | Board dạng cột có số đếm, thẻ có độ ưu tiên (`PriorityIcon`), hạn và người thực hiện; tên công việc/dự án/nghiệm thu là liên kết (`issue-link`) bên cạnh cột Hành động. |
+| Điều hướng không giống mô hình quen thuộc của Jira | Chỉ có sidebar phẳng, không có tìm kiếm/Tạo trên thanh trên | Thanh trên có tìm kiếm và Tạo; sidebar có Gần đây, Dự án và Bộ lọc mở rộng; dự án có tiêu đề + tab Danh sách/Bảng/Thành viên/Lịch sử + menu •••. |
+| Chữ ẩn cho trình đọc làm rộng cả trang | Phần tử `sr-only` định vị tuyệt đối nằm trong vùng cuộn (board) không bị cắt | Bao ngoài bằng phần tử `position: relative` (ví dụ `.priority`) để vùng cuộn cắt được. |
+| Bộ lọc chiếm nhiều hàng, ô rộng bằng nhau dù nội dung ngắn | Mỗi bộ lọc là một cột nhãn trên + ô kéo giãn | Bộ lọc là hàng chip (nhãn và lựa chọn cùng hàng, rộng vừa đủ, tối đa 190px); ô tìm kiếm co giãn 160–280px; nút phụ như "Việc của tôi" và hành động chính nằm cuối hàng. Trên điện thoại hai chip một hàng. |
+| Trang đơn điệu, khó phân biệt dự án và người | Mọi ô nhận diện cùng một màu | Nền trang xám nhạt để thẻ trắng nổi lên; `ProjectTile` và `Avatar` có 8 tông màu cố định theo mã/tên; thẻ số liệu có vạch màu; cột bảng trạng thái có vạch màu theo trạng thái. |
+| Tiêu đề lặp tên tab trong dự án | Danh sách/Thành viên có thêm tiêu đề riêng | Trong khung dự án, tên tab đã là tiêu đề; nút Tạo công việc/Thêm thành viên nằm cuối hàng lọc để tiết kiệm một hàng. |
+| Trang chủ lệch đỉnh, thừa khoảng trống; nút phụ chìm vào nền xám | Hai cột có chiều cao khác nhau; nút mặc định nền xám trên nền trang xám | Số liệu cần xử lý là một hàng thẻ gọn ngay dưới tiêu đề, thẻ dự án căn trái rộng 280–340px; nút mặc định nền trắng có viền để luôn nhìn thấy trên nền xám. |
+| Thanh trên chật vì ô tìm kiếm và lối tắt trùng | Tìm công việc và Lập báo cáo đặt ở thanh trên dù đã có ở trang riêng | Thanh trên chỉ giữ logo, Tạo (theo quyền) và tài khoản. |
+| Quản lý phải tải tệp mới xem được báo cáo | Chỉ có nút Tải ở chi tiết lần nộp | Khung xem trước PDF (`PdfPreview`) ở chi tiết công việc và màn đối chiếu; chỉ tải nội dung khi mở khung, thu hồi địa chỉ blob khi thu gọn. |
+| Khoảng trống dưới khối nội dung ở chi tiết công việc, đối chiếu, cảnh báo | Cột phải chỉ có một khối ngắn, form xử lý nằm riêng một hàng | Dùng bố cục `issue-layout`: nội dung và báo cáo bên trái, thông tin/giờ công/tiêu chí/quyết định bên phải. |
+| Nộp nhiều lần phải cuộn xuống cuối mới thấy báo cáo; khung báo cáo hiện cả người nộp | Mỗi tệp một khung xếp chồng, có tên người | Một khung duy nhất: dropdown "Lần nộp" ghi "Lần N · thời gian (mới nhất)" và dropdown "Tệp báo cáo" khi có nhiều tệp (`AttachmentViewer`); không hiển thị người nộp. |
+| Breadcrumb sát thanh trên, nút Quay lại sát breadcrumb | Khoảng cách 4px | `.page-nav` cách thanh trên 10px và các hàng cách nhau 10px. |
+| Giờ công và chỉ số khác xếp một cột dọc | Từng dòng nhãn: giá trị, lưới 3 cột cố định | Giờ công thành các ô nhãn/giá trị xếp lưới tự co; chỉ số khác là lưới tự co từ 220px; hai khối nằm cạnh nhau khi vùng nội dung từ 900px. |

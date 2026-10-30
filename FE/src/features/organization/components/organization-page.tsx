@@ -39,6 +39,7 @@ export function OrganizationPage() {
         <DataTable
           title="Danh sách đơn vị"
           actions
+          widths={[58, 24, 18]}
           headers={["Đơn vị", "Trạng thái", "Hành động"]}
           rows={query.data.items.map((unit) => [
             unit.name,

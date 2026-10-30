@@ -71,9 +71,7 @@ export const projectHistoryQuerySchema = z
 
 export const projectRowSchema = z.object(projectSchema.shape).pick({
   id: true,
-  code: true,
   name: true,
-  objective: true,
   startDate: true,
   dueAt: true,
   status: true,

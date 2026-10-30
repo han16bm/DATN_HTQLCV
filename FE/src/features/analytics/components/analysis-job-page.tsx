@@ -5,6 +5,7 @@ import { PageSkeleton, Spinner } from "@/components/ui/loading";
 import { Badge, ButtonLink, PageHeader, Panel } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { dateTime } from "@/lib/format";
+import { useCrumbLabel } from "@/lib/use-crumb-label";
 import { useRouter } from "next/navigation";
 import { useAnalysisTracking } from "../hooks/use-analysis-tracking";
 import { useCreateAnalysisJobMutation } from "../hooks/use-analytics-mutations";
@@ -21,6 +22,11 @@ function JobContent({ jobId }: { jobId: string }) {
   const tracking = useAnalysisTracking(jobId);
   const job = tracking.query.data;
   const detail = useGetAnalysisDetailQuery(job?.analysisId ?? "");
+  useCrumbLabel(
+    "job",
+    jobId,
+    detail.data && `Tiến trình · ${detail.data.snapshot.title}`,
+  );
   const create = useCreateAnalysisJobMutation();
   const router = useRouter();
   if (tracking.query.isError)
@@ -34,7 +40,7 @@ function JobContent({ jobId }: { jobId: string }) {
         title="Tiến trình AI phân tích"
         description={detail.data?.snapshot.title}
       />
-      <Panel>
+      <Panel className="record-card">
         <div className="actions">
           {["QUEUED", "RUNNING"].includes(job.status) && !tracking.paused && (
             <Spinner label="Đang phân tích" />
@@ -66,7 +72,7 @@ function JobContent({ jobId }: { jobId: string }) {
             <button onClick={tracking.resume}>Tiếp tục kiểm tra</button>
           </p>
         )}
-        <div className="actions">
+        <div className="actions section-gap">
           <ButtonLink href={`/analytics/details/${job.analysisId}`}>
             Mở thông số và lời phân tích
           </ButtonLink>

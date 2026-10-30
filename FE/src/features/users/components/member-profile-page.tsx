@@ -6,11 +6,13 @@ import { ProfileHeader } from "@/components/ui/profile-header";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useSession } from "@/lib/auth/session-context";
 import { label } from "@/lib/format";
+import { useCrumbLabel } from "@/lib/use-crumb-label";
 import { useGetProfileQuery } from "../hooks/use-users-queries";
 
 export function MemberProfilePage({ userId }: { userId: string }) {
   const { session } = useSession();
   const query = useGetProfileQuery(userId);
+  useCrumbLabel("user", userId, query.data?.displayName);
   if (query.isError)
     return (
       <QueryErrorState error={query.error} retry={() => void query.refetch()} />
@@ -27,24 +29,26 @@ export function MemberProfilePage({ userId }: { userId: string }) {
           )
         }
       />
-      <ProfileHeader
-        name={user.displayName}
-        avatarUrl={user.avatarUrl}
-        unit={user.unit}
-        role={label(user.systemRole)}
-      />
-      <Panel title="Thông tin liên hệ">
-        <dl className="record-details">
-          <div>
-            <dt>Email</dt>
-            <dd>
-              <a className="text-link" href={`mailto:${user.email}`}>
-                {user.email}
-              </a>
-            </dd>
-          </div>
-        </dl>
-      </Panel>
+      <div className="member-profile">
+        <ProfileHeader
+          name={user.displayName}
+          avatarUrl={user.avatarUrl}
+          unit={user.unit}
+          role={label(user.systemRole)}
+        />
+        <Panel title="Thông tin liên hệ">
+          <dl className="record-details">
+            <div>
+              <dt>Email</dt>
+              <dd>
+                <a className="text-link" href={`mailto:${user.email}`}>
+                  {user.email}
+                </a>
+              </dd>
+            </div>
+          </dl>
+        </Panel>
+      </div>
     </>
   );
 }

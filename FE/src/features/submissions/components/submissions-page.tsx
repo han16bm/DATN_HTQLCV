@@ -3,6 +3,7 @@
 import { PageSkeleton } from "@/components/ui/loading";
 import { Badge, DataTable, DetailLink } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { UserBadge } from "@/components/ui/user-badge";
 import { dateTime } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { useListSubmissionsQuery } from "../hooks/use-submissions-queries";
@@ -20,6 +21,7 @@ export function SubmissionsPage({ taskId }: { taskId: string }) {
         onPage: (p) => f.set("page", String(p)),
       }}
       actions
+      widths={[12, 26, 24, 22, 16]}
       headers={[
         "Lần nộp",
         "Người nộp",
@@ -29,7 +31,7 @@ export function SubmissionsPage({ taskId }: { taskId: string }) {
       ]}
       rows={q.data.items.map((s) => [
         `Lần ${s.sequence}`,
-        s.submitter.displayName,
+        <UserBadge key="submitter" name={s.submitter.displayName} />,
         dateTime(s.submittedAt),
         <Badge key="state" value={s.status} />,
         <DetailLink

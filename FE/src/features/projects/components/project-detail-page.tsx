@@ -2,18 +2,14 @@
 
 import { HistoryTable } from "@/components/ui/history-table";
 import { PageSkeleton } from "@/components/ui/loading";
-import {
-  Badge,
-  ButtonLink,
-  DataTable,
-  DetailLink,
-  Panel,
-} from "@/components/ui/page";
+import { Badge, DataTable, DetailLink, Panel } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { UserBadge } from "@/components/ui/user-badge";
 import { useListTasksQuery } from "@/features/tasks/hooks/use-tasks-queries";
 import { dateTime } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   useGetProjectQuery,
   useListProjectHistoryQuery,
@@ -50,11 +46,41 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
     );
   const p = project.data;
   return (
-    <div className="details-grid">
-      <div>
-        <Panel title="Mục tiêu dự án">
+    <div className="issue-layout">
+      <div className="issue-main">
+        <section className="detail-copy">
+          <h2>Mục tiêu dự án</h2>
           <p className="prose">{p.objective}</p>
-        </Panel>
+        </section>
+        {tasks.isError ? (
+          <QueryErrorState error={tasks.error} />
+        ) : tasks.data ? (
+          <DataTable
+            title="Công việc gần đây"
+            headerActions={
+              <Link className="text-link" href={`/projects/${projectId}/tasks`}>
+                Tất cả công việc
+              </Link>
+            }
+            pagination={{ total: tasks.data.pagination.total }}
+            actions
+            headers={["Công việc", "Trạng thái", "Hạn", "Hành động"]}
+            widths={[42, 22, 22, 14]}
+            rows={tasks.data.items.map((t) => [
+              t.title,
+              <Badge key="status" value={t.status} />,
+              dateTime(t.dueAt),
+              <DetailLink
+                key="detail"
+                href={`/tasks/${t.id}`}
+                label={`Xem công việc ${t.title}`}
+              />,
+            ])}
+          />
+        ) : (
+          <PageSkeleton variant="table" />
+        )}
+
         {history.isError ? (
           <QueryErrorState
             error={history.error}
@@ -68,50 +94,31 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
             items={history.data.items}
             pagination={{ total: history.data.pagination.total }}
             headerActions={
-              <ButtonLink href={`/projects/${projectId}?tab=history`}>
+              <Link
+                className="text-link"
+                href={`/projects/${projectId}?tab=history`}
+              >
                 Xem toàn bộ lịch sử
-              </ButtonLink>
+              </Link>
             }
           />
-        )}
-        {tasks.isError ? (
-          <QueryErrorState error={tasks.error} />
-        ) : tasks.data ? (
-          <DataTable
-            title="Công việc gần đây"
-            headerActions={
-              <ButtonLink href={`/tasks?projectId=${projectId}`}>
-                Tất cả công việc
-              </ButtonLink>
-            }
-            pagination={{ total: tasks.data.pagination.total }}
-            actions
-            headers={["Công việc", "Trạng thái", "Hạn", "Hành động"]}
-            rows={tasks.data.items.map((t) => [
-              t.title,
-              <Badge key="status" value={t.status} />,
-              dateTime(t.dueAt),
-              <DetailLink
-                key="detail"
-                href={`/tasks/${t.id}`}
-                label={`Xem công việc ${t.title}`}
-              />,
-            ])}
-          />
-        ) : (
-          <PageSkeleton />
         )}
       </div>
-      <div>
+      <aside className="issue-side" aria-label="Kế hoạch dự án">
         <Panel title="Thông tin kế hoạch">
-          <dl>
+          <dl className="record-details">
             <div>
               <dt>Mã dự án</dt>
               <dd>{p.code}</dd>
             </div>
             <div>
               <dt>Người phụ trách</dt>
-              <dd>{p.owner.displayName}</dd>
+              <dd>
+                <UserBadge
+                  name={p.owner.displayName}
+                  href={`/users/${p.owner.id}`}
+                />
+              </dd>
             </div>
             <div>
               <dt>Đơn vị</dt>
@@ -119,7 +126,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
             </div>
             <div>
               <dt>Ngày bắt đầu</dt>
-              <dd>{p.startDate}</dd>
+              <dd>{p.startDate.split("-").reverse().join("/")}</dd>
             </div>
             <div>
               <dt>Hạn hoàn thành</dt>
@@ -127,15 +134,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
             </div>
           </dl>
         </Panel>
-        <div className="actions">
-          <ButtonLink href={`/tasks?projectId=${projectId}`} primary>
-            Mở công việc trong dự án
-          </ButtonLink>
-          <ButtonLink href={`/projects/${projectId}/members`}>
-            Thành viên dự án
-          </ButtonLink>
-        </div>
-      </div>
+      </aside>
     </div>
   );
 }

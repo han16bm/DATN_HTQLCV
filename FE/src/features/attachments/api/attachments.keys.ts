@@ -5,6 +5,8 @@ export const attachmentsKeys = {
     ["attachments", viewerId ?? "anonymous"] as const,
   getUploadPolicy: (viewerId: ViewerId) =>
     [...attachmentsKeys.viewer(viewerId), "getUploadPolicy"] as const,
+  getContent: (viewerId: ViewerId, attachmentId: string) =>
+    [...attachmentsKeys.viewer(viewerId), "getContent", attachmentId] as const,
   getAttachment: (viewerId: ViewerId, attachmentId: string) =>
     [
       ...attachmentsKeys.viewer(viewerId),

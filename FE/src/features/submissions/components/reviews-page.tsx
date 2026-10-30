@@ -1,18 +1,21 @@
 "use client";
-import { canManage } from "@/lib/auth/access";
+import { hasPermission } from "@/lib/auth/access";
 
 import { PageSkeleton } from "@/components/ui/loading";
 import { DataTable, DetailLink, PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { UserBadge } from "@/components/ui/user-badge";
 import { useListProjectsQuery } from "@/features/projects/hooks/use-projects-queries";
 import { useSession } from "@/lib/auth/session-context";
 import { dateTime } from "@/lib/format";
+import Link from "next/link";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { useListReviewQueueQuery } from "../hooks/use-submissions-queries";
 
 export function ReviewsPage() {
   const f = useUrlFilters();
   const q = useListReviewQueueQuery({
+    q: f.get("q") || undefined,
     projectId: f.get("projectId") || undefined,
     page: f.page,
   });
@@ -22,15 +25,24 @@ export function ReviewsPage() {
     <>
       <PageHeader title="Kết quả chờ nghiệm thu" />
       <div className="panel filters">
+        <label className="filter-search">
+          Tìm công việc
+          <input
+            type="search"
+            placeholder="Nhập tên công việc…"
+            value={f.get("q")}
+            onChange={(e) => f.set("q", e.target.value)}
+          />
+        </label>
         <label>
           Dự án
           <select
             value={f.get("projectId")}
             onChange={(e) => f.set("projectId", e.target.value)}
           >
-            <option value="">Tất cả dự án có quyền xét</option>
+            <option value="">Tất cả dự án</option>
             {projects.data?.items
-              .filter((p) => canManage(session, p.id))
+              .filter((p) => hasPermission(session, "TASKS_REVIEW", p.id))
               .map((p) => (
                 <option value={p.id} key={p.id}>
                   {p.name}
@@ -55,6 +67,7 @@ export function ReviewsPage() {
             ...q.data.pagination,
             onPage: (p) => f.set("page", String(p)),
           }}
+          widths={[30, 8, 18, 17, 17, 10]}
           headers={[
             "Công việc",
             "Lần nộp",
@@ -65,9 +78,15 @@ export function ReviewsPage() {
           ]}
           actions
           rows={q.data.items.map((s) => [
-            s.taskTitle,
+            <Link
+              key="task"
+              className="issue-link"
+              href={`/tasks/${s.taskId}/submissions/${s.id}`}
+            >
+              {s.taskTitle}
+            </Link>,
             String(s.sequence),
-            s.submitter.displayName,
+            <UserBadge key="submitter" name={s.submitter.displayName} />,
             dateTime(s.submittedAt),
             dateTime(s.dueAtSnapshot),
             <DetailLink

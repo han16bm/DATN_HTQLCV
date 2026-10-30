@@ -4,10 +4,11 @@ import { Form } from "@/components/forms/form";
 import { FormInput } from "@/components/forms/form-field";
 import { HistoryTable } from "@/components/ui/history-table";
 import { PageSkeleton } from "@/components/ui/loading";
-import { ButtonLink, Panel } from "@/components/ui/page";
+import { Panel } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
+import { hasPermission } from "@/lib/auth/access";
 import { useSession } from "@/lib/auth/session-context";
 import { dateTime, hours } from "@/lib/format";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
@@ -25,6 +26,7 @@ import {
   useListTaskHistoryQuery,
 } from "../hooks/use-tasks-queries";
 import { remainingSchema } from "../schemas/task-form.schema";
+import { TaskReportPreview } from "./task-report-preview";
 import type { TaskDto } from "../types/tasks.types";
 
 export function TaskDetailPage({ taskId }: { taskId: string }) {
@@ -39,116 +41,137 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
   if (!query.data) return <PageSkeleton />;
   const task = query.data;
   return (
-    <div className="task-detail">
-      <Panel title="Thông tin công việc">
-        <dl className="record-details task-meta">
-          <div>
-            <dt>Người thực hiện</dt>
-            <dd>
-              {task.assignee ? (
-                <UserBadge
-                  name={task.assignee.displayName}
-                  href={`/users/${encodeURIComponent(task.assignee.id)}`}
-                />
-              ) : (
-                "Chưa phân công"
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt>Dự án</dt>
-            <dd>
+    <div className="issue-layout">
+      <div className="issue-main">
+        <div className="section-group">
+          <section className="task-overview">
+            <div className="task-content-grid">
+              <Panel title="Nội dung công việc">
+                <p className="prose">
+                  {task.description || "Chưa có mô tả bổ sung."}
+                </p>
+              </Panel>
+              <Panel title="Tiêu chí nghiệm thu">
+                <p className="prose">{task.acceptanceCriteria}</p>
+              </Panel>
+            </div>
+            <Panel title="Giờ công" className="task-worklog">
+              <dl className="task-effort">
+                {[
+                  ["Đã thực hiện", hours(task.actualMinutes)],
+                  ["Ước lượng hiện tại", hours(task.estimatedMinutes)],
+                  ["Ước lượng ban đầu", hours(task.originalEstimatedMinutes)],
+                  [
+                    "Ước tính còn lại",
+                    task.remainingMinutes === null
+                      ? "Chưa cập nhật"
+                      : hours(task.remainingMinutes),
+                  ],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <dt>{label}:</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
+              </dl>
+              {task.assigneeId === session?.user.id &&
+                task.status === "IN_PROGRESS" &&
+                project.data?.status === "ACTIVE" && (
+                  <RemainingForm
+                    key={task.id}
+                    task={task}
+                    reload={() => query.refetch()}
+                  />
+                )}
+            </Panel>
+          </section>
+        </div>
+        {task.latestSubmissionId &&
+          (hasPermission(session, "TASKS_REVIEW", task.projectId) ||
+            hasPermission(session, "TASKS_MANAGE", task.projectId)) && (
+            <TaskReportPreview
+              taskId={task.id}
+              submissionId={task.latestSubmissionId}
+            />
+          )}
+      </div>
+      <aside className="issue-side" aria-label="Thông tin công việc">
+        <Panel title="Chi tiết">
+          <dl className="record-details">
+            <div>
+              <dt>Người thực hiện</dt>
+              <dd>
+                {task.assignee ? (
+                  <UserBadge
+                    name={task.assignee.displayName}
+                    href={`/users/${encodeURIComponent(task.assignee.id)}`}
+                  />
+                ) : (
+                  "Chưa phân công"
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt>Dự án</dt>
+              <dd>
+                <Link
+                  className="text-link"
+                  href={`/projects/${encodeURIComponent(task.projectId)}`}
+                >
+                  {task.project.name}
+                </Link>
+              </dd>
+            </div>
+            <div>
+              <dt>Ngày tạo</dt>
+              <dd>{dateTime(task.createdAt)}</dd>
+            </div>
+            <div>
+              <dt>Bắt đầu thực hiện</dt>
+              <dd>
+                {task.firstStartedAt
+                  ? dateTime(task.firstStartedAt)
+                  : "Chưa bắt đầu"}
+              </dd>
+            </div>
+            <div>
+              <dt>Hạn hoàn thành</dt>
+              <dd className={task.isOverdue ? "task-overdue" : undefined}>
+                {dateTime(task.dueAt)}
+              </dd>
+            </div>
+            <div>
+              <dt>Hạn ban đầu</dt>
+              <dd>{dateTime(task.originalDueAt)}</dd>
+            </div>
+          </dl>
+        </Panel>
+      </aside>
+      <div className="issue-activity">
+        {history.isError ? (
+          <QueryErrorState
+            error={history.error}
+            retry={() => void history.refetch()}
+          />
+        ) : !history.data ? (
+          <PageSkeleton variant="table" />
+        ) : (
+          <HistoryTable
+            split
+            title="Hoạt động gần đây"
+            items={history.data.items}
+            pagination={{ total: history.data.pagination.total }}
+            headerActions={
               <Link
                 className="text-link"
-                href={`/projects/${encodeURIComponent(task.projectId)}`}
+                href={`/tasks/${encodeURIComponent(taskId)}/history`}
               >
-                {task.project.name}
+                Xem toàn bộ lịch sử
               </Link>
-            </dd>
-          </div>
-          <div>
-            <dt>Ngày tạo</dt>
-            <dd>{dateTime(task.createdAt)}</dd>
-          </div>
-          <div>
-            <dt>Bắt đầu thực hiện</dt>
-            <dd>
-              {task.firstStartedAt
-                ? dateTime(task.firstStartedAt)
-                : "Chưa bắt đầu"}
-            </dd>
-          </div>
-          <div>
-            <dt>Hạn hoàn thành</dt>
-            <dd className={task.isOverdue ? "task-overdue" : undefined}>
-              {dateTime(task.dueAt)}
-            </dd>
-          </div>
-          <div>
-            <dt>Hạn ban đầu</dt>
-            <dd>{dateTime(task.originalDueAt)}</dd>
-          </div>
-        </dl>
-      </Panel>
-      <div className="task-layout">
-        <Panel title="Nội dung công việc">
-          <p className="prose">
-            {task.description || "Chưa có mô tả bổ sung."}
-          </p>
-          <div className="task-criteria">
-            <h3>Tiêu chí nghiệm thu</h3>
-            <p className="prose">{task.acceptanceCriteria}</p>
-          </div>
-        </Panel>
-        <Panel title="Giờ công">
-          <dl className="task-effort">
-            {[
-              ["Đã thực hiện", hours(task.actualMinutes)],
-              ["Ước lượng hiện tại", hours(task.estimatedMinutes)],
-              ["Ước lượng ban đầu", hours(task.originalEstimatedMinutes)],
-              [
-                "Ước tính còn lại",
-                task.remainingMinutes === null
-                  ? "Chưa cập nhật"
-                  : hours(task.remainingMinutes),
-              ],
-            ].map(([label, value]) => (
-              <div key={label}>
-                <dt>{label}</dt>
-                <dd>{value}</dd>
-              </div>
-            ))}
-          </dl>
-          {task.assigneeId === session?.user.id &&
-            task.status === "IN_PROGRESS" &&
-            project.data?.status === "ACTIVE" && (
-              <RemainingForm
-                key={task.id}
-                task={task}
-                reload={() => query.refetch()}
-              />
-            )}
-        </Panel>
+            }
+          />
+        )}
       </div>
-      {history.isError ? (
-        <QueryErrorState
-          error={history.error}
-          retry={() => void history.refetch()}
-        />
-      ) : !history.data ? (
-        <PageSkeleton variant="table" />
-      ) : (
-        <HistoryTable
-          title="Hoạt động gần đây"
-          items={history.data.items}
-          pagination={{ total: history.data.pagination.total }}
-          headerActions={
-            <ButtonLink href={`/tasks/${encodeURIComponent(taskId)}/history`}>
-              Xem toàn bộ lịch sử
-            </ButtonLink>
-          }
-        />
-      )}
     </div>
   );
 }

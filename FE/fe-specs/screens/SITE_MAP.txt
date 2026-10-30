@@ -2,6 +2,26 @@ SITE MAP – ĐIỀU HƯỚNG, ROUTE VÀ QUYỀN
 Tài liệu 0.4 · Contract đề xuất 0.3.0 · 24/10/2026
 43 màn/biểu mẫu/hộp thoại được đặc tả. Chỉ 24 màn chính có ảnh; bỏ ảnh không có nghĩa bỏ chức năng.
 
+0. SƠ ĐỒ ĐIỀU HƯỚNG THEO JIRA CLOUD (cập nhật 30/10/2026)
+Nguồn tham khảo: tài liệu Atlassian "What is the new navigation in Jira?" và "Navigate projects with the sidebar".
+Bố cục: thanh trên toàn cục + sidebar toàn cục + góc nhìn ngang trong từng dự án. Chỉ đổi vị trí và cách trình bày, không thêm chức năng.
+
+Thanh trên: Logo Cổng công việc | Menu tài khoản (Hồ sơ, Quản trị hệ thống nếu có quyền, Đăng xuất). Bỏ Tạo toàn cục; nút tạo/thêm nằm tại header của đúng màn và theo quyền.
+Sidebar làm việc:
+  Công việc của tôi (S02, /workspace) — như "For you/Your work"
+    Gần đây — dự án/công việc vừa mở
+  Dự án (S08, /projects) — mở rộng ra các dự án gần đây
+  Công việc (S15, /tasks) — button lọc Tất cả / Việc của tôi / Việc quá hạn trên cùng danh sách; giữ tìm kiếm/dự án/chế độ xem, không tạo route riêng.
+  Nghiệm thu (S26, /reviews) — theo quyền TASKS_REVIEW
+  Báo cáo (S29, /reports)
+  Phân tích (S33, /dashboard) — như "Dashboards", theo quyền ANALYTICS_VIEW
+Khu quản trị (tách riêng, menu avatar → Quản trị hệ thống): Tài khoản /admin/users, Đơn vị /admin/organization, Nhóm nhân sự /admin/teams; nút Về không gian làm việc.
+Trong header dự án: tên/trạng thái, dropdown Tổng quan (/projects/[id]) / Công việc (/projects/[id]/tasks) / Thành viên (/projects/[id]/members) / Lịch sử (?tab=history), cùng menu cài đặt.
+  Khi ở Công việc: hai button Danh sách / Bảng trạng thái ở bên phải các filter cùng hàng lọc, đổi view=board và giữ query/filter/page, không phải option dropdown. Tạo công việc/Thêm thành viên của trang con đặt vào header dự án, tách khỏi chế độ xem. Trang chủ có nhãn Dự án bạn quản lý cạnh Tạo công việc khi có dự án ACTIVE được cấp TASKS_MANAGE.
+Trong công việc (/tasks/[taskId]/...): dropdown Chi tiết / Giờ công / Các lần nộp / Lịch sử; task-overview chia nội dung/tiêu chí bên trái, giờ công bên phải, tiêu đề mỗi nhóm ngoài khung dữ liệu trắng, metadata bên cạnh. Button Quyết định nghiệm thu ở mép phải cùng hàng tên, mở HashDialog #review ngay tại URL hiện tại khi đủ quyền; không dẫn sang lần nộp trước khi mở form. Quản lý (TASKS_REVIEW/TASKS_MANAGE) vẫn có PDF preview của lần nộp mới nhất. Các cặp Nhãn: Badge có khoảng cách rõ.
+Trong phân tích: dropdown Tổng quan / Nguy cơ trễ hạn / Khối lượng / Điểm nghẽn / Tổng hợp / Cảnh báo, giữ scope giữa các mục. Dashboard đặt KPI ở hàng phía trên biểu đồ, canh phải; Giờ công/chỉ số giữ hai vùng trong khung nhóm chung, chia 3/7 để chỉ số có nhiều cột hơn, tự xếp dọc khi hẹp. Chi tiết công việc cũng có khung nhóm chung quanh hai vùng. /reviews tìm theo tên công việc bằng q, kết hợp projectId, lọc qua HTTP trước phân trang.
+Mọi trang con có breadcrumb ở hàng trên, Quay lại ở hàng dưới; đích về danh sách vừa rời, giữ bộ lọc. Lịch sử công việc luôn có khung phải với lời nhắc khi chưa chọn; chỉ bấm Chi tiết ở Hành động mới hiện nội dung Trước/Sau, không tự chọn dòng hoặc bấm tên sự kiện, không popup. Lịch sử dự án giữ Popover để không dịch cột bảng. Các chỗ hiển thị người dùng avatar kèm tên qua UserBadge. Tiêu đề các nhóm thông tin ở ngoài panel-body trắng; giờ công đặt value ngay cạnh label.
+
 1. ĐIỂM VÀO VÀ MENU
 Chưa có phiên: S01 /login. Đăng nhập thành công: S02 /workspace, menu theo quyền thực tế.
 Nhân viên: Không gian làm việc, Dự án, Công việc, Báo cáo. Chỉ xem việc hiện tại/từng tham gia khi còn quyền dự án.

@@ -1,5 +1,5 @@
 "use client";
-import { canManage } from "@/lib/auth/access";
+import { hasPermission } from "@/lib/auth/access";
 
 import { PageSkeleton } from "@/components/ui/loading";
 import {
@@ -24,8 +24,7 @@ export function ReportsPage() {
   const { session } = useSession();
   const projectId = f.get("projectId");
   const filterAuthors = Boolean(
-    projectId &&
-    (session?.user.systemRole === "ADMIN" || canManage(session, projectId)),
+    projectId && hasPermission(session, "ANALYTICS_VIEW", projectId),
   );
   const projects = useListProjectsQuery({ pageSize: 100 });
   const members = useListProjectMembersQuery(
@@ -105,7 +104,7 @@ export function ReportsPage() {
               value={f.get("authorId")}
               onChange={(e) => f.set("authorId", e.target.value)}
             >
-              <option value="">Tất cả trong phạm vi</option>
+              <option value="">Tất cả người lập</option>
               {members.data?.items.map((m) => (
                 <option key={m.id} value={m.userId}>
                   {m.user.displayName}
@@ -154,6 +153,7 @@ export function ReportsPage() {
             onPage: (p) => f.set("page", String(p)),
           }}
           actions
+          widths={[21, 25, 20, 10, 14, 10]}
           headers={[
             "Báo cáo",
             "Dự án",

@@ -1,12 +1,13 @@
 "use client";
-import { canManage } from "@/lib/auth/access";
+import { hasPermission } from "@/lib/auth/access";
 
 import { Form } from "@/components/forms/form";
 import { FormInput, FormSelect } from "@/components/forms/form-field";
 import { ReasonForm } from "@/components/forms/reason-form";
 import { HashDialog } from "@/components/ui/dialog";
 import { PageSkeleton } from "@/components/ui/loading";
-import { DataTable, PageHeader } from "@/components/ui/page";
+import { DataTable } from "@/components/ui/page";
+import { HeaderActions } from "@/components/ui/header-actions";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
@@ -17,6 +18,8 @@ import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
 import { validationMessage } from "@/lib/forms/validation-message";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { zodResolver } from "@hookform/resolvers/zod";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { Ellipsis } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -38,7 +41,10 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
   const project = useGetProjectQuery(projectId);
   const { session } = useSession();
   const dialog = useHashDialog();
-  const query = useListProjectMembersQuery(projectId, { page: filters.page });
+  const query = useListProjectMembersQuery(projectId, {
+    q: filters.get("q") || undefined,
+    page: filters.page,
+  });
   const add = useAddProjectMemberMutation();
   const [ending, setEnding] = useState<MembershipDto | null>(null);
   const [editing, setEditing] = useState<MembershipDto | null>(null);
@@ -47,28 +53,36 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
     defaultValues: { userId: "", projectRole: "MEMBER" },
   });
   const manage =
-    canManage(session, projectId) &&
+    hasPermission(session, "MEMBERS_MANAGE", projectId) &&
     Boolean(
       project.data && ["PLANNED", "ACTIVE"].includes(project.data.status),
     );
   return (
     <>
-      <PageHeader
-        title="Thành viên dự án"
-        actions={
-          manage && (
-            <button
-              className="primary"
-              onClick={() => {
-                form.reset();
-                dialog.open("add-member");
-              }}
-            >
-              Thêm thành viên
-            </button>
-          )
-        }
-      />
+      <HeaderActions>
+        {manage && (
+          <button
+            className="primary"
+            onClick={() => {
+              form.reset();
+              dialog.open("add-member");
+            }}
+          >
+            Thêm thành viên
+          </button>
+        )}
+      </HeaderActions>
+      <section className="filters" aria-label="Tìm thành viên">
+        <label className="filter-search">
+          Tìm thành viên
+          <input
+            type="search"
+            placeholder="Nhập tên thành viên…"
+            value={filters.get("q")}
+            onChange={(e) => filters.set("q", e.target.value)}
+          />
+        </label>
+      </section>
       {query.isError ? (
         <QueryErrorState
           error={query.error}
@@ -83,6 +97,7 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
             onPage: (p) => filters.set("page", String(p)),
           }}
           actions
+          widths={[35, 22, 27, 16]}
           headers={["Thành viên", "Vai trò dự án", "Tư cách", "Hành động"]}
           rows={query.data.items.map((m) => [
             <UserBadge
@@ -92,35 +107,54 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
             />,
             label(m.projectRole),
             m.endedAt ? `Đã kết thúc ${dateTime(m.endedAt)}` : "Đang tham gia",
-            manage && (
-              <div key="actions" className="actions">
-                {!m.endedAt && m.projectRole !== "OWNER" && (
-                  <>
-                    <button
-                      onClick={() => {
+            manage && !m.endedAt && m.projectRole !== "OWNER" && (
+              <DropdownMenu.Root key="actions">
+                <DropdownMenu.Trigger asChild>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label={`Thao tác ${m.user.displayName}`}
+                  >
+                    <Ellipsis size={17} aria-hidden="true" />
+                  </button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.Content
+                    className="account-menu"
+                    align="end"
+                    sideOffset={6}
+                    collisionPadding={12}
+                  >
+                    <DropdownMenu.Item
+                      className="account-menu-item"
+                      onSelect={() => {
                         setEditing(m);
                         dialog.open("member-role");
                       }}
                     >
                       Đổi vai trò
-                    </button>
-                    <Link
-                      className="text-link"
-                      href={`/tasks?projectId=${projectId}&assigneeId=${m.userId}`}
-                    >
-                      Bàn giao việc
-                    </Link>
-                    <button
-                      onClick={() => {
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item asChild>
+                      <Link
+                        className="account-menu-item"
+                        href={`/projects/${projectId}/tasks?assigneeId=${m.userId}`}
+                      >
+                        Bàn giao việc
+                      </Link>
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Separator className="account-menu-separator" />
+                    <DropdownMenu.Item
+                      className="account-menu-item danger"
+                      onSelect={() => {
                         setEnding(m);
                         dialog.open("end-member");
                       }}
                     >
                       Kết thúc
-                    </button>
-                  </>
-                )}
-              </div>
+                    </DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Root>
             ),
           ])}
         />
@@ -160,7 +194,7 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
           <HashDialog name="member-role" title="Đổi vai trò thành viên">
             {editing && (
               <>
-                <p>{editing.user.displayName}</p>
+                <UserBadge name={editing.user.displayName} />
                 <MemberRoleForm
                   key={editing.id}
                   projectId={projectId}
@@ -178,7 +212,7 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
           <HashDialog name="end-member" title="Kết thúc tư cách thành viên">
             {ending && (
               <>
-                <p>{ending.user.displayName}</p>
+                <UserBadge name={ending.user.displayName} />
                 <EndMemberForm
                   key={ending.id}
                   projectId={projectId}

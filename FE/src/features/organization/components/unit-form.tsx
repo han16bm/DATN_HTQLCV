@@ -8,7 +8,7 @@ import {
 } from "@/components/forms/form-field";
 import type { FormOption } from "@/components/forms/form.types";
 import { ReasonForm } from "@/components/forms/reason-form";
-import { Badge, ButtonLink, Panel } from "@/components/ui/page";
+import { StatusField, ButtonLink, Panel } from "@/components/ui/page";
 import { changedFields } from "@/lib/format";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
@@ -78,10 +78,42 @@ export function UnitForm({
   ) : (
     <ButtonLink href="/admin/organization">Hủy</ButtonLink>
   );
+  const commands = unit?.status === "ACTIVE" && mode === null && (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          snapshot.saved(unit);
+          form.reset(defaults);
+          setMode("edit");
+        }}
+      >
+        Chỉnh sửa
+      </button>
+      <button
+        type="button"
+        className="danger"
+        onClick={() => {
+          snapshot.saved(unit);
+          setMode("close");
+        }}
+      >
+        Ngừng sử dụng đơn vị
+      </button>
+    </>
+  );
   return (
     <Panel
+      className="record-card"
       title={unit ? unit.name : "Thông tin đơn vị"}
-      actions={unit && <Badge value={unit.status} />}
+      actions={
+        unit && (
+          <div className="actions">
+            <StatusField value={unit.status} />
+            {commands}
+          </div>
+        )
+      }
     >
       {!unit || mode === "edit" ? (
         <Form
@@ -197,30 +229,6 @@ export function UnitForm({
               </dd>
             </div>
           </dl>
-          {unit.status === "ACTIVE" && (
-            <div className="record-actions">
-              <button
-                type="button"
-                onClick={() => {
-                  snapshot.saved(unit);
-                  form.reset(defaults);
-                  setMode("edit");
-                }}
-              >
-                Chỉnh sửa
-              </button>
-              <button
-                type="button"
-                className="danger"
-                onClick={() => {
-                  snapshot.saved(unit);
-                  setMode("close");
-                }}
-              >
-                Ngừng sử dụng đơn vị
-              </button>
-            </div>
-          )}
         </>
       )}
     </Panel>

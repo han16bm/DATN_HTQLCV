@@ -5,11 +5,16 @@ namespace Analytics.Api.Extensions;
 
 public static class ServiceRegistrationExtensions
 {
-    public static IServiceCollection AddDependencyInjection(this IServiceCollection services)
+    public static IServiceCollection AddDependencyInjection(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddHttpContextAccessor();
         services.AddScoped<IAnalyticsService, AnalyticsService>();
         services.AddScoped<IAlertService, AlertService>();
+
+        services.Configure<AlertGenerationOptions>(configuration.GetSection("AlertGeneration"));
+        services.AddScoped<IAlertGenerationService, AlertGenerationService>();
+        services.AddHostedService<AlertGenerationBackgroundService>();
+
         return services;
     }
 }

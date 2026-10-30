@@ -1,0 +1,181 @@
+- generic [active] [ref=f21e1]:
+  - generic [ref=f21e13]:
+    - complementary "Thanh điều hướng" [ref=f21e14]:
+      - generic [ref=f21e15]:
+        - link "Cổng công việc" [ref=f21e16] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f21e22] [cursor=pointer]
+      - generic [ref=f21e25]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f21e26]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f21e31]:
+        - generic [ref=f21e32]:
+          - button "Công việc" [expanded] [ref=f21e33] [cursor=pointer]
+          - generic [ref=f21e37]:
+            - link "Tổng quan cá nhân" [ref=f21e38] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f21e43] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f21e47] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f21e52] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f21e57] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f21e62]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f21e63] [cursor=pointer]
+          - generic [ref=f21e67]:
+            - link "Bảng tổng quan" [ref=f21e68] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f21e75] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f21e79] [cursor=pointer]:
+              - /url: /alerts
+        - generic [ref=f21e84]:
+          - button "Quản trị hệ thống" [expanded] [ref=f21e85] [cursor=pointer]
+          - generic [ref=f21e89]:
+            - link "Tài khoản người dùng" [ref=f21e90] [cursor=pointer]:
+              - /url: /admin/users
+            - link "Cơ cấu đơn vị" [ref=f21e97] [cursor=pointer]:
+              - /url: /admin/organization
+            - link "Nhóm nhân sự" [ref=f21e103] [cursor=pointer]:
+              - /url: /admin/teams
+      - paragraph [ref=f21e110]: Theo phạm vi được cấp quyền
+    - generic [ref=f21e111]:
+      - banner [ref=f21e112]:
+        - generic [ref=f21e113]:
+          - generic [ref=f21e114]: Không gian làm việc
+          - strong [ref=f21e117]: Công việc
+        - button "Mở menu tài khoản" [ref=f21e119] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f21e120]: tv
+          - generic [ref=f21e121]:
+            - text: Quan tri vien
+            - generic [ref=f21e122]: Quản trị viên
+      - main [ref=f21e125]:
+        - generic [ref=f21e126]:
+          - generic [ref=f21e127]:
+            - generic [ref=f21e128]:
+              - generic [ref=f21e129]:
+                - heading "Kiem thu tam dung va ban giao" [level=1] [ref=f21e130]
+                - generic [ref=f21e131]: Đang thực hiện
+                - generic [ref=f21e132]: Ưu tiên bình thường
+              - paragraph [ref=f21e133]: Du an kiem thu task flows
+            - generic [ref=f21e134]:
+              - button "Nộp kết quả" [ref=f21e262] [cursor=pointer]
+              - button "Ghi giờ công" [ref=f21e263] [cursor=pointer]
+              - button "Tải minh chứng" [ref=f21e264] [cursor=pointer]
+              - button "Tạm dừng / hủy" [ref=f21e265] [cursor=pointer]
+          - combobox "Mục công việc" [ref=f21e137]:
+            - option "Thông tin" [selected]
+            - option "Giờ công"
+            - option "Các lần nộp"
+            - option "Lịch sử"
+          - generic [ref=f21e138]:
+            - generic [ref=f21e139]:
+              - heading "Thông tin công việc" [level=2] [ref=f21e141]
+              - generic [ref=f21e142]:
+                - generic [ref=f21e143]:
+                  - term [ref=f21e144]: Người thực hiện
+                  - definition [ref=f21e145]:
+                    - link "Xem hồ sơ công khai của Quan tri vien" [ref=f21e146] [cursor=pointer]:
+                      - /url: /users/01f6b300092f4918a0ae12c2170314bb
+                      - generic [aria-hidden] [ref=f21e147]: tv
+                      - generic [ref=f21e148]: Quan tri vien
+                - generic [ref=f21e150]:
+                  - term [ref=f21e151]: Dự án
+                  - definition [ref=f21e152]:
+                    - link "Du an kiem thu task flows" [ref=f21e153] [cursor=pointer]:
+                      - /url: /projects/40094846ced24d88ab0c825cd83b84cc
+                - generic [ref=f21e154]:
+                  - term [ref=f21e155]: Ngày tạo
+                  - definition [ref=f21e156]: 13:57 28/10/26
+                - generic [ref=f21e157]:
+                  - term [ref=f21e158]: Bắt đầu thực hiện
+                  - definition [ref=f21e159]: 13:59 28/10/26
+                - generic [ref=f21e160]:
+                  - term [ref=f21e161]: Hạn hoàn thành
+                  - definition [ref=f21e162]: 17:00 15/11/26
+                - generic [ref=f21e163]:
+                  - term [ref=f21e164]: Hạn ban đầu
+                  - definition [ref=f21e165]: 17:00 15/11/26
+            - generic [ref=f21e166]:
+              - generic [ref=f21e167]:
+                - heading "Nội dung công việc" [level=2] [ref=f21e169]
+                - paragraph [ref=f21e170]: Chưa có mô tả bổ sung.
+                - generic [ref=f21e171]:
+                  - heading "Tiêu chí nghiệm thu" [level=3] [ref=f21e172]
+                  - paragraph [ref=f21e173]: Hoan thanh kiem thu tam dung, cap nhat uoc luong va ban giao task.
+              - generic [ref=f21e174]:
+                - heading "Giờ công" [level=2] [ref=f21e176]
+                - generic [ref=f21e177]:
+                  - generic [ref=f21e178]:
+                    - term [ref=f21e179]: Đã thực hiện
+                    - definition [ref=f21e180]: 0 giờ
+                  - generic [ref=f21e181]:
+                    - term [ref=f21e182]: Ước lượng hiện tại
+                    - definition [ref=f21e183]: 2 giờ
+                  - generic [ref=f21e184]:
+                    - term [ref=f21e185]: Ước lượng ban đầu
+                    - definition [ref=f21e186]: 2 giờ
+                  - generic [ref=f21e187]:
+                    - term [ref=f21e188]: Ước tính còn lại
+                    - definition [ref=f21e189]: 1,5 giờ
+                - button "Cập nhật thời gian còn lại" [ref=f21e267] [cursor=pointer]
+            - generic [ref=f21e190]:
+              - generic [ref=f21e191]:
+                - heading "Hoạt động gần đây" [level=2] [ref=f21e192]
+                - link "Xem toàn bộ lịch sử" [ref=f21e193] [cursor=pointer]:
+                  - /url: /tasks/3a7dc0ba0d624350ab2315a925cc776a/history
+              - table "Hoạt động gần đây" [ref=f21e195]:
+                - rowgroup [ref=f21e196]:
+                  - row [ref=f21e197]:
+                    - columnheader "Thời điểm" [ref=f21e198]
+                    - columnheader "Người thực hiện" [ref=f21e199]
+                    - columnheader "Sự kiện" [ref=f21e200]
+                    - columnheader "Hành động" [ref=f21e201]
+                - rowgroup [ref=f21e202]:
+                  - row [ref=f21e268]:
+                    - cell "14:02 28/10/26" [ref=f21e269]
+                    - cell "Quan tri vien" [ref=f21e270]
+                    - cell "START" [ref=f21e271]
+                    - cell [ref=f21e209]:
+                      - group [ref=f21e210]:
+                        - generic "Xem thay đổi (2)" [ref=f21e211] [cursor=pointer]
+                  - row [ref=f21e272]:
+                    - cell "14:00 28/10/26" [ref=f21e213]
+                    - cell "Tran Quan Ly Hai" [ref=f21e214]
+                    - cell [ref=f21e273]:
+                      - generic [ref=f21e216]:
+                        - text: ASSIGN
+                        - paragraph [ref=f21e217]: Nguoi cu ban qua du an khac, ban giao cho dong nghiep xu ly tiep
+                    - cell [ref=f21e218]:
+                      - group [ref=f21e219]:
+                        - generic "Xem thay đổi (2)" [ref=f21e220] [cursor=pointer]
+                  - row [ref=f21e274]:
+                    - cell "14:00 28/10/26" [ref=f21e275]
+                    - cell "Tran Quan Ly Hai" [ref=f21e223]
+                    - cell [ref=f21e276]:
+                      - generic [ref=f21e225]:
+                        - text: PAUSE
+                        - paragraph [ref=f21e277]: Cho bo sung tai lieu tu khach hang
+                    - cell [ref=f21e226]:
+                      - group [ref=f21e227]:
+                        - generic "Xem thay đổi (2)" [ref=f21e228] [cursor=pointer]
+                  - row [ref=f21e278]:
+                    - cell "13:59 28/10/26" [ref=f21e230]
+                    - cell "Tran Quan Ly Hai" [ref=f21e231]
+                    - cell "UPDATE_REMAINING" [ref=f21e279]
+                    - cell [ref=f21e234]:
+                      - group [ref=f21e235]:
+                        - generic "Xem thay đổi (2)" [ref=f21e236] [cursor=pointer]
+                  - row [ref=f21e280]:
+                    - cell "13:59 28/10/26" [ref=f21e281]
+                    - cell "Tran Quan Ly Hai" [ref=f21e239]
+                    - cell "START" [ref=f21e282]
+                    - cell [ref=f21e242]:
+                      - group [ref=f21e243]:
+                        - generic "Xem thay đổi (2)" [ref=f21e283] [cursor=pointer]
+              - generic [ref=f21e245]: 7 kết quả
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f21e9] [cursor=pointer]
+  - alert [ref=f21e247]

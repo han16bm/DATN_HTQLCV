@@ -85,7 +85,7 @@ public class SubmissionService(ApplicationDbContext db) : BaseService(db), ISubm
         task.Version++;
         task.UpdatedAt = now;
 
-        WriteAuditLog(nameof(Submission), submission.Id, actorId, "CREATE", null, submission);
+        WriteAuditLog(nameof(Submission), submission.Id, actorId, "CREATE", null, new { submission.Sequence, submission.Summary, submission.Links, submission.AttachmentIds, submission.Status });
         await Db.SaveChangesAsync();
 
         return new SubmissionMutationResult(await submission.ToDtoAsync(Db), await task.ToDtoAsync(Db));
@@ -113,7 +113,7 @@ public class SubmissionService(ApplicationDbContext db) : BaseService(db), ISubm
         var assignment = await Db.TaskAssignments.FirstOrDefaultAsync(a => a.TaskId == taskId && a.EndedAt == null);
         if (assignment is not null) assignment.EndedAt = now;
 
-        WriteAuditLog(nameof(Submission), submission.Id, actorId, "APPROVE", null, submission);
+        WriteAuditLog(nameof(Submission), submission.Id, actorId, "APPROVE", null, new { submission.Status, submission.ReviewedBy, submission.ReviewComment });
         await Db.SaveChangesAsync();
 
         return new SubmissionMutationResult(await submission.ToDtoAsync(Db), await task.ToDtoAsync(Db));
@@ -138,13 +138,13 @@ public class SubmissionService(ApplicationDbContext db) : BaseService(db), ISubm
         task.Version++;
         task.UpdatedAt = now;
 
-        WriteAuditLog(nameof(Submission), submission.Id, actorId, "REQUEST_REVISION", null, submission, request.Reason);
+        WriteAuditLog(nameof(Submission), submission.Id, actorId, "REQUEST_REVISION", null, new { submission.Status, submission.ReviewedBy, submission.ReviewComment, submission.RequestedChanges }, request.Reason);
         await Db.SaveChangesAsync();
 
         return new SubmissionMutationResult(await submission.ToDtoAsync(Db), await task.ToDtoAsync(Db));
     }
 
-    public async Task<PagedResult<SubmissionDto>> ListReviewQueueAsync(ReviewQueueQuery query)
+    public async Task<PagedResult<ReviewQueueItemDto>> ListReviewQueueAsync(ReviewQueueQuery query)
     {
         var q = Db.Submissions.AsNoTracking().Where(s => s.Status == SubmissionStatus.Pending);
         if (!string.IsNullOrWhiteSpace(query.ProjectId))
@@ -155,9 +155,17 @@ public class SubmissionService(ApplicationDbContext db) : BaseService(db), ISubm
         q = q.OrderBy(s => s.SubmittedAt);
 
         var paged = await q.ToPagedResultAsync(query);
-        var items = new List<SubmissionDto>();
-        foreach (var s in paged.Items) items.Add(await s.ToDtoAsync(Db));
-        return new PagedResult<SubmissionDto> { Items = items, Page = paged.Page, PageSize = paged.PageSize, Total = paged.Total };
+        var taskIdsInPage = paged.Items.Select(s => s.TaskId).Distinct().ToList();
+        var tasks = await Db.Tasks.AsNoTracking().Where(t => taskIdsInPage.Contains(t.Id)).ToDictionaryAsync(t => t.Id);
+
+        var items = new List<ReviewQueueItemDto>();
+        foreach (var s in paged.Items)
+        {
+            var submitter = await Db.PersonRefAsync(s.SubmittedBy);
+            var taskTitle = tasks.TryGetValue(s.TaskId, out var task) ? task.Title : s.TaskId;
+            items.Add(new ReviewQueueItemDto(s.Id, s.TaskId, taskTitle, s.Sequence, submitter, s.SubmittedAt, s.DueAtSnapshot));
+        }
+        return new PagedResult<ReviewQueueItemDto> { Items = items, Page = paged.Page, PageSize = paged.PageSize, Total = paged.Total };
     }
 
     private async Task<(Submission Submission, WorkTask Task)> RequireLatestPendingAsync(string taskId, string submissionId, string actorId)

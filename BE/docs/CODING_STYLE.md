@@ -96,15 +96,23 @@ Service implement interface, kế thừa `BaseService<TEntity>` khi cần ghi au
 
 ## 4. Response envelope
 
-Mọi action controller trả `Task<object>`. `[Audit]` attribute (đặt ở `BaseApiController` hoặc từng controller) tự bọc kết quả thành `Result<T>` và luôn trả HTTP 200:
+Mọi action controller trả `Task<object>`. Response **thành công đi thẳng, không bọc** — body chính là DTO/kết quả trả về, mã HTTP là `200`/`201` theo ngữ nghĩa thông thường:
 
 ```json
-{ "succeeded": true, "errors": null, "data": { ... }, "traceId": "...", "statusCode": 100200 }
+{ "id": "...", "username": "admin", ... }
 ```
 
-Lỗi nghiệp vụ/validate cũng trả HTTP 200 với `succeeded:false` và `errors` — **không** dùng mã 4xx/5xx cho lỗi nghiệp vụ. Chỉ các lỗi ở biên bảo mật (thiếu/sai API key, chưa xác thực tại Gateway) mới trả mã HTTP thật (401/403).
+Lỗi (nghiệp vụ, validate, hay bảo mật) đều trả **mã HTTP thật** (`401`/`403`/`404`/`409`/`412`/`422`/`428`/`429`/`500`...) với body dẹt:
 
-Ngoại lệ dùng để báo lỗi nghiệp vụ, không dùng `return null`/magic string. Ném đúng loại kế thừa `AppException` (`NotFoundException`, `BusinessRuleException`, `ForbiddenException`, `ValidationException`…) với `ErrorCode` tương ứng trong `ErrorCodes`. `[Audit]` bắt toàn bộ exception chưa xử lý và chuyển thành `Result<T>` lỗi.
+```json
+{ "code": "NOT_FOUND", "message": "Không tìm thấy dự án.", "fieldErrors": [ { "path": ["username"], "message": "..." } ], "details": { } }
+```
+
+`fieldErrors`/`details` chỉ xuất hiện khi có dữ liệu tương ứng (lỗi field-level hoặc dữ liệu phụ cho UI), không có thì bỏ hẳn field, không trả `null`.
+
+Lý do chốt theo chiều này: đây là contract mà FE đã quyết định và khóa lại bằng test (xem `FE/docs/IMPLEMENTATION_STATUS.md`, mục "Theo yêu cầu dùng response trực tiếp như vietcd...") — BE phải khớp theo FE, không có envelope `{succeeded, data, errors, traceId}` nào ở giữa.
+
+Ngoại lệ dùng để báo lỗi nghiệp vụ, không dùng `return null`/magic string. Ném đúng loại kế thừa `AppException` (`NotFoundException`, `BusinessRuleException`, `ForbiddenException`, `ValidationException`…) với `ErrorCode` tương ứng trong `ErrorCodes` (dạng `100xxx`, lấy `% 1000` ra đúng mã HTTP cần trả). `[Audit]` (`Shared.Commons.Attributes.AuditAttribute`) bắt toàn bộ exception chưa xử lý, ModelState không hợp lệ, và lỗi `[Authorize]` (qua `JwtBearerEvents.OnChallenge`/`OnForbidden` ở `Program.cs`), chuyển thành đúng hình dạng lỗi ở trên — không tự viết lại logic này ở controller/service.
 
 ## 5. Phân trang
 
@@ -147,7 +155,7 @@ Một điểm đăng ký duy nhất mỗi service: `ServiceRegistrationExtension
 ## 13. Những điều không làm
 
 - Không gọi `DbContext` trực tiếp trong Controller.
-- Không trả lỗi nghiệp vụ bằng mã HTTP 4xx/5xx (xem mục 4).
+- Không bọc response thành công trong envelope kiểu `{succeeded, data, ...}` (xem mục 4) — trả DTO trần, dùng đúng mã HTTP cho lỗi.
 - Không optimistic update, không tự suy luận field chỉ-đọc ở FE rồi gửi lại cho BE.
 - Không dùng chung một enum trạng thái cho nhiều entity khác nhau.
 - Không thêm Repository/UnitOfWork layer ở bản base này.

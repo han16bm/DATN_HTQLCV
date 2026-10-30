@@ -15,9 +15,9 @@ namespace Tasks.Api.Services;
 
 public class ReportService(ApplicationDbContext db) : BaseService(db), IReportService
 {
-    public async Task<ReportPreviewDto> GetPreviewAsync(ReportPreviewQuery query)
+    public async Task<ReportPreviewDto> GetPreviewAsync(ReportPreviewQuery query, string actorId)
     {
-        return await BuildPreviewAsync(query.ProjectId, query.PeriodType, query.PeriodStart, authorId: null);
+        return await BuildPreviewAsync(query.ProjectId, query.PeriodType, query.PeriodStart, actorId);
     }
 
     public async Task<PagedResult<ReportDto>> ListAsync(ReportQuery query)

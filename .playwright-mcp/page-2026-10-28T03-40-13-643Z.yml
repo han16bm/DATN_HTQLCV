@@ -1,0 +1,98 @@
+- generic [ref=f28e1]:
+  - generic [ref=f28e2]:
+    - complementary "Thanh điều hướng" [ref=f28e3]:
+      - generic [ref=f28e4]:
+        - link "Cổng công việc" [ref=f28e5] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f28e11] [cursor=pointer]
+      - generic [ref=f28e14]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f28e15]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f28e20]:
+        - generic [ref=f28e21]:
+          - button "Công việc" [expanded] [ref=f28e22] [cursor=pointer]
+          - generic [ref=f28e26]:
+            - link "Tổng quan cá nhân" [ref=f28e27] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f28e32] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f28e36] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f28e41] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f28e46] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f28e51]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f28e52] [cursor=pointer]
+          - generic [ref=f28e56]:
+            - link "Bảng tổng quan" [ref=f28e57] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f28e64] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f28e68] [cursor=pointer]:
+              - /url: /alerts
+      - paragraph [ref=f28e74]: Theo phạm vi được cấp quyền
+    - generic [ref=f28e75]:
+      - banner [ref=f28e76]:
+        - generic [ref=f28e77]:
+          - generic [ref=f28e78]: Không gian làm việc
+          - strong [ref=f28e81]: Báo cáo
+        - button "Mở menu tài khoản" [ref=f28e84] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f28e85]: LH
+          - generic [ref=f28e86]:
+            - text: Tran Quan Ly Hai
+            - generic [ref=f28e87]: Quản lý
+      - main [ref=f28e90]:
+        - generic [ref=f28e91]:
+          - generic [ref=f28e115]:
+            - generic [ref=f28e116]:
+              - heading "Hằng ngày · 2026-10-28" [level=1] [ref=f28e118]
+              - paragraph [ref=f28e119]: Tran Quan Ly Hai · Dự án thử nghiệm E2E
+            - link "Danh sách báo cáo" [ref=f28e121] [cursor=pointer]:
+              - /url: /reports
+          - paragraph [ref=f28e122]:
+            - generic [ref=f28e123]: Bản nháp
+          - generic [ref=f28e124]:
+            - generic [ref=f28e125]:
+              - heading "Số liệu từ nhật ký" [level=2] [ref=f28e126]
+              - button "Làm mới số liệu" [ref=f28e128] [cursor=pointer]
+            - paragraph [ref=f28e130]: Số liệu nguồn tại 10:39 28/10/26 · 0 giờ · Kỳ chưa kết thúc
+            - generic [ref=f28e131]:
+              - table "Số liệu từ nhật ký" [ref=f28e132]:
+                - rowgroup [ref=f28e133]:
+                  - row [ref=f28e134]:
+                    - columnheader "Công việc liên quan" [ref=f28e135]
+                    - columnheader "Trạng thái hiện tại" [ref=f28e136]
+                    - columnheader "Phút trong kỳ" [ref=f28e137]
+                    - columnheader "Hành động" [ref=f28e138]
+                - rowgroup
+              - generic [ref=f28e139]:
+                - heading "Chưa có dữ liệu" [level=2] [ref=f28e140]
+                - paragraph [ref=f28e141]: Chưa có dữ liệu phù hợp trong phạm vi này.
+            - generic [ref=f28e142]: 0 kết quả
+          - generic [ref=f28e144]:
+            - heading "Nội dung báo cáo" [level=2] [ref=f28e146]
+            - generic [ref=f28e147]:
+              - checkbox "Gửi và chốt báo cáo sau khi lưu" [checked] [active] [ref=f28e148]
+              - text: Gửi và chốt báo cáo sau khi lưu
+            - group [ref=f28e150]:
+              - generic [ref=f28e151]:
+                - generic [ref=f28e152]: Công việc trong báo cáo
+                - button "Công việc trong báo cáo" [ref=f28e153] [cursor=pointer]:
+                  - generic [ref=f28e154]: Chọn công việc trong báo cáo
+              - generic [ref=f28e157]:
+                - generic [ref=f28e158]: Kết quả thực hiện *
+                - textbox "Kết quả thực hiện *" [ref=f28e171]: Hoàn thành tài liệu kiểm thử E2E, đã được nghiệm thu.
+              - generic [ref=f28e160]:
+                - generic [ref=f28e161]: Khó khăn
+                - textbox "Khó khăn" [ref=f28e162]
+              - generic [ref=f28e163]:
+                - generic [ref=f28e164]: Kế hoạch tiếp theo *
+                - textbox "Kế hoạch tiếp theo *" [ref=f28e172]: Tiếp tục kiểm thử các luồng còn lại của dự án.
+              - generic [ref=f28e166]:
+                - generic [ref=f28e167]: Lý do nếu không có giờ công
+                - textbox "Lý do nếu không có giờ công" [ref=f28e168]: Người quản lý không trực tiếp ghi giờ công, chỉ xét duyệt kết quả.
+              - button "Lưu và gửi báo cáo" [ref=f28e173] [cursor=pointer]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f28e110] [cursor=pointer]
+  - alert [ref=f28e114]

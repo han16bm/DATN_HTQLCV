@@ -1,0 +1,4 @@
+- generic [active] [ref=f19e1]:
+  - status [ref=f19e2]: Đang tải phiên làm việc…
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f19e9] [cursor=pointer]

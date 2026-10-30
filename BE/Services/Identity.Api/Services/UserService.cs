@@ -177,7 +177,7 @@ public class UserService(ApplicationDbContext context, IHttpContextAccessor http
     private static UserDto ToDto(User u)
     {
         return new(
-            u.Id, u.Version, u.CreatedAt, u.UpdatedAt, u.Username, u.DisplayName, u.Email, u.UnitId,
+            u.Id, u.Version, u.CreatedAt, u.UpdatedAt, u.Username, u.DisplayName, u.Email, null, u.UnitId,
             u.SystemRole.ToString().ToUpperInvariant(), u.Status.ToString().ToUpperInvariant(),
             new Models.Dtos.EntityLabelDto(u.UnitId, u.Unit?.Name ?? string.Empty));
     }

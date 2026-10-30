@@ -9,6 +9,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Unit> Units => Set<Unit>();
     public DbSet<Team> Teams => Set<Team>();
     public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
+    public DbSet<PermissionGroup> PermissionGroups => Set<PermissionGroup>();
+    public DbSet<PermissionGroupMember> PermissionGroupMembers => Set<PermissionGroupMember>();
 
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<ProjectMembership> ProjectMemberships => Set<ProjectMembership>();
@@ -60,6 +62,20 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             e.HasKey(x => new { x.TeamId, x.UserId });
             e.HasOne(x => x.Team).WithMany(t => t.Members).HasForeignKey(x => x.TeamId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PermissionGroup>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Status).HasConversion<string>();
+            e.Property(x => x.Features).HasConversion(stringListConverter, stringListComparer);
+        });
+
+        modelBuilder.Entity<PermissionGroupMember>(e =>
+        {
+            e.HasKey(x => new { x.PermissionGroupId, x.UserId });
+            e.HasOne(x => x.PermissionGroup).WithMany(g => g.Members).HasForeignKey(x => x.PermissionGroupId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
         });
 

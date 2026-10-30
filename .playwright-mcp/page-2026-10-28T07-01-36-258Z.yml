@@ -1,0 +1,176 @@
+- generic:
+  - generic [aria-hidden]:
+    - complementary:
+      - generic:
+        - link:
+          - /url: /workspace
+          - generic: Cổng công việc
+        - button
+      - generic:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph: Phong CNTT
+      - navigation:
+        - generic:
+          - button [expanded]:
+            - generic: Công việc
+          - generic:
+            - link:
+              - /url: /workspace
+              - generic: Tổng quan cá nhân
+            - link:
+              - /url: /projects
+              - generic: Dự án
+            - link:
+              - /url: /tasks
+              - generic: Công việc
+            - link:
+              - /url: /reviews
+              - generic: Chờ nghiệm thu
+            - link:
+              - /url: /reports
+              - generic: Báo cáo công việc
+        - generic:
+          - button [expanded]:
+            - generic: Theo dõi & phân tích
+          - generic:
+            - link:
+              - /url: /dashboard
+              - generic: Bảng tổng quan
+            - link:
+              - /url: /analytics/risks
+              - generic: Phân tích & AI
+            - link:
+              - /url: /alerts
+              - generic: Cảnh báo
+      - generic:
+        - paragraph: Theo phạm vi được cấp quyền
+    - generic:
+      - banner:
+        - generic:
+          - generic: Không gian làm việc
+          - strong: Tổng quan
+        - generic:
+          - button [expanded]:
+            - generic [aria-hidden]: LH
+            - generic:
+              - text: Tran Quan Ly Hai
+              - generic: Quản lý
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=1]: Chào Hai,
+            - generic:
+              - link:
+                - /url: /dashboard
+                - text: Mở bảng tổng quan
+              - link:
+                - /url: /reports/new
+                - text: Lập báo cáo
+          - region:
+            - link:
+              - /url: /projects
+              - generic: Dự án
+              - strong: "2"
+              - generic: Xem dự án
+            - link:
+              - /url: /reports?status=DRAFT&authorId=84513f59992d438584aa0608d7505d1d
+              - generic: Báo cáo nháp
+              - strong: "0"
+              - generic: Tiếp tục báo cáo
+            - link:
+              - /url: /reviews
+              - generic: Chờ nghiệm thu
+              - strong: "0"
+              - generic: Mở hàng chờ
+            - link:
+              - /url: /tasks?overdue=true&assigneeId=84513f59992d438584aa0608d7505d1d
+              - generic: Công việc quá hạn
+              - strong: "0"
+              - generic: Xem công việc
+          - generic:
+            - generic:
+              - heading [level=2]: Dự án đang theo dõi
+              - link:
+                - /url: /projects
+                - text: Tất cả dự án
+            - generic:
+              - table:
+                - rowgroup:
+                  - row:
+                    - columnheader: Dự án
+                    - columnheader: Người phụ trách
+                    - columnheader: Trạng thái
+                    - columnheader: Hạn hoàn thành
+                    - columnheader: Hành động
+                - rowgroup:
+                  - row:
+                    - cell: Du an kiem thu task flows
+                    - cell: Tran Quan Ly Hai
+                    - cell:
+                      - generic: Hoạt động
+                    - cell: 17:00 31/12/26
+                    - cell:
+                      - link:
+                        - /url: /projects/40094846ced24d88ab0c825cd83b84cc
+                        - text: Chi tiết
+                  - row:
+                    - cell: Dự án thử nghiệm E2E
+                    - cell: Nguyen Quan Ly
+                    - cell:
+                      - generic: Hoàn thành
+                    - cell: 17:00 31/12/26
+                    - cell:
+                      - link:
+                        - /url: /projects/716a4376b89b4d498a708c54350b6a61
+                        - text: Chi tiết
+            - generic: 2 kết quả
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=1]: Công việc của tôi
+            - generic:
+              - button: Bảng trạng thái
+              - button: Tạo công việc
+          - generic:
+            - generic:
+              - text: Tìm công việc
+              - searchbox
+            - generic:
+              - text: Dự án
+              - combobox
+            - generic:
+              - text: Trạng thái
+              - combobox
+            - generic:
+              - text: Ưu tiên
+              - combobox
+          - generic:
+            - generic:
+              - table:
+                - rowgroup:
+                  - row:
+                    - columnheader: Công việc
+                    - columnheader: Dự án
+                    - columnheader: Người thực hiện
+                    - columnheader: Ưu tiên
+                    - columnheader: Trạng thái
+                    - columnheader: Ngày bắt đầu
+                    - columnheader: Hạn hoàn thành
+                    - columnheader: Hành động
+              - generic:
+                - heading [level=2]: Chưa có dữ liệu
+                - paragraph: Chưa có dữ liệu phù hợp trong phạm vi này.
+            - generic: 0 kết quả
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f20e9] [cursor=pointer]
+  - alert
+  - menu "Mở menu tài khoản" [active] [ref=f20e193]:
+    - generic [ref=f20e194]:
+      - text: Tran Quan Ly Hai
+      - generic [ref=f20e195]: Phong CNTT
+    - separator [ref=f20e196]
+    - menuitem "Hồ sơ công khai" [ref=f20e197] [cursor=pointer]
+    - menuitem "Hồ sơ cá nhân" [ref=f20e201] [cursor=pointer]
+    - menuitem "Đăng xuất" [ref=f20e205] [cursor=pointer]

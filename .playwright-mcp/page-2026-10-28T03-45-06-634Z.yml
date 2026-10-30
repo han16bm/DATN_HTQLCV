@@ -1,0 +1,96 @@
+- generic [ref=f34e1]:
+  - generic [ref=f34e13]:
+    - complementary "Thanh điều hướng" [ref=f34e14]:
+      - generic [ref=f34e15]:
+        - link "Cổng công việc" [ref=f34e16] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f34e22] [cursor=pointer]
+      - generic [ref=f34e25]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f34e26]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f34e31]:
+        - generic [ref=f34e32]:
+          - button "Công việc" [expanded] [ref=f34e33] [cursor=pointer]
+          - generic [ref=f34e37]:
+            - link "Tổng quan cá nhân" [ref=f34e38] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f34e43] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f34e47] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f34e52] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f34e57] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f34e62]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f34e63] [cursor=pointer]
+          - generic [ref=f34e67]:
+            - link "Bảng tổng quan" [ref=f34e68] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f34e75] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f34e79] [cursor=pointer]:
+              - /url: /alerts
+        - generic [ref=f34e84]:
+          - button "Quản trị hệ thống" [expanded] [ref=f34e85] [cursor=pointer]
+          - generic [ref=f34e89]:
+            - link "Tài khoản người dùng" [ref=f34e90] [cursor=pointer]:
+              - /url: /admin/users
+            - link "Cơ cấu đơn vị" [ref=f34e97] [cursor=pointer]:
+              - /url: /admin/organization
+            - link "Nhóm nhân sự" [ref=f34e103] [cursor=pointer]:
+              - /url: /admin/teams
+      - paragraph [ref=f34e110]: Theo phạm vi được cấp quyền
+    - generic [ref=f34e111]:
+      - banner [ref=f34e112]:
+        - generic [ref=f34e113]:
+          - generic [ref=f34e114]: Không gian làm việc
+          - strong [ref=f34e117]: Quản trị
+        - button "Mở menu tài khoản" [ref=f34e119] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f34e120]: tv
+          - generic [ref=f34e121]:
+            - text: Quan tri vien
+            - generic [ref=f34e122]: Quản trị viên
+      - main [ref=f34e125]:
+        - generic [ref=f34e126]:
+          - generic [ref=f34e127]:
+            - heading "Chi tiết tài khoản" [level=1] [ref=f34e130]
+            - link "Danh sách tài khoản" [ref=f34e132] [cursor=pointer]:
+              - /url: /admin/users
+          - generic [ref=f34e133]:
+            - generic [ref=f34e134]:
+              - generic [ref=f34e135]:
+                - heading "Thông tin tài khoản" [level=2] [ref=f34e136]
+                - button "Chỉnh sửa thông tin" [ref=f34e137] [cursor=pointer]
+              - generic [ref=f34e138]:
+                - generic [aria-hidden] [ref=f34e139]: LH
+                - generic [ref=f34e140]:
+                  - strong [ref=f34e141]: Tran Quan Ly Hai
+                  - generic [ref=f34e142]: manager2
+                - generic [ref=f34e143]: Đã khóa
+              - generic [ref=f34e144]:
+                - generic [ref=f34e145]:
+                  - term [ref=f34e146]: Đơn vị
+                  - definition [ref=f34e147]: Phong CNTT
+                - generic [ref=f34e148]:
+                  - term [ref=f34e149]: Email
+                  - definition [ref=f34e150]: manager2@datn.local
+                - generic [ref=f34e151]:
+                  - term [ref=f34e152]: Vai trò hệ thống
+                  - definition [ref=f34e153]: Quản lý
+                - generic [ref=f34e154]:
+                  - term [ref=f34e155]: Cập nhật lần cuối
+                  - definition [ref=f34e156]: 10:44 28/10/26
+            - generic [ref=f34e157]:
+              - heading "Truy cập và mật khẩu" [level=2] [ref=f34e159]
+              - generic [ref=f34e160]:
+                - button "Mở khóa tài khoản" [active] [ref=f34e161] [cursor=pointer]
+                - button "Cấp lại mật khẩu" [ref=f34e162] [cursor=pointer]
+              - group [ref=f34e165]:
+                - generic [ref=f34e166]:
+                  - generic [ref=f34e167]: Lý do *
+                  - textbox "Lý do *" [ref=f34e168]
+                - button "Lưu thông tin" [ref=f34e170] [cursor=pointer]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f34e9] [cursor=pointer]
+  - alert [ref=f34e163]

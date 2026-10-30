@@ -1,0 +1,98 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e14]:
+    - complementary "Thanh điều hướng" [ref=f1e15]:
+      - generic [ref=f1e16]:
+        - link "Cổng công việc" [ref=f1e17] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f1e23] [cursor=pointer]
+      - generic [ref=f1e26]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f1e27]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f1e32]:
+        - generic [ref=f1e33]:
+          - button "Công việc" [expanded] [ref=f1e34] [cursor=pointer]
+          - generic [ref=f1e38]:
+            - link "Tổng quan cá nhân" [ref=f1e39] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f1e44] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f1e48] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f1e53] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f1e58] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f1e63]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f1e64] [cursor=pointer]
+          - generic [ref=f1e68]:
+            - link "Bảng tổng quan" [ref=f1e69] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f1e76] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f1e80] [cursor=pointer]:
+              - /url: /alerts
+      - paragraph [ref=f1e86]: Theo phạm vi được cấp quyền
+    - generic [ref=f1e87]:
+      - banner [ref=f1e88]:
+        - generic [ref=f1e89]:
+          - generic [ref=f1e90]: Không gian làm việc
+          - strong [ref=f1e93]: Cảnh báo
+        - button "Mở menu tài khoản" [ref=f1e96] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f1e97]: LH
+          - generic [ref=f1e98]:
+            - text: Tran Quan Ly Hai
+            - generic [ref=f1e99]: Quản lý
+      - main [ref=f1e102]:
+        - generic [ref=f1e103]:
+          - heading "Cảnh báo" [level=1] [ref=f1e107]
+          - generic [ref=f1e108]:
+            - generic [ref=f1e109]:
+              - text: Dự án
+              - combobox "Dự án" [ref=f1e110]:
+                - option "Tất cả trong quyền" [selected]
+                - option "Du an kiem thu huy"
+                - option "Du an kiem thu task flows"
+                - option "Dự án thử nghiệm E2E"
+            - generic [ref=f1e111]:
+              - text: Trạng thái xử lý
+              - combobox "Trạng thái xử lý" [ref=f1e112]:
+                - option "Tất cả" [selected]
+                - option "Chưa đọc"
+                - option "Đã đọc"
+                - option "Đang thực hiện"
+                - option "Đã xử lý"
+                - option "Đã bác bỏ"
+            - generic [ref=f1e113]:
+              - text: Mức độ
+              - combobox "Mức độ" [ref=f1e114]:
+                - option "Tất cả" [selected]
+                - option "Thông tin"
+                - option "Thấp"
+                - option "Trung bình"
+                - option "Cao"
+                - option "Nghiêm trọng"
+          - generic [ref=f1e148]:
+            - table [ref=f1e150]:
+              - rowgroup [ref=f1e151]:
+                - row [ref=f1e152]:
+                  - columnheader "Vấn đề" [ref=f1e153]
+                  - columnheader "Đối tượng" [ref=f1e154]
+                  - columnheader "Mức độ" [ref=f1e155]
+                  - columnheader "Tình trạng xử lý" [ref=f1e156]
+                  - columnheader "Điều kiện nguồn" [ref=f1e157]
+                  - columnheader "Hành động" [ref=f1e158]
+              - rowgroup [ref=f1e159]:
+                - row [ref=f1e160]:
+                  - cell "Chất lượng dữ liệu" [ref=f1e161]
+                  - cell "Kiem thu alert data quality chua phan cong" [ref=f1e162]
+                  - cell "Thấp" [ref=f1e163]
+                  - cell "Chưa đọc" [ref=f1e165]
+                  - cell "Còn điều kiện phát sinh" [ref=f1e167]
+                  - cell [ref=f1e168]:
+                    - link "Xem cảnh báo Chất lượng dữ liệu" [ref=f1e169] [cursor=pointer]:
+                      - /url: /alerts/8ea728969a284fb1953ad1bcfd493e95
+                      - text: Chi tiết
+            - generic [ref=f1e170]: 1 kết quả
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f1e9] [cursor=pointer]
+  - alert [ref=f1e13]

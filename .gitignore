@@ -36,7 +36,6 @@ obj/
 
 # AI coding assistant support files
 .claude/
-.codegraph/
 .cursor/
 .windsurf/
 .aider*

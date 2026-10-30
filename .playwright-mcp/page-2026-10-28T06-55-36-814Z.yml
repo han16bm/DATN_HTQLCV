@@ -1,0 +1,104 @@
+- generic [active] [ref=f11e1]:
+  - generic [ref=f11e13]:
+    - complementary "Thanh điều hướng" [ref=f11e14]:
+      - generic [ref=f11e15]:
+        - link "Cổng công việc" [ref=f11e16] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f11e22] [cursor=pointer]
+      - generic [ref=f11e25]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f11e26]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f11e31]:
+        - generic [ref=f11e32]:
+          - button "Công việc" [expanded] [ref=f11e33] [cursor=pointer]
+          - generic [ref=f11e37]:
+            - link "Tổng quan cá nhân" [ref=f11e38] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f11e43] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f11e47] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f11e52] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f11e57] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f11e62]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f11e63] [cursor=pointer]
+          - generic [ref=f11e67]:
+            - link "Bảng tổng quan" [ref=f11e68] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f11e75] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f11e79] [cursor=pointer]:
+              - /url: /alerts
+      - paragraph [ref=f11e85]: Theo phạm vi được cấp quyền
+    - generic [ref=f11e86]:
+      - banner [ref=f11e87]:
+        - generic [ref=f11e88]:
+          - generic [ref=f11e89]: Không gian làm việc
+          - strong [ref=f11e92]: Dự án
+        - button "Mở menu tài khoản" [ref=f11e94] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f11e95]: LH
+          - generic [ref=f11e96]:
+            - text: Tran Quan Ly Hai
+            - generic [ref=f11e97]: Quản lý
+      - main [ref=f11e100]:
+        - generic [ref=f11e101]:
+          - generic [ref=f11e102]:
+            - generic [ref=f11e103]:
+              - generic [ref=f11e104]:
+                - heading "Dự án thử nghiệm E2E" [level=1] [ref=f11e105]
+                - generic [ref=f11e106]: Hoàn thành
+              - paragraph [ref=f11e107]: Phong CNTT
+            - link "Danh sách" [ref=f11e109] [cursor=pointer]:
+              - /url: /projects
+          - combobox "Mục dự án" [ref=f11e113]:
+            - option "Tổng quan"
+            - option "Công việc"
+            - option "Thành viên" [selected]
+            - option "Lịch sử"
+          - heading "Thành viên dự án" [level=1] [ref=f11e117]
+          - generic [ref=f11e120]:
+            - table [ref=f11e122]:
+              - rowgroup [ref=f11e123]:
+                - row [ref=f11e124]:
+                  - columnheader "Thành viên" [ref=f11e125]
+                  - columnheader "Vai trò dự án" [ref=f11e126]
+                  - columnheader "Tư cách" [ref=f11e127]
+                  - columnheader "Hành động" [ref=f11e128]
+              - rowgroup [ref=f11e129]:
+                - row [ref=f11e130]:
+                  - cell [ref=f11e131]:
+                    - link "Xem hồ sơ công khai của Nguyen Quan Ly" [ref=f11e132] [cursor=pointer]:
+                      - /url: /users/184728461ea949e0b1d34d1ac9217d9d
+                      - generic [aria-hidden] [ref=f11e133]: QL
+                      - generic [ref=f11e134]: Nguyen Quan Ly
+                  - cell "Phụ trách" [ref=f11e136]
+                  - cell "Đang tham gia" [ref=f11e137]
+                  - cell [ref=f11e138]
+                - row [ref=f11e139]:
+                  - cell [ref=f11e140]:
+                    - link "Xem hồ sơ công khai của Quan tri vien" [ref=f11e141] [cursor=pointer]:
+                      - /url: /users/01f6b300092f4918a0ae12c2170314bb
+                      - generic [aria-hidden] [ref=f11e142]: tv
+                      - generic [ref=f11e143]: Quan tri vien
+                  - cell "Quản lý" [ref=f11e145]
+                  - cell "Đã kết thúc 13:46 28/10/26" [ref=f11e146]
+                  - cell [ref=f11e147]
+                - row [ref=f11e188]:
+                  - cell [ref=f11e149]:
+                    - link "Xem hồ sơ công khai của Tran Quan Ly Hai" [ref=f11e150] [cursor=pointer]:
+                      - /url: /users/84513f59992d438584aa0608d7505d1d
+                      - generic [aria-hidden] [ref=f11e151]: LH
+                      - generic [ref=f11e152]: Tran Quan Ly Hai
+                  - cell "Quản lý" [ref=f11e154]
+                  - cell "Đang tham gia" [ref=f11e155]
+                  - cell [ref=f11e189]
+            - generic [ref=f11e161]: 3 kết quả
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=f11e190]:
+        - button "Close toast" [ref=f11e191] [cursor=pointer]
+        - generic [ref=f11e198]: Đã đóng dự án.
+  - button "Open Next.js Dev Tools" [ref=f11e9] [cursor=pointer]
+  - alert [ref=f11e163]

@@ -27,3 +27,12 @@ public record SubmissionDto
 }
 
 public record SubmissionMutationResult(SubmissionDto Submission, TaskDto Task);
+
+public record ReviewQueueItemDto(
+    string Id,
+    string TaskId,
+    string TaskTitle,
+    int Sequence,
+    PersonRefDto Submitter,
+    DateTime SubmittedAt,
+    DateTime DueAtSnapshot);

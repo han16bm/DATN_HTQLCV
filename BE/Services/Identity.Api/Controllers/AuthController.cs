@@ -33,8 +33,9 @@ public class AuthController(ILogger<BaseApiController> logger, IAuthService auth
 
     [HttpPost("logout")]
     [Authorize]
-    public object Logout()
+    public async Task<object> Logout()
     {
+        await authService.LogoutAsync(HttpContext.GetUserId()!);
         return new { ok = true };
     }
 }

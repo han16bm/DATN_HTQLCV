@@ -21,7 +21,7 @@ import { useListProjectsQuery } from "../hooks/use-projects-queries";
 export function WorkspaceOverview() {
   const { session } = useSession();
   const userId = session?.user.id ?? "";
-  const canReview = canVisit(session?.user.systemRole, "/reviews");
+  const canReview = canVisit(session, "/reviews");
   const projects = useListProjectsQuery({ pageSize: 4 });
   const drafts = useListReportsQuery({
     authorId: userId,
@@ -68,7 +68,7 @@ export function WorkspaceOverview() {
         title={`Chào ${session?.user.displayName.split(" ").at(-1) ?? "bạn"},`}
         actions={
           <>
-            {canVisit(session?.user.systemRole, "/dashboard") && (
+            {canVisit(session, "/dashboard") && (
               <ButtonLink href="/dashboard" primary>
                 Mở bảng tổng quan
               </ButtonLink>

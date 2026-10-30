@@ -1,0 +1,96 @@
+- generic [active] [ref=f10e1]:
+  - generic [ref=f10e13]:
+    - complementary "Thanh điều hướng" [ref=f10e14]:
+      - generic [ref=f10e15]:
+        - link "Cổng công việc" [ref=f10e16] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f10e22] [cursor=pointer]
+      - generic [ref=f10e25]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f10e26]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f10e31]:
+        - generic [ref=f10e32]:
+          - button "Công việc" [expanded] [ref=f10e33] [cursor=pointer]
+          - generic [ref=f10e37]:
+            - link "Tổng quan cá nhân" [ref=f10e38] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f10e43] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f10e47] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f10e52] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f10e57] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f10e62]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f10e63] [cursor=pointer]
+          - generic [ref=f10e67]:
+            - link "Bảng tổng quan" [ref=f10e68] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f10e75] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f10e79] [cursor=pointer]:
+              - /url: /alerts
+      - paragraph [ref=f10e85]: Theo phạm vi được cấp quyền
+    - generic [ref=f10e86]:
+      - banner [ref=f10e87]:
+        - generic [ref=f10e88]:
+          - generic [ref=f10e89]: Không gian làm việc
+          - strong [ref=f10e92]: Công việc
+        - button "Mở menu tài khoản" [ref=f10e94] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f10e95]: LH
+          - generic [ref=f10e96]:
+            - text: Tran Quan Ly Hai
+            - generic [ref=f10e97]: Quản lý
+      - main [ref=f10e100]:
+        - generic [ref=f10e101]:
+          - generic [ref=f10e103]:
+            - generic [ref=f10e104]:
+              - heading "Kiểm thử upload minh chứng" [level=1] [ref=f10e105]
+              - generic [ref=f10e106]: Hoàn thành
+              - generic [ref=f10e107]: Ưu tiên bình thường
+            - paragraph [ref=f10e108]: Dự án thử nghiệm E2E
+          - combobox "Mục công việc" [ref=f10e110]:
+            - option "Thông tin"
+            - option "Giờ công"
+            - option "Các lần nộp" [selected]
+            - option "Lịch sử"
+          - heading "Đối chiếu kết quả · Lần 1" [level=1] [ref=f10e114]
+          - generic [ref=f10e115]:
+            - generic [ref=f10e116]:
+              - heading "Tiêu chí nghiệm thu" [level=2] [ref=f10e118]
+              - paragraph [ref=f10e119]: Tải lên tệp minh chứng thành công.
+            - generic [ref=f10e120]:
+              - heading "Kết quả đã nộp" [level=2] [ref=f10e122]
+              - generic [ref=f10e123]: Đã chấp nhận
+              - paragraph [ref=f10e124]: Nguyen Quan Ly · 11:18 28/10/26
+              - paragraph [ref=f10e125]: Đã tải minh chứng kiểm thử upload.
+              - generic [ref=f10e126]:
+                - generic [ref=f10e127]:
+                  - term [ref=f10e128]: Hạn tại lúc nộp
+                  - definition [ref=f10e129]: 17:00 5/11/26
+                - generic [ref=f10e130]:
+                  - term [ref=f10e131]: Tình trạng nộp
+                  - definition [ref=f10e132]: Nộp trong hạn
+                - generic [ref=f10e133]:
+                  - term [ref=f10e134]: Giờ công tại lúc nộp
+                  - definition [ref=f10e135]: 0,5 giờ
+              - button "Tải evidence.txt (60 B)" [ref=f10e137] [cursor=pointer]
+          - generic [ref=f10e154]:
+            - heading "Kết quả nghiệm thu" [level=2] [ref=f10e156]
+            - paragraph [ref=f10e157]: Tran Quan Ly Hai · 13:55 28/10/26
+            - paragraph [ref=f10e158]: Minh chung day du, dat tieu chi nghiem thu.
+          - paragraph [ref=f10e159]: Bạn đang xem kết quả đã nộp.
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=f10e160]:
+        - button "Close toast" [ref=f10e161] [cursor=pointer]
+        - generic [ref=f10e168]: Đã ghi nhận quyết định nghiệm thu.
+  - button "Open Next.js Dev Tools" [ref=f10e170] [cursor=pointer]:
+    - generic [ref=f10e173]:
+      - text: Rendering
+      - generic [ref=f10e174]:
+        - generic [ref=f10e175]: .
+        - generic [ref=f10e176]: .
+        - generic [ref=f10e177]: .
+  - alert [ref=f10e140]

@@ -1,14 +1,21 @@
 namespace Analytics.Api.Models.Dtos;
 
-public record RiskItemDto
-{
-    public string TaskId { get; init; } = null!;
-    public string TaskTitle { get; init; } = null!;
-    public string Status { get; init; } = null!;
-    public string? AssigneeId { get; init; }
-    public DateTime DueAt { get; init; }
-    public string Category { get; init; } = null!; // AT_RISK | OVERDUE | NO_SIGNAL
-    public string RiskLevel { get; init; } = null!; // LOW | MEDIUM | HIGH
-    public string AssessmentBasis { get; init; } = "BUSINESS_RULES";
-    public QualityDto Quality { get; init; } = new();
-}
+public record RiskItemDto(
+    string TaskId,
+    string TaskTitle,
+    PersonRefDto? Assignee,
+    string Category, // AT_RISK | OVERDUE | INSUFFICIENT_DATA | NO_SIGNAL
+    List<string> Evidence,
+    QualityDto Quality,
+    AnalysisRefDto AnalysisRef);
+
+public record ProjectRiskSummaryDto(
+    string ProjectName,
+    string RiskLevel, // LOW | MEDIUM | HIGH | UNKNOWN
+    int OverdueCount,
+    int AtRiskCount,
+    int InsufficientDataCount,
+    List<string> Evidence,
+    AnalysisRefDto AnalysisRef);
+
+public record RisksDto(AnalysisMetaDto Metadata, List<RiskItemDto> Items, List<ProjectRiskSummaryDto> Projects);

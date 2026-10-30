@@ -28,13 +28,20 @@ export type MutationOptions = RequestOptions & {
 export type VersionOptions = MutationOptions & { version: number };
 type HttpConfig = InternalAxiosRequestConfig<unknown> & { replay?: boolean };
 
-let accessToken: string | null = null;
+const TOKEN_STORAGE_KEY = "datn.accessToken";
+let accessToken: string | null =
+  typeof window === "undefined"
+    ? null
+    : window.sessionStorage.getItem(TOKEN_STORAGE_KEY);
 let refreshHandler: (() => Promise<void>) | null = null;
 let refreshPromise: Promise<void> | null = null;
 export const token = {
   get: () => accessToken,
   set: (value: string | null) => {
     accessToken = value;
+    if (typeof window === "undefined") return;
+    if (value) window.sessionStorage.setItem(TOKEN_STORAGE_KEY, value);
+    else window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
   },
 };
 export function registerRefresh(handler: (() => Promise<void>) | null) {

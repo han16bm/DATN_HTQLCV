@@ -24,9 +24,10 @@ public class AlertService(ApplicationDbContext context, IHttpContextAccessor htt
         q = q.OrderByDescending(a => a.CreatedAt);
 
         var paged = await q.ToPagedResultAsync(query);
+        var titles = await LoadTaskTitlesAsync(paged.Items.Select(a => a.TaskId));
         return new PagedResult<AlertDto>
         {
-            Items = paged.Items.Select(ToDto).ToList(),
+            Items = paged.Items.Select(a => ToDto(a, ResolveTaskTitle(a.TaskId, titles))).ToList(),
             Page = paged.Page,
             PageSize = paged.PageSize,
             Total = paged.Total
@@ -37,7 +38,8 @@ public class AlertService(ApplicationDbContext context, IHttpContextAccessor htt
     {
         var alert = await context.Alerts.AsNoTracking().FirstOrDefaultAsync(a => a.Id == alertId)
             ?? throw new NotFoundException("Không tìm thấy cảnh báo.");
-        return ToDto(alert);
+        var titles = await LoadTaskTitlesAsync([alert.TaskId]);
+        return ToDto(alert, ResolveTaskTitle(alert.TaskId, titles));
     }
 
     public async Task<AlertDto> UpdateAsync(string alertId, UpdateAlertRequest request, string? ifMatch)
@@ -65,10 +67,23 @@ public class AlertService(ApplicationDbContext context, IHttpContextAccessor htt
         alert.UpdatedAt = DateTime.UtcNow;
 
         await context.SaveChangesAsync();
-        return ToDto(alert);
+        var titles = await LoadTaskTitlesAsync([alert.TaskId]);
+        return ToDto(alert, ResolveTaskTitle(alert.TaskId, titles));
     }
 
-    private static AlertDto ToDto(Alert a)
+    private async Task<Dictionary<string, string>> LoadTaskTitlesAsync(IEnumerable<string?> taskIds)
+    {
+        var ids = taskIds.Where(id => id != null).Select(id => id!).Distinct().ToList();
+        return await context.Tasks.AsNoTracking().Where(t => ids.Contains(t.Id)).ToDictionaryAsync(t => t.Id, t => t.Title);
+    }
+
+    private static string? ResolveTaskTitle(string? taskId, Dictionary<string, string> titles)
+    {
+        if (taskId is null) return null;
+        return titles.TryGetValue(taskId, out var title) ? title : null;
+    }
+
+    private static AlertDto ToDto(Alert a, string? taskTitle)
     {
         return new()
         {
@@ -87,7 +102,9 @@ public class AlertService(ApplicationDbContext context, IHttpContextAccessor htt
             MethodVersion = a.MethodVersion,
             ResolutionNote = a.ResolutionNote,
             HandledBy = a.HandledBy,
-            HandledAt = a.HandledAt
+            HandledAt = a.HandledAt,
+            TaskTitle = taskTitle,
+            AnalysisRef = null
         };
     }
 }

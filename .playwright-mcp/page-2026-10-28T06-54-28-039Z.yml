@@ -1,0 +1,121 @@
+- generic:
+  - generic [aria-hidden]:
+    - complementary:
+      - generic:
+        - link:
+          - /url: /workspace
+          - generic: Cổng công việc
+        - button
+      - generic:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph: Phong CNTT
+      - navigation:
+        - generic:
+          - button [expanded]:
+            - generic: Công việc
+          - generic:
+            - link:
+              - /url: /workspace
+              - generic: Tổng quan cá nhân
+            - link:
+              - /url: /projects
+              - generic: Dự án
+            - link:
+              - /url: /tasks
+              - generic: Công việc
+            - link:
+              - /url: /reviews
+              - generic: Chờ nghiệm thu
+            - link:
+              - /url: /reports
+              - generic: Báo cáo công việc
+        - generic:
+          - button [expanded]:
+            - generic: Theo dõi & phân tích
+          - generic:
+            - link:
+              - /url: /dashboard
+              - generic: Bảng tổng quan
+            - link:
+              - /url: /analytics/risks
+              - generic: Phân tích & AI
+            - link:
+              - /url: /alerts
+              - generic: Cảnh báo
+        - generic:
+          - button [expanded]:
+            - generic: Quản trị hệ thống
+          - generic:
+            - link:
+              - /url: /admin/users
+              - generic: Tài khoản người dùng
+            - link:
+              - /url: /admin/organization
+              - generic: Cơ cấu đơn vị
+            - link:
+              - /url: /admin/teams
+              - generic: Nhóm nhân sự
+      - generic:
+        - paragraph: Theo phạm vi được cấp quyền
+    - generic:
+      - banner:
+        - generic:
+          - generic: Không gian làm việc
+          - strong: Quản trị
+        - generic:
+          - button [expanded]:
+            - generic [aria-hidden]: tv
+            - generic:
+              - text: Quan tri vien
+              - generic: Quản trị viên
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=1]: Chi tiết tài khoản
+            - generic:
+              - link:
+                - /url: /admin/users
+                - text: Danh sách tài khoản
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=2]: Thông tin tài khoản
+                - button: Chỉnh sửa thông tin
+              - generic:
+                - generic [aria-hidden]: LH
+                - generic:
+                  - strong: Tran Quan Ly Hai
+                  - generic: manager2
+                - generic: Hoạt động
+              - generic:
+                - generic:
+                  - term: Đơn vị
+                  - definition: Phong CNTT
+                - generic:
+                  - term: Email
+                  - definition: manager2@datn.local
+                - generic:
+                  - term: Vai trò hệ thống
+                  - definition: Quản lý
+                - generic:
+                  - term: Cập nhật lần cuối
+                  - definition: 13:54 28/10/26
+            - generic:
+              - generic:
+                - heading [level=2]: Truy cập và mật khẩu
+              - generic:
+                - button: Khóa tài khoản
+                - button: Cấp lại mật khẩu
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f9e9] [cursor=pointer]
+  - alert
+  - menu "Mở menu tài khoản" [active] [ref=f9e249]:
+    - generic [ref=f9e250]:
+      - text: Quan tri vien
+      - generic [ref=f9e251]: Phong CNTT
+    - separator [ref=f9e252]
+    - menuitem "Hồ sơ công khai" [ref=f9e253] [cursor=pointer]
+    - menuitem "Hồ sơ cá nhân" [ref=f9e257] [cursor=pointer]
+    - menuitem "Đăng xuất" [ref=f9e261] [cursor=pointer]

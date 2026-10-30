@@ -55,7 +55,7 @@ public class TimeLogService(ApplicationDbContext db) : BaseService(db), ITimeLog
         Db.TimeLogs.Add(entity);
         task.Version++;
         task.UpdatedAt = now;
-        WriteAuditLog(nameof(TimeLog), entity.Id, actorId, "CREATE", null, entity);
+        WriteAuditLog(nameof(TimeLog), entity.Id, actorId, "CREATE", null, new { entity.TaskId, entity.UserId, entity.WorkDate, entity.Minutes, entity.Description, entity.Status });
         await Db.SaveChangesAsync();
 
         return new TimeLogMutationResult(await entity.ToDtoAsync(Db), await task.ToDtoAsync(Db));
@@ -89,7 +89,7 @@ public class TimeLogService(ApplicationDbContext db) : BaseService(db), ITimeLog
         task.Version++;
         task.UpdatedAt = DateTime.UtcNow;
 
-        WriteAuditLog(nameof(TimeLog), log.Id, actorId, "UPDATE", before, log, request.Reason);
+        WriteAuditLog(nameof(TimeLog), log.Id, actorId, "UPDATE", before, new { log.WorkDate, log.Minutes, log.Description, log.Status }, request.Reason);
         await Db.SaveChangesAsync();
 
         return new TimeLogMutationResult(await log.ToDtoAsync(Db), await task.ToDtoAsync(Db));
@@ -114,7 +114,7 @@ public class TimeLogService(ApplicationDbContext db) : BaseService(db), ITimeLog
         task.Version++;
         task.UpdatedAt = DateTime.UtcNow;
 
-        WriteAuditLog(nameof(TimeLog), log.Id, actorId, "VOID", null, log, request.Reason);
+        WriteAuditLog(nameof(TimeLog), log.Id, actorId, "VOID", null, new { log.Status, log.VoidReason }, request.Reason);
         await Db.SaveChangesAsync();
 
         return new TimeLogMutationResult(await log.ToDtoAsync(Db), await task.ToDtoAsync(Db));

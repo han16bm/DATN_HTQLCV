@@ -20,6 +20,7 @@ export const sessionSchema = z.object({
       projectRole: projectRoleSchema,
     }),
   ),
+  permissions: z.array(z.string()).default([]),
 });
 export const loginResponseSchema = z.object({
   session: sessionSchema,

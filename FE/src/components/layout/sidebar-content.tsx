@@ -125,7 +125,7 @@ export function SidebarContent({
       <nav className="sidebar-nav" aria-label="Điều hướng chính">
         {groups.map((group) => {
           const items = group.items.filter((item) =>
-            canVisit(session.user.systemRole, item.href),
+            canVisit(session, item.href),
           );
           if (!items.length) return null;
           const expanded = collapsed || !closed.includes(group.id);

@@ -143,7 +143,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           </header>
           <main className="content">
             <div className="page-surface">
-              {canVisit(session.user.systemRole, pathname) ? (
+              {canVisit(session, pathname) ? (
                 children
               ) : (
                 <QueryErrorState

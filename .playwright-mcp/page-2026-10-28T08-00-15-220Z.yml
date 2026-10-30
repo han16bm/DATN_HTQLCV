@@ -1,0 +1,167 @@
+- generic:
+  - generic [aria-hidden]:
+    - complementary:
+      - generic:
+        - link:
+          - /url: /workspace
+          - generic: Cổng công việc
+        - button
+      - generic:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph: Phong CNTT
+      - navigation:
+        - generic:
+          - button [expanded]:
+            - generic: Công việc
+          - generic:
+            - link:
+              - /url: /workspace
+              - generic: Tổng quan cá nhân
+            - link:
+              - /url: /projects
+              - generic: Dự án
+            - link:
+              - /url: /tasks
+              - generic: Công việc
+            - link:
+              - /url: /reviews
+              - generic: Chờ nghiệm thu
+            - link:
+              - /url: /reports
+              - generic: Báo cáo công việc
+        - generic:
+          - button [expanded]:
+            - generic: Theo dõi & phân tích
+          - generic:
+            - link:
+              - /url: /dashboard
+              - generic: Bảng tổng quan
+            - link:
+              - /url: /analytics/risks
+              - generic: Phân tích & AI
+            - link:
+              - /url: /alerts
+              - generic: Cảnh báo
+      - generic:
+        - paragraph: Theo phạm vi được cấp quyền
+    - generic:
+      - banner:
+        - generic:
+          - generic: Không gian làm việc
+          - strong: Công việc
+        - generic:
+          - button:
+            - generic [aria-hidden]: LH
+            - generic:
+              - text: Tran Quan Ly Hai
+              - generic: Quản lý
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=1]: Kiem thu alert data quality chua phan cong
+                - generic: Mới tạo
+                - generic: Ưu tiên bình thường
+              - paragraph: Du an kiem thu task flows
+            - generic:
+              - link:
+                - /url: /tasks/69671d21c36449888e3462f898554c59/edit
+                - text: Điều chỉnh
+              - button: Giao việc
+              - button: Hủy công việc
+          - generic:
+            - combobox
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=2]: Thông tin công việc
+              - generic:
+                - generic:
+                  - term: Người thực hiện
+                  - definition: Chưa phân công
+                - generic:
+                  - term: Dự án
+                  - definition:
+                    - link:
+                      - /url: /projects/40094846ced24d88ab0c825cd83b84cc
+                      - text: Du an kiem thu task flows
+                - generic:
+                  - term: Ngày tạo
+                  - definition: 14:56 28/10/26
+                - generic:
+                  - term: Bắt đầu thực hiện
+                  - definition: Chưa bắt đầu
+                - generic:
+                  - term: Hạn hoàn thành
+                  - definition: 17:00 20/12/26
+                - generic:
+                  - term: Hạn ban đầu
+                  - definition: 17:00 20/12/26
+            - generic:
+              - generic:
+                - generic:
+                  - heading [level=2]: Nội dung công việc
+                - paragraph: Chưa có mô tả bổ sung.
+                - generic:
+                  - heading [level=3]: Tiêu chí nghiệm thu
+                  - paragraph: Kiem thu job sinh canh bao tu dong.
+              - generic:
+                - generic:
+                  - heading [level=2]: Giờ công
+                - generic:
+                  - generic:
+                    - term: Đã thực hiện
+                    - definition: 0 giờ
+                  - generic:
+                    - term: Ước lượng hiện tại
+                    - definition: 1 giờ
+                  - generic:
+                    - term: Ước lượng ban đầu
+                    - definition: 1 giờ
+                  - generic:
+                    - term: Ước tính còn lại
+                    - definition: Chưa cập nhật
+            - generic:
+              - generic:
+                - heading [level=2]: Hoạt động gần đây
+                - link:
+                  - /url: /tasks/69671d21c36449888e3462f898554c59/history
+                  - text: Xem toàn bộ lịch sử
+              - generic:
+                - table:
+                  - rowgroup:
+                    - row:
+                      - columnheader: Thời điểm
+                      - columnheader: Người thực hiện
+                      - columnheader: Sự kiện
+                      - columnheader: Hành động
+                  - rowgroup:
+                    - row:
+                      - cell: 14:56 28/10/26
+                      - cell: Tran Quan Ly Hai
+                      - cell:
+                        - generic: CREATE
+                      - cell:
+                        - group:
+                          - generic: Xem thay đổi (26)
+              - generic: 1 kết quả
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f3e9] [cursor=pointer]
+  - alert
+  - dialog [ref=f3e188]:
+    - generic [ref=f3e189]:
+      - heading "Giao công việc" [level=2] [ref=f3e190]
+      - button "Đóng biểu mẫu" [active] [ref=f3e191] [cursor=pointer]: ×
+    - paragraph [ref=f3e192]: Giờ công của người trước vẫn được bảo toàn sau khi bàn giao.
+    - group [ref=f3e195]:
+      - generic [ref=f3e196]:
+        - generic [ref=f3e197]: Người nhận mới *
+        - combobox "Người nhận mới *" [ref=f3e198]:
+          - option "Chọn người nhận mới" [selected]
+          - option "Tran Quan Ly Hai"
+          - option "Quan tri vien"
+      - generic [ref=f3e199]:
+        - generic [ref=f3e200]: Lý do bàn giao
+        - textbox "Lý do bàn giao" [ref=f3e201]
+      - button "Xác nhận phân công" [ref=f3e203] [cursor=pointer]

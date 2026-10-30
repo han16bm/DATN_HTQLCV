@@ -9,12 +9,14 @@ public static class ServiceRegistrationExtensions
     {
         services.AddHttpContextAccessor();
         services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
+        services.Configure<AuthOptions>(configuration.GetSection("Auth"));
 
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IUnitService, UnitService>();
         services.AddScoped<ITeamService, TeamService>();
+        services.AddScoped<IPermissionGroupService, PermissionGroupService>();
 
         return services;
     }

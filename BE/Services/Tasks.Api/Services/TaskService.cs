@@ -92,7 +92,7 @@ public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskServic
         };
 
         Db.Tasks.Add(entity);
-        WriteAuditLog(nameof(WorkTask), entity.Id, actorId, "CREATE", null, entity);
+        WriteAuditLog(nameof(WorkTask), entity.Id, actorId, "CREATE", null, Clone(entity));
         await Db.SaveChangesAsync();
         return await entity.ToDtoAsync(Db);
     }
@@ -120,7 +120,7 @@ public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskServic
 
         task.Version++;
         task.UpdatedAt = DateTime.UtcNow;
-        WriteAuditLog(nameof(WorkTask), task.Id, actorId, "UPDATE", before, task, request.ChangeReason);
+        WriteAuditLog(nameof(WorkTask), task.Id, actorId, "UPDATE", before, Clone(task), request.ChangeReason);
         await Db.SaveChangesAsync();
         return await task.ToDtoAsync(Db);
     }
@@ -142,7 +142,7 @@ public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskServic
         var assignment = await Db.TaskAssignments.FirstOrDefaultAsync(a => a.TaskId == taskId && a.EndedAt == null);
         if (assignment is not null) assignment.EndedAt = DateTime.UtcNow;
 
-        WriteAuditLog(nameof(WorkTask), task.Id, actorId, "CANCEL", before, task, request.Reason);
+        WriteAuditLog(nameof(WorkTask), task.Id, actorId, "CANCEL", before, Clone(task), request.Reason);
         await Db.SaveChangesAsync();
         return await task.ToDtoAsync(Db);
     }
@@ -187,7 +187,7 @@ public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskServic
 
         task.Version++;
         task.UpdatedAt = DateTime.UtcNow;
-        WriteAuditLog(nameof(WorkTask), task.Id, actorId, "ASSIGN", before, task, request.Reason);
+        WriteAuditLog(nameof(WorkTask), task.Id, actorId, "ASSIGN", before, Clone(task), request.Reason);
         await Db.SaveChangesAsync();
         return await task.ToDtoAsync(Db);
     }
@@ -208,7 +208,7 @@ public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskServic
         task.Version++;
         task.UpdatedAt = DateTime.UtcNow;
 
-        WriteAuditLog(nameof(WorkTask), task.Id, actorId, "START", before, task);
+        WriteAuditLog(nameof(WorkTask), task.Id, actorId, "START", before, Clone(task));
         await Db.SaveChangesAsync();
         return await task.ToDtoAsync(Db);
     }
@@ -228,7 +228,7 @@ public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskServic
         task.Version++;
         task.UpdatedAt = DateTime.UtcNow;
 
-        WriteAuditLog(nameof(WorkTask), task.Id, actorId, "PAUSE", before, task, request.Reason);
+        WriteAuditLog(nameof(WorkTask), task.Id, actorId, "PAUSE", before, Clone(task), request.Reason);
         await Db.SaveChangesAsync();
         return await task.ToDtoAsync(Db);
     }
@@ -245,7 +245,7 @@ public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskServic
         task.Version++;
         task.UpdatedAt = DateTime.UtcNow;
 
-        WriteAuditLog(nameof(WorkTask), task.Id, actorId, "UPDATE_REMAINING", before, task);
+        WriteAuditLog(nameof(WorkTask), task.Id, actorId, "UPDATE_REMAINING", before, Clone(task));
         await Db.SaveChangesAsync();
         return await task.ToDtoAsync(Db);
     }
@@ -254,7 +254,11 @@ public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskServic
     {
         var q = Db.AuditLogs.AsNoTracking().Where(a => a.EntityType == nameof(WorkTask) && a.EntityId == taskId).OrderByDescending(a => a.At);
         var paged = await q.ToPagedResultAsync(query);
-        var items = paged.Items.Select(a => new AuditDto(a.Id, a.EntityType, a.EntityId, a.ActorId, a.Action, a.At,
+        var actorIds = paged.Items.Select(a => a.ActorId).Distinct().ToList();
+        var actors = await Db.Users.AsNoTracking().Where(u => actorIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id);
+        var items = paged.Items.Select(a => new AuditDto(a.Id,
+            actors.TryGetValue(a.ActorId, out var actor) ? new PersonRefDto(actor.Id, actor.DisplayName) : new PersonRefDto(a.ActorId, a.ActorId),
+            a.Action, a.At,
             a.BeforeJson is null ? null : System.Text.Json.JsonDocument.Parse(a.BeforeJson).RootElement,
             a.AfterJson is null ? null : System.Text.Json.JsonDocument.Parse(a.AfterJson).RootElement,
             a.Reason)).ToList();

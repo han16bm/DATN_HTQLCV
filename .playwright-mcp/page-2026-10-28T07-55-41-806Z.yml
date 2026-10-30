@@ -1,0 +1,51 @@
+- generic [active] [ref=f27e1]:
+  - generic [ref=f27e14]:
+    - complementary "Thanh điều hướng" [ref=f27e15]:
+      - generic [ref=f27e16]:
+        - link "Cổng công việc" [ref=f27e17] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f27e23] [cursor=pointer]
+      - generic [ref=f27e26]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f27e27]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f27e32]:
+        - generic [ref=f27e33]:
+          - button "Công việc" [expanded] [ref=f27e34] [cursor=pointer]
+          - generic [ref=f27e38]:
+            - link "Tổng quan cá nhân" [ref=f27e39] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f27e44] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f27e48] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f27e53] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f27e58] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f27e63]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f27e64] [cursor=pointer]
+          - generic [ref=f27e68]:
+            - link "Bảng tổng quan" [ref=f27e69] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f27e76] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f27e80] [cursor=pointer]:
+              - /url: /alerts
+      - paragraph [ref=f27e86]: Theo phạm vi được cấp quyền
+    - generic [ref=f27e87]:
+      - banner [ref=f27e88]:
+        - generic [ref=f27e89]:
+          - generic [ref=f27e90]: Không gian làm việc
+          - strong [ref=f27e93]: Dự án
+        - generic [ref=f27e94]:
+          - status "Đang cập nhật dữ liệu" [ref=f27e95]
+          - button "Mở menu tài khoản" [ref=f27e96] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f27e97]: LH
+            - generic [ref=f27e98]:
+              - text: Tran Quan Ly Hai
+              - generic [ref=f27e99]: Quản lý
+      - main [ref=f27e102]:
+        - status "Đang tải dữ liệu" [ref=f27e104]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f27e9] [cursor=pointer]
+  - alert [ref=f27e13]

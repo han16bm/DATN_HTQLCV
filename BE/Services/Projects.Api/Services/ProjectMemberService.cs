@@ -60,7 +60,7 @@ public class ProjectMemberService(ApplicationDbContext context, IHttpContextAcce
         };
         Context.ProjectMemberships.Add(membership);
 
-        await WriteAuditLogAsync(membership.Id, "ADD_MEMBER", null, membership);
+        await WriteAuditLogAsync(membership.Id, "ADD_MEMBER", null, Snapshot(membership));
         await Context.SaveChangesAsync();
         return (await MapManyAsync([membership]))[0];
     }
@@ -84,7 +84,7 @@ public class ProjectMemberService(ApplicationDbContext context, IHttpContextAcce
         membership.Version++;
         membership.UpdatedAt = DateTime.UtcNow;
 
-        await WriteAuditLogAsync(membership.Id, "END_MEMBERSHIP", before, membership, request.Reason);
+        await WriteAuditLogAsync(membership.Id, "END_MEMBERSHIP", before, Snapshot(membership), request.Reason);
         await Context.SaveChangesAsync();
         return (await MapManyAsync([membership]))[0];
     }
@@ -111,7 +111,7 @@ public class ProjectMemberService(ApplicationDbContext context, IHttpContextAcce
         membership.Version++;
         membership.UpdatedAt = DateTime.UtcNow;
 
-        await WriteAuditLogAsync(membership.Id, "UPDATE_ROLE", before, membership, request.Reason);
+        await WriteAuditLogAsync(membership.Id, "UPDATE_ROLE", before, Snapshot(membership), request.Reason);
         await Context.SaveChangesAsync();
         return (await MapManyAsync([membership]))[0];
     }

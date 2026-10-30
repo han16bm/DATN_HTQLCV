@@ -1,0 +1,162 @@
+- generic [active] [ref=f25e1]:
+  - generic [ref=f25e181]:
+    - complementary "Thanh điều hướng" [ref=f25e182]:
+      - generic [ref=f25e183]:
+        - link "Cổng công việc" [ref=f25e184] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f25e190] [cursor=pointer]
+      - generic [ref=f25e193]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f25e194]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f25e199]:
+        - generic [ref=f25e200]:
+          - button "Công việc" [expanded] [ref=f25e201] [cursor=pointer]
+          - generic [ref=f25e205]:
+            - link "Tổng quan cá nhân" [ref=f25e206] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f25e211] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f25e215] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f25e220] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f25e225] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f25e230]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f25e231] [cursor=pointer]
+          - generic [ref=f25e235]:
+            - link "Bảng tổng quan" [ref=f25e236] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f25e243] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f25e247] [cursor=pointer]:
+              - /url: /alerts
+      - paragraph [ref=f25e253]: Theo phạm vi được cấp quyền
+    - generic [ref=f25e254]:
+      - banner [ref=f25e255]:
+        - generic [ref=f25e256]:
+          - generic [ref=f25e257]: Không gian làm việc
+          - strong [ref=f25e260]: Tổng quan
+        - button "Mở menu tài khoản" [ref=f25e262] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f25e263]: LH
+          - generic [ref=f25e264]:
+            - text: Tran Quan Ly Hai
+            - generic [ref=f25e265]: Quản lý
+      - main [ref=f25e268]:
+        - generic [ref=f25e269]:
+          - generic [ref=f25e270]:
+            - heading "Chào Hai," [level=1] [ref=f25e273]
+            - generic [ref=f25e274]:
+              - link "Mở bảng tổng quan" [ref=f25e275] [cursor=pointer]:
+                - /url: /dashboard
+              - link "Lập báo cáo" [ref=f25e276] [cursor=pointer]:
+                - /url: /reports/new
+          - region "Số liệu cá nhân" [ref=f25e277]:
+            - link "Dự án 2 Xem dự án" [ref=f25e278] [cursor=pointer]:
+              - /url: /projects
+              - generic [ref=f25e279]: Dự án
+              - strong [ref=f25e280]: "2"
+              - generic [ref=f25e281]: Xem dự án
+            - link "Báo cáo nháp 0 Tiếp tục báo cáo" [ref=f25e282] [cursor=pointer]:
+              - /url: /reports?status=DRAFT&authorId=84513f59992d438584aa0608d7505d1d
+              - generic [ref=f25e283]: Báo cáo nháp
+              - strong [ref=f25e284]: "0"
+              - generic [ref=f25e285]: Tiếp tục báo cáo
+            - link "Chờ nghiệm thu 1 Mở hàng chờ" [ref=f25e286] [cursor=pointer]:
+              - /url: /reviews
+              - generic [ref=f25e287]: Chờ nghiệm thu
+              - strong [ref=f25e288]: "1"
+              - generic [ref=f25e289]: Mở hàng chờ
+            - link "Công việc quá hạn 0 Xem công việc" [ref=f25e290] [cursor=pointer]:
+              - /url: /tasks?overdue=true&assigneeId=84513f59992d438584aa0608d7505d1d
+              - generic [ref=f25e291]: Công việc quá hạn
+              - strong [ref=f25e292]: "0"
+              - generic [ref=f25e293]: Xem công việc
+          - generic [ref=f25e294]:
+            - generic [ref=f25e295]:
+              - heading "Dự án đang theo dõi" [level=2] [ref=f25e296]
+              - link "Tất cả dự án" [ref=f25e297] [cursor=pointer]:
+                - /url: /projects
+            - table "Dự án đang theo dõi" [ref=f25e299]:
+              - rowgroup [ref=f25e300]:
+                - row [ref=f25e301]:
+                  - columnheader "Dự án" [ref=f25e302]
+                  - columnheader "Người phụ trách" [ref=f25e303]
+                  - columnheader "Trạng thái" [ref=f25e304]
+                  - columnheader "Hạn hoàn thành" [ref=f25e305]
+                  - columnheader "Hành động" [ref=f25e306]
+              - rowgroup [ref=f25e307]:
+                - row [ref=f25e308]:
+                  - cell "Du an kiem thu task flows" [ref=f25e309]
+                  - cell "Tran Quan Ly Hai" [ref=f25e310]
+                  - cell "Hoạt động" [ref=f25e311]
+                  - cell "17:00 31/12/26" [ref=f25e313]
+                  - cell [ref=f25e314]:
+                    - link "Xem dự án Du an kiem thu task flows" [ref=f25e315] [cursor=pointer]:
+                      - /url: /projects/40094846ced24d88ab0c825cd83b84cc
+                      - text: Chi tiết
+                - row [ref=f25e316]:
+                  - cell "Dự án thử nghiệm E2E" [ref=f25e317]
+                  - cell "Nguyen Quan Ly" [ref=f25e318]
+                  - cell "Hoàn thành" [ref=f25e319]
+                  - cell "17:00 31/12/26" [ref=f25e321]
+                  - cell [ref=f25e322]:
+                    - link "Xem dự án Dự án thử nghiệm E2E" [ref=f25e323] [cursor=pointer]:
+                      - /url: /projects/716a4376b89b4d498a708c54350b6a61
+                      - text: Chi tiết
+            - generic [ref=f25e324]: 2 kết quả
+          - generic [ref=f25e326]:
+            - heading "Công việc của tôi" [level=1] [ref=f25e329]
+            - generic [ref=f25e330]:
+              - button "Bảng trạng thái" [ref=f25e331] [cursor=pointer]
+              - button "Tạo công việc" [ref=f25e332] [cursor=pointer]
+          - generic [ref=f25e333]:
+            - generic [ref=f25e334]:
+              - text: Tìm công việc
+              - searchbox "Tìm công việc" [ref=f25e335]
+            - generic [ref=f25e336]:
+              - text: Dự án
+              - combobox "Dự án" [ref=f25e337]:
+                - option "Tất cả dự án" [selected]
+                - option "Du an kiem thu task flows"
+                - option "Dự án thử nghiệm E2E"
+            - generic [ref=f25e338]:
+              - text: Trạng thái
+              - combobox "Trạng thái" [ref=f25e339]:
+                - option "Tất cả" [selected]
+                - option "Quá hạn"
+                - option "Mới tạo"
+                - option "Chờ thực hiện"
+                - option "Đang thực hiện"
+                - option "Chờ nghiệm thu"
+                - option "Hoàn thành"
+                - option "Đã hủy"
+            - generic [ref=f25e340]:
+              - text: Ưu tiên
+              - combobox "Ưu tiên" [ref=f25e341]:
+                - option "Tất cả" [selected]
+                - option "Thấp"
+                - option "Bình thường"
+                - option "Cao"
+                - option "Khẩn cấp"
+          - generic [ref=f25e342]:
+            - generic [ref=f25e343]:
+              - table [ref=f25e344]:
+                - rowgroup [ref=f25e345]:
+                  - row [ref=f25e346]:
+                    - columnheader "Công việc" [ref=f25e347]
+                    - columnheader "Dự án" [ref=f25e348]
+                    - columnheader "Người thực hiện" [ref=f25e349]
+                    - columnheader "Ưu tiên" [ref=f25e350]
+                    - columnheader "Trạng thái" [ref=f25e351]
+                    - columnheader "Ngày bắt đầu" [ref=f25e352]
+                    - columnheader "Hạn hoàn thành" [ref=f25e353]
+                    - columnheader "Hành động" [ref=f25e354]
+                - rowgroup
+              - generic [ref=f25e355]:
+                - heading "Chưa có dữ liệu" [level=2] [ref=f25e356]
+                - paragraph [ref=f25e357]: Chưa có dữ liệu phù hợp trong phạm vi này.
+            - generic [ref=f25e358]: 0 kết quả
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f25e9] [cursor=pointer]
+  - alert [ref=f25e130]: Chào Hai,

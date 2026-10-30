@@ -1,13 +1,16 @@
+using Analytics.Api.Filters;
 using Analytics.Api.Interfaces;
 using Analytics.Api.Models.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Commons.Attributes;
+using Shared.Entities;
 
 namespace Analytics.Api.Controllers;
 
 [Authorize]
 [Audit]
+[RequiresPermission(PermissionFeatures.AnalyticsView)]
 [ApiController]
 [Route("api/analytics/bottlenecks")]
 public class BottlenecksController(ILogger<BaseApiController> logger, IAnalyticsService service) : BaseApiController(logger)

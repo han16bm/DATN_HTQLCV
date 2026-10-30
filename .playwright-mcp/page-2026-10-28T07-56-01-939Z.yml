@@ -1,0 +1,103 @@
+- generic [active] [ref=f27e1]:
+  - generic [ref=f27e14]:
+    - complementary "Thanh điều hướng" [ref=f27e15]:
+      - generic [ref=f27e16]:
+        - link "Cổng công việc" [ref=f27e17] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f27e23] [cursor=pointer]
+      - generic [ref=f27e26]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f27e27]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f27e32]:
+        - generic [ref=f27e33]:
+          - button "Công việc" [expanded] [ref=f27e34] [cursor=pointer]
+          - generic [ref=f27e38]:
+            - link "Tổng quan cá nhân" [ref=f27e39] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f27e44] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f27e48] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f27e53] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f27e58] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f27e63]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f27e64] [cursor=pointer]
+          - generic [ref=f27e68]:
+            - link "Bảng tổng quan" [ref=f27e69] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f27e76] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f27e80] [cursor=pointer]:
+              - /url: /alerts
+      - paragraph [ref=f27e86]: Theo phạm vi được cấp quyền
+    - generic [ref=f27e87]:
+      - banner [ref=f27e88]:
+        - generic [ref=f27e89]:
+          - generic [ref=f27e90]: Không gian làm việc
+          - strong [ref=f27e93]: Dự án
+        - button "Mở menu tài khoản" [ref=f27e96] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f27e97]: LH
+          - generic [ref=f27e98]:
+            - text: Tran Quan Ly Hai
+            - generic [ref=f27e99]: Quản lý
+      - main [ref=f27e102]:
+        - generic [ref=f27e103]:
+          - generic [ref=f27e117]:
+            - generic [ref=f27e118]:
+              - generic [ref=f27e119]:
+                - heading "Du an kiem thu task flows" [level=1] [ref=f27e120]
+                - generic [ref=f27e121]: Hoạt động
+              - paragraph [ref=f27e122]: Phong CNTT
+            - generic [ref=f27e123]:
+              - link "Danh sách" [ref=f27e124] [cursor=pointer]:
+                - /url: /projects
+              - link "Chỉnh sửa kế hoạch" [ref=f27e125] [cursor=pointer]:
+                - /url: /projects/40094846ced24d88ab0c825cd83b84cc/edit
+              - button "Kết thúc / hủy" [ref=f27e126] [cursor=pointer]
+          - combobox "Mục dự án" [ref=f27e128]:
+            - option "Tổng quan" [selected]
+            - option "Công việc"
+            - option "Thành viên"
+            - option "Lịch sử"
+          - generic [ref=f27e130]:
+            - heading "Tạo công việc" [level=1] [ref=f27e132]
+            - paragraph [ref=f27e133]: Du an kiem thu task flows · Hạn dự án 17:00 31/12/26
+          - generic [ref=f27e134]:
+            - heading "Kế hoạch công việc" [level=2] [ref=f27e136]
+            - group [ref=f27e138]:
+              - generic [ref=f27e139]:
+                - generic [ref=f27e140]: Tên công việc *
+                - textbox "Tên công việc *" [ref=f27e141]: Kiem thu alert data quality chua phan cong
+              - generic [ref=f27e142]:
+                - generic [ref=f27e143]: Ưu tiên *
+                - combobox "Ưu tiên *" [ref=f27e144]:
+                  - option "Chọn ưu tiên"
+                  - option "Thấp"
+                  - option "Bình thường" [selected]
+                  - option "Cao"
+                  - option "Khẩn cấp"
+              - generic [ref=f27e145]:
+                - generic [ref=f27e146]: Hạn hoàn thành (giờ Việt Nam) *
+                - textbox "Hạn hoàn thành (giờ Việt Nam) *" [ref=f27e147]: 2026-12-20T17:00
+              - generic [ref=f27e148]:
+                - generic [ref=f27e149]: Thời gian dự kiến (phút) *
+                - spinbutton "Thời gian dự kiến (phút) *" [ref=f27e150]: "60"
+              - generic [ref=f27e151]:
+                - generic [ref=f27e152]: Mô tả
+                - textbox "Mô tả" [ref=f27e153]
+              - generic [ref=f27e154]:
+                - generic [ref=f27e155]: Tiêu chí nghiệm thu *
+                - textbox "Tiêu chí nghiệm thu *" [ref=f27e156]: Kiem thu job sinh canh bao tu dong.
+              - generic [ref=f27e157]:
+                - link "Hủy" [ref=f27e158] [cursor=pointer]:
+                  - /url: /tasks?projectId=40094846ced24d88ab0c825cd83b84cc
+                - button "Tạo công việc" [ref=f27e159] [cursor=pointer]
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=f27e160]:
+        - button "Close toast" [ref=f27e161] [cursor=pointer]
+        - generic [ref=f27e168]: Đã tạo công việc, chưa phân công.
+  - button "Open Next.js Dev Tools" [ref=f27e9] [cursor=pointer]
+  - alert [ref=f27e13]

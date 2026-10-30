@@ -1,0 +1,177 @@
+- generic [active] [ref=f23e1]:
+  - generic [ref=f23e342]:
+    - complementary "Thanh điều hướng" [ref=f23e343]:
+      - generic [ref=f23e344]:
+        - link "Cổng công việc" [ref=f23e345] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f23e351] [cursor=pointer]
+      - generic [ref=f23e354]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f23e355]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f23e360]:
+        - generic [ref=f23e361]:
+          - button "Công việc" [expanded] [ref=f23e362] [cursor=pointer]
+          - generic [ref=f23e366]:
+            - link "Tổng quan cá nhân" [ref=f23e367] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f23e372] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f23e376] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f23e381] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f23e386] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f23e391]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f23e392] [cursor=pointer]
+          - generic [ref=f23e396]:
+            - link "Bảng tổng quan" [ref=f23e397] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f23e404] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f23e408] [cursor=pointer]:
+              - /url: /alerts
+        - generic [ref=f23e413]:
+          - button "Quản trị hệ thống" [expanded] [ref=f23e414] [cursor=pointer]
+          - generic [ref=f23e418]:
+            - link "Tài khoản người dùng" [ref=f23e419] [cursor=pointer]:
+              - /url: /admin/users
+            - link "Cơ cấu đơn vị" [ref=f23e426] [cursor=pointer]:
+              - /url: /admin/organization
+            - link "Nhóm nhân sự" [ref=f23e432] [cursor=pointer]:
+              - /url: /admin/teams
+      - paragraph [ref=f23e439]: Theo phạm vi được cấp quyền
+    - generic [ref=f23e440]:
+      - banner [ref=f23e441]:
+        - generic [ref=f23e442]:
+          - generic [ref=f23e443]: Không gian làm việc
+          - strong [ref=f23e446]: Tổng quan
+        - button "Mở menu tài khoản" [ref=f23e448] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f23e449]: tv
+          - generic [ref=f23e450]:
+            - text: Quan tri vien
+            - generic [ref=f23e451]: Quản trị viên
+      - main [ref=f23e454]:
+        - generic [ref=f23e455]:
+          - generic [ref=f23e456]:
+            - heading "Chào vien," [level=1] [ref=f23e459]
+            - generic [ref=f23e460]:
+              - link "Mở bảng tổng quan" [ref=f23e461] [cursor=pointer]:
+                - /url: /dashboard
+              - link "Lập báo cáo" [ref=f23e462] [cursor=pointer]:
+                - /url: /reports/new
+          - region "Số liệu cá nhân" [ref=f23e463]:
+            - link "Dự án 2 Xem dự án" [ref=f23e464] [cursor=pointer]:
+              - /url: /projects
+              - generic [ref=f23e465]: Dự án
+              - strong [ref=f23e466]: "2"
+              - generic [ref=f23e467]: Xem dự án
+            - link "Báo cáo nháp 0 Tiếp tục báo cáo" [ref=f23e468] [cursor=pointer]:
+              - /url: /reports?status=DRAFT&authorId=01f6b300092f4918a0ae12c2170314bb
+              - generic [ref=f23e469]: Báo cáo nháp
+              - strong [ref=f23e470]: "0"
+              - generic [ref=f23e471]: Tiếp tục báo cáo
+            - link "Chờ nghiệm thu 0 Mở hàng chờ" [ref=f23e472] [cursor=pointer]:
+              - /url: /reviews
+              - generic [ref=f23e473]: Chờ nghiệm thu
+              - strong [ref=f23e474]: "0"
+              - generic [ref=f23e475]: Mở hàng chờ
+            - link "Công việc quá hạn 0 Xem công việc" [ref=f23e476] [cursor=pointer]:
+              - /url: /tasks?overdue=true&assigneeId=01f6b300092f4918a0ae12c2170314bb
+              - generic [ref=f23e477]: Công việc quá hạn
+              - strong [ref=f23e478]: "0"
+              - generic [ref=f23e479]: Xem công việc
+          - generic [ref=f23e480]:
+            - generic [ref=f23e481]:
+              - heading "Dự án đang theo dõi" [level=2] [ref=f23e482]
+              - link "Tất cả dự án" [ref=f23e483] [cursor=pointer]:
+                - /url: /projects
+            - table "Dự án đang theo dõi" [ref=f23e485]:
+              - rowgroup [ref=f23e486]:
+                - row [ref=f23e487]:
+                  - columnheader "Dự án" [ref=f23e488]
+                  - columnheader "Người phụ trách" [ref=f23e489]
+                  - columnheader "Trạng thái" [ref=f23e490]
+                  - columnheader "Hạn hoàn thành" [ref=f23e491]
+                  - columnheader "Hành động" [ref=f23e492]
+              - rowgroup [ref=f23e493]:
+                - row [ref=f23e494]:
+                  - cell "Du an kiem thu task flows" [ref=f23e495]
+                  - cell "Tran Quan Ly Hai" [ref=f23e496]
+                  - cell "Hoạt động" [ref=f23e497]
+                  - cell "17:00 31/12/26" [ref=f23e499]
+                  - cell [ref=f23e500]:
+                    - link "Xem dự án Du an kiem thu task flows" [ref=f23e501] [cursor=pointer]:
+                      - /url: /projects/40094846ced24d88ab0c825cd83b84cc
+                      - text: Chi tiết
+                - row [ref=f23e502]:
+                  - cell "Dự án thử nghiệm E2E" [ref=f23e503]
+                  - cell "Nguyen Quan Ly" [ref=f23e504]
+                  - cell "Hoàn thành" [ref=f23e505]
+                  - cell "17:00 31/12/26" [ref=f23e507]
+                  - cell [ref=f23e508]:
+                    - link "Xem dự án Dự án thử nghiệm E2E" [ref=f23e509] [cursor=pointer]:
+                      - /url: /projects/716a4376b89b4d498a708c54350b6a61
+                      - text: Chi tiết
+            - generic [ref=f23e510]: 2 kết quả
+          - generic [ref=f23e512]:
+            - heading "Công việc của tôi" [level=1] [ref=f23e515]
+            - button "Bảng trạng thái" [ref=f23e517] [cursor=pointer]
+          - generic [ref=f23e518]:
+            - generic [ref=f23e519]:
+              - text: Tìm công việc
+              - searchbox "Tìm công việc" [ref=f23e520]
+            - generic [ref=f23e521]:
+              - text: Dự án
+              - combobox "Dự án" [ref=f23e522]:
+                - option "Tất cả dự án" [selected]
+                - option "Du an kiem thu task flows"
+                - option "Dự án thử nghiệm E2E"
+            - generic [ref=f23e523]:
+              - text: Trạng thái
+              - combobox "Trạng thái" [ref=f23e524]:
+                - option "Tất cả" [selected]
+                - option "Quá hạn"
+                - option "Mới tạo"
+                - option "Chờ thực hiện"
+                - option "Đang thực hiện"
+                - option "Chờ nghiệm thu"
+                - option "Hoàn thành"
+                - option "Đã hủy"
+            - generic [ref=f23e525]:
+              - text: Ưu tiên
+              - combobox "Ưu tiên" [ref=f23e526]:
+                - option "Tất cả" [selected]
+                - option "Thấp"
+                - option "Bình thường"
+                - option "Cao"
+                - option "Khẩn cấp"
+          - generic [ref=f23e527]:
+            - table [ref=f23e529]:
+              - rowgroup [ref=f23e530]:
+                - row [ref=f23e531]:
+                  - columnheader "Công việc" [ref=f23e532]
+                  - columnheader "Dự án" [ref=f23e533]
+                  - columnheader "Người thực hiện" [ref=f23e534]
+                  - columnheader "Ưu tiên" [ref=f23e535]
+                  - columnheader "Trạng thái" [ref=f23e536]
+                  - columnheader "Ngày bắt đầu" [ref=f23e537]
+                  - columnheader "Hạn hoàn thành" [ref=f23e538]
+                  - columnheader "Hành động" [ref=f23e539]
+              - rowgroup [ref=f23e540]:
+                - row [ref=f23e541]:
+                  - cell "Kiem thu tam dung va ban giao" [ref=f23e542]
+                  - cell "Du an kiem thu task flows" [ref=f23e543]
+                  - cell "Quan tri vien" [ref=f23e544]
+                  - cell "Bình thường" [ref=f23e545]
+                  - cell "Đang thực hiện" [ref=f23e546]
+                  - cell "13:59 28/10/26" [ref=f23e549]
+                  - cell "17:00 15/11/26" [ref=f23e550]
+                  - cell [ref=f23e551]:
+                    - link "Xem công việc Kiem thu tam dung va ban giao" [ref=f23e552] [cursor=pointer]:
+                      - /url: /tasks/3a7dc0ba0d624350ab2315a925cc776a
+                      - text: Chi tiết
+            - generic [ref=f23e553]: 1 kết quả
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f23e9] [cursor=pointer]
+  - alert [ref=f23e138]: Chào vien,

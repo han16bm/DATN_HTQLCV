@@ -3,11 +3,16 @@ import type { SessionDto } from "@/features/auth/types/auth.types";
 type Role = SessionDto["user"]["systemRole"];
 
 // One role policy for navigation and direct route access.
-const routes: { path: RegExp; roles: readonly Role[] }[] = [
+const routes: {
+  path: RegExp;
+  roles: readonly Role[];
+  permission?: string;
+}[] = [
   { path: /^\/admin(?:\/|$)/, roles: ["ADMIN"] },
   {
     path: /^\/(?:dashboard|analytics|alerts|reviews)(?:\/|$)/,
     roles: ["MANAGER", "ADMIN"],
+    permission: "ANALYTICS_VIEW",
   },
   { path: /^\/projects\/new\/?$/, roles: ["MANAGER"] },
   {
@@ -17,10 +22,12 @@ const routes: { path: RegExp; roles: readonly Role[] }[] = [
   { path: /^\/tasks\/[^/]+\/edit\/?$/, roles: ["MANAGER", "ADMIN"] },
 ];
 
-export function canVisit(role: Role | undefined, path: string) {
+export function canVisit(session: SessionDto | null | undefined, path: string) {
+  const role = session?.user.systemRole;
   if (!role) return false;
   const route = routes.find((route) => route.path.test(path));
-  return !route || route.roles.includes(role);
+  if (!route || route.roles.includes(role)) return true;
+  return Boolean(route.permission && session?.permissions.includes(route.permission));
 }
 
 // Project actions remain scoped; opening a page does not grant write access.

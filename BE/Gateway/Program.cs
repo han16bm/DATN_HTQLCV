@@ -1,4 +1,5 @@
 using System.Text;
+using Gateway.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -27,6 +28,26 @@ builder.Services
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true
         };
+        options.Events = new JwtBearerEvents
+        {
+            OnChallenge = async context =>
+            {
+                context.HandleResponse();
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsJsonAsync(
+                    new Shared.Commons.Models.ErrorResponse("UNAUTHORIZED", "Phiên đăng nhập đã hết hạn hoặc không hợp lệ."),
+                    Shared.Commons.Models.JsonDefaults.Web);
+            },
+            OnForbidden = async context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsJsonAsync(
+                    new Shared.Commons.Models.ErrorResponse("FORBIDDEN", "Bạn không có quyền truy cập."),
+                    Shared.Commons.Models.JsonDefaults.Web);
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
@@ -46,6 +67,7 @@ builder.Services
 
 var app = builder.Build();
 
+app.UseMiddleware<TraceIdMiddleware>();
 app.UseCors("Default");
 app.UseAuthentication();
 app.UseAuthorization();

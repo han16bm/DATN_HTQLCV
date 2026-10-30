@@ -18,4 +18,6 @@ public record AlertDto
     public string? ResolutionNote { get; init; }
     public string? HandledBy { get; init; }
     public DateTime? HandledAt { get; init; }
+    public string? TaskTitle { get; init; }
+    public AnalysisRefDto? AnalysisRef { get; init; }
 }

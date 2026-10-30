@@ -1,0 +1,116 @@
+- generic:
+  - generic [aria-hidden]:
+    - complementary:
+      - generic:
+        - link:
+          - /url: /workspace
+          - generic: Cổng công việc
+        - button
+      - generic:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph: Phong CNTT
+      - navigation:
+        - generic:
+          - button [expanded]:
+            - generic: Công việc
+          - generic:
+            - link:
+              - /url: /workspace
+              - generic: Tổng quan cá nhân
+            - link:
+              - /url: /projects
+              - generic: Dự án
+            - link:
+              - /url: /tasks
+              - generic: Công việc
+            - link:
+              - /url: /reviews
+              - generic: Chờ nghiệm thu
+            - link:
+              - /url: /reports
+              - generic: Báo cáo công việc
+        - generic:
+          - button [expanded]:
+            - generic: Theo dõi & phân tích
+          - generic:
+            - link:
+              - /url: /dashboard
+              - generic: Bảng tổng quan
+            - link:
+              - /url: /analytics/risks
+              - generic: Phân tích & AI
+            - link:
+              - /url: /alerts
+              - generic: Cảnh báo
+        - generic:
+          - button [expanded]:
+            - generic: Quản trị hệ thống
+          - generic:
+            - link:
+              - /url: /admin/users
+              - generic: Tài khoản người dùng
+            - link:
+              - /url: /admin/organization
+              - generic: Cơ cấu đơn vị
+            - link:
+              - /url: /admin/teams
+              - generic: Nhóm nhân sự
+      - generic:
+        - paragraph: Theo phạm vi được cấp quyền
+    - generic:
+      - banner:
+        - generic:
+          - generic: Không gian làm việc
+          - strong: Công việc
+        - generic:
+          - button [expanded]:
+            - generic [aria-hidden]: tv
+            - generic:
+              - text: Quan tri vien
+              - generic: Quản trị viên
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=1]: Kiem thu tam dung va ban giao
+                - generic: Chờ nghiệm thu
+                - generic: Ưu tiên bình thường
+              - paragraph: Du an kiem thu task flows
+          - generic:
+            - combobox
+          - generic:
+            - generic:
+              - heading [level=2]: Các lần nộp kết quả
+            - generic:
+              - table:
+                - rowgroup:
+                  - row:
+                    - columnheader: Lần nộp
+                    - columnheader: Người nộp
+                    - columnheader: Thời điểm
+                    - columnheader: Kết quả xét
+                    - columnheader: Hành động
+                - rowgroup:
+                  - row:
+                    - cell: Lần 1
+                    - cell: Quan tri vien
+                    - cell: 14:03 28/10/26
+                    - cell:
+                      - generic: Chờ xét
+                    - cell:
+                      - link:
+                        - /url: /tasks/3a7dc0ba0d624350ab2315a925cc776a/submissions/d63ce7c1f46046d3863ad6bdf7795af5
+                        - text: Chi tiết
+            - generic: 1 kết quả
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f22e9] [cursor=pointer]
+  - alert: Kiem thu tam dung va ban giao
+  - menu "Mở menu tài khoản" [active] [ref=f22e315]:
+    - generic [ref=f22e316]:
+      - text: Quan tri vien
+      - generic [ref=f22e317]: Phong CNTT
+    - separator [ref=f22e318]
+    - menuitem "Hồ sơ công khai" [ref=f22e319] [cursor=pointer]
+    - menuitem "Hồ sơ cá nhân" [ref=f22e323] [cursor=pointer]
+    - menuitem "Đăng xuất" [ref=f22e327] [cursor=pointer]

@@ -1,0 +1,135 @@
+- generic [active] [ref=f9e1]:
+  - generic [ref=f9e13]:
+    - complementary "Thanh điều hướng" [ref=f9e14]:
+      - generic [ref=f9e15]:
+        - link "Cổng công việc" [ref=f9e16] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f9e22] [cursor=pointer]
+      - generic [ref=f9e25]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f9e26]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f9e31]:
+        - generic [ref=f9e32]:
+          - button "Công việc" [expanded] [ref=f9e33] [cursor=pointer]
+          - generic [ref=f9e37]:
+            - link "Tổng quan cá nhân" [ref=f9e38] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f9e43] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f9e47] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f9e52] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f9e57] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f9e62]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f9e63] [cursor=pointer]
+          - generic [ref=f9e67]:
+            - link "Bảng tổng quan" [ref=f9e68] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f9e75] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f9e79] [cursor=pointer]:
+              - /url: /alerts
+      - paragraph [ref=f9e85]: Theo phạm vi được cấp quyền
+    - generic [ref=f9e86]:
+      - banner [ref=f9e87]:
+        - generic [ref=f9e88]:
+          - generic [ref=f9e89]: Không gian làm việc
+          - strong [ref=f9e92]: Dự án
+        - button "Mở menu tài khoản" [ref=f9e95] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f9e96]: QL
+          - generic [ref=f9e97]:
+            - text: Nguyen Quan Ly
+            - generic [ref=f9e98]: Quản lý
+      - main [ref=f9e101]:
+        - generic [ref=f9e102]:
+          - generic [ref=f9e117]:
+            - generic [ref=f9e118]:
+              - generic [ref=f9e119]:
+                - heading "Dự án thử nghiệm E2E" [level=1] [ref=f9e120]
+                - generic [ref=f9e121]: Dự kiến
+              - paragraph [ref=f9e122]: Phong CNTT
+            - generic [ref=f9e123]:
+              - link "Danh sách" [ref=f9e124] [cursor=pointer]:
+                - /url: /projects
+              - link "Chỉnh sửa kế hoạch" [ref=f9e125] [cursor=pointer]:
+                - /url: /projects/716a4376b89b4d498a708c54350b6a61/edit
+              - button "Triển khai dự án" [ref=f9e127] [cursor=pointer]
+              - button "Kết thúc / hủy" [ref=f9e128] [cursor=pointer]
+          - combobox "Mục dự án" [ref=f9e130]:
+            - option "Tổng quan" [selected]
+            - option "Công việc"
+            - option "Thành viên"
+            - option "Lịch sử"
+          - generic [ref=f9e131]:
+            - generic [ref=f9e132]:
+              - generic [ref=f9e133]:
+                - heading "Mục tiêu dự án" [level=2] [ref=f9e135]
+                - paragraph [ref=f9e136]: Kiểm thử luồng tạo dự án end-to-end qua BE thật.
+              - generic [ref=f9e137]:
+                - generic [ref=f9e138]:
+                  - heading "Các mốc triển khai" [level=2] [ref=f9e139]
+                  - link "Xem toàn bộ lịch sử" [ref=f9e140] [cursor=pointer]:
+                    - /url: /projects/716a4376b89b4d498a708c54350b6a61?tab=history
+                - table "Các mốc triển khai" [ref=f9e142]:
+                  - rowgroup [ref=f9e143]:
+                    - row [ref=f9e144]:
+                      - columnheader "Thời điểm" [ref=f9e145]
+                      - columnheader "Người thực hiện" [ref=f9e146]
+                      - columnheader "Sự kiện" [ref=f9e147]
+                      - columnheader "Hành động" [ref=f9e148]
+                  - rowgroup [ref=f9e149]:
+                    - row [ref=f9e150]:
+                      - cell "10:03 28/10/26" [ref=f9e151]
+                      - cell "Nguyen Quan Ly" [ref=f9e152]
+                      - cell "CREATE" [ref=f9e153]
+                      - cell [ref=f9e155]:
+                        - group [ref=f9e156]:
+                          - generic "Xem thay đổi (6)" [ref=f9e157] [cursor=pointer]
+                - generic [ref=f9e158]: 1 kết quả
+              - generic [ref=f9e160]:
+                - generic [ref=f9e161]:
+                  - heading "Công việc gần đây" [level=2] [ref=f9e162]
+                  - link "Tất cả công việc" [ref=f9e163] [cursor=pointer]:
+                    - /url: /tasks?projectId=716a4376b89b4d498a708c54350b6a61
+                - generic [ref=f9e164]:
+                  - table "Công việc gần đây" [ref=f9e165]:
+                    - rowgroup [ref=f9e166]:
+                      - row [ref=f9e167]:
+                        - columnheader "Công việc" [ref=f9e168]
+                        - columnheader "Trạng thái" [ref=f9e169]
+                        - columnheader "Hạn" [ref=f9e170]
+                        - columnheader "Hành động" [ref=f9e171]
+                    - rowgroup
+                  - generic [ref=f9e172]:
+                    - heading "Chưa có dữ liệu" [level=2] [ref=f9e173]
+                    - paragraph [ref=f9e174]: Chưa có dữ liệu phù hợp trong phạm vi này.
+                - generic [ref=f9e175]: 0 kết quả
+            - generic [ref=f9e177]:
+              - generic [ref=f9e178]:
+                - heading "Thông tin kế hoạch" [level=2] [ref=f9e180]
+                - generic [ref=f9e181]:
+                  - generic [ref=f9e182]:
+                    - term [ref=f9e183]: Mã dự án
+                    - definition [ref=f9e184]: DATN-01
+                  - generic [ref=f9e185]:
+                    - term [ref=f9e186]: Người phụ trách
+                    - definition [ref=f9e187]: Nguyen Quan Ly
+                  - generic [ref=f9e188]:
+                    - term [ref=f9e189]: Đơn vị
+                    - definition [ref=f9e190]: Phong CNTT
+                  - generic [ref=f9e191]:
+                    - term [ref=f9e192]: Ngày bắt đầu
+                    - definition [ref=f9e193]: 2026-10-28
+                  - generic [ref=f9e194]:
+                    - term [ref=f9e195]: Hạn hoàn thành
+                    - definition [ref=f9e196]: 17:00 31/12/26
+              - generic [ref=f9e197]:
+                - link "Mở công việc trong dự án" [ref=f9e198] [cursor=pointer]:
+                  - /url: /tasks?projectId=716a4376b89b4d498a708c54350b6a61
+                - link "Thành viên dự án" [ref=f9e199] [cursor=pointer]:
+                  - /url: /projects/716a4376b89b4d498a708c54350b6a61/members
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f9e9] [cursor=pointer]
+  - alert [ref=f9e116]

@@ -8,6 +8,7 @@ public record UserDto(
     string Username,
     string DisplayName,
     string Email,
+    string? AvatarUrl,
     string UnitId,
     string SystemRole,
     string Status,

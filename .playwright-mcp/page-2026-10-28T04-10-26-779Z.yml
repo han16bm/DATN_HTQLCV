@@ -1,0 +1,70 @@
+- generic [active] [ref=f39e1]:
+  - generic [ref=f39e2]:
+    - complementary "Thanh điều hướng" [ref=f39e3]:
+      - generic [ref=f39e4]:
+        - link "Cổng công việc" [ref=f39e5] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f39e11] [cursor=pointer]
+      - generic [ref=f39e14]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f39e15]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f39e20]:
+        - generic [ref=f39e21]:
+          - button "Công việc" [expanded] [ref=f39e22] [cursor=pointer]
+          - generic [ref=f39e26]:
+            - link "Tổng quan cá nhân" [ref=f39e27] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f39e32] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f39e36] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f39e41] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f39e46] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f39e51]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f39e52] [cursor=pointer]
+          - generic [ref=f39e56]:
+            - link "Bảng tổng quan" [ref=f39e57] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f39e64] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f39e68] [cursor=pointer]:
+              - /url: /alerts
+        - generic [ref=f39e73]:
+          - button "Quản trị hệ thống" [expanded] [ref=f39e74] [cursor=pointer]
+          - generic [ref=f39e78]:
+            - link "Tài khoản người dùng" [ref=f39e79] [cursor=pointer]:
+              - /url: /admin/users
+            - link "Cơ cấu đơn vị" [ref=f39e86] [cursor=pointer]:
+              - /url: /admin/organization
+            - link "Nhóm nhân sự" [ref=f39e92] [cursor=pointer]:
+              - /url: /admin/teams
+      - paragraph [ref=f39e99]: Theo phạm vi được cấp quyền
+    - generic [ref=f39e100]:
+      - banner [ref=f39e101]:
+        - generic [ref=f39e102]:
+          - generic [ref=f39e103]: Không gian làm việc
+          - strong [ref=f39e106]: Phân tích
+        - generic [ref=f39e107]:
+          - status "Đang cập nhật dữ liệu" [ref=f39e108]
+          - button "Mở menu tài khoản" [ref=f39e109] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f39e110]: tv
+            - generic [ref=f39e111]:
+              - text: Quan tri vien
+              - generic [ref=f39e112]: Quản trị viên
+      - main [ref=f39e115]:
+        - generic [ref=f39e116]:
+          - heading "Điểm nghẽn quy trình" [level=1] [ref=f39e120]
+          - generic [ref=f39e121]:
+            - combobox "Mục phân tích" [ref=f39e122]:
+              - option "Tổng quan"
+              - option "Nguy cơ trễ hạn"
+              - option "Khối lượng"
+              - option "Điểm nghẽn" [selected]
+              - option "Tổng hợp"
+            - button "Bộ lọc" [ref=f39e123] [cursor=pointer]
+          - status "Đang tải dữ liệu" [ref=f39e124]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f39e162] [cursor=pointer]
+  - alert [ref=f39e166]

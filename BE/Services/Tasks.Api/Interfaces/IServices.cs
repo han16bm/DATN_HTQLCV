@@ -35,7 +35,7 @@ public interface ISubmissionService
     Task<SubmissionMutationResult> CreateAsync(string taskId, CreateSubmissionRequest request, int ifMatchVersion, string actorId);
     Task<SubmissionMutationResult> ApproveAsync(string taskId, string submissionId, ApproveSubmissionRequest request, int ifMatchVersion, string actorId);
     Task<SubmissionMutationResult> RequestRevisionAsync(string taskId, string submissionId, RequestSubmissionRevisionRequest request, int ifMatchVersion, string actorId);
-    Task<PagedResult<SubmissionDto>> ListReviewQueueAsync(ReviewQueueQuery query);
+    Task<PagedResult<ReviewQueueItemDto>> ListReviewQueueAsync(ReviewQueueQuery query);
 }
 
 public interface IAttachmentService
@@ -48,7 +48,7 @@ public interface IAttachmentService
 
 public interface IReportService
 {
-    Task<ReportPreviewDto> GetPreviewAsync(ReportPreviewQuery query);
+    Task<ReportPreviewDto> GetPreviewAsync(ReportPreviewQuery query, string actorId);
     Task<PagedResult<ReportDto>> ListAsync(ReportQuery query);
     Task<ReportDto> GetAsync(string reportId);
     Task<ReportDto> CreateDraftAsync(CreateReportDraftRequest request, string actorId);

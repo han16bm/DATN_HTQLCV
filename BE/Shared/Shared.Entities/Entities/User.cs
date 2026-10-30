@@ -20,6 +20,7 @@ public class User
     public DateTime? LockedAt { get; set; }
     public string? LockReason { get; set; }
     public int FailedLoginCount { get; set; }
+    public int TokenVersion { get; set; }
 
     public Unit? Unit { get; set; }
 }

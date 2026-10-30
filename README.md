@@ -16,6 +16,8 @@ Mở `http://localhost:3000`. Hướng dẫn tài khoản development, cấu hì
 
 ## Tài liệu
 
+- [Bản đồ dự án (FE + BE, trạng thái, lỗi đã biết, kế hoạch)](docs/PROJECT_MAP.md)
+- [Database (PostgreSQL): cấu trúc bảng, dựng bằng Docker, áp migration](docs/DATABASE.md)
 - [Đặc tả frontend](FE/fe-specs/README.md)
 - [Kiến trúc frontend](FE/docs/ARCHITECTURE.md)
 - [Rà soát đặc tả](FE/docs/SPEC_REVIEW.md)

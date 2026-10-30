@@ -13,7 +13,7 @@ public class ReportsController(ILogger<BaseApiController> logger, IReportService
     [HttpGet("api/report-previews")]
     public async Task<object> Preview([FromQuery] ReportPreviewQuery query)
     {
-        return await service.GetPreviewAsync(query);
+        return await service.GetPreviewAsync(query, ActorId);
     }
 
     [HttpGet("api/reports")]

@@ -1,0 +1,180 @@
+- generic:
+  - generic [aria-hidden]:
+    - complementary:
+      - generic:
+        - link:
+          - /url: /workspace
+          - generic: Cổng công việc
+        - button
+      - generic:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph: Phong CNTT
+      - navigation:
+        - generic:
+          - button [expanded]:
+            - generic: Công việc
+          - generic:
+            - link:
+              - /url: /workspace
+              - generic: Tổng quan cá nhân
+            - link:
+              - /url: /projects
+              - generic: Dự án
+            - link:
+              - /url: /tasks
+              - generic: Công việc
+            - link:
+              - /url: /reviews
+              - generic: Chờ nghiệm thu
+            - link:
+              - /url: /reports
+              - generic: Báo cáo công việc
+        - generic:
+          - button [expanded]:
+            - generic: Theo dõi & phân tích
+          - generic:
+            - link:
+              - /url: /dashboard
+              - generic: Bảng tổng quan
+            - link:
+              - /url: /analytics/risks
+              - generic: Phân tích & AI
+            - link:
+              - /url: /alerts
+              - generic: Cảnh báo
+      - generic:
+        - paragraph: Theo phạm vi được cấp quyền
+    - generic:
+      - banner:
+        - generic:
+          - generic: Không gian làm việc
+          - strong: Dự án
+        - generic:
+          - button:
+            - generic [aria-hidden]: LH
+            - generic:
+              - text: Tran Quan Ly Hai
+              - generic: Quản lý
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=1]: Du an kiem thu huy
+                - generic: Dự kiến
+              - paragraph: Phong CNTT
+            - generic:
+              - link:
+                - /url: /projects
+                - text: Danh sách
+              - link:
+                - /url: /projects/ca297790068e4bc38094922abc9eeafb/edit
+                - text: Chỉnh sửa kế hoạch
+              - generic:
+                - button: Triển khai dự án
+              - button: Kết thúc / hủy
+          - generic:
+            - combobox
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - heading [level=2]: Mục tiêu dự án
+                - paragraph: Kiem thu huy du an.
+              - generic:
+                - generic:
+                  - heading [level=2]: Các mốc triển khai
+                  - link:
+                    - /url: /projects/ca297790068e4bc38094922abc9eeafb?tab=history
+                    - text: Xem toàn bộ lịch sử
+                - generic:
+                  - table:
+                    - rowgroup:
+                      - row:
+                        - columnheader: Thời điểm
+                        - columnheader: Người thực hiện
+                        - columnheader: Sự kiện
+                        - columnheader: Hành động
+                    - rowgroup:
+                      - row:
+                        - cell: 14:06 28/10/26
+                        - cell: Tran Quan Ly Hai
+                        - cell:
+                          - generic: CREATE
+                        - cell:
+                          - group:
+                            - generic: Xem thay đổi (6)
+                - generic: 1 kết quả
+              - generic:
+                - generic:
+                  - heading [level=2]: Công việc gần đây
+                  - link:
+                    - /url: /tasks?projectId=ca297790068e4bc38094922abc9eeafb
+                    - text: Tất cả công việc
+                - generic:
+                  - table:
+                    - rowgroup:
+                      - row:
+                        - columnheader: Công việc
+                        - columnheader: Trạng thái
+                        - columnheader: Hạn
+                        - columnheader: Hành động
+                  - generic:
+                    - heading [level=2]: Chưa có dữ liệu
+                    - paragraph: Chưa có dữ liệu phù hợp trong phạm vi này.
+                - generic: 0 kết quả
+            - generic:
+              - generic:
+                - generic:
+                  - heading [level=2]: Thông tin kế hoạch
+                - generic:
+                  - generic:
+                    - term: Mã dự án
+                    - definition: DATN-03
+                  - generic:
+                    - term: Người phụ trách
+                    - definition: Tran Quan Ly Hai
+                  - generic:
+                    - term: Đơn vị
+                    - definition: Phong CNTT
+                  - generic:
+                    - term: Ngày bắt đầu
+                    - definition: 2026-10-28
+                  - generic:
+                    - term: Hạn hoàn thành
+                    - definition: 17:00 31/12/26
+              - generic:
+                - link:
+                  - /url: /tasks?projectId=ca297790068e4bc38094922abc9eeafb
+                  - text: Mở công việc trong dự án
+                - link:
+                  - /url: /projects/ca297790068e4bc38094922abc9eeafb/members
+                  - text: Thành viên dự án
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f26e9] [cursor=pointer]
+  - alert
+  - dialog [ref=f26e239]:
+    - generic [ref=f26e240]:
+      - heading "Kết thúc dự án" [level=2] [ref=f26e241]
+      - button "Đóng biểu mẫu" [active] [ref=f26e242] [cursor=pointer]: ×
+    - paragraph [ref=f26e243]: Các điều kiện được kiểm tra lại tại thời điểm xác nhận.
+    - generic [ref=f26e244]:
+      - generic [ref=f26e245]:
+        - generic [ref=f26e246]:
+          - term [ref=f26e247]: Công việc mở
+          - definition [ref=f26e248]: "0"
+        - generic [ref=f26e249]:
+          - term [ref=f26e250]: Kết quả chờ nghiệm thu
+          - definition [ref=f26e251]: "0"
+        - generic [ref=f26e252]:
+          - term [ref=f26e253]: Báo cáo cần gửi
+          - definition [ref=f26e254]: "0"
+      - generic [ref=f26e255]:
+        - text: Thao tác
+        - combobox "Thao tác" [ref=f26e256]:
+          - option "Hủy dự án" [selected]
+      - group [ref=f26e259]:
+        - generic [ref=f26e260]:
+          - generic [ref=f26e261]: Lý do hủy *
+          - textbox "Lý do hủy *" [ref=f26e262]
+        - button "Kiểm tra và xác nhận" [ref=f26e264] [cursor=pointer]

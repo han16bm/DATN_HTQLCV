@@ -82,7 +82,7 @@ public class ProjectService(ApplicationDbContext context, IHttpContextAccessor h
             EndedAt = null
         });
 
-        await WriteAuditLogAsync(project.Id, "CREATE", null, project);
+        await WriteAuditLogAsync(project.Id, "CREATE", null, Snapshot(project));
         await Context.SaveChangesAsync();
         return await MapAsync(project);
     }
@@ -141,7 +141,7 @@ public class ProjectService(ApplicationDbContext context, IHttpContextAccessor h
         project.Version++;
         project.UpdatedAt = DateTime.UtcNow;
 
-        await WriteAuditLogAsync(project.Id, "UPDATE", before, project, request.ChangeReason);
+        await WriteAuditLogAsync(project.Id, "UPDATE", before, Snapshot(project), request.ChangeReason);
         await Context.SaveChangesAsync();
         return await MapAsync(project);
     }
@@ -158,7 +158,7 @@ public class ProjectService(ApplicationDbContext context, IHttpContextAccessor h
         project.Version++;
         project.UpdatedAt = DateTime.UtcNow;
 
-        await WriteAuditLogAsync(project.Id, "ACTIVATE", before, project);
+        await WriteAuditLogAsync(project.Id, "ACTIVATE", before, Snapshot(project));
         await Context.SaveChangesAsync();
         return await MapAsync(project);
     }
@@ -187,7 +187,7 @@ public class ProjectService(ApplicationDbContext context, IHttpContextAccessor h
         project.Version++;
         project.UpdatedAt = DateTime.UtcNow;
 
-        await WriteAuditLogAsync(project.Id, "COMPLETE", before, project);
+        await WriteAuditLogAsync(project.Id, "COMPLETE", before, Snapshot(project));
         await Context.SaveChangesAsync();
         return await MapAsync(project);
     }
@@ -209,7 +209,7 @@ public class ProjectService(ApplicationDbContext context, IHttpContextAccessor h
         project.Version++;
         project.UpdatedAt = DateTime.UtcNow;
 
-        await WriteAuditLogAsync(project.Id, "CANCEL", before, project, request.Reason);
+        await WriteAuditLogAsync(project.Id, "CANCEL", before, Snapshot(project), request.Reason);
         await Context.SaveChangesAsync();
         return await MapAsync(project);
     }
@@ -222,8 +222,19 @@ public class ProjectService(ApplicationDbContext context, IHttpContextAccessor h
             .OrderByDescending(a => a.At);
 
         var paged = await logs.ToPagedResultAsync(query);
-        var dtos = paged.Items.Select(a => new AuditDto(a.Id, a.EntityType, a.EntityId, a.ActorId, a.Action, a.At, a.BeforeJson, a.AfterJson, a.Reason)).ToList();
+        var actorIds = paged.Items.Select(a => a.ActorId).Distinct().ToList();
+        var actors = await Context.Users.AsNoTracking().Where(u => actorIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id);
+        var dtos = paged.Items.Select(a => new AuditDto(
+            a.Id,
+            actors.TryGetValue(a.ActorId, out var actor) ? new PersonRefDto(actor.Id, actor.DisplayName) : new PersonRefDto(a.ActorId, a.ActorId),
+            a.Action, a.At, ParseJson(a.BeforeJson), ParseJson(a.AfterJson), a.Reason)).ToList();
         return new PagedResult<AuditDto> { Items = dtos, Page = paged.Page, PageSize = paged.PageSize, Total = paged.Total };
+    }
+
+    private static object? ParseJson(string? json)
+    {
+        if (json is null) return null;
+        return System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(json);
     }
 
     private async Task<Project> FindAsync(string projectId)

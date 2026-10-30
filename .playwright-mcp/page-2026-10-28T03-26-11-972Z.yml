@@ -1,0 +1,197 @@
+- generic:
+  - generic [aria-hidden]:
+    - complementary:
+      - generic:
+        - link:
+          - /url: /workspace
+          - generic: Cổng công việc
+        - button
+      - generic:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph: Phong CNTT
+      - navigation:
+        - generic:
+          - button [expanded]:
+            - generic: Công việc
+          - generic:
+            - link:
+              - /url: /workspace
+              - generic: Tổng quan cá nhân
+            - link:
+              - /url: /projects
+              - generic: Dự án
+            - link:
+              - /url: /tasks
+              - generic: Công việc
+            - link:
+              - /url: /reviews
+              - generic: Chờ nghiệm thu
+            - link:
+              - /url: /reports
+              - generic: Báo cáo công việc
+        - generic:
+          - button [expanded]:
+            - generic: Theo dõi & phân tích
+          - generic:
+            - link:
+              - /url: /dashboard
+              - generic: Bảng tổng quan
+            - link:
+              - /url: /analytics/risks
+              - generic: Phân tích & AI
+            - link:
+              - /url: /alerts
+              - generic: Cảnh báo
+      - generic:
+        - paragraph: Theo phạm vi được cấp quyền
+    - generic:
+      - banner:
+        - generic:
+          - generic: Không gian làm việc
+          - strong: Công việc
+        - generic:
+          - button:
+            - generic [aria-hidden]: QL
+            - generic:
+              - text: Nguyen Quan Ly
+              - generic: Quản lý
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=1]: Viết tài liệu kiểm thử E2E
+                - generic: Đang thực hiện
+                - generic: Ưu tiên bình thường
+              - paragraph: Dự án thử nghiệm E2E
+            - generic:
+              - button: Nộp kết quả
+              - button: Ghi giờ công
+              - button: Tải minh chứng
+              - link:
+                - /url: /tasks/13a5bfaf978d4551aa4ef6f0acaaaf63/edit
+                - text: Điều chỉnh
+              - button: Bàn giao
+              - button: Tạm dừng / hủy
+          - generic:
+            - combobox
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=2]: Thông tin công việc
+              - generic:
+                - generic:
+                  - term: Người thực hiện
+                  - definition:
+                    - link:
+                      - /url: /users/184728461ea949e0b1d34d1ac9217d9d
+                      - generic [aria-hidden]: QL
+                      - generic: Nguyen Quan Ly
+                - generic:
+                  - term: Dự án
+                  - definition:
+                    - link:
+                      - /url: /projects/716a4376b89b4d498a708c54350b6a61
+                      - text: Dự án thử nghiệm E2E
+                - generic:
+                  - term: Ngày tạo
+                  - definition: 10:16 28/10/26
+                - generic:
+                  - term: Bắt đầu thực hiện
+                  - definition: 10:22 28/10/26
+                - generic:
+                  - term: Hạn hoàn thành
+                  - definition: 17:00 5/11/26
+                - generic:
+                  - term: Hạn ban đầu
+                  - definition: 17:00 5/11/26
+            - generic:
+              - generic:
+                - generic:
+                  - heading [level=2]: Nội dung công việc
+                - paragraph: Chưa có mô tả bổ sung.
+                - generic:
+                  - heading [level=3]: Tiêu chí nghiệm thu
+                  - paragraph: Tài liệu mô tả đủ các case kiểm thử chính.
+              - generic:
+                - generic:
+                  - heading [level=2]: Giờ công
+                - generic:
+                  - generic:
+                    - term: Đã thực hiện
+                    - definition: 2 giờ
+                  - generic:
+                    - term: Ước lượng hiện tại
+                    - definition: 8 giờ
+                  - generic:
+                    - term: Ước lượng ban đầu
+                    - definition: 8 giờ
+                  - generic:
+                    - term: Ước tính còn lại
+                    - definition: Chưa cập nhật
+                - generic:
+                  - button: Cập nhật thời gian còn lại
+            - generic:
+              - generic:
+                - heading [level=2]: Hoạt động gần đây
+                - link:
+                  - /url: /tasks/13a5bfaf978d4551aa4ef6f0acaaaf63/history
+                  - text: Xem toàn bộ lịch sử
+              - generic:
+                - table:
+                  - rowgroup:
+                    - row:
+                      - columnheader: Thời điểm
+                      - columnheader: Người thực hiện
+                      - columnheader: Sự kiện
+                      - columnheader: Hành động
+                  - rowgroup:
+                    - row:
+                      - cell: 10:22 28/10/26
+                      - cell: Nguyen Quan Ly
+                      - cell:
+                        - generic: START
+                      - cell:
+                        - group:
+                          - generic: Xem thay đổi (2)
+                    - row:
+                      - cell: 10:22 28/10/26
+                      - cell: Nguyen Quan Ly
+                      - cell:
+                        - generic: ASSIGN
+                      - cell:
+                        - group:
+                          - generic: Xem thay đổi (3)
+                    - row:
+                      - cell: 10:16 28/10/26
+                      - cell: Nguyen Quan Ly
+                      - cell:
+                        - generic: CREATE
+                      - cell:
+                        - group:
+                          - generic: Xem thay đổi (26)
+              - generic: 3 kết quả
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f16e9] [cursor=pointer]
+  - alert
+  - dialog [ref=f16e213]:
+    - generic [ref=f16e214]:
+      - heading "Nộp kết quả công việc" [level=2] [ref=f16e215]
+      - button "Đóng biểu mẫu" [active] [ref=f16e216] [cursor=pointer]: ×
+    - paragraph [ref=f16e217]: Mỗi lần nộp lưu riêng hạn hoàn thành và tổng giờ công tại thời điểm nộp.
+    - generic [ref=f16e218]:
+      - heading "Tiêu chí nghiệm thu" [level=3] [ref=f16e219]
+      - paragraph [ref=f16e220]: Tài liệu mô tả đủ các case kiểm thử chính.
+      - group [ref=f16e222]:
+        - generic [ref=f16e223]:
+          - generic [ref=f16e224]: Tóm tắt kết quả *
+          - textbox "Tóm tắt kết quả *" [ref=f16e225]
+        - generic [ref=f16e226]:
+          - generic [ref=f16e227]: Liên kết minh chứng
+          - textbox "Liên kết minh chứng" [ref=f16e228]
+          - paragraph [ref=f16e229]: Mỗi dòng một liên kết, tối đa 10 liên kết.
+        - generic [ref=f16e230]:
+          - text: Tệp minh chứng
+          - paragraph [ref=f16e231]: Tối đa 10 tệp, mỗi tệp 20 MiB. PDF, PNG, JPEG, TXT, DOCX.
+          - button "Tệp minh chứng" [ref=f16e232]
+        - button "Xác nhận nộp" [ref=f16e234] [cursor=pointer]

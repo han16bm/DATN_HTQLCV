@@ -6,9 +6,7 @@ public record EntityLabelDto(string Id, string Name);
 
 public record AuditDto(
     string Id,
-    string EntityType,
-    string EntityId,
-    string ActorId,
+    PersonRefDto Actor,
     string Action,
     DateTime At,
     object? Before,

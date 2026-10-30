@@ -1,0 +1,100 @@
+- generic [active] [ref=f6e1]:
+  - generic [ref=f6e14]:
+    - complementary "Thanh điều hướng" [ref=f6e15]:
+      - generic [ref=f6e16]:
+        - link "Cổng công việc" [ref=f6e17] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f6e23] [cursor=pointer]
+      - generic [ref=f6e26]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f6e27]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f6e32]:
+        - generic [ref=f6e33]:
+          - button "Công việc" [expanded] [ref=f6e34] [cursor=pointer]
+          - generic [ref=f6e38]:
+            - link "Tổng quan cá nhân" [ref=f6e39] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f6e44] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f6e48] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f6e53] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f6e58] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f6e63]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f6e64] [cursor=pointer]
+          - generic [ref=f6e68]:
+            - link "Bảng tổng quan" [ref=f6e69] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f6e76] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f6e80] [cursor=pointer]:
+              - /url: /alerts
+      - paragraph [ref=f6e86]: Theo phạm vi được cấp quyền
+    - generic [ref=f6e87]:
+      - banner [ref=f6e88]:
+        - generic [ref=f6e89]:
+          - generic [ref=f6e90]: Không gian làm việc
+          - strong [ref=f6e93]: Cảnh báo
+        - button "Mở menu tài khoản" [ref=f6e95] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f6e96]: LH
+          - generic [ref=f6e97]:
+            - text: Tran Quan Ly Hai
+            - generic [ref=f6e98]: Quản lý
+      - main [ref=f6e101]:
+        - generic [ref=f6e102]:
+          - generic [ref=f6e103]:
+            - generic [ref=f6e104]:
+              - heading "Chất lượng dữ liệu" [level=1] [ref=f6e106]
+              - paragraph [ref=f6e107]: Kiem thu alert data quality chua phan cong
+            - link "Danh sách cảnh báo" [ref=f6e109] [cursor=pointer]:
+              - /url: /alerts
+          - generic [ref=f6e110]:
+            - generic [ref=f6e111]:
+              - heading "Nguyên nhân và bằng chứng" [level=2] [ref=f6e113]
+              - paragraph [ref=f6e114]:
+                - generic [ref=f6e115]: Thấp
+                - generic [ref=f6e116]: Chưa đọc
+              - paragraph [ref=f6e117]: Điều kiện phát sinh đã hết; lịch sử xử lý được giữ lại.
+              - paragraph [ref=f6e118]: Chưa phân công người thực hiện.
+              - paragraph [ref=f6e119]: Dữ liệu đến 14:58 28/10/26 · alert-job-v1
+              - link "Mở công việc" [ref=f6e121] [cursor=pointer]:
+                - /url: /tasks/69671d21c36449888e3462f898554c59
+            - generic [ref=f6e122]:
+              - heading "Thông tin xử lý" [level=2] [ref=f6e124]
+              - generic [ref=f6e125]:
+                - generic [ref=f6e126]:
+                  - term [ref=f6e127]: Tiếp nhận
+                  - definition [ref=f6e128]: 14:56 28/10/26
+                - generic [ref=f6e129]:
+                  - term [ref=f6e130]: Người xử lý gần nhất
+                  - definition [ref=f6e131]: Chưa có
+                - generic [ref=f6e132]:
+                  - term [ref=f6e133]: Thời điểm
+                  - definition [ref=f6e134]: —
+                - generic [ref=f6e135]:
+                  - term [ref=f6e136]: Hướng xử lý hoặc lý do
+                  - definition [ref=f6e137]: Chưa ghi nhận
+          - generic [ref=f6e138]:
+            - heading "Cập nhật tình trạng xử lý" [level=2] [ref=f6e140]
+            - group [ref=f6e144]:
+              - generic [ref=f6e145]:
+                - generic [ref=f6e146]: Trạng thái xử lý *
+                - combobox "Trạng thái xử lý *" [ref=f6e147]:
+                  - option "Chọn trạng thái xử lý"
+                  - option "Đã đọc"
+                  - option "Đang thực hiện"
+                  - option "Đã xử lý" [selected]
+                  - option "Đã bác bỏ"
+              - generic [ref=f6e148]:
+                - generic [ref=f6e149]: Hướng xử lý hoặc lý do
+                - textbox "Hướng xử lý hoặc lý do" [ref=f6e150]
+                - paragraph [ref=f6e151]: Bắt buộc trừ khi chỉ đánh dấu đã đọc.
+              - generic [ref=f6e152]:
+                - button "Hủy" [ref=f6e153] [cursor=pointer]
+                - button "Lưu thông tin" [ref=f6e154] [cursor=pointer]
+            - paragraph [ref=f6e142]: Lưu xử lý cảnh báo không tự đổi trạng thái hoặc kế hoạch công việc.
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f6e9] [cursor=pointer]
+  - alert [ref=f6e13]

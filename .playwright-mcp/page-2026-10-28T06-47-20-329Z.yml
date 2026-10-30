@@ -1,0 +1,9 @@
+- generic [active] [ref=f3e1]:
+  - generic [ref=f3e2]:
+    - paragraph [ref=f3e3]: "404"
+    - heading "Không tìm thấy nội dung" [level=1] [ref=f3e4]
+    - paragraph [ref=f3e5]: Nội dung không tồn tại hoặc đã được chuyển sang địa chỉ khác.
+    - link "Về không gian làm việc" [ref=f3e7] [cursor=pointer]:
+      - /url: /workspace
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f3e13] [cursor=pointer]

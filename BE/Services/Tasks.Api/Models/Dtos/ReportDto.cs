@@ -37,4 +37,4 @@ public record ReportDto
     public required PersonRefDto Author { get; init; }
 }
 
-public record AuditDto(string Id, string EntityType, string EntityId, string ActorId, string Action, DateTime At, object? Before, object? After, string? Reason);
+public record AuditDto(string Id, PersonRefDto Actor, string Action, DateTime At, object? Before, object? After, string? Reason);

@@ -1,0 +1,82 @@
+- generic [ref=f31e1]:
+  - generic [ref=f31e14]:
+    - complementary "Thanh điều hướng" [ref=f31e15]:
+      - generic [ref=f31e16]:
+        - link "Cổng công việc" [ref=f31e17] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f31e23] [cursor=pointer]
+      - generic [ref=f31e26]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f31e27]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f31e32]:
+        - generic [ref=f31e33]:
+          - button "Công việc" [expanded] [ref=f31e34] [cursor=pointer]
+          - generic [ref=f31e38]:
+            - link "Tổng quan cá nhân" [ref=f31e39] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f31e44] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f31e48] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f31e53] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f31e58] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f31e63]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f31e64] [cursor=pointer]
+          - generic [ref=f31e68]:
+            - link "Bảng tổng quan" [ref=f31e69] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f31e76] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f31e80] [cursor=pointer]:
+              - /url: /alerts
+        - generic [ref=f31e85]:
+          - button "Quản trị hệ thống" [expanded] [ref=f31e86] [cursor=pointer]
+          - generic [ref=f31e90]:
+            - link "Tài khoản người dùng" [ref=f31e91] [cursor=pointer]:
+              - /url: /admin/users
+            - link "Cơ cấu đơn vị" [ref=f31e98] [cursor=pointer]:
+              - /url: /admin/organization
+            - link "Nhóm nhân sự" [ref=f31e104] [cursor=pointer]:
+              - /url: /admin/teams
+      - paragraph [ref=f31e111]: Theo phạm vi được cấp quyền
+    - generic [ref=f31e112]:
+      - banner [ref=f31e113]:
+        - generic [ref=f31e114]:
+          - generic [ref=f31e115]: Không gian làm việc
+          - strong [ref=f31e118]: Quản trị
+        - button "Mở menu tài khoản" [ref=f31e120] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f31e121]: tv
+          - generic [ref=f31e122]:
+            - text: Quan tri vien
+            - generic [ref=f31e123]: Quản trị viên
+      - main [ref=f31e126]:
+        - generic [ref=f31e127]:
+          - generic [ref=f31e128]:
+            - heading "Tạo nhóm" [level=1] [ref=f31e131]
+            - link "Danh sách nhóm" [ref=f31e133] [cursor=pointer]:
+              - /url: /admin/teams
+          - generic [ref=f31e134]:
+            - heading "Tạo nhóm" [level=2] [ref=f31e136]
+            - group [ref=f31e138]:
+              - generic [ref=f31e139]:
+                - generic [ref=f31e140]: Tên nhóm *
+                - textbox "Tên nhóm *" [ref=f31e141]: Nhóm kiểm thử
+              - generic [ref=f31e142]:
+                - generic [ref=f31e143]: Đơn vị *
+                - combobox "Đơn vị *" [ref=f31e144]:
+                  - option "Chọn đơn vị"
+                  - option "Phong CNTT" [selected]
+                  - option "Phòng QA"
+              - generic [ref=f31e145]:
+                - generic [ref=f31e146]: Thành viên
+                - button "Thành viên" [active] [ref=f31e147] [cursor=pointer]:
+                  - generic [ref=f31e148]: Quan tri vien
+              - generic [ref=f31e151]:
+                - link "Hủy" [ref=f31e152] [cursor=pointer]:
+                  - /url: /admin/teams
+                - button "Tạo nhóm" [ref=f31e153] [cursor=pointer]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f31e9] [cursor=pointer]
+  - alert [ref=f31e13]

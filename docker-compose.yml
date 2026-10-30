@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: datn-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: datn
+      POSTGRES_USER: datn
+      POSTGRES_PASSWORD: datn_dev_only
+    ports:
+      # 55432 trên host để tránh đụng cổng 5432 nếu máy đã có Postgres cài sẵn.
+      - "55432:5432"
+    volumes:
+      - datn-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  datn-postgres-data:

@@ -33,7 +33,7 @@ export function ProjectsPage() {
       <PageHeader
         title="Dự án"
         actions={
-          canVisit(session?.user.systemRole, "/projects/new") && (
+          canVisit(session, "/projects/new") && (
             <ButtonLink href="/projects/new" primary>
               Tạo dự án
             </ButtonLink>

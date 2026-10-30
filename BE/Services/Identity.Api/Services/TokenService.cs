@@ -20,7 +20,8 @@ public class TokenService(IOptions<JwtOptions> options) : ITokenService
             new Claim(ClaimTypes.NameIdentifier, user.Id),
             new Claim(JwtRegisteredClaimNames.Sub, user.Id),
             new Claim(ClaimTypes.Name, user.Username),
-            new Claim(ClaimTypes.Role, user.SystemRole.ToString())
+            new Claim(ClaimTypes.Role, user.SystemRole.ToString()),
+            new Claim("tv", user.TokenVersion.ToString())
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SigningKey));

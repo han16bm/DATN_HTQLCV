@@ -1,32 +1,37 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Shared.Commons.Exceptions;
-using Shared.Commons.Extensions;
 using Shared.Commons.Models;
 
 namespace Shared.Commons.Attributes;
 
 /// <summary>
-/// Chuẩn hoá mọi response controller về Result&lt;T&gt;, luôn trả HTTP 200.
-/// Lỗi nghiệp vụ/validate nằm trong body (succeeded=false); chỉ lỗi ở biên bảo mật mới dùng mã HTTP thật.
+/// Chuẩn hoá lỗi controller về {code, message, fieldErrors?, details?} kèm mã HTTP thật
+/// (404/403/409/412/422/428...). Response thành công đi thẳng, không bọc — khớp contract FE
+/// (xem FE/docs/IMPLEMENTATION_STATUS.md: "success là DTO, lỗi là code/message/fieldErrors?/details?").
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public class AuditAttribute : ActionFilterAttribute
 {
-    public AuditAttribute() => Order = int.MinValue;
+    public AuditAttribute()
+    {
+        Order = int.MinValue;
+    }
 
     public override void OnActionExecuting(ActionExecutingContext context)
     {
         if (!context.ModelState.IsValid)
         {
-            var traceId = context.HttpContext.GetTraceId();
-            var messages = context.ModelState
+            var fieldErrors = context.ModelState
                 .Where(kv => kv.Value?.Errors.Count > 0)
-                .SelectMany(kv => kv.Value!.Errors.Select(e => e.ErrorMessage))
-                .Where(m => !string.IsNullOrWhiteSpace(m))
-                .ToArray();
+                .Select(kv => new FieldErrorItem(ToPath(kv.Key), kv.Value!.Errors[0].ErrorMessage))
+                .ToList();
 
-            context.Result = new OkObjectResult(Result<object>.Failure(messages, traceId, ErrorCodes.Validation));
+            context.Result = new ObjectResult(new ErrorResponse("VALIDATION", "Dữ liệu gửi lên không hợp lệ.", fieldErrors))
+            {
+                StatusCode = StatusCodes.Status422UnprocessableEntity
+            };
         }
 
         base.OnActionExecuting(context);
@@ -34,28 +39,50 @@ public class AuditAttribute : ActionFilterAttribute
 
     public override void OnActionExecuted(ActionExecutedContext context)
     {
-        var traceId = context.HttpContext.GetTraceId();
-
         if (context.Exception is not null)
         {
-            var (message, code) = Describe(context.Exception);
-            context.Result = new OkObjectResult(Result<object>.Failure(message, traceId, code));
+            var (status, code, message) = Describe(context.Exception);
+            context.Result = new ObjectResult(new ErrorResponse(code, message)) { StatusCode = status };
             context.ExceptionHandled = true;
-            base.OnActionExecuted(context);
-            return;
-        }
-
-        if (context.Result is ObjectResult { Value: not null } objectResult && objectResult.Value is not Result<object>)
-        {
-            context.Result = new OkObjectResult(Result<object>.Success(objectResult.Value, traceId));
         }
 
         base.OnActionExecuted(context);
     }
 
-    private static (string Message, int Code) Describe(Exception ex) => ex switch
+    private static List<string> ToPath(string key)
     {
-        AppException appEx => (appEx.Message, appEx.ErrorCode),
-        _ => ("Có lỗi hệ thống, vui lòng thử lại.", ErrorCodes.SystemError)
-    };
+        var parts = key.Split('.', StringSplitOptions.RemoveEmptyEntries);
+        var path = new List<string>();
+        foreach (var part in parts)
+        {
+            path.Add(part.Length > 0 ? char.ToLowerInvariant(part[0]) + part[1..] : part);
+        }
+        return path;
+    }
+
+    private static (int Status, string Code, string Message) Describe(Exception ex)
+    {
+        if (ex is AppException appEx)
+        {
+            var status = appEx.ErrorCode % 1000;
+            return (status, CodeFor(status), appEx.Message);
+        }
+        return (StatusCodes.Status500InternalServerError, "SYSTEM_ERROR", "Có lỗi hệ thống, vui lòng thử lại.");
+    }
+
+    private static string CodeFor(int status)
+    {
+        switch (status)
+        {
+            case 401: return "UNAUTHORIZED";
+            case 403: return "FORBIDDEN";
+            case 404: return "NOT_FOUND";
+            case 409: return "CONFLICT";
+            case 412: return "PRECONDITION_FAILED";
+            case 422: return "VALIDATION";
+            case 428: return "PRECONDITION_REQUIRED";
+            case 429: return "RATE_LIMITED";
+            default: return "SYSTEM_ERROR";
+        }
+    }
 }

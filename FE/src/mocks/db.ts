@@ -613,6 +613,12 @@ function sessionDTO(user: User): SessionDto {
         projectId: member.projectId,
         projectRole: member.projectRole,
       })),
+    permissions:
+      user.systemRole === "ADMIN"
+        ? ["USERS_MANAGE", "ORGANIZATION_MANAGE", "ANALYTICS_VIEW"]
+        : user.systemRole === "MANAGER"
+          ? ["PROJECT_CREATE"]
+          : [],
   };
 }
 const taskMinutes = (taskId: string) =>

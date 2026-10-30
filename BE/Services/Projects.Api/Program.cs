@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Projects.Api.Extensions;
 using Projects.Api.Filters;
@@ -12,6 +13,7 @@ builder.Host.UseSerilog((context, config) => config.ReadFrom.Configuration(conte
 
 builder.Services.AddEntityServices(builder.Configuration);
 builder.Services.AddDependencyInjection(builder.Configuration);
+builder.Services.AddCorsConfiguration(builder.Environment);
 
 var jwt = builder.Configuration.GetSection("Jwt");
 var jwtSigningKey = jwt["SigningKey"];
@@ -33,14 +35,56 @@ builder.Services
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true
         };
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var userId = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var tokenVersionClaim = context.Principal?.FindFirst("tv")?.Value;
+                if (userId is null || tokenVersionClaim is null || !int.TryParse(tokenVersionClaim, out var tokenVersion))
+                {
+                    context.Fail("Token thiếu thông tin bắt buộc.");
+                    return;
+                }
+
+                var db = context.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
+                var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+                if (user is null || user.Status == Shared.Entities.Enums.UserStatus.Locked || user.TokenVersion != tokenVersion)
+                {
+                    context.Fail("Phiên đăng nhập không còn hợp lệ.");
+                }
+            },
+            OnChallenge = async context =>
+            {
+                context.HandleResponse();
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsJsonAsync(
+                    new Shared.Commons.Models.ErrorResponse("UNAUTHORIZED", "Phiên đăng nhập đã hết hạn hoặc không hợp lệ."),
+                    Shared.Commons.Models.JsonDefaults.Web);
+            },
+            OnForbidden = async context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsJsonAsync(
+                    new Shared.Commons.Models.ErrorResponse("FORBIDDEN", "Bạn không có quyền truy cập."),
+                    Shared.Commons.Models.JsonDefaults.Web);
+            }
+        };
     });
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<LogExceptionFilter>();
-builder.Services.AddControllers(options => options.Filters.Add<LogExceptionFilter>())
+builder.Services.AddControllers(options =>
+    {
+        options.Filters.Add<LogExceptionFilter>();
+        options.ModelBinderProviders.Insert(0, new Shared.Commons.Extensions.SnakeCaseEnumModelBinderProvider());
+    })
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        options.JsonSerializerOptions.Converters.Add(new Shared.Commons.Models.PagedResultJsonConverterFactory());
     });
 
 builder.Services.AddEndpointsApiExplorer();
@@ -51,6 +95,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Projects.Api"));
 
+app.UseCors(CorsConfigurationExtensions.PolicyName);
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseSerilogRequestLogging();

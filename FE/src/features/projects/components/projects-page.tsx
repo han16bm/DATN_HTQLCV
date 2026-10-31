@@ -87,17 +87,11 @@ export function ProjectsPage() {
         </label>
       </section>
       {scope.isError && (
-        <QueryErrorState
-          error={scope.error}
-          retry={() => void scope.refetch()}
-        />
+        <QueryErrorState error={scope.error} retry={scope.refetch} />
       )}
       {query.isPending && <PageSkeleton variant="table" />}
       {query.isError && (
-        <QueryErrorState
-          error={query.error}
-          retry={() => void query.refetch()}
-        />
+        <QueryErrorState error={query.error} retry={query.refetch} />
       )}{" "}
       {query.data && !query.isError && (
         <DataTable

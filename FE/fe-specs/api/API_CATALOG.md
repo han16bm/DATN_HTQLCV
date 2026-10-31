@@ -2,6 +2,8 @@
 
 Contract đề xuất **0.3.0** · Tài liệu **0.4** · cập nhật 24/10/2026. Có 79 operation, gồm các operation nghiệp vụ, chi tiết LLM và phản hồi điểm nghẽn. Mọi request vẫn đi qua public Gateway.
 
+Rà ngày 31/10/2026: vẫn 83 route hiện hành; không triển khai /permission-groups và đã bỏ service dự phòng không có caller/handler. Response theo schema: LoginResponse chỉ session/accessToken; Session.projectAccess chỉ projectId/permissions; snapshot.scope chỉ from/to và AnalysisMeasure không có basis (model vẫn giữ dữ liệu nguồn); AlertDto.handler là PersonRef|null thay handledBy. GET lần nộp thêm sort=sequence|-sequence, sắp xếp trước pagination; khung báo cáo dùng 5 lần/trang và chọn từng tệp.
+
 Điều chỉnh theo yêu cầu ngày 25/10/2026: JSON thành công trả ResponseDTO trực tiếp; danh sách là {items, pagination}, lỗi là ErrorDTO phẳng {code, message, fieldErrors?, details?}. Không bọc data/meta hoặc error/meta, không gửi requestId/serverTime. GET không gửi body. Request DTO gồm params/query/body tách biệt. Dữ liệu nested theo DTO_MODELS.md. Tất cả field label/ref mới là read-only; không thêm vào request create/update.
 
 LLM có sẵn chạy qua adapter BE. Số liệu do BE tính. GET tổng quan/danh sách/chi tiết không gọi LLM; mở S43 có thể chủ động gọi createAnalysisJob REUSE_OR_CREATE một lần nếu BE cho phép và chưa có kết quả/job. Xem LLM_ANALYSIS.md và API_CHANGELOG_LLM.md.
@@ -2458,6 +2460,7 @@ Entity thực sự thay đổi tăng version/updatedAt và lưu audit theo nghi�
 | `page` | integer | Không; có mặc định | ≥ 1; mặc định 1; Trang bắt đầu từ 1. |
 | `pageSize` | integer | Không; có mặc định | ≥ 1; ≤ 100; mặc định 20; Số dòng mỗi trang, mặc định 20 và tối đa 100. |
 | `q` | string | Không | độ dài ≤ 255; Từ khóa tìm kiếm, trim đầu/cuối. |
+| `sort` | enum(sequence, -sequence) | Không; mặc định -sequence | Cũ nhất/mới nhất trước, áp dụng trước phân trang. |
 
 ### Body DTO và whitelist
 

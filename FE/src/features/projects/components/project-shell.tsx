@@ -36,9 +36,7 @@ export function ProjectShell({
   const [target, setTarget] = useState<HTMLDivElement | null>(null);
   useCrumbLabel("project", projectId, query.data?.name);
   if (query.isError)
-    return (
-      <QueryErrorState error={query.error} retry={() => void query.refetch()} />
-    );
+    return <QueryErrorState error={query.error} retry={query.refetch} />;
   if (!query.data) return <PageSkeleton />;
   const project = query.data;
   const root = `/projects/${projectId}`;
@@ -58,36 +56,36 @@ export function ProjectShell({
           <p className="muted">
             {project.code} · {project.unit.name}
           </p>
-          <div className="page-header-nav">
-            <SectionNav
-              label="Mục dự án"
-              items={[
-                {
-                  href: root,
-                  label: "Tổng quan",
-                  active: path === root && !history,
-                },
-                {
-                  href: `${root}/tasks`,
-                  label: "Công việc",
-                  active: tasks || path === `${root}/tasks/new`,
-                },
-                {
-                  href: `${root}/members`,
-                  label: "Thành viên",
-                  active: path === `${root}/members`,
-                },
-                {
-                  href: `${root}?tab=history`,
-                  label: "Lịch sử",
-                  active: history,
-                },
-                ...(path === `${root}/edit`
-                  ? [{ href: path, label: "Cài đặt", active: true }]
-                  : []),
-              ]}
-            />
-          </div>
+        </div>
+        <div className="project-navigation">
+          <SectionNav
+            label="Mục dự án"
+            items={[
+              {
+                href: root,
+                label: "Tổng quan",
+                active: path === root && !history,
+              },
+              {
+                href: `${root}/tasks`,
+                label: "Công việc",
+                active: tasks || path === `${root}/tasks/new`,
+              },
+              {
+                href: `${root}/members`,
+                label: "Thành viên",
+                active: path === `${root}/members`,
+              },
+              {
+                href: `${root}?tab=history`,
+                label: "Lịch sử",
+                active: history,
+              },
+              ...(path === `${root}/edit`
+                ? [{ href: path, label: "Cài đặt", active: true }]
+                : []),
+            ]}
+          />
         </div>
         <div className="actions">
           <div className="header-actions-slot" ref={setTarget} />

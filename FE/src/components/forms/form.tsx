@@ -19,6 +19,7 @@ export type FormProps<
   compact?: boolean;
   submitLabel?: string;
   submitDisabled?: boolean;
+  submitActions?: ReactNode;
   cancel?: ReactNode;
   compareFields?: CompareField[];
   onConflictReload?: () => Promise<Record<string, unknown>>;
@@ -32,6 +33,7 @@ export function Form<Input extends FieldValues, Output extends FieldValues>({
   compact = false,
   submitLabel = "Lưu thông tin",
   submitDisabled = false,
+  submitActions,
   cancel,
   compareFields = [],
   onConflictReload,
@@ -78,6 +80,12 @@ export function Form<Input extends FieldValues, Output extends FieldValues>({
       onSubmit={form.handleSubmit(submit)}
     >
       <fieldset className="form-fields" disabled={isSubmitting}>
+        {submitActions && (
+          <div className="form-actions wide">
+            {cancel}
+            {submitActions}
+          </div>
+        )}
         {children}
         {error && (
           <FormError
@@ -88,18 +96,20 @@ export function Form<Input extends FieldValues, Output extends FieldValues>({
             onConflictAccept={onConflictAccept}
           />
         )}
-        <div className="form-actions wide">
-          {cancel}
-          <button
-            className="primary pending-button"
-            type="submit"
-            disabled={submitDisabled}
-            aria-busy={isSubmitting}
-          >
-            {isSubmitting && <Spinner />}
-            {isSubmitting ? "Đang lưu…" : submitLabel}
-          </button>
-        </div>
+        {!submitActions && (
+          <div className="form-actions wide">
+            {cancel}
+            <button
+              className="primary pending-button"
+              type="submit"
+              disabled={submitDisabled}
+              aria-busy={isSubmitting}
+            >
+              {isSubmitting && <Spinner />}
+              {isSubmitting ? "Đang lưu…" : submitLabel}
+            </button>
+          </div>
+        )}
       </fieldset>
     </form>
   );

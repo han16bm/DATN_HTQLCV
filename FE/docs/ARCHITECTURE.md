@@ -1,5 +1,31 @@
 # Cấu trúc frontend
 
+## Giao diện hiện hành — 31/10/2026
+
+Đã rà 43 page.tsx và 12 feature; xem [UI_REDESIGN.md](UI_REDESIGN.md) cho danh sách từng route, component/state và phạm vi QA. SectionNav chuyển thành liên kết tab ngang (giữ URL/scope/dirty guard). Chi tiết công việc chia nội dung/kết quả và cột ngữ cảnh/giờ công; lịch sử mở drawer khi chọn hàng, không còn khung rỗng. Báo cáo nháp có vùng viết và tóm tắt nguồn, hai nút Lưu nháp/Gửi báo cáo ở đầu form; bỏ footer sticky che field. Báo cáo gửi là bố cục đọc với snapshot. KPI chính thành một nhóm, chỉ số phụ thành danh sách; căn cứ và lời AI cùng ngữ cảnh.
+
+Token chung 24/17/15/14/12–13px, control thông thường 30px, topbar 56px, sidebar 232px; chữ trung tính, xanh cho action/chọn. Bảng dùng header/footer 32px, hàng chuẩn 48px, tên việc ellipsis/title và ưu tiên chữ màu. Filter focus trung tính; select/menu đổi mũi tên theo trạng thái mở thật. Lịch sử dự án và công việc dùng chung drawer 420px có slide; AuditChanges chỉ dựng nội dung trước/sau, không giữ Popover/split riêng. PdfPreview sở hữu Panel với actions trên heading, picker thay tên tệp khi có nhiều tệp; các màn gọi không bọc thêm card PDF. Mô tả/tiêu chí cùng vị trí cũ nhưng phân vùng bằng nền nhẹ/viền trái, không thêm dữ liệu/icon trang trí. Các đoạn UI ngày 30/10 và cũ hơn bên dưới là lịch sử, không yêu cầu dựng lại dropdown SectionNav, section-group/task-overview/task-effort hay panel lịch sử rỗng. API/DTO/mock/permissions/cache/validation nghiệp vụ giữ nguyên trong lượt thiết kế này.
+
+## Khung tài liệu và thử tải lại — 31/10/2026
+
+Ai đọc được công việc cũng thấy vùng tài liệu, gồm nhân viên và người nộp; không dùng TASKS_REVIEW/TASKS_MANAGE để ẩn khung. API lấy lần nộp và tệp vẫn kiểm tra quyền đọc công việc qua requireTask; quyền nghiệm thu độc lập, không đổi. AttachmentViewer/PdfPreview giữ cùng Panel khi chưa có lần nộp hoặc tệp đính kèm. Khung trống có nhãn Chưa có báo cáo đính kèm; ID trống giữ query phụ thuộc tắt, không tạo ID giả hay request rỗng. Tệp lỗi vẫn hiển thị lỗi/thử lại, không bị coi là không có tài liệu. Trang chi tiết công việc và đối chiếu lần nộp cùng dùng khung này; chọn lần nộp, sort/phân trang và vòng đời blob giữ nguyên.
+
+QueryErrorState nhận callback Promise và tái dùng ActionButton cho pending/spinner/disable. Các màn truyền retry={query.refetch}; theo dõi AI cũng trả Promise refetch. Không bọc void hoặc tự reload trang để tạo cảm giác tải lại. ActionButton dùng type=button, tránh submit form cha; response không hợp lệ vẫn là lỗi sau khi thử lại.
+
+## Hạn mock tự cập nhật khi mở ứng dụng — 31/10/2026
+
+browser.ts gọi resetDatabase(new Date().toISOString()) trước khi khởi động worker. DB lấy ngày Việt Nam, đặt deadline task còn mở và còn hạn ở mốc seed thành hôm nay + taskPolicy.dueInDays (6), giữ giờ seed và khoảng lệch originalDueAt. Nếu hạn mới vượt hạn dự án, nới dueAt của dự án tương ứng. Case quá hạn/hoàn thành/hủy, lần nộp và snapshot lịch sử giữ nguyên; HTTP GET không tự dời hạn. Node resetMockState gọi resetDatabase() không đối số để giữ fixture và clock cố định cho các ca tích hợp. setClock vẫn chỉ phục vụ tiến thời gian trong kịch bản, không rebase task.
+
+## Rà dọn toàn bộ FE — 31/10/2026
+
+Đã bỏ feature permission-groups chưa có màn/caller/handler và hàm EvidenceFile cũ; tệp đang xem dùng AttachmentViewer/PdfPreview. Xóa các type không có consumer, thu phạm vi export về nội bộ và bỏ CSS của giao diện đã xóa. class-variance-authority, clsx và tailwind-merge không có import nên được bỏ khỏi dependency trực tiếp.
+
+Session.projectAccess chỉ gồm projectId/permissions; projectRole vẫn ở membership/model để quản lý vai trò và tính quyền. LoginResponse chỉ trả session/accessToken; hạn token tiếp tục được kiểm tra từ sessionExpiry trong DB. MeasureDto bỏ basis; model giữ basis để dựng KPI. Snapshot.scope response chỉ giữ from/to, model vẫn giữ scope đầy đủ cho quyền/tạo lại phân tích. ID snapshot/citation, dữ liệu chart và version vẫn giữ vì validation/thao tác có dùng. AlertDto trả handler (PersonRef), không trả handledBy của model hoặc suy tên theo người đang đăng nhập. Severity/trạng thái lựa chọn dùng cùng schema; phiên bản luật lấy từ analysisPolicy.ruleVersion trong data.json. Nhóm quyền nội bộ chỉ cần features/memberIds.
+
+GET /tasks/:taskId/submissions nhận sort=sequence|-sequence, default -sequence; DB sort trước paginate. Khung báo cáo lấy 5 lần/trang, chọn một lần và một tệp. Đổi trang/sort xóa lựa chọn cũ, không giữ PDF của trang trước; đổi latestSubmissionId remount khung. Xem báo cáo cũ không thay đổi đối tượng nghiệm thu của TaskShell. Không thêm endpoint hoặc trang.
+
+Phạm vi và bằng chứng rà từng feature ở [REFACTOR_REVIEW.md](REFACTOR_REVIEW.md#rà-dọn-file-prop-dto-và-hardcode--31102026).
+
 ## Bố cục theo ảnh phản hồi — 30/10/2026
 
 AppShell/AdminShell giữ quyền và phiên, thanh trên chỉ có logo/menu tài khoản; CreateMenu đã bỏ theo yêu cầu. PageNav xếp breadcrumb trên Quay lại. Dự án/công việc/phân tích dùng SectionNav dropdown trong header, vẫn qua DirtyNavigationGuard. Danh sách/Bảng trạng thái là hai button ở bên phải các filter trong cùng hàng lọc, tách khỏi nút tạo ở header và không nằm trong dropdown. Sidebar lọc cùng /tasks và giữ tìm kiếm/dự án/chế độ xem. WorkspaceOverview ghép danh sách chính/cột dự án qua children; các thẻ cá nhân rộng tối đa 220px, không kéo giãn hàng. Nút tạo ở trang chủ có ngữ cảnh Dự án bạn quản lý, chỉ dùng quyền TASKS_MANAGE và danh sách dự án ACTIVE hiện có.

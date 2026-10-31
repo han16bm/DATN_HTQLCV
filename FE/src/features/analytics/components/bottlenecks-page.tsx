@@ -19,10 +19,7 @@ export function BottlenecksPage() {
   return (
     <AnalyticsFrame scope={scope} title="Điểm nghẽn quy trình">
       {query.isError ? (
-        <QueryErrorState
-          error={query.error}
-          retry={() => void query.refetch()}
-        />
+        <QueryErrorState error={query.error} retry={query.refetch} />
       ) : !query.data ? (
         <PageSkeleton variant="table" />
       ) : (
@@ -45,7 +42,8 @@ export function BottlenecksPage() {
               <Link
                 key={t.taskId}
                 href={`/tasks/${t.taskId}`}
-                className="text-link"
+                className="text-link task-name"
+                title={t.taskTitle}
               >
                 {t.taskTitle}
               </Link>,

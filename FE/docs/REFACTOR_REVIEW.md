@@ -1,5 +1,28 @@
 # Rà soát và refactor từng luồng
 
+## Rà dọn file, prop, DTO và hardcode — 31/10/2026
+
+Quét đồ thị import/export bằng Knip, TypeScript/ESLint và lần các property/JSX prop trong toàn bộ src (287 tệp nguồn kể cả JSON, 43 page.tsx kể cả route gốc). Đối chiếu nơi đọc ở UI, form, hook, service, schema và DB; không chỉ tìm chuỗi trong một màn. Giữ các trường phục vụ mutation/version, kiểm tra quyền/snapshot và Recharts dataKey dù không hiển thị như text.
+
+| Luồng / màn | Kết quả rà và điều chỉnh |
+| --- | --- |
+| Auth: đăng nhập, hồ sơ, ảnh, mật khẩu | Session.projectAccess bỏ projectRole; LoginResponse bỏ expiresAt. Quyền vẫn lấy permissions; hạn token vẫn nằm trong DB. Profile/avatar giữ version và multipart, không có dữ liệu người dùng viết cứng. |
+| Users: danh sách, tạo/chi tiết, hồ sơ thành viên | Các field còn lại dùng cho bảng/form/lookup hoặc kiểm tra thao tác; giữ DTO hồ sơ công khai rút gọn. |
+| Organization: đơn vị/nhóm, tạo/chi tiết/thành viên | parentId/managerId/memberIds/version cần cho form và thao tác; Row chỉ phục vụ danh sách. Không xóa quan hệ chỉ vì không in ở bảng. |
+| Projects: danh sách, tạo/sửa, tổng quan/lịch sử | code/objective chỉ ở detail/form; Row đã tối giản. Giữ id cho route/quyền, owner/unit cho hiển thị. |
+| Project members: danh sách/thêm/đổi vai trò/bàn giao/kết thúc | Membership.projectRole/id/version/endedAt đều có consumer; vai trò nghiệp vụ không bị xóa cùng projectRole thừa trong session. |
+| Tasks: trang chủ/danh sách/bảng/tạo/sửa/chi tiết/lịch sử | Row và detail phục vụ các màn khác nhau; giữ ngày bắt đầu, ID/version/quyền và giờ công. Không có prop khai báo nhưng không nơi truyền sau quét. |
+| Time logs: danh sách/tạo/sửa/loại | version được useEditSnapshot dùng cho If-Match, không phải field thừa. Snapshot/giờ công lịch sử giữ nguyên. |
+| Submissions/reviews | Thêm sort trước pagination trên API hiện có. Khung tài liệu chỉ lấy 5 lần/trang, chọn mới/cũ và một PDF; không chặn truy cập các lần ngoài 100 bản ghi đầu. Người nộp vẫn cần ở bảng nghiệm thu/đối chiếu, không hiện ở khung tài liệu. |
+| Reports: danh sách/nháp/xem số liệu/chốt | selectedTaskIds, nội dung và snapshot cần cho form/báo cáo chốt; reportItemSchema chuyển nội bộ. |
+| Attachments | Bỏ EvidenceFile không có caller; bỏ prop defaultOpen chỉ luôn được truyền true. Giữ metadata/policy từ HTTP và thu hồi blob khi đổi tài liệu. |
+| Analytics: dashboard/nguy cơ/khối lượng/điểm nghẽn/tổng hợp/chi tiết/job/phản hồi | Bỏ basis khỏi MeasureDto và projectId khỏi snapshot.scope response; giữ ở model cho tính toán/quyền. Bỏ AnalysisErrorDto/QualityDto không dùng, các schema/helper chỉ dùng nội bộ không export. Giữ snapshotId/analysisId để đối chiếu lời AI và các field chart được đọc bằng dataKey. |
+| Alerts: danh sách/chi tiết/xử lý | handler (PersonRef) thay ID handledBy trong response; UI dùng UserBadge, không đoán tên từ phiên. Severity và options xử lý dùng schema hiện có; ruleVersion nằm trong seed policy. |
+
+Xóa 4 tệp của permission-groups: không có UI/hook/handler/catalog/caller. Policy tính quyền vẫn nằm ở DB/data.json, bỏ id/name của nhóm policy không có nơi dùng; không tạo API quản trị nhóm quyền. Bỏ ReasonInput/PersonRefDto không dùng, chỉ giữ Pagination nội bộ Page. Bỏ export thừa của now/labels/areaOf/Crumb/BrandMark/các schema con/actionHref, giữ logic đang được gọi trong cùng tệp. Xóa CSS data-note/inline-form/file-list/scope-unit/pdf-list; giữ skeleton-*, field-* và tone-* vì tên được sinh động. Bỏ 3 dependency runtime không có import và Prettier dev dependency không có cấu hình/script/caller; không thêm package kiểm toán vào dự án.
+
+Không tìm thấy dữ liệu tên người/ngày/số liệu mẫu viết cứng trong UI/service qua lượt quét. Nhãn, enum, màu/kích thước, validation và cấu hình hiển thị là hằng số hợp lệ; seed/snapshot mô phỏng và policy vẫn ở data.json. Chỉ xóa trường không có consumer; không bỏ kiểm tra quyền/version hoặc fixture cần cho các luồng hiện hành.
+
 ## Điều chỉnh role ngày 26/10/2026
 
 Bỏ quyền cấp lẻ, chuyển sang role/phạm vi dự án và gom fallback user ID vào query keys. S13 là dialog Đổi vai trò trong danh sách thành viên. Chi tiết chính sách và dữ liệu tại [ARCHITECTURE.md](ARCHITECTURE.md#điều-chỉnh-role-ngày-26102026).
@@ -71,7 +94,7 @@ Giữ scope URL, quyền theo dự án/toàn hệ thống, nguồn dữ liệu v
 
 ### Tệp minh chứng (attachments)
 
-EvidenceUploader, EvidenceFile và useDownloadAttachment
+EvidenceUploader, AttachmentViewer/PdfPreview và useDownloadAttachment
 
 Đọc policy từ HTTP, upload multipart, chỉ chọn tệp READY. Download chủ động khi bấm, kiểm tra binary/header, giải phóng object URL; file không được đưa vào Query cache.
 

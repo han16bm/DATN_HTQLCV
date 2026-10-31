@@ -3,6 +3,7 @@ import { AdminShell } from "@/components/layout/admin-shell";
 import { WorkspaceShell } from "@/components/layout/workspace-shell";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DataTable } from "@/components/ui/page";
+import { QueryErrorState } from "@/components/ui/query-error-state";
 import { ReportsPage } from "@/features/reports/components/reports-page";
 import { UsersPage } from "@/features/users/components/users-page";
 import { UserEditorPage } from "@/features/users/components/user-editor-page";
@@ -49,6 +50,7 @@ import { analyticsKeys } from "@/features/analytics/api/analytics.keys";
 import { useGetAnalysisDetailQuery } from "@/features/analytics/hooks/use-analytics-queries";
 import { DashboardPage } from "@/features/analytics/components/dashboard-page";
 import { ProjectShell } from "@/features/projects/components/project-shell";
+import { ProjectDetailPage } from "@/features/projects/components/project-detail-page";
 import { ProjectEditorPage } from "@/features/projects/components/project-editor-page";
 import { WorkspaceOverview } from "@/features/projects/components/workspace-overview";
 import {
@@ -193,6 +195,73 @@ it("shows loading feedback before listing actual start dates from the task respo
   }
   expect(screen.queryByRole("status", { name: "Đang tải dữ liệu" })).toBeNull();
 });
+it("retries a failed HTTP read, shows pending feedback, and replaces the error with recovered data", async () => {
+  const session = await login("lan");
+  const client = show(<TaskDetailPage taskId="t-2" />, session);
+  await screen.findByRole("heading", { name: "Nội dung công việc" });
+  let attempts = 0;
+  let release!: () => void;
+  const ready = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  server.use(
+    http.get("*/api/tasks/t-2", async () => {
+      if (++attempts === 1) return HttpResponse.json({ invalid: true });
+      await ready;
+    }),
+  );
+  await act(async () => {
+    await client.refetchQueries({
+      queryKey: tasksKeys.getTask(session.user.id, "t-2"),
+    });
+  });
+  const error = await screen.findByRole("alert");
+  const user = userEvent.setup();
+  await user.click(within(error).getByRole("button", { name: "Thử tải lại" }));
+  const pending = await screen.findByRole("button", { name: "Đang tải lại…" });
+  expect((pending as HTMLButtonElement).disabled).toBe(true);
+  expect(pending.getAttribute("aria-busy")).toBe("true");
+  await waitFor(() => expect(attempts).toBe(2));
+  await user.click(pending);
+  expect(attempts).toBe(2);
+  release();
+  await screen.findByRole("heading", { name: "Nội dung công việc" });
+  expect(screen.queryByRole("alert")).toBeNull();
+});
+
+it("does not submit its enclosing form when retrying a failed request", async () => {
+  const submit = vi.fn();
+  let release!: () => void;
+  const retry = vi.fn(
+    () =>
+      new Promise<void>((resolve) => {
+        release = resolve;
+      }),
+  );
+  show(
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        submit();
+      }}
+    >
+      <QueryErrorState error={new Error("Chưa tải được tệp.")} retry={retry} />
+    </form>,
+    await login("lan"),
+  );
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Thử tải lại" }));
+  expect(retry).toHaveBeenCalledTimes(1);
+  expect(submit).not.toHaveBeenCalled();
+  expect(
+    (screen.getByRole("button", { name: "Đang tải lại…" }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+  await act(async () => release());
+  await screen.findByRole("button", { name: "Thử tải lại" });
+  expect(submit).not.toHaveBeenCalled();
+});
+
 it("shows creation and actual first-start dates in task details", async () => {
   const session = await login("lan");
   const task = await tasksService.getTask("t-2");
@@ -671,19 +740,16 @@ it("switches compact analytics sections while preserving the selected scope", as
   );
   show(<RisksPage />, session);
   const tabs = screen.getByRole("navigation", { name: "Mục phân tích" });
-  const trigger = within(tabs).getByRole("button", { name: "Mục phân tích" });
-  expect(trigger.textContent).toContain("Nguy cơ trễ hạn");
-  await userEvent.setup().click(trigger);
-  const menu = within(await screen.findByRole("menu"));
+  const menu = within(tabs);
   expect(
     menu
-      .getByRole("menuitem", { name: "Nguy cơ trễ hạn" })
+      .getByRole("link", { name: "Nguy cơ trễ hạn" })
       .getAttribute("aria-current"),
   ).toBe("page");
   expect(screen.queryByRole("combobox", { name: "Mục phân tích" })).toBeNull();
   expect(screen.queryByRole("combobox", { name: "Đơn vị" })).toBeNull();
   const target = new URL(
-    menu.getByRole("menuitem", { name: "Khối lượng" }).getAttribute("href")!,
+    menu.getByRole("link", { name: "Khối lượng" }).getAttribute("href")!,
     location.origin,
   );
   expect(target.pathname).toBe("/analytics/workload");
@@ -694,7 +760,7 @@ it("switches compact analytics sections while preserving the selected scope", as
     to: "2026-10-23",
   });
   expect(
-    menu.getByRole("menuitem", { name: "Cảnh báo" }).getAttribute("href"),
+    menu.getByRole("link", { name: "Cảnh báo" }).getAttribute("href"),
   ).toBe("/alerts");
 });
 it("opens collapsed analytics filters, clears dependent selections, resets and returns focus after Escape", async () => {
@@ -955,7 +1021,9 @@ it("keeps account actions in the avatar menu and shows the signed-in profile", a
   // Quản trị không nằm trong menu làm việc; Admin chưa được cấp quyền phân tích.
   expect(within(sidebar).queryByRole("link", { name: "Phân tích" })).toBeNull();
   expect(within(sidebar).queryByRole("link", { name: "Tài khoản" })).toBeNull();
-  expect(screen.getByText("admin@example.test")).toBeTruthy();
+  const email = screen.getByRole("textbox", { name: "Email" });
+  expect(email).toHaveProperty("value", "admin@example.test");
+  expect(email).toHaveProperty("readOnly", true);
   await user.click(screen.getByRole("button", { name: "Mở menu tài khoản" }));
   const menu = await screen.findByRole("menu");
   expect(
@@ -1040,19 +1108,12 @@ it("marks submissions as the active task tab on a nested submission detail route
     session,
   );
   const tabs = await screen.findByRole("navigation", { name: "Mục công việc" });
-  await userEvent
-    .setup()
-    .click(within(tabs).getByRole("button", { name: "Mục công việc" }));
-  const menu = within(await screen.findByRole("menu"));
+  const menu = within(tabs);
   expect(
-    menu
-      .getByRole("menuitem", { name: "Các lần nộp" })
-      .getAttribute("aria-current"),
+    menu.getByRole("link", { name: "Kết quả" }).getAttribute("aria-current"),
   ).toBe("page");
   expect(
-    menu
-      .getByRole("menuitem", { name: "Chi tiết" })
-      .getAttribute("aria-current"),
+    menu.getByRole("link", { name: "Chi tiết" }).getAttribute("aria-current"),
   ).toBeNull();
 });
 it("marks project history as the active tab from the URL without a separate permissions page", async () => {
@@ -1065,25 +1126,18 @@ it("marks project history as the active tab from the URL without a separate perm
     session,
   );
   const tabs = await screen.findByRole("navigation", { name: "Mục dự án" });
-  await userEvent
-    .setup()
-    .click(within(tabs).getByRole("button", { name: "Mục dự án" }));
-  const menu = within(await screen.findByRole("menu"));
+  const menu = within(tabs);
   expect(
-    menu
-      .getByRole("menuitem", { name: "Lịch sử" })
-      .getAttribute("aria-current"),
+    menu.getByRole("link", { name: "Lịch sử" }).getAttribute("aria-current"),
   ).toBe("page");
-  expect(menu.queryByRole("menuitem", { name: "Phân quyền" })).toBeNull();
+  expect(menu.queryByRole("link", { name: "Phân quyền" })).toBeNull();
   expect(
-    menu
-      .getByRole("menuitem", { name: "Tổng quan" })
-      .getAttribute("aria-current"),
+    menu.getByRole("link", { name: "Tổng quan" }).getAttribute("aria-current"),
   ).toBeNull();
   expect(
-    menu.getByRole("menuitem", { name: "Công việc" }).getAttribute("href"),
+    menu.getByRole("link", { name: "Công việc" }).getAttribute("href"),
   ).toBe("/projects/p-main/tasks");
-  expect(menu.queryByRole("menuitem", { name: "Bảng" })).toBeNull();
+  expect(menu.queryByRole("link", { name: "Bảng" })).toBeNull();
 });
 
 it("keeps creation in the project header and the view buttons with filters while preserving task filters", async () => {
@@ -1227,20 +1281,16 @@ it("keeps a task edit draft when cancelling tab navigation and leaves only after
   );
   const tabs = await screen.findByRole("navigation", { name: "Mục công việc" });
   const user = userEvent.setup();
-  const trigger = within(tabs).getByRole("button", { name: "Mục công việc" });
-  await user.click(trigger);
   expect(
-    screen
-      .getByRole("menuitem", { name: "Điều chỉnh" })
+    within(tabs)
+      .getByRole("link", { name: "Điều chỉnh" })
       .getAttribute("aria-current"),
   ).toBe("page");
-  await user.keyboard("{Escape}");
   const input = await screen.findByRole("textbox", { name: "Tên công việc *" });
   expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
   await user.clear(input);
   await user.type(input, "Công việc đang sửa");
-  await user.click(trigger);
-  await user.click(screen.getByRole("menuitem", { name: "Lịch sử" }));
+  await user.click(within(tabs).getByRole("link", { name: "Lịch sử" }));
   await user.click(
     within(await screen.findByRole("alertdialog")).getByRole("button", {
       name: "Ở lại",
@@ -1248,9 +1298,7 @@ it("keeps a task edit draft when cancelling tab navigation and leaves only after
   );
   expect(nav.push).not.toHaveBeenCalled();
   expect(input).toHaveProperty("value", "Công việc đang sửa");
-  await user.keyboard("{Escape}");
-  await user.click(trigger);
-  await user.click(screen.getByRole("menuitem", { name: "Lịch sử" }));
+  await user.click(within(tabs).getByRole("link", { name: "Lịch sử" }));
   await user.click(
     within(await screen.findByRole("alertdialog")).getByRole("button", {
       name: "Bỏ thay đổi",
@@ -1425,40 +1473,56 @@ it("renders translated task history and real before/after values without raw JSO
   expect(row.querySelector(".avatar")).not.toBeNull();
   expect(event.textContent).toBe("Chi tiết");
   expect(screen.getByRole("columnheader", { name: "Hành động" })).toBeTruthy();
-  const detail = screen.getByRole("complementary", {
-    name: "Chi tiết thay đổi",
-  });
-  expect(
-    within(detail).getByText(
-      "Chọn Chi tiết ở một sự kiện để xem nội dung thay đổi.",
-    ),
-  ).toBeTruthy();
-  expect(within(detail).queryByText("Mô tả được cập nhật")).toBeNull();
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.queryByText("Mô tả được cập nhật")).toBeNull();
   const user = userEvent.setup();
   await user.click(event);
-  const changes = within(detail);
-  expect(
-    changes.queryByText(
-      "Chọn Chi tiết ở một sự kiện để xem nội dung thay đổi.",
-    ),
-  ).toBeNull();
+  const changes = within(
+    await screen.findByRole("dialog", { name: "Chi tiết thay đổi" }),
+  );
   expect(changes.getByText("Mô tả")).toBeTruthy();
   expect(changes.getByText("Mô tả được cập nhật")).toBeTruthy();
   expect(changes.getByText("Cao")).toBeTruthy();
   expect(changes.queryByText('"before"')).toBeNull();
   expect(within(row).queryByText("Mô tả được cập nhật")).toBeNull();
   expect(row.querySelector("pre")).toBeNull();
-  expect(
-    screen.queryByRole("dialog", { name: "Nội dung thay đổi" }),
-  ).toBeNull();
-  expect(event.getAttribute("aria-pressed")).toBe("true");
+  expect(event.getAttribute("aria-expanded")).toBe("true");
+  await user.click(
+    changes.getByRole("button", { name: "Đóng chi tiết lịch sử" }),
+  );
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(document.activeElement).toBe(event);
   const created = screen.getByRole("button", {
     name: "Xem thay đổi: Tạo công việc",
   });
   await user.click(created);
-  expect(created.getAttribute("aria-pressed")).toBe("true");
-  expect(event.getAttribute("aria-pressed")).toBe("false");
-  expect(changes.queryByText("Mô tả được cập nhật")).toBeNull();
+  expect(created.getAttribute("aria-expanded")).toBe("true");
+  expect(event.getAttribute("aria-expanded")).toBe("false");
+  expect(
+    within(screen.getByRole("dialog")).queryByText("Mô tả được cập nhật"),
+  ).toBeNull();
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(document.activeElement).toBe(created);
+});
+it("opens project changes in the same history drawer and restores focus on close", async () => {
+  const session = await login("minh");
+  history.replaceState(null, "", "/projects/p-main?tab=history");
+  show(<ProjectDetailPage projectId="p-main" />, session);
+  const action = await screen.findByRole("button", { name: /Xem thay đổi:/ });
+  const user = userEvent.setup();
+  expect(screen.queryByRole("dialog")).toBeNull();
+  await user.click(action);
+  const detail = await screen.findByRole("dialog", {
+    name: "Chi tiết thay đổi",
+  });
+  expect(within(detail).getByText("Nguyễn Minh")).toBeTruthy();
+  expect(within(detail).getByText("Trước")).toBeTruthy();
+  expect(within(detail).getByText("Sau")).toBeTruthy();
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(action.getAttribute("aria-expanded")).toBe("false");
+  expect(document.activeElement).toBe(action);
 });
 it.each([
   [
@@ -1894,7 +1958,7 @@ it("preserves report input on validation failure and saves then submits a zero-h
   );
   const user = userEvent.setup();
   const client = show(<ReportPage reportId={draft.id} edit />, session);
-  const achievements = await screen.findByLabelText("Kết quả thực hiện");
+  const achievements = await screen.findByLabelText("Kết quả thực hiện *");
   await waitFor(() => expect(client.isFetching()).toBe(0));
   let previews = 0;
   const observe = ({ request }: { request: Request }) => {
@@ -1913,13 +1977,10 @@ it("preserves report input on validation failure and saves then submits a zero-h
   } finally {
     server.events.removeListener("request:start", observe);
   }
-  const plan = screen.getByLabelText("Kế hoạch tiếp theo");
+  const plan = screen.getByLabelText("Kế hoạch tiếp theo *");
   await user.type(achievements, "Đối chiếu tiêu chí nghiệm thu");
   await user.type(plan, "Thực hiện kiểm thử tích hợp");
-  await user.click(
-    screen.getByRole("checkbox", { name: "Gửi và chốt báo cáo sau khi lưu" }),
-  );
-  await user.click(screen.getByRole("button", { name: "Lưu và gửi báo cáo" }));
+  await user.click(screen.getByRole("button", { name: "Gửi báo cáo" }));
   await screen.findByText("Cần giải thích kỳ không có giờ công.");
   expect((achievements as HTMLTextAreaElement).value).toBe(
     "Đối chiếu tiêu chí nghiệm thu",
@@ -1929,11 +1990,37 @@ it("preserves report input on validation failure and saves then submits a zero-h
     screen.getByLabelText("Lý do nếu không có giờ công"),
     "Rà soát tài liệu, chưa ghi giờ trong kỳ này.",
   );
-  await user.click(screen.getByRole("button", { name: "Lưu và gửi báo cáo" }));
+  await user.click(screen.getByRole("button", { name: "Gửi báo cáo" }));
   await waitFor(() =>
     expect(db.reports.find((r) => r.id === draft.id)?.status).toBe("SUBMITTED"),
   );
   expect(nav.push).toHaveBeenCalledWith(`/reports/${draft.id}`);
+});
+it("can save an incomplete draft after send validation without submitting the report", async () => {
+  const session = await login("lan");
+  const draft = await reportsService.createReportDraft(
+    { projectId: "p-main", periodType: "DAILY", periodStart: "2026-10-21" },
+    { key: "draft-after-send-validation" },
+  );
+  const user = userEvent.setup();
+  const client = show(<ReportPage reportId={draft.id} edit />, session);
+  await screen.findByLabelText("Kết quả thực hiện *");
+  await waitFor(() => expect(client.isFetching()).toBe(0));
+  await user.click(screen.getByRole("button", { name: "Gửi báo cáo" }));
+  await screen.findByText("Kết quả thực hiện là bắt buộc khi gửi.");
+  await screen.findByText("Kế hoạch tiếp theo là bắt buộc khi gửi.");
+  await user.type(screen.getByLabelText("Khó khăn"), "Cần đối chiếu số liệu");
+  await user.click(screen.getByRole("button", { name: "Lưu nháp" }));
+  await waitFor(() =>
+    expect(db.reports.find((r) => r.id === draft.id)?.blockers).toBe(
+      "Cần đối chiếu số liệu",
+    ),
+  );
+  expect(db.reports.find((r) => r.id === draft.id)?.status).toBe("DRAFT");
+  expect(
+    screen.queryByText("Kết quả thực hiện là bắt buộc khi gửi."),
+  ).toBeNull();
+  expect(nav.push).not.toHaveBeenCalled();
 });
 it("keeps task edits through a version conflict and saves with the accepted snapshot", async () => {
   const session = await login("minh");
@@ -2417,11 +2504,6 @@ it.each([
   "blocks direct access to $path for $username before mounting its data queries",
   async ({ username, path, page }) => {
     const session = await login(username);
-    // Đổi nhãn vai trò trong dự án không tạo thêm quyền: quyền chỉ đến từ session.
-    session.projectAccess = session.projectAccess.map((project) => ({
-      ...project,
-      projectRole: "OWNER",
-    }));
     history.replaceState(null, "", path);
     const requests: string[] = [];
     const observe = ({ request }: { request: Request }) => {
@@ -2491,8 +2573,8 @@ it("shows an API scope denial, clears old data and retains the error without ref
         authKeys.getSession(session.user.id),
       );
       expect(
-        current?.projectAccess.some(
-          (project) => project.projectRole !== "MEMBER",
+        current?.projectAccess.some((project) =>
+          project.permissions.includes("ANALYTICS_VIEW"),
         ),
       ).toBe(false);
     });

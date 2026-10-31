@@ -2,7 +2,7 @@ import { useId } from "react";
 
 // Logo Cổng công việc: ô gradient xanh – tím, lối vào hình vòm (cổng) bên trong
 // có dấu tích hoàn thành. Cùng hình dùng cho thanh trên, đăng nhập và favicon.
-export function BrandMark({ size = 28 }: { size?: number }) {
+function BrandMark({ size = 28 }: { size?: number }) {
   const id = useId();
   return (
     <svg

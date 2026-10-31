@@ -41,7 +41,7 @@ export function useAnalysisTracking(jobId: string | null) {
     paused: paused && !terminal,
     resume: () => {
       setRound((r) => r + 1);
-      void query.refetch();
+      return query.refetch();
     },
   };
 }

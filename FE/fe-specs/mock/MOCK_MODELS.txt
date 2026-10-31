@@ -1,6 +1,10 @@
 ĐẶC TẢ MOCK MODEL CHO FRONTEND
 Phiên bản tài liệu: 0.4 | Contract đề xuất: 0.3.0 | Ngày: 23/10/2026
 
+Cập nhật rà dọn 31/10/2026: model hiện hành ở src/mocks/db.ts, seed/policy ở data.json. Session không trả projectRole/hạn token; membership và sessionExpiry vẫn giữ cho nghiệp vụ. Measure giữ basis và snapshot giữ scope đầy đủ để tính KPI/quyền, response chỉ giữ trường màn dùng. Alert model giữ handledBy, DTO dựng handler (PersonRef); ruleVersion lấy từ analysisPolicy. Nhóm policy nội bộ chỉ còn features/memberIds, không có API quản trị permission-groups. Danh sách lần nộp sort sequence/-sequence trước paginate, không giới hạn tổng lần nộp ở 100.
+
+Hạn task tương đối (31/10/2026): khi mở mock browser, lấy ngày thực tế tại Asia/Ho_Chi_Minh. Các task chưa hoàn thành/hủy và còn hạn tại seed.clock nhận dueAt là hôm nay + taskPolicy.dueInDays (6), giữ giờ seed 17:00; originalDueAt dời cùng khoảng để giữ chênh lệch kế hoạch. Nới dueAt của dự án nếu nhỏ hơn hạn task mới. Không sửa case quá hạn, task đã kết thúc, lịch sử/lần nộp/snapshot. Node tests không truyền ngày khởi tạo nên tiếp tục dùng mốc gốc; setClock không tự dời hạn.
+
 1. MỤC ĐÍCH VÀ PHẠM VI
 Đây là đặc tả để Codex viết fixture và MSW handler sau. Model mô tả bộ nhớ giả lập của FE, không phải thiết kế database/ERD của BE. UI gọi cùng API Gateway path trong API_CATALOG.md. MSW chặn HTTP; component không import fixture để render.
 Response DTO, request DTO, form model và mock model là các khái niệm riêng. DTO có đủ trường trong api/DTO_MODELS.md; các model bộ nhớ dưới đây dùng các DTO đọc và thêm lịch sử/state cần cho mock.

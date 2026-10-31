@@ -11,11 +11,7 @@ import { useAnalysisTracking } from "../hooks/use-analysis-tracking";
 import { useCreateAnalysisJobMutation } from "../hooks/use-analytics-mutations";
 import { useGetAnalysisDetailQuery } from "../hooks/use-analytics-queries";
 export function AnalysisJobPage({ jobId }: { jobId: string }) {
-  return (
-    <>
-      <JobContent key={jobId} jobId={jobId} />
-    </>
-  );
+  return <JobContent key={jobId} jobId={jobId} />;
 }
 
 function JobContent({ jobId }: { jobId: string }) {

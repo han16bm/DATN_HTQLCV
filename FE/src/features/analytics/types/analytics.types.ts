@@ -8,13 +8,9 @@ import type {
 } from "../schemas/analysis-feedback.schema";
 import type {
   createJobSchema,
-  jobErrorSchema,
   jobSchema,
 } from "../schemas/analysis-job.schema";
-import type {
-  analysisMetaSchema,
-  qualitySchema,
-} from "../schemas/analysis-meta.schema";
+import type { analysisMetaSchema } from "../schemas/analysis-meta.schema";
 import type {
   contextItemSchema,
   measureSchema,
@@ -31,9 +27,7 @@ import type {
 import type { risksSchema } from "../schemas/risks.schema";
 import type { summarySchema } from "../schemas/summary.schema";
 import type { workloadSchema } from "../schemas/workload.schema";
-export type AnalysisErrorDto = z.output<typeof jobErrorSchema>;
 export type JobDto = z.output<typeof jobSchema>;
-export type QualityDto = z.output<typeof qualitySchema>;
 export type AnalysisMetaDto = z.output<typeof analysisMetaSchema>;
 export type BottlenecksDto = z.output<typeof bottlenecksSchema>;
 export type MetricDto = z.output<typeof metricSchema>;

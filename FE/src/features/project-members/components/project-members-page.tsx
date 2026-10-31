@@ -84,10 +84,7 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
         </label>
       </section>
       {query.isError ? (
-        <QueryErrorState
-          error={query.error}
-          retry={() => void query.refetch()}
-        />
+        <QueryErrorState error={query.error} retry={query.refetch} />
       ) : !query.data ? (
         <PageSkeleton variant="table" />
       ) : (

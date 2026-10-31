@@ -206,7 +206,8 @@ const reportModel = z
   .extend({ submittedAt: z.iso.datetime().nullable() });
 const alertModel = z
   .object(alertSchema.shape)
-  .omit({ taskTitle: true, analysisRef: true });
+  .omit({ taskTitle: true, analysisRef: true, handler: true })
+  .extend({ handledBy: idSchema.nullable() });
 const attachmentModel = z.object(attachmentSchema.shape).extend({
   taskId: idSchema,
   uploadedBy: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
@@ -215,9 +216,10 @@ const attachmentModel = z.object(attachmentSchema.shape).extend({
 const qualityModel = z
   .object(qualitySchema.shape)
   .extend({ missingFields: z.array(z.string()) });
-const measureModel = z
-  .object(measureSchema.shape)
-  .extend({ missingFields: z.array(z.string()) });
+const measureModel = z.object(measureSchema.shape).extend({
+  basis: z.enum(["CURRENT", "PERIOD"]),
+  missingFields: z.array(z.string()),
+});
 const errorModel = z.object(jobErrorSchema.shape).extend({
   code: z.enum([
     "LLM_NOT_CONFIGURED",
@@ -284,7 +286,7 @@ type Analysis = z.output<typeof analysisModel>;
 const policy = seed.uploadPolicy;
 const baseClock = seed.clock;
 let clock = baseClock;
-export const now = () => clock;
+const now = () => clock;
 const today = () =>
   new Date(new Date(clock).getTime() + 7 * 3600_000).toISOString().slice(0, 10);
 const entity = (id = crypto.randomUUID()) => ({
@@ -297,8 +299,6 @@ const accessPolicy = z
     project: z.record(projectRoleSchema, z.array(permissionSchema)),
     groups: z.array(
       z.object({
-        id: idSchema,
-        name: z.string(),
         features: z.array(permissionSchema),
         memberIds: z.array(idSchema),
       }),
@@ -364,11 +364,32 @@ function schedule(fn: () => void, ms: number) {
   }, ms);
   timers.add(timer);
 }
-export function resetDatabase() {
+export function resetDatabase(date?: string) {
   for (const t of timers) clearTimeout(t);
   timers.clear();
-  clock = baseClock;
+  clock = date ?? baseClock;
   db = createDatabase();
+  if (!date) return;
+
+  // Mốc mẫu xác định case còn hạn; không xét theo ngày máy vì seed có thể đã cũ.
+  const deadline = new Date(`${today()}T00:00:00.000Z`);
+  deadline.setUTCDate(deadline.getUTCDate() + seed.taskPolicy.dueInDays);
+  const day = deadline.toISOString().slice(0, 10);
+  for (const task of db.tasks) {
+    if (
+      ["COMPLETED", "CANCELLED"].includes(task.status) ||
+      task.dueAt < baseClock
+    )
+      continue;
+    const dueAt = `${day}${task.dueAt.slice(10)}`;
+    const shift = Date.parse(dueAt) - Date.parse(task.dueAt);
+    task.originalDueAt = new Date(
+      Date.parse(task.originalDueAt) + shift,
+    ).toISOString();
+    task.dueAt = dueAt;
+    const project = db.projects.find((item) => item.id === task.projectId)!;
+    if (project.dueAt < dueAt) project.dueAt = dueAt;
+  }
 }
 export function setClock(value: string) {
   const next = z.iso.datetime().parse(value);
@@ -645,7 +666,6 @@ function sessionDTO(user: User): SessionDto {
       .filter((member) => member.userId === user.id && !member.endedAt)
       .map((member) => ({
         projectId: member.projectId,
-        projectRole: member.projectRole,
         permissions: projectPermissions(user, member.projectId),
       })),
     permissions: systemPermissions(user),
@@ -736,7 +756,7 @@ function issueSession(user: User) {
   db.sessions.set(accessToken, user.id);
   db.sessionExpiry.set(accessToken, expiresAt);
   db.revoked.delete(`mock-${user.id}`);
-  return { session: sessionDTO(user), accessToken, expiresAt };
+  return { session: sessionDTO(user), accessToken };
 }
 export const authDb = {
   login(body: LoginInput) {
@@ -2392,7 +2412,11 @@ export const submissionsDb = {
     return paginate(
       db.submissions
         .filter((s) => s.taskId === taskId)
-        .sort((a, b) => b.sequence - a.sequence)
+        .sort((a, b) =>
+          query.sort === "sequence"
+            ? a.sequence - b.sequence
+            : b.sequence - a.sequence,
+        )
         .map(submissionRow),
       query,
     );
@@ -3940,6 +3964,7 @@ function alertDTO(a: (typeof db.alerts)[number], u: User): AlertDto {
   const today = localDateTime(now()).slice(0, 10);
   return {
     ...a,
+    handler: a.handledBy ? person(a.handledBy) : null,
     taskTitle: task?.title ?? null,
     analysisRef: task
       ? taskAnalysis(
@@ -3995,7 +4020,7 @@ export function evaluateAlertRules() {
         conditionActive: true,
         evidence: rule.evidence,
         dataAsOf: now(),
-        methodVersion: "trial-rules-v1",
+        methodVersion: seed.analysisPolicy.ruleVersion,
         resolutionNote: null,
         handledBy: null,
         handledAt: null,

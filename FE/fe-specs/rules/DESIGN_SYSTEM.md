@@ -1,6 +1,26 @@
 # Quy tắc thiết kế giao diện doanh nghiệp
 
-## Thiết kế hiện hành — 30/10/2026
+## Thiết kế hiện hành — 31/10/2026
+
+Theo yêu cầu thiết kế lại toàn bộ FE, quy tắc dưới đây và `../../docs/UI_REDESIGN.md` thay thông số UI ngày 30/10/cũ hơn.
+
+Khung tài liệu ở chi tiết công việc luôn có mặt sau khi công việc tải thành công, kể cả tài khoản nhân viên/người nộp; không ẩn khung bằng quyền quản lý/nghiệm thu. Có tệp thì xem trước, chưa có thì trạng thái trống. API vẫn kiểm tra quyền đọc công việc/tệp; nghiệm thu giữ quyền riêng.
+
+| Vùng | Quy tắc |
+| --- | --- |
+| Chữ | Segoe UI/Arial, H1 24/600, H2 17/600, H3 15/600; body/table/control/tab/field label 14; metadata/status 12–13. Đánh giá ở zoom 100% |
+| Màu | Nền #f7f8fa, trắng cho nội dung, chữ #252b37/phụ #667085, viền #e3e6eb, primary #0c66e4. Bình thường dùng trung tính |
+| Khung | Topbar 56, sidebar 232/56; Admin tách qua avatar; main padding 24–28 và tối đa 1680; card bo 8/padding 20, control thông thường 30/bo 6; auth và vùng chạm có kích thước riêng |
+| Điều hướng | SectionNav tab ngang với link/aria-current và cuộn khi hẹp; giữ route/scope/dirty/back; hai nút Danh sách/Bảng trạng thái vẫn trong hàng lọc |
+| Công việc | Mô tả/tiêu chí chung card, phân bằng viền nhấn/nền nhẹ/padding gọn; kết quả bên dưới, metadata/giờ công cột phụ, nghiệm thu ở header. Tên trong bảng một dòng/30ch + title đầy đủ; ưu tiên chữ màu, không icon |
+| Filter/dropdown | Focus trung tính, không viền/ring xanh. Mũi tên native select đổi bằng :open, menu/box chọn theo aria-expanded; giữ nhận diện filter đang chọn bằng nền/chữ. Khoảng cách nhãn 4, gap hàng lọc 8–12 |
+| Bảng/lịch sử | Header/footer tối thiểu 32px, hàng chuẩn 48px/padding dọc 4; dữ liệu dài hợp lệ còn xuống dòng. Hành động không gạch chân khi hover. Dự án/công việc cùng drawer 420px, padding 16, slide 180/140ms, reduced motion, đóng trả focus đúng hàng; không split/Popover riêng |
+| PDF | Heading Báo cáo đính kèm + nút Thu gọn/Xem trước, Mở tab mới, Tải xuống ngoài khung dữ liệu. Chưa có lần nộp/tệp vẫn giữ khung với Chưa có báo cáo đính kèm, không fetch ID rỗng; quyền xem giữ nguyên. Tên/dung lượng gọn một dòng; nhiều tệp dùng picker thay tên. Picker vẫn dùng được nếu metadata tệp được chọn lỗi. Giữ HTTP/blob/đổi lần nộp và không thêm card lồng |
+| Báo cáo | Form viết + cột kỳ/người lập/dự án/nguồn; Lưu nháp/Gửi báo cáo đầu form, không sticky che field; bảng nguồn mở bằng details. Đã gửi dùng bố cục đọc và snapshot |
+| Phân tích | Nhóm 4 KPI chính, value 26 nổi hơn label 14; biểu đồ/bảng dưới. Giờ công và danh sách chỉ số phụ hai vùng; danh sách phụ 2 cột khi đủ rộng, 1 khi hẹp, không nhiều card nhỏ. Căn cứ và lời AI cạnh nhau |
+| Responsive/state | Container page/card/form; bảng/board cuộn riêng, vùng chính/phụ xếp dọc; giữ skeleton/spinner/error/empty/disabled/pending/dirty/412 và trạng thái AI thực tế. Thử tải lại nhận Promise request, hiện Đang tải lại…/spinner/disable trong lúc chờ, type=button để không submit form cha |
+
+## Thiết kế ngày 30/10/2026 — lịch sử
 
 Theo ảnh phản hồi, tham khảo [điều hướng Jira](https://support.atlassian.com/jira-software-cloud/docs/what-is-the-new-navigation-in-jira/) và [khoảng cách Atlassian](https://atlassian.design/foundations/spacing/). Phần này và docs/UI_REVIEW.md thay các quy tắc trình bày gốc phía dưới khi khác nhau.
 

@@ -19,7 +19,7 @@ export function AnalysisLink({
   );
 }
 
-export function actionHref(action: DomainActionDto) {
+function actionHref(action: DomainActionDto) {
   const id = encodeURIComponent(action.taskId ?? "");
   switch (action.target) {
     case "TASK_DETAIL":

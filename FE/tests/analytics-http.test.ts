@@ -53,7 +53,10 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
     const source = await analyticsService.getAnalysisDetail(
       alert.analysisRef!.analysisId,
     );
-    expect(source.snapshot.scope).toEqual(period);
+    expect(source.snapshot.scope).toEqual({ from: period.from, to: period.to });
+    expect(
+      db.details.get(alert.analysisRef!.analysisId)!.snapshot.scope.projectId,
+    ).toBe(period.projectId);
     setClock("2027-02-10T03:35:00.000Z");
     const next = await analyticsService.getDashboard(period);
     expect(next.metadata.dataAsOf).toBe("2027-02-10T03:35:00.000Z");
@@ -441,7 +444,8 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
       },
     );
     expect(updated.conditionActive).toBe(true);
-    expect(updated.handledBy).toBe("u-pm");
+    expect(updated.handler).toEqual({ id: "u-pm", displayName: "Nguyễn Minh" });
+    expect(updated).not.toHaveProperty("handledBy");
     expect(db.tasks.find((t) => t.id === alert.taskId)).toEqual(task);
     await expect(
       alertsService.updateAlert(

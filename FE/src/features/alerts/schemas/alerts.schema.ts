@@ -1,6 +1,7 @@
 import {
   analysisRefSchema,
   listQuerySchema,
+  personRefSchema,
 } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
@@ -22,12 +23,19 @@ export const alertStatusSchema = z.enum([
   "RESOLVED",
   "DISMISSED",
 ]);
+export const alertSeveritySchema = z.enum([
+  "INFO",
+  "LOW",
+  "MEDIUM",
+  "HIGH",
+  "CRITICAL",
+]);
 export const alertQuerySchema = z
   .object({
     ...listQuerySchema.shape,
     projectId: idSchema.optional(),
     status: alertStatusSchema.optional(),
-    severity: z.enum(["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional(),
+    severity: alertSeveritySchema.optional(),
   })
   .strict();
 export const alertSchema = z.object({
@@ -43,14 +51,14 @@ export const alertSchema = z.object({
     "BOTTLENECK",
     "DATA_QUALITY",
   ]),
-  severity: z.enum(["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"]),
+  severity: alertSeveritySchema,
   status: alertStatusSchema,
   conditionActive: z.boolean(),
   evidence: z.array(z.string()),
   dataAsOf: z.iso.datetime(),
   methodVersion: z.string(),
   resolutionNote: z.string().nullable(),
-  handledBy: z.string().nullable(),
+  handler: personRefSchema.nullable(),
   handledAt: z.iso.datetime().nullable(),
   taskTitle: z.string().nullable(),
   analysisRef: analysisRefSchema.nullable(),

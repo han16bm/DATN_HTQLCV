@@ -52,13 +52,10 @@ export function ReviewsPage() {
         </label>
       </div>
       {projects.isError && (
-        <QueryErrorState
-          error={projects.error}
-          retry={() => void projects.refetch()}
-        />
+        <QueryErrorState error={projects.error} retry={projects.refetch} />
       )}
       {q.isError ? (
-        <QueryErrorState error={q.error} retry={() => void q.refetch()} />
+        <QueryErrorState error={q.error} retry={q.refetch} />
       ) : !q.data ? (
         <PageSkeleton variant="table" />
       ) : (
@@ -67,7 +64,7 @@ export function ReviewsPage() {
             ...q.data.pagination,
             onPage: (p) => f.set("page", String(p)),
           }}
-          widths={[30, 8, 18, 17, 17, 10]}
+          widths={[26, 8, 18, 18, 19, 11]}
           headers={[
             "Công việc",
             "Lần nộp",
@@ -80,7 +77,8 @@ export function ReviewsPage() {
           rows={q.data.items.map((s) => [
             <Link
               key="task"
-              className="issue-link"
+              className="issue-link task-name"
+              title={s.taskTitle}
               href={`/tasks/${s.taskId}/submissions/${s.id}`}
             >
               {s.taskTitle}

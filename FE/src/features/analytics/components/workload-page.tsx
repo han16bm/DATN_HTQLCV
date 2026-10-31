@@ -19,10 +19,7 @@ export function WorkloadPage() {
   return (
     <AnalyticsFrame scope={scope} title="Khối lượng công việc">
       {query.isError ? (
-        <QueryErrorState
-          error={query.error}
-          retry={() => void query.refetch()}
-        />
+        <QueryErrorState error={query.error} retry={query.refetch} />
       ) : !query.data ? (
         <PageSkeleton variant="table" />
       ) : (

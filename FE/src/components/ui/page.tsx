@@ -1,7 +1,5 @@
 "use client";
 import { label } from "@/lib/format";
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { Check, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { type ComponentProps, type ReactNode } from "react";
 export function PageHeader({
@@ -204,38 +202,17 @@ type NavProps = {
   items: { href: string; label: string; active: boolean }[];
 };
 export function SectionNav({ label, items }: NavProps) {
-  const current = items.find((item) => item.active);
   return (
     <nav className="section-nav" aria-label={label}>
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger className="section-trigger" aria-label={label}>
-          {current?.label ?? items[0]?.label}
-          <ChevronDown size={16} aria-hidden="true" />
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content
-            className="account-menu"
-            align="start"
-            sideOffset={6}
-            collisionPadding={12}
-          >
-            {items.map((item) => (
-              <DropdownMenu.Item key={item.href} asChild>
-                <Link
-                  className="account-menu-item"
-                  href={item.href}
-                  aria-current={item.active ? "page" : undefined}
-                >
-                  <span className="menu-check">
-                    {item.active && <Check size={15} aria-hidden="true" />}
-                  </span>
-                  {item.label}
-                </Link>
-              </DropdownMenu.Item>
-            ))}
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
+      {items.map((item) => (
+        <Link
+          key={item.href}
+          href={item.href}
+          aria-current={item.active ? "page" : undefined}
+        >
+          {item.label}
+        </Link>
+      ))}
     </nav>
   );
 }

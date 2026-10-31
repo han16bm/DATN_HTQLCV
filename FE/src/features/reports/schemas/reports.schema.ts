@@ -19,7 +19,7 @@ export const createReportSchema = z
     selectedTaskIds: z.array(idSchema).optional(),
   })
   .strict();
-export const reportItemSchema = z.object({
+const reportItemSchema = z.object({
   taskId: idSchema,
   title: z.string(),
   status: taskStatusSchema,

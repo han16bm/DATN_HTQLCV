@@ -14,15 +14,11 @@ export function UserEditorPage({ userId }: { userId?: string }) {
   const units = useListUnitsQuery({ pageSize: 100, status: "ACTIVE" });
   useCrumbLabel("user", userId ?? "", query.data?.displayName);
   if (units.isError)
-    return (
-      <QueryErrorState error={units.error} retry={() => void units.refetch()} />
-    );
+    return <QueryErrorState error={units.error} retry={units.refetch} />;
   if (!units.data || (userId && query.isPending))
     return <PageSkeleton variant="form" />;
   if (query.isError)
-    return (
-      <QueryErrorState error={query.error} retry={() => void query.refetch()} />
-    );
+    return <QueryErrorState error={query.error} retry={query.refetch} />;
   return (
     <>
       <PageHeader

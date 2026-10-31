@@ -43,10 +43,7 @@ export function ProjectCloseDialog({
       description="Các điều kiện được kiểm tra lại tại thời điểm xác nhận."
     >
       {checks.isError ? (
-        <QueryErrorState
-          error={checks.error}
-          retry={() => void checks.refetch()}
-        />
+        <QueryErrorState error={checks.error} retry={checks.refetch} />
       ) : !checks.data ? (
         <PageSkeleton variant="form" />
       ) : (

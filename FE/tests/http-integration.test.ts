@@ -196,7 +196,6 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
     expect(Object.keys(session.data.projectAccess[0]).sort()).toEqual([
       "permissions",
       "projectId",
-      "projectRole",
     ]);
     const file = await apiClient.get<object>("/attachments/a-criteria");
     expect(Object.keys(file.data).sort()).toEqual([
@@ -237,11 +236,17 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
     }>(`/analytics/details/${dashboard.overviewRef.analysisId}`);
     expect(Object.keys(snapshot.data.snapshot.scope).sort()).toEqual([
       "from",
-      "projectId",
       "to",
     ]);
     const stored = db.details.get(dashboard.overviewRef.analysisId)!;
     expect(stored.snapshot.scope.assigneeId).toBe("u-lan");
+    expect(stored.snapshot.scope.projectId).toBe("p-main");
+    const detail = await analyticsService.getAnalysisDetail(
+      dashboard.overviewRef.analysisId,
+    );
+    expect(detail.snapshot.metrics.length).toBeGreaterThan(0);
+    expect(detail.snapshot.metrics[0]).not.toHaveProperty("basis");
+    expect(stored.snapshot.metrics[0]).toHaveProperty("basis");
     for (const field of ["sourceRevision", "subject", "expiresAt"]) {
       expect(snapshot.data.snapshot).not.toHaveProperty(field);
       expect(stored.snapshot).toHaveProperty(field);

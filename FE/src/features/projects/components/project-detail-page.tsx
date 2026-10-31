@@ -28,10 +28,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
   if (!project.data) return <PageSkeleton />;
   if (search.get("tab") === "history")
     return history.isError ? (
-      <QueryErrorState
-        error={history.error}
-        retry={() => void history.refetch()}
-      />
+      <QueryErrorState error={history.error} retry={history.refetch} />
     ) : !history.data ? (
       <PageSkeleton variant="table" />
     ) : (
@@ -48,10 +45,9 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
   return (
     <div className="issue-layout">
       <div className="issue-main">
-        <section className="detail-copy">
-          <h2>Mục tiêu dự án</h2>
+        <Panel title="Mục tiêu dự án" className="project-objective">
           <p className="prose">{p.objective}</p>
-        </section>
+        </Panel>
         {tasks.isError ? (
           <QueryErrorState error={tasks.error} />
         ) : tasks.data ? (
@@ -65,9 +61,11 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
             pagination={{ total: tasks.data.pagination.total }}
             actions
             headers={["Công việc", "Trạng thái", "Hạn", "Hành động"]}
-            widths={[42, 22, 22, 14]}
+            widths={[36, 24, 24, 16]}
             rows={tasks.data.items.map((t) => [
-              t.title,
+              <span key="title" className="task-name" title={t.title}>
+                {t.title}
+              </span>,
               <Badge key="status" value={t.status} />,
               dateTime(t.dueAt),
               <DetailLink
@@ -82,10 +80,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
         )}
 
         {history.isError ? (
-          <QueryErrorState
-            error={history.error}
-            retry={() => void history.refetch()}
-          />
+          <QueryErrorState error={history.error} retry={history.refetch} />
         ) : !history.data ? (
           <PageSkeleton variant="table" />
         ) : (

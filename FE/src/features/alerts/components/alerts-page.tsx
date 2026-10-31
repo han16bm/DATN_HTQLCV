@@ -7,15 +7,16 @@ import { AnalyticsTabs } from "@/features/analytics/components/analytics-tabs";
 import { useListAnalyticsFilterOptionsQuery } from "@/features/analytics/hooks/use-analytics-queries";
 import { label, options } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
-import { z } from "zod";
 import { useListAlertsQuery } from "../hooks/use-alerts-queries";
-import { alertStatusSchema } from "../schemas/alerts.schema";
-export const severity = z.enum(["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"]);
+import {
+  alertSeveritySchema,
+  alertStatusSchema,
+} from "../schemas/alerts.schema";
 
 export function AlertsPage() {
   const f = useUrlFilters();
   const status = alertStatusSchema.safeParse(f.get("status"));
-  const level = severity.safeParse(f.get("severity"));
+  const level = alertSeveritySchema.safeParse(f.get("severity"));
   const projects = useListAnalyticsFilterOptionsQuery({
     kind: "PROJECT",
     pageSize: 100,
@@ -50,7 +51,11 @@ export function AlertsPage() {
             title: "Trạng thái xử lý",
             values: alertStatusSchema.options,
           },
-          { name: "severity", title: "Mức độ", values: severity.options },
+          {
+            name: "severity",
+            title: "Mức độ",
+            values: alertSeveritySchema.options,
+          },
         ].map((config) => (
           <label key={config.name}>
             {config.title}
@@ -69,13 +74,10 @@ export function AlertsPage() {
         ))}
       </section>
       {projects.isError && (
-        <QueryErrorState
-          error={projects.error}
-          retry={() => void projects.refetch()}
-        />
+        <QueryErrorState error={projects.error} retry={projects.refetch} />
       )}
       {q.isError ? (
-        <QueryErrorState error={q.error} retry={() => void q.refetch()} />
+        <QueryErrorState error={q.error} retry={q.refetch} />
       ) : !q.data ? (
         <PageSkeleton variant="table" />
       ) : (
@@ -96,7 +98,13 @@ export function AlertsPage() {
           ]}
           rows={q.data.items.map((a) => [
             label(a.type),
-            a.taskTitle ?? "Dự án",
+            <span
+              key="target"
+              className="task-name"
+              title={a.taskTitle ?? undefined}
+            >
+              {a.taskTitle ?? "Dự án"}
+            </span>,
             <Badge key="severity" value={a.severity} />,
             <Badge key="status" value={a.status} />,
             a.conditionActive ? "Còn điều kiện phát sinh" : "Điều kiện đã hết",

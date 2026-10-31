@@ -5,7 +5,7 @@ import { Form } from "@/components/forms/form";
 import { FormSelect } from "@/components/forms/form-field";
 import { Avatar } from "@/components/ui/avatar";
 import { HashDialog } from "@/components/ui/dialog";
-import { PriorityIcon } from "@/components/ui/priority-icon";
+import { Priority } from "@/components/ui/priority";
 import { PageSkeleton } from "@/components/ui/loading";
 import { HeaderActions } from "@/components/ui/header-actions";
 import {
@@ -258,22 +258,13 @@ export function TaskListPage({
         {viewButtons}
       </section>
       {projects.isError && (
-        <QueryErrorState
-          error={projects.error}
-          retry={() => void projects.refetch()}
-        />
+        <QueryErrorState error={projects.error} retry={projects.refetch} />
       )}
       {!personal && members.isError && (
-        <QueryErrorState
-          error={members.error}
-          retry={() => void members.refetch()}
-        />
+        <QueryErrorState error={members.error} retry={members.refetch} />
       )}
       {query.isError && (
-        <QueryErrorState
-          error={query.error}
-          retry={() => void query.refetch()}
-        />
+        <QueryErrorState error={query.error} retry={query.refetch} />
       )}{" "}
       {query.isPending && <PageSkeleton variant="table" />}
       {data && !query.isError && (
@@ -305,14 +296,16 @@ export function TaskListPage({
                           className="board-card"
                           href={`/tasks/${t.id}`}
                         >
-                          <span className="board-card-title">{t.title}</span>
+                          <span className="board-card-title" title={t.title}>
+                            {t.title}
+                          </span>
                           {!fixedProjectId && (
                             <span className="small muted">
                               {t.project.name}
                             </span>
                           )}
                           <span className="board-card-meta">
-                            <PriorityIcon value={t.priority} />
+                            <Priority value={t.priority} />
                             <span
                               className={`small ${t.isOverdue ? "task-overdue" : "muted"}`}
                             >
@@ -345,10 +338,10 @@ export function TaskListPage({
               actions
               widths={
                 personal
-                  ? [33, 11, 18, 14, 14, 10]
+                  ? [28, 12, 20, 15, 15, 10]
                   : fixedProjectId
-                    ? [28, 16, 10, 16, 11, 11, 8]
-                    : [23, 13, 14, 9, 13, 10, 10, 8]
+                    ? [24, 17, 11, 18, 11, 11, 8]
+                    : [21, 12, 14, 10, 13, 11, 11, 8]
               }
               headers={[
                 "Công việc",
@@ -364,7 +357,8 @@ export function TaskListPage({
                 <div key="task">
                   <Link
                     key="title"
-                    className="issue-link"
+                    className="issue-link task-name"
+                    title={t.title}
                     href={`/tasks/${t.id}`}
                   >
                     {t.title}
@@ -388,7 +382,7 @@ export function TaskListPage({
                         "Chưa phân công"
                       ),
                     ]),
-                <PriorityIcon key="priority" value={t.priority} showLabel />,
+                <Priority key="priority" value={t.priority} />,
                 <span key="state" className="page-status">
                   <Badge value={t.status} />
                   {t.isOverdue && <Badge value="OVERDUE" />}

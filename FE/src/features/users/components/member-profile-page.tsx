@@ -14,9 +14,7 @@ export function MemberProfilePage({ userId }: { userId: string }) {
   const query = useGetProfileQuery(userId);
   useCrumbLabel("user", userId, query.data?.displayName);
   if (query.isError)
-    return (
-      <QueryErrorState error={query.error} retry={() => void query.refetch()} />
-    );
+    return <QueryErrorState error={query.error} retry={query.refetch} />;
   if (!query.data) return <PageSkeleton />;
   const user = query.data;
   return (

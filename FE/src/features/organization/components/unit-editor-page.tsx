@@ -19,17 +19,11 @@ export function UnitEditorPage({ unitId }: { unitId?: string }) {
   const users = useListUsersQuery({ pageSize: 100, status: "ACTIVE" });
   useCrumbLabel("unit", unitId ?? "", query.data?.name);
   if (query.isError)
-    return (
-      <QueryErrorState error={query.error} retry={() => void query.refetch()} />
-    );
+    return <QueryErrorState error={query.error} retry={query.refetch} />;
   if (units.isError)
-    return (
-      <QueryErrorState error={units.error} retry={() => void units.refetch()} />
-    );
+    return <QueryErrorState error={units.error} retry={units.refetch} />;
   if (users.isError)
-    return (
-      <QueryErrorState error={users.error} retry={() => void users.refetch()} />
-    );
+    return <QueryErrorState error={users.error} retry={users.refetch} />;
   if (!units.data || !users.data || (unitId && query.isPending))
     return <PageSkeleton variant="form" />;
   return (

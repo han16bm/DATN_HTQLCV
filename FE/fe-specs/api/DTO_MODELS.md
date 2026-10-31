@@ -2,6 +2,8 @@
 
 Contract 0.3.0. Các bảng là đặc tả văn bản để Codex tạo schema/DTO sau. Tên kiểu có tiền tố nhóm để tránh trùng tên. Request và response được phân biệt; không dùng Partial<EntityDTO> làm body cập nhật.
 
+Rà tối giản ngày 31/10/2026: schema trong src/features là contract response hiện hành. Session projectAccess chỉ có projectId/permissions; LoginResponse không trả expiresAt. Snapshot.scope response chỉ có from/to (model giữ scope đầy đủ); AnalysisMeasure bỏ basis trong response, MetricDTO ở dashboard vẫn giữ basis để hiện Hiện tại/Trong kỳ. Alert trả handler: PersonRef|null thay handledBy. ID snapshot/analysisId/citation và version vẫn cần để kiểm tra/thao tác. Chi tiết từng màn ở ../../docs/REFACTOR_REVIEW.md.
+
 ## Kiểu dùng chung
 
 | Kiểu | Trường và ràng buộc |
@@ -200,7 +202,6 @@ Với object/mảng lồng nhau, tên có dấu chấm hoặc [] là đường d
 |---|---|---|---|
 | `session` | Auth.SessionDTO | Có | Người dùng và tập quyền hiện tại. |
 | `accessToken` | string | Có | độ dài ≥ 1; Bearer token theo phiên; không persist và không serialize vào RSC. |
-| `expiresAt` | string · UTC ISO 8601 có Z | Có | Thời điểm hết hạn access token. |
 
 ## Auth.LoginDTO
 
@@ -211,14 +212,15 @@ Với object/mảng lồng nhau, tên có dấu chấm hoặc [] là đường d
 
 ## Auth.SessionDTO
 
-Theo yêu cầu điều hướng bằng role ngày 25/10/2026, response hiện hành chỉ có user rút gọn và projectAccess theo session.schema.ts. Không trả systemPermissions hoặc membershipId không được FE sử dụng; quyền mở trang lấy từ user.systemRole, quyền tác vụ/phạm vi dự án vẫn do API kiểm tra.
+Quyền hiệu lực theo điều chỉnh ngày 30/10/2026 lấy từ permissions của session, không suy từ tên role. Rà ngày 31/10/2026 bỏ projectRole khỏi projectAccess vì không có consumer; vai trò vẫn thuộc MembershipDTO và model để quản lý/tính quyền.
 
 | Trường | Kiểu | Bắt buộc | Ràng buộc / ý nghĩa |
 |---|---|---|---|
-| `user` | Users.UserDTO | Có | Thông tin hiển thị chỉ đọc, user.id phải bằng userId. |
-| `projectAccess` | array<object> | Có | Tư cách đang hoạt động theo từng dự án; không có quyền cấp lẻ, không dùng làm quyền mở trang. |
+| `user` | object rút gọn | Có | id/version/avatarUrl/displayName/username/email/unitId/unit/systemRole; không có status/updatedAt. |
+| `permissions` | array<Permission> | Có | Quyền hiệu lực ở phạm vi hệ thống. |
+| `projectAccess` | array<object> | Có | Phạm vi dự án đang tham gia và quyền hiệu lực. |
 | `projectAccess[].projectId` | string | Có | độ dài ≥ 1; độ dài ≤ 100; ID dự án; không đồng nghĩa ID service. |
-| `projectAccess[].projectRole` | enum(OWNER, MANAGER, MEMBER) | Có | Vai trò của tư cách đang hoạt động; kết hợp systemRole để xác định thao tác trong dự án. |
+| `projectAccess[].permissions` | array<Permission> | Có | Quyền hiệu lực trong đúng projectId. |
 
 ## Organization.TeamCreateDTO
 
@@ -928,7 +930,7 @@ Response danh sách hiện hành ngày 30/10/2026, dùng cho `GET /api/projects`
 | `dataAsOf` | string · UTC ISO 8601 có Z | Có | Thời điểm số liệu nguồn, không trình bày dữ liệu cũ như mới. |
 | `methodVersion` | string | Có | Phiên bản phương pháp để đối chiếu. |
 | `resolutionNote` | string / null | Có | Hướng xử lý/lý do; bắt buộc với trạng thái xử lý khác READ. |
-| `handledBy` | string / null | Có | Người xử lý từ phiên. |
+| `handler` | Shared.PersonRefDTO / null | Có | Người xử lý với id/displayName; handledBy chỉ lưu trong mock model. |
 | `handledAt` | string · UTC ISO 8601 có Z / null | Có | Thời điểm xử lý cảnh báo. |
 | `taskTitle` | string / null | Có | Theo đúng kiểu và khả năng null đã ghi. |
 | `analysisRef` | Shared.AnalysisRefDTO / null | Có | Điểm mở S43; giữ đúng analysisId/snapshotId và phạm vi lọc từ BE. |
@@ -1019,7 +1021,6 @@ Discriminated union theo `kind`; mỗi nhánh strict và không nhận field c�
 | `label` | string | Có | độ dài ≥ 1; độ dài ≤ 255 |
 | `value` | number / null | Có | Giá trị đúng kiểu được khai báo; phần số do BE tính, null khi thiếu nguồn, không tự đổi thành 0. |
 | `unit` | enum(TASK, COUNT, PERCENT, MINUTE, HOUR) | Có | Đơn vị đo của giá trị hoặc chuỗi số liệu; dùng nhãn Việt tương ứng, không phải đơn vị tổ chức. |
-| `basis` | enum(CURRENT, PERIOD) | Có | Theo đúng kiểu và khả năng null đã ghi. |
 | `formula` | string | Có | độ dài ≥ 1; độ dài ≤ 2000; Diễn giải cách tính của BE; FE hiển thị/định dạng, không yêu cầu LLM tính lại. |
 | `evidenceIds` | array<string> | Có | ID dữ liệu căn cứ phải tồn tại trong snapshot.evidence. |
 | `missingFields` | array<string> | Có | Trường/nguồn thiếu; không tự thay bằng 0. |
@@ -1129,7 +1130,7 @@ Discriminated union theo `kind`; mỗi nhánh strict và không nhận field c�
 | `analysisType` | enum(RISK, WORKLOAD, BOTTLENECK, SUMMARY, METRIC) | Có | Loại nội dung phân tích; phân biệt với trạng thái job. |
 | `title` | string | Có | độ dài ≥ 1; độ dài ≤ 255; Tiêu đề hiển thị của nội dung phân tích, không bắt buộc là tên công việc. |
 | `subject` | Shared.AnalysisSubjectDTO | Có | Theo đúng kiểu và khả năng null đã ghi. |
-| `scope` | Analytics.AnalyticsQueryDTO | Có | Theo đúng kiểu và khả năng null đã ghi. |
+| `scope` | object {from: LocalDate, to: LocalDate} | Có | Kỳ hiển thị; filter/phạm vi đầy đủ chỉ lưu trong model. |
 | `dataAsOf` | string · UTC ISO 8601 có Z | Có | Thời điểm số liệu nguồn, không trình bày dữ liệu cũ như mới. |
 | `createdAt` | string · UTC ISO 8601 có Z | Có | Thời điểm tạo UTC. |
 | `expiresAt` | string · UTC ISO 8601 có Z | Có | Hạn lưu/đọc snapshot; sau thời điểm này BE có thể trả 410 SNAPSHOT_EXPIRED. |

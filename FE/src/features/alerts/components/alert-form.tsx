@@ -64,12 +64,7 @@ export function AlertForm({
             {
               name: "status",
               label: "Trạng thái xử lý",
-              options: options([
-                "READ",
-                "IN_PROGRESS",
-                "RESOLVED",
-                "DISMISSED",
-              ]),
+              options: options(updateAlertSchema.shape.status.options),
             },
             { name: "resolutionNote", label: "Hướng xử lý hoặc lý do" },
           ]}
@@ -88,7 +83,7 @@ export function AlertForm({
           <FormSelect
             label="Trạng thái xử lý"
             required
-            options={options(["READ", "IN_PROGRESS", "RESOLVED", "DISMISSED"])}
+            options={options(updateAlertSchema.shape.status.options)}
             {...form.register("status")}
             error={errors.status}
           />

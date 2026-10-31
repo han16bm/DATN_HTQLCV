@@ -1,5 +1,51 @@
 # Trạng thái triển khai
 
+## Sửa khung báo cáo bị ẩn với nhân viên — 31/10/2026
+
+TaskDetailPage bỏ điều kiện TASKS_REVIEW/TASKS_MANAGE quanh vùng tài liệu. Nhân viên/người nộp đã được đọc công việc thấy PDF hoặc khung trống như quản lý; không sửa API, quyền backend hoặc quyền nghiệm thu. Lượt sửa trước mới bao phủ khung trống của quản lý và còn giữ test ẩn preview với người nộp; test này được thay bằng ca đọc tài liệu của nhân viên. Ca mới bao phủ khung trống của Minh/Lan/Huy và không tải tài liệu khi công việc bị từ chối.
+
+Kiểm tra: **228/228 test ở 13 file đạt**, lint, typecheck, build và git diff --check đạt. Huy xem PDF của việc mình được đọc và khung trống của lần nộp không có tệp; Lan thấy khung khi việc của mình chưa có lần nộp. Lan bị từ chối ở việc không thuộc phạm vi và tài khoản ngoài dự án không tải được tài liệu. Edge vẫn chưa kết nối nên chưa xác nhận bố cục trực quan trên browser.
+
+## Giữ khung báo cáo trống và sửa phản hồi Thử tải lại — 31/10/2026
+
+Khung Báo cáo đính kèm vẫn hiện khi chưa có lần nộp hoặc lần nộp không có tệp, ở chi tiết công việc và trang đối chiếu. PdfPreview hiển thị Chưa có báo cáo đính kèm trong vùng trống; không gửi request với ID trống, không dựng dữ liệu giả hay đổi quyền xem. Lỗi tải vẫn là lỗi, picker tệp vẫn dùng được; sort/phân trang/chọn lần nộp và thu hồi blob giữ nguyên.
+
+QueryErrorState dùng ActionButton để chờ Promise request, hiện Đang tải lại…/spinner/disable; type=button tránh gửi form cha. 56 callback retry chuyển từ wrapper void sang refetch trực tiếp; theo dõi AI trả Promise refetch. Không reload trang hoặc xóa draft khi thử lại. Test HTTP xác nhận request thứ hai thực sự được gửi sau response sai và UI phục hồi khi API trả hợp lệ.
+
+Kiểm tra: **223/223 test ở 13 file đạt**, gồm 100 test UI ở 2 file; typecheck, lint, build và git diff --check đạt. Edge native pipe/browser host chưa kết nối; chưa xác nhận trực quan khung trống và nút chờ trên Edge. Quy tắc đã cập nhật trong AGENTS.md, kiến trúc, design system và ghi chép UI.
+
+## Thu gọn control, bảng, lịch sử và PDF — 31/10/2026
+
+Control thông thường 30px, filter bỏ viền/ring xanh khi focus nhưng giữ dấu focus bàn phím trung tính. Select đổi mũi tên theo trạng thái mở thật; menu avatar và bộ chọn nhiều dùng aria-expanded. Bảng giảm header/footer xuống tối thiểu 32px, hàng chuẩn 48px với padding dọc 4px; hành động không gạch chân khi hover. Tên công việc một dòng, tối đa 30ch, có title đầy đủ; cân lại tỷ lệ cột và giữ nguyên chuỗi response. Ưu tiên dùng chữ có màu, bỏ icon; board bố trí lại ưu tiên/hạn/avatar để không tràn.
+
+Lịch sử dự án/công việc dùng chung drawer 420px, slide mở/đóng và trả focus về nút đã chọn; bỏ split/Popover và CSS cũ. PDF có các nút cùng hàng Báo cáo đính kèm, ngoài khung dữ liệu; tên tệp gọn, nhiều tệp dùng picker thay tên. Picker vẫn hiện nếu metadata tệp lỗi để đổi sang tệp khác. Bỏ card trắng lồng ở màn gọi; giữ tải có xác thực, chọn lần nộp, sort/phân trang và thu hồi blob. Mô tả/tiêu chí giữ vị trí, thêm phân nền/viền nhẹ trong cùng card. Không đổi API/DTO/mock/quyền hoặc thêm route/nghiệp vụ.
+
+Kiểm tra: **217/217 test ở 13 file đạt**, typecheck, lint, build và git diff --check đạt. Ca hồi quy mới xác nhận lịch sử dự án dùng chung drawer/đóng trả focus và đổi tệp PDF sau lỗi 404. Chưa QA trực quan các tinh chỉnh này vì Edge native pipe/browser host chưa kết nối; giữ yêu cầu chỉ dùng Edge, không dùng Playwright/CDP. Bộ 38 ảnh của lượt trước không đại diện cho giao diện compact hiện tại. Quy tắc đã cập nhật trong AGENTS.md, kiến trúc, design system và các ghi chép UI.
+
+## Thiết kế lại toàn bộ giao diện — 31/10/2026
+
+Đã đồng bộ UI của 43 page.tsx/12 feature bằng token và component chung: font 24/17/15/14/12–13px, chữ trung tính, control 36px, card/bảng/filter/board và responsive. SectionNav thành tab ngang giữ URL/scope/dirty guard. Công việc có vùng nội dung/kết quả và cột ngữ cảnh/giờ công; lịch sử mở drawer khi chọn, không panel rỗng, đóng trả focus đúng nút. Báo cáo có bố cục viết/đọc và hai nút Lưu nháp/Gửi báo cáo ở đầu form; dữ liệu chốt giữ nguyên. KPI chính rõ thứ bậc, chỉ số phụ thành danh sách hai cột, căn cứ AI mở gọn và nhãn mô hình ở heading. Hồ sơ và Admin dùng cùng phong cách; không đổi API/DTO/mock/permissions hay thêm route/nghiệp vụ.
+
+Kiểm tra: **215/215 test ở 13 file đạt**, ca focus drawer kiểm tra riêng sau cùng đạt; typecheck, lint, build và git diff --check đạt. QA thực tế trên Edge zoom 100%, desktop/375px đã phát hiện và sửa footer che textarea, filter mobile xuống dòng sai, chỉ số dài và panel thao tác rỗng. Có 38 ảnh viewport, 10 ảnh cũ được đánh dấu trước tinh chỉnh. Danh sách từng route, gallery và giới hạn xác minh ở [UI_REDESIGN.md](UI_REDESIGN.md).
+
+Computer Use mất cả native pipe/browser host khi tiếp tục phiên; chưa xem mọi tổ hợp case/màn phụ hoặc chụp lại tinh chỉnh cuối. Giữ giới hạn chỉ dùng Edge của người dùng, không chuyển sang Playwright/CDP. Chưa nghiệm thu với BE thật. Các mục UI ngày 30/10/cũ hơn bên dưới là lịch sử khi khác với thiết kế mới.
+
+## Hạn công việc mock tự lấy hôm nay + 6 ngày — 31/10/2026
+
+Mock browser gọi resetDatabase với thời gian thực trước khi mở worker. Các task còn mở/còn hạn tại seed.clock tự nhận hạn hôm nay + taskPolicy.dueInDays (6) theo ngày Việt Nam, giữ giờ 17:00 và độ lệch originalDueAt. Nới hạn dự án nếu cần để task vẫn hợp lệ; giữ nguyên case quá hạn/hoàn thành/hủy và lịch sử/lần nộp. Không dời deadline trong GET hoặc setClock. Node test reset không đối số vẫn dùng mốc seed cố định.
+
+Kiểm tra: **214/214 tests ở 13 file**, typecheck, lint, build và git diff --check đạt. Ba ca HTTP mới kiểm tra cuối tháng, chuyển năm theo múi giờ Việt Nam, năm nhuận; xác nhận lịch sử/case quá hạn không đổi và vẫn tạo được task trong hạn dự án sau khi cập nhật ngày. Tải lại trang để khởi tạo lại DB mock với ngày mới.
+
+## Rà dọn toàn bộ FE, DTO/mock và tài liệu lần nộp — 31/10/2026
+
+Rà đồ thị sử dụng trên 287 tệp nguồn/43 page.tsx và lần các luồng của 12 feature. Xóa 4 tệp/folder permission-groups chưa có caller/màn/handler, EvidenceFile cũ, prop defaultOpen chỉ luôn true, type/export thừa và 5 nhóm CSS không còn dùng. Bỏ 3 dependency runtime và Prettier dev dependency không có script/cấu hình; package-lock cập nhật cùng package.json, không thêm dependency kiểm toán.
+
+Response session bỏ projectRole của projectAccess, login bỏ expiresAt; membership và hạn token vẫn được dùng trong DB. MeasureDto bỏ basis, snapshot.scope response bỏ projectId; model giữ nguồn đầy đủ để tính KPI/phạm vi và kiểm tra snapshot. Alert trả handler: PersonRef thay ID handledBy để hiển thị tên người xử lý; model giữ ID. Dùng chung enum/options cảnh báo, chuyển phiên bản luật sang analysisPolicy.ruleVersion trong data.json; nhóm policy nội bộ bỏ id/name không dùng. Không tìm thấy tên/ngày/số liệu nghiệp vụ mẫu viết cứng trong UI/service ở lượt quét; nhãn/enum/cấu hình UI và seed mock vẫn giữ đúng trách nhiệm.
+
+Khung tài liệu báo cáo có sort mới/cũ, 5 lần/trang qua HTTP, chỉ mở một lần/một tệp; không còn lấy 100 bản ghi rồi coi là toàn bộ. Chọn lại hủy PDF cũ/thu hồi blob, lỗi có thử lại. Không đổi mục tiêu nghiệm thu từ TaskShell. Breadcrumb/Quay lại tiếp tục dùng khoảng cách chung hiện có.
+
+Kiểm tra: **211/211 tests ở 13 file**, typecheck, lint, build và git diff --check đạt; Knip trả **0 issue** về file/export/type/dependency không dùng. Ca HTTP kiểm tra 121 lần nộp và sort trước phân trang; ca UI kiểm tra chuyển sort/trang, không tải mọi tài liệu, thu hồi blob và không hiện người nộp trong khung tài liệu. Kiểm tra HTTP xác nhận response rút gọn trong khi model vẫn giữ dữ liệu nghiệp vụ cần thiết. Kiểm thử giao diện dùng JSDOM, chưa QA trực quan trên browser ở lượt này.
+
 ## Tìm công việc nghiệm thu, KPI phía trên và khung nhóm — 30/10/2026
 
 ReviewsPage thêm ô Tìm công việc, truyền q cùng projectId/page qua hook/service HTTP hiện có. Schema đã có q; mock DB nay lọc theo task.title không phân biệt hoa/thường cùng quyền/phạm vi trước phân trang. Đổi từ khóa giữ dự án và bỏ page. Không thêm DTO/endpoint hoặc request lấy từng task.

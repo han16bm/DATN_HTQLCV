@@ -24,9 +24,7 @@ function ReviewContent({ task }: { task: TaskDto }) {
   const { session } = useSession();
   const dialog = useHashDialog();
   if (query.isError)
-    return (
-      <QueryErrorState error={query.error} retry={() => void query.refetch()} />
-    );
+    return <QueryErrorState error={query.error} retry={query.refetch} />;
   if (!query.data) return <PageSkeleton variant="form" />;
   if (
     query.data.status !== "PENDING" ||

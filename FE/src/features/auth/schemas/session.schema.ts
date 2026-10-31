@@ -1,5 +1,4 @@
 import { userSchema } from "@/features/users/schemas/user.schema";
-import { projectRoleSchema } from "@/features/project-members/schemas/project-members.schema";
 import { permissionSchema } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
@@ -18,7 +17,6 @@ export const sessionSchema = z.object({
   projectAccess: z.array(
     z.object({
       projectId: idSchema,
-      projectRole: projectRoleSchema,
       permissions: z.array(permissionSchema).default([]),
     }),
   ),
@@ -27,7 +25,6 @@ export const sessionSchema = z.object({
 export const loginResponseSchema = z.object({
   session: sessionSchema,
   accessToken: z.string().min(1, "Vui lòng nhập thông tin bắt buộc"),
-  expiresAt: z.iso.datetime(),
 });
 export const logoutResultSchema = z.object({
   ok: z.literal(true),

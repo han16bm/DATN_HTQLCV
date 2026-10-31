@@ -6,16 +6,19 @@ export function ActionButton({
   children,
   onAction,
   primary = false,
+  pendingLabel = "Đang xử lý…",
 }: {
   children: ReactNode;
-  onAction: () => Promise<void>;
+  onAction: () => Promise<unknown>;
   primary?: boolean;
+  pendingLabel?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   return (
     <div>
       <button
+        type="button"
         disabled={busy}
         className={`pending-button ${primary ? "primary" : ""}`}
         aria-busy={busy}
@@ -36,7 +39,7 @@ export function ActionButton({
         }}
       >
         {busy && <Spinner />}
-        {busy ? "Đang xử lý…" : children}
+        {busy ? pendingLabel : children}
       </button>
       {error && (
         <p className="field-error" role="alert">

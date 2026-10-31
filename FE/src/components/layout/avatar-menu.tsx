@@ -42,7 +42,11 @@ export function AvatarMenu({
               {label(session.user.systemRole)}
             </span>
           </span>
-          <ChevronDown size={15} aria-hidden="true" />
+          <ChevronDown
+            className="dropdown-chevron"
+            size={15}
+            aria-hidden="true"
+          />
         </button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>

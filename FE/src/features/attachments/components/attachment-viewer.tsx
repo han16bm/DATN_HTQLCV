@@ -16,23 +16,26 @@ export function AttachmentViewer({
   const selected =
     picked && attachmentIds.includes(picked) ? picked : attachmentIds[0];
   return (
-    <div className="attachment-viewer">
-      {attachmentIds.length > 1 && (
-        <label className="viewer-select">
-          Tệp báo cáo
-          <select
-            value={selected}
-            onChange={(event) => setPicked(event.target.value)}
-          >
-            {attachmentIds.map((id, index) => (
-              <option key={id} value={id}>
-                {files[index]?.data?.filename ?? `Tệp ${index + 1}`}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
-      <PdfPreview key={selected} attachmentId={selected} defaultOpen />
-    </div>
+    <PdfPreview
+      key={selected}
+      attachmentId={selected}
+      picker={
+        attachmentIds.length > 1 ? (
+          <label className="viewer-select">
+            <span className="sr-only">Tệp báo cáo</span>
+            <select
+              value={selected}
+              onChange={(event) => setPicked(event.target.value)}
+            >
+              {attachmentIds.map((id, index) => (
+                <option key={id} value={id}>
+                  {files[index]?.data?.filename ?? `Tệp ${index + 1}`}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : undefined
+      }
+    />
   );
 }

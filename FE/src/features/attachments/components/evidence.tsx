@@ -6,11 +6,7 @@ import { fileSize } from "@/lib/format";
 import { useUI } from "@/stores/ui-store";
 import { useEffect, useId, useState } from "react";
 import { useUploadAttachmentMutation } from "../hooks/use-attachments-mutations";
-import {
-  useGetAttachmentQuery,
-  useGetUploadPolicyQuery,
-} from "../hooks/use-attachments-queries";
-import { useDownloadAttachment } from "../hooks/use-download-attachment";
+import { useGetUploadPolicyQuery } from "../hooks/use-attachments-queries";
 import { type AttachmentDto } from "../types/attachments.types";
 const formats: Record<string, string> = {
   "application/pdf": "PDF",
@@ -114,39 +110,9 @@ export function EvidenceUploader({
       {(error || policy.error) && (
         <QueryErrorState
           error={error ?? policy.error!}
-          retry={() => void policy.refetch()}
+          retry={policy.refetch}
         />
       )}
-    </div>
-  );
-}
-
-export function EvidenceFile({ attachmentId }: { attachmentId: string }) {
-  const query = useGetAttachmentQuery(attachmentId);
-  const { pending, error, download } = useDownloadAttachment();
-  if (query.isError) return <QueryErrorState error={query.error} />;
-  if (!query.data)
-    return (
-      <p role="status" className="loading-inline">
-        <Spinner />
-        Đang tải thông tin tệp…
-      </p>
-    );
-  const item = query.data;
-  return (
-    <div className="section-gap">
-      <button
-        type="button"
-        className="pending-button"
-        aria-busy={pending}
-        disabled={pending || item.status !== "READY"}
-        onClick={() => void download(item.id, item.filename)}
-      >
-        {pending && <Spinner />}
-        {pending ? "Đang tải…" : `Tải ${item.filename}`} (
-        {fileSize(item.sizeBytes)})
-      </button>
-      {error && <QueryErrorState error={error} />}
     </div>
   );
 }

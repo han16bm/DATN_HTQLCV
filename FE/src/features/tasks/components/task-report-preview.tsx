@@ -1,18 +1,18 @@
 "use client";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import { Panel, StatusField } from "@/components/ui/page";
+import { Pagination, StatusField } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { AttachmentViewer } from "@/features/attachments/components/attachment-viewer";
 import {
   useGetSubmissionQuery,
   useListSubmissionsQuery,
 } from "@/features/submissions/hooks/use-submissions-queries";
+import type { SubmissionQuery } from "@/features/submissions/types/submissions.types";
 import { dateTime } from "@/lib/format";
 import { useState } from "react";
 
-// Quản lý xem báo cáo PDF ngay ở chi tiết công việc. Mặc định là lần nộp mới
-// nhất; công việc nộp nhiều lần thì chọn lần cần xem bằng dropdown.
+// Chỉ tải tài liệu của lần được chọn; danh sách lần nộp phân trang qua HTTP.
 export function TaskReportPreview({
   taskId,
   submissionId,
@@ -20,41 +20,27 @@ export function TaskReportPreview({
   taskId: string;
   submissionId: string;
 }) {
-  const [picked, setPicked] = useState<string>();
-  const selected = picked ?? submissionId;
-  const list = useListSubmissionsQuery(taskId, { pageSize: 100 });
+  const [picked, setPicked] = useState<string | null>(submissionId);
+  const [page, setPage] = useState(1);
+  const [sort, setSort] =
+    useState<NonNullable<SubmissionQuery["sort"]>>("-sequence");
+  const list = useListSubmissionsQuery(taskId, { page, pageSize: 5, sort });
+  const selected = picked ?? list.data?.items[0]?.id ?? "";
   const query = useGetSubmissionQuery(taskId, selected);
-  if (query.isError)
-    return (
-      <Panel title="Báo cáo kết quả">
-        <QueryErrorState
-          error={query.error}
-          retry={() => void query.refetch()}
-        />
-      </Panel>
-    );
-  if (!query.data)
-    return (
-      <Panel title="Báo cáo kết quả">
-        <PageSkeleton />
-      </Panel>
-    );
   const s = query.data;
-  // Chưa tải được danh sách thì vẫn xem được lần nộp mới nhất.
-  const rows = list.data?.items.length
-    ? list.data.items
-    : [{ id: s.id, sequence: s.sequence, submittedAt: s.submittedAt }];
+  const rows = list.data?.items ?? (s ? [s] : []);
   return (
-    <Panel
-      title="Báo cáo kết quả"
-      className="report-preview"
-      actions={<StatusField value={s.status} />}
-    >
+    <section className="report-preview">
+      <div className="panel-heading">
+        <h2>Báo cáo kết quả</h2>
+        {s && <StatusField value={s.status} />}
+      </div>
       <div className="report-picker">
         <label className="viewer-select">
           Lần nộp
           <select
             value={selected}
+            disabled={!rows.length || list.isFetching}
             onChange={(event) => setPicked(event.target.value)}
           >
             {rows.map((row) => (
@@ -65,15 +51,46 @@ export function TaskReportPreview({
             ))}
           </select>
         </label>
-        {rows.length > 1 && (
-          <span className="small muted">Đã nộp {rows.length} lần</span>
-        )}
+        <label className="viewer-select">
+          Sắp xếp
+          <select
+            value={sort}
+            onChange={(event) => {
+              setSort(
+                event.target.value as NonNullable<SubmissionQuery["sort"]>,
+              );
+              setPage(1);
+              setPicked(null);
+            }}
+          >
+            <option value="-sequence">Mới nhất trước</option>
+            <option value="sequence">Cũ nhất trước</option>
+          </select>
+        </label>
       </div>
-      {s.attachmentIds.length ? (
-        <AttachmentViewer key={s.id} attachmentIds={s.attachmentIds} />
-      ) : (
-        <p className="muted">Lần nộp này không đính kèm báo cáo.</p>
+      {list.isError && (
+        <QueryErrorState error={list.error} retry={list.refetch} />
       )}
-    </Panel>
+      {query.isError ? (
+        <QueryErrorState error={query.error} retry={query.refetch} />
+      ) : !s ? (
+        list.isError ? null : list.data && !selected ? (
+          <AttachmentViewer attachmentIds={[]} />
+        ) : (
+          <PageSkeleton />
+        )
+      ) : (
+        <AttachmentViewer key={s.id} attachmentIds={s.attachmentIds} />
+      )}
+      {list.data && (
+        <Pagination
+          {...list.data.pagination}
+          onPage={(value) => {
+            setPage(value);
+            setPicked(null);
+          }}
+        />
+      )}
+    </section>
   );
 }

@@ -245,7 +245,6 @@ describe("S08–S14 projects and memberships", () => {
     const session = await signInMember();
     expect(session.projectAccess).toContainEqual({
       projectId: "p-main",
-      projectRole: "MANAGER",
       permissions: expect.arrayContaining(["TASKS_MANAGE", "TASKS_REVIEW"]),
     });
     const taskKey = key();

@@ -23,8 +23,7 @@ export function SubmissionDetailPage({
     submissionId,
     q.data && `Lần nộp ${q.data.sequence}`,
   );
-  if (q.isError)
-    return <QueryErrorState error={q.error} retry={() => void q.refetch()} />;
+  if (q.isError) return <QueryErrorState error={q.error} retry={q.refetch} />;
   if (task.isError) return <QueryErrorState error={task.error} />;
   if (!q.data || !task.data) return <PageSkeleton />;
   const s = q.data;
@@ -57,11 +56,7 @@ export function SubmissionDetailPage({
               </p>
             ))}
           </Panel>
-          {s.attachmentIds.length > 0 && (
-            <Panel title="Báo cáo đính kèm" className="report-preview">
-              <AttachmentViewer attachmentIds={s.attachmentIds} />
-            </Panel>
-          )}
+          <AttachmentViewer attachmentIds={s.attachmentIds} />
           {s.reviewedAt && (
             <Panel title="Kết quả nghiệm thu">
               <p className="person-meta">

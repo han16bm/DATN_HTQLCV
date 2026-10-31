@@ -1,8 +1,6 @@
 "use client";
 import { dateTime, hours, label, number } from "@/lib/format";
 import type { AuditDto } from "@/types/common";
-import * as Popover from "@radix-ui/react-popover";
-import { X } from "lucide-react";
 
 const fields: Record<string, string> = {
   title: "Tên công việc",
@@ -53,8 +51,7 @@ function valueText(value: Value | undefined, field: string): string {
 export function AuditChanges({
   before,
   after,
-  inline = false,
-}: Pick<AuditDto, "before" | "after"> & { inline?: boolean }) {
+}: Pick<AuditDto, "before" | "after">) {
   const previous =
     before && typeof before === "object" && !Array.isArray(before)
       ? before
@@ -68,46 +65,23 @@ export function AuditChanges({
     return (
       <span className="muted small">Không có thay đổi trường dữ liệu.</span>
     );
-  const content = (
-    <dl>
-      {keys.map((key) => (
-        <div key={key}>
-          <dt>{fields[key] ?? key}</dt>
-          <dd>
-            <span className="small muted">Trước</span>
-            {valueText(previous[key], key)}
-          </dd>
-          <dd>
-            <span className="small muted">Sau</span>
-            {valueText(next[key], key)}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-  if (inline) return <div className="audit-changes">{content}</div>;
   return (
-    <Popover.Root>
-      <Popover.Trigger className="link-button">
-        Xem thay đổi ({keys.length})
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          className="audit-changes audit-popover"
-          align="end"
-          sideOffset={8}
-          collisionPadding={16}
-          aria-label="Nội dung thay đổi"
-        >
-          <div className="panel-heading">
-            <h3>Nội dung thay đổi</h3>
-            <Popover.Close className="icon-button" aria-label="Đóng thay đổi">
-              <X size={16} />
-            </Popover.Close>
+    <div className="audit-changes">
+      <dl>
+        {keys.map((key) => (
+          <div key={key}>
+            <dt>{fields[key] ?? key}</dt>
+            <dd>
+              <span className="small muted">Trước</span>
+              {valueText(previous[key], key)}
+            </dd>
+            <dd>
+              <span className="small muted">Sau</span>
+              {valueText(next[key], key)}
+            </dd>
           </div>
-          {content}
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+        ))}
+      </dl>
+    </div>
   );
 }

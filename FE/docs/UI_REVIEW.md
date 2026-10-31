@@ -1,5 +1,41 @@
 # Các lỗi giao diện và quy tắc tránh lặp
 
+## Bỏ sót khung tài liệu ở tài khoản nhân viên — 31/10/2026
+
+Ảnh phản hồi cho thấy vùng trái còn trống vì TaskDetailPage vẫn bọc cả vùng tài liệu trong điều kiện TASKS_REVIEW/TASKS_MANAGE. Lượt trước chỉ kiểm tra khung trống bằng tài khoản quản lý, còn giữ test cũ yêu cầu ẩn với người nộp. Đã bỏ điều kiện hiển thị này: ai đọc được công việc thấy PDF đã nộp hoặc khung Chưa có báo cáo đính kèm. Backend vốn kiểm tra requireTask cho đọc lần nộp/tệp, không sửa policy/API; nghiệm thu vẫn giữ quyền riêng.
+
+Ca hồi quy nay kiểm tra người nộp Huy, nhân viên Lan và quản lý Minh: tài liệu hiện khi có, khung hiện khi chưa có lần nộp. Người ngoài dự án bị từ chối ở công việc và không phát sinh request tài liệu/tệp. Các số liệu kiểm thử lượt trước bên dưới là kết quả ở thời điểm đó, không chứng minh đã bao phủ tài khoản nhân viên.
+
+Kiểm tra hiện tại: **228/228 test ở 13 file đạt**, lint/typecheck/build/git diff --check đạt. Phạm vi tài liệu vẫn theo công việc được đọc: Lan không đọc được t-4 của Huy, nhưng thấy khung trống ở t-2 của mình; không mở rộng policy mock. Edge chưa kết nối nên các kết quả mới là kiểm tra source/HTTP/JSDOM.
+
+## Giữ khung PDF trống và phản hồi thử tải lại — 31/10/2026
+
+- Không dùng latestSubmissionId/attachmentIds.length để ẩn vùng tài liệu trong phạm vi đã được phép xem. TaskDetailPage giữ AttachmentViewer trống trước lần nộp đầu tiên; TaskReportPreview/SubmissionDetailPage giữ cùng Panel khi lần nộp không đính kèm tệp. Chưa có báo cáo đính kèm nằm trong khung nền nhẹ, không thay lỗi 403/404/response sai bằng trạng thái trống. Không fetch file hoặc lần nộp với ID trống.
+- QueryErrorState trước đây gọi refetch nhưng bỏ Promise và không có trạng thái chờ; nút mặc định cũng có thể submit form cha. Tái dùng ActionButton, nhận Promise/hiện Đang tải lại…/spinner/disabled và type=button. Các màn truyền refetch trực tiếp; vẫn gửi lại HTTP thật, giữ URL/draft và lỗi nếu response tiếp tục không hợp lệ.
+- Kiểm tra: 223/223 test ở 13 file đạt, gồm 100 test UI ở hai file; typecheck, lint, build và git diff --check đạt. Các ca mới bao phủ chưa có lần nộp/tệp, khung đối chiếu, thu hồi blob khi đổi sang lần không có tệp; retry sau response sai gửi HTTP lần hai và mở PDF/dữ liệu khi response phục hồi; retry trong form không submit. Edge chưa kết nối nên chưa QA trực quan lượt này.
+
+## Thu gọn control, bảng và tài liệu — phản hồi 31/10/2026
+
+- Control thông thường giảm 36 → 30px; filter giảm khoảng cách nhãn/ô và khoảng dưới thanh lọc. Giữ kích thước riêng cho đăng nhập/hồ sơ/vùng chạm. Focus filter bỏ viền/ring xanh, keyboard còn outline trung tính; filter chọn không có viền xanh.
+- Select native đổi mũi tên bằng [:open](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Selectors/:open); AvatarMenu/MultiSelect dùng aria-expanded. Không dùng focus giả trạng thái mở vì picker đóng vẫn có thể giữ focus.
+- Header/footer bảng 32px, hàng chuẩn 48px/padding dọc 4px, trạng thái compact; không gạch chân nút/liên kết ở cột Hành động khi hover. Tên việc một dòng tối đa 30ch, hover hiện title đầy đủ; giữ chuỗi gốc và cân lại tỷ lệ cột. Nội dung khác dài hợp lệ không bị cắt mất dữ liệu.
+- Priority thay PriorityIcon, giữ chữ và màu mức độ, không icon. Board bố trí ưu tiên/hạn hai hàng gọn để không tràn sau khi bỏ icon.
+- Lịch sử dự án/công việc cùng drawer 420px, padding 16px, slide mở/đóng 180/140ms; giữ dữ liệu khi slide đóng, Escape/đóng trả focus. Bỏ nhánh split/Popover và CSS thừa. Reduced motion vẫn áp dụng.
+- PdfPreview có heading Báo cáo đính kèm với actions ngoài khung; tên tệp/dung lượng một dòng gọn, picker nhiều tệp thay tên. Bỏ card bọc PDF ở TaskReportPreview/SubmissionDetailPage; giữ HTTP, thứ tự chọn lần nộp, tải tệp và vòng đời blob.
+- Nội dung công việc/tiêu chí giữ bên trái, cùng card; mô tả có viền nhấn nhẹ, tiêu chí có nền nhẹ/đường chia, padding gọn. Không thêm trường hay biến nội dung thành dữ liệu mẫu.
+
+Kiểm tra hành vi: 217/217 test ở 13 file đạt; có ca lịch sử dự án mở/đóng bằng cùng drawer và trả focus, PDF vẫn chọn được tệp khác khi tệp hiện tại lỗi/không tồn tại. Typecheck, lint, build và git diff --check đạt. Edge native pipe/browser host vẫn chưa kết nối nên chưa xác nhận trực quan kích thước, ellipsis, mũi tên native và chuyển động của bản này.
+
+## Thiết kế lại toàn bộ FE — 31/10/2026
+
+Quy tắc hiện hành, danh sách 43 route/12 feature, thay đổi component và bằng chứng QA nằm ở [UI_REDESIGN.md](UI_REDESIGN.md). Yêu cầu mới thay UI của các lượt cũ bên dưới: tab ngang thay dropdown SectionNav; mô tả/tiêu chí chung card và ngữ cảnh/giờ công cột bên; Chi tiết lịch sử mở drawer, không giữ panel rỗng; soạn báo cáo chia nội dung/nguồn và hai nút ở đầu form, không sticky phủ field; chỉ số phụ là danh sách hai cột khi rộng, một cột khi hẹp. Typography 24/17/15/14/12–13px, chữ trung tính, control 36px.
+
+Giữ đường đi/dirty/back/scope, quyền, version/412, dữ liệu snapshot và nhãn thiếu/cũ/mô phỏng. Không thêm route/endpoint/action nghiệp vụ. Các ghi chép kiểm tra browser không kết nối được ở các lượt trước không đại diện cho lượt QA native Edge hiện tại.
+
+## Tài liệu nhiều lần nộp và dữ liệu người — 31/10/2026
+
+TaskReportPreview có chọn lần nộp, sắp xếp mới/cũ và phân trang thật 5 lần/trang. Chỉ hiện lần/thời gian, mở một tệp tại một thời điểm; lỗi tải danh sách có thử lại. Không lấy 100 bản ghi rồi ghi tổng bằng items.length. Đổi lựa chọn thu hồi blob cũ; việc nghiệm thu vẫn mở lần mới nhất theo Task. PdfPreview mở ngay tệp được chọn, không giữ prop defaultOpen dự phòng. AlertDetail dùng tên/avatar dự phòng từ handler (PersonRef), không hiển thị ID người khác hoặc thay bằng tên người đang đăng nhập.
+
 ## Điều chỉnh theo ảnh và Jira — 30/10/2026
 
 Đây là quy tắc UI hiện hành, thay các ghi chép tab/chip/inline history cũ bên dưới. Tham khảo [điều hướng Jira](https://support.atlassian.com/jira-software-cloud/docs/what-is-the-new-navigation-in-jira/), [bảng dữ liệu Atlassian](https://atlassian.design/components/dynamic-table/) và [khoảng cách Atlassian](https://atlassian.design/foundations/spacing/); chỉ áp dụng vào các chức năng hiện có.

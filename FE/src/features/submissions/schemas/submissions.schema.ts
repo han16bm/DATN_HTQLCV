@@ -77,7 +77,10 @@ export const submissionSchema = z
   })
   .superRefine(checkProjection);
 export const submissionQuerySchema = z
-  .object({ ...listQuerySchema.shape })
+  .object({
+    ...listQuerySchema.shape,
+    sort: z.enum(["sequence", "-sequence"]).default("-sequence"),
+  })
   .strict();
 export const submissionResultSchema = z.object({
   submission: submissionSchema,

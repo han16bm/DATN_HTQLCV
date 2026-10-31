@@ -1,4 +1,7 @@
 SITE MAP – ĐIỀU HƯỚNG, ROUTE VÀ QUYỀN
+KHUNG TÀI LIỆU 31/10/2026: Người được đọc công việc thấy vùng Báo cáo đính kèm ngay trong Chi tiết, gồm cả nhân viên/người nộp. Có tài liệu thì xem PDF/chọn lần nộp; chưa có thì giữ khung trống. Không dùng quyền quản lý/nghiệm thu để ẩn khung. Quyền đọc API và quyền nghiệm thu riêng giữ nguyên, không thêm route.
+HIỆN HÀNH 31/10/2026: Không thay URL hoặc thêm/xóa route trong lượt thiết kế lại. 43 page.tsx thực tế được liệt kê tại ../../docs/UI_REDESIGN.md. Dự án/công việc/phân tích dùng tab ngang thay dropdown, href/query/scope giữ nguyên. Công việc: Chi tiết → Giờ công → Kết quả → Lịch sử; chi tiết lần nộp thuộc tab Kết quả. Nút Chi tiết lịch sử mở drawer, không route hoặc panel rỗng. Báo cáo nháp/đã gửi giữ route, đổi bố cục viết/đọc. Admin vẫn qua avatar và AdminShell riêng. Các mô tả trình bày cũ bên dưới là lịch sử khi khác với cập nhật này.
+
 Tài liệu 0.4 · Contract đề xuất 0.3.0 · 24/10/2026
 43 màn/biểu mẫu/hộp thoại được đặc tả. Chỉ 24 màn chính có ảnh; bỏ ảnh không có nghĩa bỏ chức năng.
 

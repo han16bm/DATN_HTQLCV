@@ -2,7 +2,7 @@ import { analysisRefSchema } from "@/lib/validation/common.schema";
 import { z } from "zod";
 import { analysisMetaSchema } from "./analysis-meta.schema";
 import { measureSchema } from "./analysis-snapshot.schema";
-export const highlightSchema = z.object({
+const highlightSchema = z.object({
   title: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
   description: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(2000),
   severity: z.enum(["INFO", "MEDIUM", "HIGH"]),

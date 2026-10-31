@@ -10,12 +10,11 @@ export function TaskHistoryPage({ taskId }: { taskId: string }) {
   const filters = useUrlFilters();
   const query = useListTaskHistoryQuery(taskId, { page: filters.page });
   return query.isError ? (
-    <QueryErrorState error={query.error} retry={() => void query.refetch()} />
+    <QueryErrorState error={query.error} retry={query.refetch} />
   ) : !query.data ? (
     <PageSkeleton variant="table" />
   ) : (
     <HistoryTable
-      split
       title="Lịch sử công việc"
       pagination={{
         ...query.data.pagination,

@@ -1,7 +1,11 @@
 {
   "clock": "2026-10-23T10:05:00.000Z",
+  "taskPolicy": {
+    "dueInDays": 6
+  },
   "analysisPolicy": {
-    "retentionDays": 7
+    "retentionDays": 7,
+    "ruleVersion": "trial-rules-v1"
   },
   "password": "Mock@12345",
   "permissionPolicy": {
@@ -31,8 +35,6 @@
     },
     "groups": [
       {
-        "id": "pg-analytics",
-        "name": "Xem phân tích toàn hệ thống",
         "features": ["ANALYTICS_VIEW"],
         "memberIds": []
       }

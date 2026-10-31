@@ -81,7 +81,7 @@ export const navigation: Record<Area, NavItem[]> = {
   ],
 };
 
-export const areaOf = (pathname: string): Area =>
+const areaOf = (pathname: string): Area =>
   /^\/admin(?:\/|$)/.test(pathname) ? "admin" : "workspace";
 
 // Các trang danh sách ghi nhớ URL gần nhất (bộ lọc, chế độ xem, trang) để các
@@ -115,7 +115,7 @@ export function safeNext(value: string | null) {
     : "/workspace";
 }
 
-export type Crumb = { label: string; href?: string };
+type Crumb = { label: string; href?: string };
 export type Trail = { crumbs: Crumb[]; back: string };
 type Entity = { label: string; parentId?: string };
 export type TrailContext = {

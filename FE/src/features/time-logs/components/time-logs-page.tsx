@@ -30,10 +30,7 @@ export function TimeLogsPage({ taskId }: { taskId: string }) {
         description={`Tổng giờ công hợp lệ: ${number(task.data?.actualMinutes, "phút")}. Nhật ký đã loại vẫn được giữ để tra cứu.`}
       />
       {query.isError ? (
-        <QueryErrorState
-          error={query.error}
-          retry={() => void query.refetch()}
-        />
+        <QueryErrorState error={query.error} retry={query.refetch} />
       ) : !query.data ? (
         <PageSkeleton variant="table" />
       ) : (

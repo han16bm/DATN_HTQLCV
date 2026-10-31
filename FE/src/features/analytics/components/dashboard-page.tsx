@@ -55,10 +55,7 @@ export function DashboardPage() {
   return (
     <AnalyticsFrame scope={scope} title="Bảng tổng quan">
       {query.isError ? (
-        <QueryErrorState
-          error={query.error}
-          retry={() => void query.refetch()}
-        />
+        <QueryErrorState error={query.error} retry={query.refetch} />
       ) : !query.data ? (
         <PageSkeleton variant="cards" />
       ) : (
@@ -99,7 +96,7 @@ export function DashboardPage() {
                     <CartesianGrid horizontal={false} stroke="#e0e5eb" />
                     <XAxis
                       type="number"
-                      fontSize={11}
+                      fontSize={12}
                       allowDecimals={false}
                       axisLine={false}
                       tickLine={false}
@@ -152,7 +149,7 @@ export function DashboardPage() {
                       <XAxis
                         dataKey="date"
                         tickFormatter={(d) => String(d).slice(5)}
-                        fontSize={11}
+                        fontSize={12}
                       />
                       <YAxis allowDecimals={false} />
                       <Tooltip />
@@ -205,7 +202,7 @@ export function DashboardPage() {
               <AnalysisLink key="analysis" value={p.analysisRef} />,
             ])}
           />
-          <div className="analytics-summary section-group">
+          <div className="analytics-summary">
             <Panel className="analytics-effort" title="Giờ công và ước lượng">
               <dl>
                 <div>
@@ -253,14 +250,33 @@ export function DashboardPage() {
                 có lịch yêu cầu nộp báo cáo nên chưa xác định được tỷ lệ nộp đủ.
               </p>
             </Panel>
-            <Panel title="Các chỉ số khác" className="analytics-metrics">
-              <div className="metric-grid">
+            <Panel title="Chỉ số bổ sung" className="analytics-metrics">
+              <dl className="metric-list">
                 {query.data.metrics
                   .filter((m) => !["K03", "K04", "K06", "K12"].includes(m.code))
                   .map((m) => (
-                    <MetricCard key={m.code} metric={m} />
+                    <div key={m.code}>
+                      <dt>
+                        {m.label}
+                        <span className="small muted">
+                          {m.basis === "CURRENT" ? "Hiện tại" : "Trong kỳ"}
+                          {m.denominator !== null
+                            ? ` · Tổng ${number(m.denominator)}`
+                            : ""}
+                        </span>
+                      </dt>
+                      <dd className="metric-value">
+                        {metricValue(m.value, m.unit)}
+                      </dd>
+                      <dd>
+                        <AnalysisLink
+                          value={m.analysisRef}
+                          label={`Xem chỉ số ${m.label}`}
+                        />
+                      </dd>
+                    </div>
                   ))}
-              </div>
+              </dl>
             </Panel>
           </div>
         </>

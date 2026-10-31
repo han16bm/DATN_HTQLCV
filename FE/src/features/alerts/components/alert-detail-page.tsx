@@ -9,6 +9,7 @@ import {
   Panel,
 } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { UserBadge } from "@/components/ui/user-badge";
 import { AnalysisLink } from "@/features/analytics/components/analysis-links";
 import { useSession } from "@/lib/auth/session-context";
 import { dateTime, label } from "@/lib/format";
@@ -24,8 +25,7 @@ export function AlertDetailPage({ alertId }: { alertId: string }) {
     alertId,
     q.data && (q.data.taskTitle ?? label(q.data.type)),
   );
-  if (q.isError)
-    return <QueryErrorState error={q.error} retry={() => void q.refetch()} />;
+  if (q.isError) return <QueryErrorState error={q.error} retry={q.refetch} />;
   if (!q.data) return <PageSkeleton />;
   const a = q.data;
   return (
@@ -70,7 +70,7 @@ export function AlertDetailPage({ alertId }: { alertId: string }) {
         </div>
         <aside className="issue-side" aria-label="Xử lý cảnh báo">
           <Panel title="Thông tin xử lý">
-            <dl>
+            <dl className="record-details">
               <div>
                 <dt>Tiếp nhận</dt>
                 <dd>{dateTime(a.createdAt)}</dd>
@@ -78,9 +78,11 @@ export function AlertDetailPage({ alertId }: { alertId: string }) {
               <div>
                 <dt>Người xử lý gần nhất</dt>
                 <dd>
-                  {a.handledBy === session?.user.id
-                    ? session.user.displayName
-                    : (a.handledBy ?? "Chưa có")}
+                  {a.handler ? (
+                    <UserBadge name={a.handler.displayName} />
+                  ) : (
+                    "Chưa có"
+                  )}
                 </dd>
               </div>
               <div>

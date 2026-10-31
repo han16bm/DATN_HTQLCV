@@ -8,7 +8,7 @@ export const evidenceSchema = z.object({
   observedAt: z.iso.datetime().nullable(),
   action: domainActionSchema.nullable(),
 });
-export const findingSchema = z.object({
+const findingSchema = z.object({
   id: idSchema,
   title: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
   text: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(3000),

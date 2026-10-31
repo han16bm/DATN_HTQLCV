@@ -39,16 +39,9 @@ function EditorLoader({ projectId }: { projectId?: string }) {
     pageSize: 100,
   });
   if (projectId && query.isError)
-    return (
-      <QueryErrorState error={query.error} retry={() => void query.refetch()} />
-    );
+    return <QueryErrorState error={query.error} retry={query.refetch} />;
   if (projectId && members.isError)
-    return (
-      <QueryErrorState
-        error={members.error}
-        retry={() => void members.refetch()}
-      />
-    );
+    return <QueryErrorState error={members.error} retry={members.refetch} />;
   if (projectId && (!query.data || !members.data))
     return <PageSkeleton variant="form" />;
   return (

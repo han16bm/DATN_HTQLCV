@@ -23,11 +23,7 @@ const typeLabel: Record<string, string> = {
 };
 
 export function AnalysisDetailPage({ analysisId }: { analysisId: string }) {
-  return (
-    <>
-      <AnalysisDetail key={analysisId} analysisId={analysisId} />
-    </>
-  );
+  return <AnalysisDetail key={analysisId} analysisId={analysisId} />;
 }
 
 function AnalysisDetail({ analysisId }: { analysisId: string }) {
@@ -66,9 +62,7 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
     create,
   ]);
   if (query.isError)
-    return (
-      <QueryErrorState error={query.error} retry={() => void query.refetch()} />
-    );
+    return <QueryErrorState error={query.error} retry={query.refetch} />;
   if (!detail) return <PageSkeleton />;
   const { snapshot, explanation } = detail;
   return (
@@ -120,16 +114,25 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
       <div className="analysis-columns">
         <AnalysisSources snapshot={snapshot} />
         <div className="analysis-ai">
-          <Panel title="AI phân tích">
-            <p className="metadata">
-              <Badge value={explanation.status} />
-            </p>
+          <Panel
+            title="Nhận định và đề xuất AI"
+            actions={
+              <div className="analysis-state">
+                {explanation.lastSuccess && (
+                  <span className="small muted">
+                    {explanation.lastSuccess.modelDisplayName}
+                  </span>
+                )}
+                <Badge value={explanation.status} />
+              </div>
+            }
+          >
             {startError && (
               <QueryErrorState
                 error={startError}
                 retry={() => {
                   setStartError(null);
-                  void create
+                  return create
                     .mutateAsync({
                       analysisId,
                       generationMode: "REUSE_OR_CREATE",

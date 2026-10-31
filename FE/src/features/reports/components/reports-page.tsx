@@ -131,19 +131,13 @@ export function ReportsPage() {
         </label>
       </section>
       {projects.isError && (
-        <QueryErrorState
-          error={projects.error}
-          retry={() => void projects.refetch()}
-        />
+        <QueryErrorState error={projects.error} retry={projects.refetch} />
       )}
       {filterAuthors && members.isError && (
-        <QueryErrorState
-          error={members.error}
-          retry={() => void members.refetch()}
-        />
+        <QueryErrorState error={members.error} retry={members.refetch} />
       )}
       {q.isError ? (
-        <QueryErrorState error={q.error} retry={() => void q.refetch()} />
+        <QueryErrorState error={q.error} retry={q.refetch} />
       ) : !q.data ? (
         <PageSkeleton variant="table" />
       ) : (

@@ -31,7 +31,6 @@ function session(
 }
 const leader = (projectId: string): SessionDto["projectAccess"][number] => ({
   projectId,
-  projectRole: "OWNER",
   permissions: [
     "PROJECT_MANAGE",
     "TASKS_MANAGE",
@@ -85,10 +84,7 @@ describe("effective permissions by scope", () => {
     const relabelled = session([], [leader("p-1")], "ADMIN");
     expect(canAdminister(relabelled)).toBe(false);
     expect(canVisit(relabelled, "/admin/users")).toBe(false);
-    const employee = session(
-      [],
-      [{ projectId: "p-1", projectRole: "OWNER", permissions: [] }],
-    );
+    const employee = session([], [{ projectId: "p-1", permissions: [] }]);
     expect(hasPermission(employee, "PROJECT_MANAGE", "p-1")).toBe(false);
     expect(canVisit(employee, "/projects/p-1/edit")).toBe(false);
   });
@@ -98,10 +94,7 @@ describe("route access", () => {
   const admin = session(["USERS_MANAGE", "ORGANIZATION_MANAGE"], [], "ADMIN");
   const accounts = session(["USERS_MANAGE"], [], "ADMIN");
   const leaderSession = session(["PROJECT_CREATE"], [leader("p-1")], "MANAGER");
-  const member = session(
-    [],
-    [{ projectId: "p-1", projectRole: "MEMBER", permissions: [] }],
-  );
+  const member = session([], [{ projectId: "p-1", permissions: [] }]);
 
   it("opens administration routes by their own permission", () => {
     expect(canVisit(admin, "/admin")).toBe(true);

@@ -14,7 +14,7 @@ export const riskItemSchema = z.object({
   quality: qualitySchema,
   analysisRef: analysisRefSchema,
 });
-export const projectRiskSummarySchema = z.object({
+const projectRiskSummarySchema = z.object({
   projectName: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
   riskLevel: z.enum(["LOW", "MEDIUM", "HIGH", "UNKNOWN"]),
   overdueCount: z.number().int().safe().min(0),

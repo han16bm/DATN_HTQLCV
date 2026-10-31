@@ -25,7 +25,7 @@ export function ReportNumbers({
         </p>
       }
       actions
-      widths={[44, 24, 17, 15]}
+      widths={[38, 24, 20, 18]}
       headers={[
         frozen ? "Công việc tại lúc gửi" : "Công việc liên quan",
         frozen ? "Trạng thái tại lúc gửi" : "Trạng thái hiện tại",
@@ -33,7 +33,9 @@ export function ReportNumbers({
         "Hành động",
       ]}
       rows={value.items.map((t) => [
-        t.title,
+        <span key="title" className="task-name" title={t.title}>
+          {t.title}
+        </span>,
         <Badge key="status" value={t.status} />,
         String(t.minutes),
         <DetailLink

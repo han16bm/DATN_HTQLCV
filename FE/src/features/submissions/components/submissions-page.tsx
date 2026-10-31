@@ -10,8 +10,7 @@ import { useListSubmissionsQuery } from "../hooks/use-submissions-queries";
 export function SubmissionsPage({ taskId }: { taskId: string }) {
   const f = useUrlFilters();
   const q = useListSubmissionsQuery(taskId, { page: f.page });
-  if (q.isError)
-    return <QueryErrorState error={q.error} retry={() => void q.refetch()} />;
+  if (q.isError) return <QueryErrorState error={q.error} retry={q.refetch} />;
   if (!q.data) return <PageSkeleton variant="table" />;
   return (
     <DataTable

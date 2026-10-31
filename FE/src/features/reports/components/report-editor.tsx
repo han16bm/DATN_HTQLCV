@@ -3,15 +3,16 @@
 import { Form } from "@/components/forms/form";
 import { FormMultiSelect, FormTextarea } from "@/components/forms/form-field";
 import { ActionButton } from "@/components/ui/action-button";
-import { PageSkeleton } from "@/components/ui/loading";
+import { PageSkeleton, Spinner } from "@/components/ui/loading";
 import { Panel } from "@/components/ui/page";
+import { UserBadge } from "@/components/ui/user-badge";
 import { QueryErrorState } from "@/components/ui/query-error-state";
-import { changedFields } from "@/lib/format";
+import { changedFields, dateTime, hours, label } from "@/lib/format";
 import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
 import { validationMessage } from "@/lib/forms/validation-message";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -26,9 +27,11 @@ import { type ReportDto } from "../types/reports.types";
 import { ReportNumbers } from "./report-numbers";
 export function ReportEditor({
   report,
+  projectName,
   reload,
 }: {
   report: ReportDto;
+  projectName: string;
   reload: () => Promise<{
     data?: ReportDto;
   }>;
@@ -43,7 +46,7 @@ export function ReportEditor({
   const submit = useSubmitReportMutation();
   const snapshot = useEditSnapshot(report);
   const router = useRouter();
-  const [send, setSend] = useState(false);
+  const send = useRef(false);
   const schema = updateReportSchema
     .extend({
       zeroTimeReason: z
@@ -53,7 +56,7 @@ export function ReportEditor({
         .transform((value) => value || null),
     })
     .superRefine((v, ctx) => {
-      if (!send) return;
+      if (!send.current) return;
       if (!v.achievements?.trim())
         ctx.addIssue({
           code: "custom",
@@ -89,29 +92,8 @@ export function ReportEditor({
   });
   const { errors } = form.formState;
   return (
-    <>
-      {preview.isError ? (
-        <QueryErrorState error={preview.error} />
-      ) : preview.data ? (
-        <ReportNumbers
-          value={preview.data}
-          actions={
-            <ActionButton
-              onAction={async () => {
-                await refresh.mutateAsync({
-                  reportId: report.id,
-                  version: snapshot.base.version,
-                });
-              }}
-            >
-              Làm mới số liệu
-            </ActionButton>
-          }
-        />
-      ) : (
-        <PageSkeleton variant="form" />
-      )}
-      <Panel title="Nội dung báo cáo">
+    <div className="report-layout">
+      <Panel title="Nội dung báo cáo" className="report-editor">
         <Form
           form={form}
           compareFields={[
@@ -129,7 +111,32 @@ export function ReportEditor({
             { name: "nextPlan", label: "Kế hoạch tiếp theo" },
             { name: "zeroTimeReason", label: "Lý do nếu không có giờ công" },
           ]}
-          submitLabel={send ? "Lưu và gửi báo cáo" : "Lưu nháp"}
+          submitActions={
+            <>
+              <button
+                type="submit"
+                className="pending-button"
+                onClick={() => {
+                  send.current = false;
+                }}
+              >
+                {form.formState.isSubmitting && !send.current && <Spinner />}
+                Lưu nháp
+              </button>
+              <button
+                type="submit"
+                disabled={!preview.data}
+                className="primary pending-button"
+                aria-busy={form.formState.isSubmitting}
+                onClick={() => {
+                  send.current = true;
+                }}
+              >
+                {form.formState.isSubmitting && send.current && <Spinner />}
+                Gửi báo cáo
+              </button>
+            </>
+          }
           onConflictReload={() => snapshot.load(reload)}
           onConflictAccept={snapshot.accept}
           onSubmit={async (values) => {
@@ -149,7 +156,7 @@ export function ReportEditor({
               });
               snapshot.saved(saved);
             }
-            if (send) {
+            if (send.current) {
               await submit.mutateAsync({
                 reportId: report.id,
                 payload: values.zeroTimeReason
@@ -182,36 +189,101 @@ export function ReportEditor({
           />
           <FormTextarea
             label="Kết quả thực hiện"
-            required={send}
+            required
+            hint="Bắt buộc khi gửi báo cáo."
             {...form.register("achievements")}
             error={errors.achievements}
           />
           <FormTextarea
             label="Khó khăn"
+            width="medium"
             {...form.register("blockers")}
             error={errors.blockers}
           />
           <FormTextarea
             label="Kế hoạch tiếp theo"
-            required={send}
+            required
+            width="medium"
+            hint="Bắt buộc khi gửi báo cáo."
             {...form.register("nextPlan")}
             error={errors.nextPlan}
           />
-          <FormTextarea
-            label="Lý do nếu không có giờ công"
-            {...form.register("zeroTimeReason")}
-            error={errors.zeroTimeReason}
-          />
-          <label className="checkbox-label wide">
-            <input
-              type="checkbox"
-              checked={send}
-              onChange={(e) => setSend(e.target.checked)}
+          {(preview.data?.totalMinutes === 0 || report.zeroTimeReason) && (
+            <FormTextarea
+              label="Lý do nếu không có giờ công"
+              {...form.register("zeroTimeReason")}
+              error={errors.zeroTimeReason}
             />
-            Gửi và chốt báo cáo sau khi lưu
-          </label>
+          )}
+          {preview.data && (
+            <details className="wide report-source-details">
+              <summary>Công việc và giờ công trong kỳ</summary>
+              <ReportNumbers value={preview.data} />
+            </details>
+          )}
         </Form>
       </Panel>
-    </>
+      <aside className="report-context" aria-label="Thông tin kỳ báo cáo">
+        <Panel title="Kỳ báo cáo">
+          <dl className="record-details">
+            <div>
+              <dt>Dự án</dt>
+              <dd>{projectName}</dd>
+            </div>
+            <div>
+              <dt>Người lập</dt>
+              <dd>
+                <UserBadge name={report.author.displayName} />
+              </dd>
+            </div>
+            <div>
+              <dt>Loại báo cáo</dt>
+              <dd>{label(report.periodType)}</dd>
+            </div>
+            <div>
+              <dt>Bắt đầu kỳ</dt>
+              <dd>{report.periodStart.split("-").reverse().join("/")}</dd>
+            </div>
+          </dl>
+        </Panel>
+        <Panel title="Số liệu nguồn">
+          {preview.isError ? (
+            <QueryErrorState error={preview.error} retry={preview.refetch} />
+          ) : !preview.data ? (
+            <PageSkeleton variant="cards" />
+          ) : (
+            <>
+              <dl className="record-details">
+                <div>
+                  <dt>Giờ công</dt>
+                  <dd>{hours(preview.data.totalMinutes)}</dd>
+                </div>
+                <div>
+                  <dt>Công việc</dt>
+                  <dd>{preview.data.items.length} việc</dd>
+                </div>
+                <div>
+                  <dt>Cập nhật</dt>
+                  <dd>{dateTime(preview.data.dataAsOf)}</dd>
+                </div>
+              </dl>
+              {preview.data.partialPeriod && (
+                <p className="small muted">Kỳ báo cáo chưa kết thúc.</p>
+              )}
+              <ActionButton
+                onAction={async () => {
+                  await refresh.mutateAsync({
+                    reportId: report.id,
+                    version: snapshot.base.version,
+                  });
+                }}
+              >
+                Làm mới số liệu
+              </ActionButton>
+            </>
+          )}
+        </Panel>
+      </aside>
+    </div>
   );
 }

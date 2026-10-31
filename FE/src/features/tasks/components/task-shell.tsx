@@ -38,9 +38,7 @@ export function TaskShell({
     query.data?.project.name,
   );
   if (query.isError)
-    return (
-      <QueryErrorState error={query.error} retry={() => void query.refetch()} />
-    );
+    return <QueryErrorState error={query.error} retry={query.refetch} />;
   if (!query.data) return <PageSkeleton />;
   const task = query.data;
   const root = `/tasks/${taskId}`;
@@ -74,7 +72,7 @@ export function TaskShell({
         },
         {
           href: `${root}/submissions`,
-          label: "Các lần nộp",
+          label: "Kết quả",
           active: path.startsWith(`${root}/submissions`),
         },
         {
@@ -90,126 +88,130 @@ export function TaskShell({
   );
   return (
     <>
-      <PageHeader
-        title={task.title}
-        navigation={navigation}
-        status={
-          <>
-            <StatusField value={task.status} />
-            <StatusField label="Ưu tiên" value={task.priority} />
-            {task.isOverdue && <StatusField label="Tiến độ" value="OVERDUE" />}
-          </>
-        }
-        actions={
-          <>
-            {review && (
-              <button className="primary" onClick={() => dialog.open("review")}>
-                Quyết định nghiệm thu
-              </button>
-            )}
-            {working && (
-              <>
+      <div className="task-header">
+        <PageHeader
+          title={task.title}
+          navigation={navigation}
+          status={
+            <>
+              <StatusField value={task.status} />
+              <StatusField label="Ưu tiên" value={task.priority} />
+              {task.isOverdue && (
+                <StatusField label="Tiến độ" value="OVERDUE" />
+              )}
+            </>
+          }
+          actions={
+            <>
+              {review && (
                 <button
                   className="primary"
-                  onClick={() => dialog.open("submit")}
+                  onClick={() => dialog.open("review")}
                 >
-                  Nộp kết quả
+                  Quyết định nghiệm thu
                 </button>
-                <button onClick={() => dialog.open("time-log")}>
-                  Ghi giờ công
-                </button>
-              </>
-            )}
-            {start && (
-              <button
-                className="primary"
-                onClick={() => dialog.open("execution")}
-              >
-                Bắt đầu
-              </button>
-            )}
-            {assign && (
-              <button
-                className="primary"
-                onClick={() => dialog.open("assignment")}
-              >
-                Giao việc
-              </button>
-            )}
-            {(working || change || stop) && (
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger asChild>
+              )}
+              {working && (
+                <>
                   <button
-                    type="button"
-                    className="icon-button bordered"
-                    aria-label="Thao tác công việc"
+                    className="primary"
+                    onClick={() => dialog.open("submit")}
                   >
-                    <Ellipsis size={18} aria-hidden="true" />
+                    Nộp kết quả
                   </button>
-                </DropdownMenu.Trigger>
-                <DropdownMenu.Portal>
-                  <DropdownMenu.Content
-                    className="account-menu"
-                    align="end"
-                    sideOffset={8}
-                    collisionPadding={12}
-                  >
-                    {working && (
-                      <DropdownMenu.Item
-                        className="account-menu-item"
-                        onSelect={() => dialog.open("attachment")}
-                      >
-                        Tải minh chứng
-                      </DropdownMenu.Item>
-                    )}
-                    {change && (
-                      <>
-                        {path !== `${root}/edit` && (
-                          <DropdownMenu.Item asChild>
-                            <Link
-                              className="account-menu-item"
-                              href={`${root}/edit`}
-                            >
-                              Điều chỉnh
-                            </Link>
-                          </DropdownMenu.Item>
-                        )}
-                        {!assign && (
-                          <DropdownMenu.Item
-                            className="account-menu-item"
-                            onSelect={() => dialog.open("assignment")}
-                          >
-                            Bàn giao
-                          </DropdownMenu.Item>
-                        )}
-                      </>
-                    )}
-                    {stop && (
-                      <>
-                        {(working || change) && (
-                          <DropdownMenu.Separator className="account-menu-separator" />
-                        )}
+                  <button onClick={() => dialog.open("time-log")}>
+                    Ghi giờ công
+                  </button>
+                </>
+              )}
+              {start && (
+                <button
+                  className="primary"
+                  onClick={() => dialog.open("execution")}
+                >
+                  Bắt đầu
+                </button>
+              )}
+              {assign && (
+                <button
+                  className="primary"
+                  onClick={() => dialog.open("assignment")}
+                >
+                  Giao việc
+                </button>
+              )}
+              {(working || change || stop) && (
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger asChild>
+                    <button
+                      type="button"
+                      className="icon-button bordered"
+                      aria-label="Thao tác công việc"
+                    >
+                      <Ellipsis size={18} aria-hidden="true" />
+                    </button>
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Portal>
+                    <DropdownMenu.Content
+                      className="account-menu"
+                      align="end"
+                      sideOffset={8}
+                      collisionPadding={12}
+                    >
+                      {working && (
                         <DropdownMenu.Item
-                          className="account-menu-item danger"
-                          onSelect={() => dialog.open("execution")}
+                          className="account-menu-item"
+                          onSelect={() => dialog.open("attachment")}
                         >
-                          {working ? "Tạm dừng / hủy" : "Hủy công việc"}
+                          Tải minh chứng
                         </DropdownMenu.Item>
-                      </>
-                    )}
-                  </DropdownMenu.Content>
-                </DropdownMenu.Portal>
-              </DropdownMenu.Root>
-            )}
-          </>
-        }
-      />
+                      )}
+                      {change && (
+                        <>
+                          {path !== `${root}/edit` && (
+                            <DropdownMenu.Item asChild>
+                              <Link
+                                className="account-menu-item"
+                                href={`${root}/edit`}
+                              >
+                                Điều chỉnh
+                              </Link>
+                            </DropdownMenu.Item>
+                          )}
+                          {!assign && (
+                            <DropdownMenu.Item
+                              className="account-menu-item"
+                              onSelect={() => dialog.open("assignment")}
+                            >
+                              Bàn giao
+                            </DropdownMenu.Item>
+                          )}
+                        </>
+                      )}
+                      {stop && (
+                        <>
+                          {(working || change) && (
+                            <DropdownMenu.Separator className="account-menu-separator" />
+                          )}
+                          <DropdownMenu.Item
+                            className="account-menu-item danger"
+                            onSelect={() => dialog.open("execution")}
+                          >
+                            {working ? "Tạm dừng / hủy" : "Hủy công việc"}
+                          </DropdownMenu.Item>
+                        </>
+                      )}
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Portal>
+                </DropdownMenu.Root>
+              )}
+            </>
+          }
+        />
+      </div>
 
       {project.isError && (
-        <QueryErrorState
-          error={project.error}
-          retry={() => void project.refetch()}
-        />
+        <QueryErrorState error={project.error} retry={project.refetch} />
       )}
       {children}
       {review && <ReviewDialog task={task} />}

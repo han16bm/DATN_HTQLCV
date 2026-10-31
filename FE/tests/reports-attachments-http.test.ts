@@ -26,6 +26,30 @@ const period = {
   periodStart: "2026-10-21",
 };
 describe("reports and evidence through HTTP", () => {
+  it("sorts submission attempts before pagination, including more than 100 attempts", async () => {
+    await login("minh");
+    const first = db.submissions.find((item) => item.id === "s-pending")!;
+    for (let sequence = 2; sequence <= 121; sequence++)
+      db.submissions.push({ ...first, id: `round-${sequence}`, sequence });
+    const latest = await submissionsService.listSubmissions("t-4", {
+      pageSize: 5,
+    });
+    expect(latest.items.map((item) => item.sequence)).toEqual([
+      121, 120, 119, 118, 117,
+    ]);
+    expect(latest.pagination).toEqual({ page: 1, pageSize: 5, total: 121 });
+    const oldest = await submissionsService.listSubmissions("t-4", {
+      pageSize: 5,
+      sort: "sequence",
+    });
+    expect(oldest.items.map((item) => item.sequence)).toEqual([1, 2, 3, 4, 5]);
+    const end = await submissionsService.listSubmissions("t-4", {
+      pageSize: 5,
+      page: 25,
+    });
+    expect(end.items.map((item) => item.sequence)).toEqual([1]);
+    expect((await submissionsService.listSubmissions("t-3")).items).toEqual([]);
+  });
   it("searches review tasks before pagination and preserves project access", async () => {
     await login("minh");
     const task = db.tasks.find((item) => item.id === "t-4")!;

@@ -17,10 +17,7 @@ export function AnalysisSummaryPage() {
   return (
     <AnalyticsFrame scope={scope} title="Tổng hợp phân tích và đề xuất">
       {query.isError ? (
-        <QueryErrorState
-          error={query.error}
-          retry={() => void query.refetch()}
-        />
+        <QueryErrorState error={query.error} retry={query.refetch} />
       ) : !query.data ? (
         <PageSkeleton />
       ) : (

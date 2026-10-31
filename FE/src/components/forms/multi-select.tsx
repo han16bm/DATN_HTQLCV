@@ -47,7 +47,11 @@ export function MultiSelect({
                   )}${value.length > 2 ? ` +${value.length - 2}` : ""}`
               : `Chọn ${label.toLowerCase()}`}
           </span>
-          <ChevronDown size={16} aria-hidden="true" />
+          <ChevronDown
+            className="dropdown-chevron"
+            size={16}
+            aria-hidden="true"
+          />
         </button>
       </Popover.Trigger>
       <Popover.Portal>

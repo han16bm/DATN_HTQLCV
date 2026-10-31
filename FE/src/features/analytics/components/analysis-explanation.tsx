@@ -17,18 +17,27 @@ export function AnalysisExplanation({
         <div className="measure-row" key={f.id}>
           <h3>{f.title}</h3>
           <p className="preserve-lines">{f.text}</p>
-          <div className="citation-links">
-            {f.metricIds.map((id) => (
-              <a className="text-link" key={id} href={`#metric-${id}`}>
-                {snapshot.metrics.find((m) => m.id === id)?.label ?? "Chỉ số"}
-              </a>
-            ))}
-            {f.evidenceIds.map((id) => (
-              <a className="text-link" key={id} href={`#evidence-${id}`}>
-                Căn cứ {snapshot.evidence.findIndex((ev) => ev.id === id) + 1}
-              </a>
-            ))}
-          </div>
+          {(f.metricIds.length > 0 || f.evidenceIds.length > 0) && (
+            <details className="analysis-citations">
+              <summary>
+                Căn cứ tham chiếu ({f.metricIds.length + f.evidenceIds.length})
+              </summary>
+              <div className="citation-links">
+                {f.metricIds.map((id) => (
+                  <a className="text-link" key={id} href={`#metric-${id}`}>
+                    {snapshot.metrics.find((m) => m.id === id)?.label ??
+                      "Chỉ số"}
+                  </a>
+                ))}
+                {f.evidenceIds.map((id) => (
+                  <a className="text-link" key={id} href={`#evidence-${id}`}>
+                    Căn cứ{" "}
+                    {snapshot.evidence.findIndex((ev) => ev.id === id) + 1}
+                  </a>
+                ))}
+              </div>
+            </details>
+          )}
         </div>
       ))}
       {value.recommendations.length > 0 && (
@@ -48,7 +57,7 @@ export function AnalysisExplanation({
         ))}
       </details>
       <p className="small muted metadata">
-        {value.modelDisplayName} · Diễn giải lúc {dateTime(value.generatedAt)}
+        Diễn giải lúc {dateTime(value.generatedAt)}
       </p>
     </>
   ) : null;

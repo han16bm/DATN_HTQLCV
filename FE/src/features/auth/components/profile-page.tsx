@@ -9,7 +9,7 @@ import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
 import { validationMessage } from "@/lib/forms/validation-message";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Image as ImageIcon, KeyRound, Mail, UserRound } from "lucide-react";
+import { Image as ImageIcon, KeyRound, UserRound } from "lucide-react";
 import { useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -71,12 +71,6 @@ function ProfileDetails({ user }: { user: SessionDto["user"] }) {
     <>
       <PageHeader
         title="Hồ sơ cá nhân"
-        description={
-          <span className="profile-email">
-            <Mail size={15} aria-hidden="true" />
-            {user.email}
-          </span>
-        }
         actions={
           <ButtonLink href={`/users/${encodeURIComponent(user.id)}`}>
             Xem hồ sơ công khai

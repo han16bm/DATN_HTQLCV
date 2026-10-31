@@ -92,17 +92,11 @@ export function UsersPage() {
         </label>
       </section>
       {units.isError && (
-        <QueryErrorState
-          error={units.error}
-          retry={() => void units.refetch()}
-        />
+        <QueryErrorState error={units.error} retry={units.refetch} />
       )}
       {query.isPending && <PageSkeleton variant="table" />}
       {query.isError && (
-        <QueryErrorState
-          error={query.error}
-          retry={() => void query.refetch()}
-        />
+        <QueryErrorState error={query.error} retry={query.refetch} />
       )}{" "}
       {query.data && (
         <DataTable

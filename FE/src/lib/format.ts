@@ -1,4 +1,4 @@
-export const labels: Record<string, string> = {
+const labels: Record<string, string> = {
   EMPLOYEE: "Nhân viên",
   MANAGER: "Quản lý",
   ADMIN: "Quản trị viên",

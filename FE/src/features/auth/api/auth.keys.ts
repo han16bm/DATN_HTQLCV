@@ -4,4 +4,6 @@ export const authKeys = {
   viewer: (viewerId: ViewerId) => ["auth", viewerId ?? "anonymous"] as const,
   getSession: (viewerId: ViewerId) =>
     [...authKeys.viewer(viewerId), "getSession"] as const,
+  getProfile: (viewerId: ViewerId) =>
+    [...authKeys.viewer(viewerId), "getProfile"] as const,
 };

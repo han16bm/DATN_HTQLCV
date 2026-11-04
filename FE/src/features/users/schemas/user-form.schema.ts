@@ -2,6 +2,7 @@ import { reasonSchema } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 import { systemRoleSchema } from "./user.schema";
+import { personalInfoSchema } from "./personal-info.schema";
 export const resetPasswordSchema = z
   .object({
     temporaryPassword: z.string().min(8).max(128),
@@ -14,6 +15,7 @@ export const resetPasswordSchema = z
   .strict();
 export const createUserSchema = z
   .object({
+    ...personalInfoSchema.partial().shape,
     username: z
       .string()
       .trim()

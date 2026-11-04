@@ -1,6 +1,6 @@
 # Đặc tả API, DTO và trường được thay đổi
 
-Hợp đồng hiện hành **86 endpoint HTTP**, cập nhật 03/11/2026: 83 endpoint sẵn có và 3 endpoint thông báo cá nhân theo yêu cầu mới. Phần nghiệp vụ/LLM tiếp tục hợp đồng 0.3.0, tài liệu 0.4; phần mở rộng được ghi riêng ở NOTIFICATIONS.md. Mọi request vẫn đi qua public Gateway.
+Hợp đồng hiện hành **87 endpoint HTTP**, cập nhật 04/11/2026: 83 endpoint sẵn có, 3 endpoint thông báo cá nhân và GET hồ sơ riêng. Phần nghiệp vụ/LLM tiếp tục hợp đồng 0.3.0, tài liệu 0.4; thông báo được ghi riêng ở NOTIFICATIONS.md. Mọi request vẫn đi qua public Gateway.
 
 Rà ngày 31/10/2026: vẫn 83 route hiện hành; không triển khai /permission-groups và đã bỏ service dự phòng không có caller/handler. Response theo schema: LoginResponse chỉ session/accessToken; Session.projectAccess chỉ projectId/permissions; snapshot.scope chỉ from/to và AnalysisMeasure không có basis (model vẫn giữ dữ liệu nguồn); AlertDto.handler là PersonRef|null thay handledBy. GET lần nộp thêm sort=sequence|-sequence, sắp xếp trước pagination; khung báo cáo dùng 5 lần/trang và chọn từng tệp.
 
@@ -21,6 +21,7 @@ Bổ sung theo yêu cầu tiếp tục ngày 03/11/2026: **86 endpoint HTTP**. C
 | [logout](#logout) | `POST /api/auth/logout` | 200 | useMutation | S01, S02 |
 | [refreshSession](#refreshsession) | `POST /api/auth/refresh` | 200 | Auth adapter single-flight; không tạo query định kỳ | S01, S02 |
 | [getSession](#getsession) | `GET /api/auth/me` | 200 | useQuery | S02 |
+| [getPersonalProfile](#getpersonalprofile) | `GET /api/auth/me/profile` | 200 | useQuery | Hồ sơ cá nhân |
 | [updateProfile](#updateprofile) | `PATCH /api/auth/me` | 200 | useMutation, multipart | Hồ sơ cá nhân |
 | [changePassword](#changepassword) | `PUT /api/auth/me/password` | 200 | useMutation | Hồ sơ / Đổi mật khẩu |
 | [getAvatar](#getavatar) | `GET /api/avatars/:avatarId` | 200 | Image src từ avatarUrl | Hồ sơ, menu tài khoản, quản trị |
@@ -394,7 +395,7 @@ Object rỗng `{}`; không có trường nghiệp vụ.
 | `systemRole` | Users.SystemRoleDTO | Có | Vai trò hệ thống, không tự cấp quyền mọi dự án. |
 | `initialPassword` | string | Có | độ dài ≥ 8; độ dài ≤ 128; Mật khẩu tạm khi cấp tài khoản; không trả về UserDTO. |
 
-FE chỉ được gửi: `username`, `displayName`, `email`, `unitId`, `systemRole`, `initialPassword`.
+FE chỉ được gửi: `username`, `displayName`, `email`, `unitId`, `systemRole`, `initialPassword` và các trường cá nhân tùy chọn `gender`, `birthDate`, `phone`, `permanentAddress`, `temporaryAddress`. Username chỉ khai báo khi cấp tài khoản, không được thay đổi ở API cập nhật.
 
 ### Response DTO
 
@@ -3899,13 +3900,21 @@ Scope tổng hợp: query thiếu unitId/projectId dùng đơn vị mặc địn
 
 ### updateProfile
 
-`PATCH /api/auth/me` cập nhật chính tài khoản trong phiên, không nhận userId. Body multipart chỉ gồm username (3–64 ký tự, chữ Latin/số/dấu chấm/gạch dưới/gạch ngang), displayName (1–255 ký tự) và avatar; mỗi trường đều tùy chọn nhưng phải có ít nhất một trường. Mục ảnh chỉ gửi avatar, không gửi lại tên/tên đăng nhập. Trim tên và tên đăng nhập. Email, đơn vị, vai trò và trạng thái không nằm trong whitelist. Tên đăng nhập phải duy nhất; thay tên đăng nhập không đổi mật khẩu.
+`PATCH /api/auth/me` cập nhật chính tài khoản trong phiên, không nhận userId. Body multipart chỉ gồm displayName (1–255 ký tự), gender, birthDate, phone, permanentAddress, temporaryAddress và avatar; mỗi trường tùy chọn nhưng phải có ít nhất một trường. Các trường cá nhân tùy chọn theo Users.PersonalInfoDTO, chuỗi rỗng được chuẩn hóa thành null để xóa giá trị. Mục ảnh chỉ gửi avatar. Form thông tin chỉ gửi trường đã sửa; trim họ tên và nội dung chuỗi. Username, email, đơn vị, vai trò, trạng thái, position, nhóm và dự án không nằm trong whitelist. Tên đăng nhập chỉ đọc, username chỉ được khai báo khi tạo tài khoản mới.
 
 Avatar nhận JPG, PNG hoặc WebP, dung lượng lớn hơn 0 và tối đa 2 MB. Kiểm tra loại/dung lượng tại schema và chữ ký tệp tại DB. Tệp không hợp lệ không lưu bất kỳ thay đổi nào. Tên và avatar được cập nhật trong cùng transaction.
 
-Yêu cầu bearer, If-Match từ session.user.version và Idempotency-Key. Response 200 là SessionDTO; user thêm version và avatarUrl nullable. Phiên hết hạn trả 401; dữ liệu ngoài whitelist/ảnh sai trả 422; trùng tên đăng nhập 409; version cũ 412 và giữ form để đối chiếu. Không tự retry mutation bằng khóa mới.
+Yêu cầu bearer, If-Match từ phiên bản hồ sơ đang sửa (hoặc session.user.version khi đổi ảnh) và Idempotency-Key. Response 200 là SessionDTO; user có version và avatarUrl nullable. Phiên hết hạn trả 401; dữ liệu ngoài whitelist (kể cả username)/ảnh sai trả 422; version cũ 412 và giữ form để đối chiếu. Không tự retry mutation bằng khóa mới.
 
-Thành công cập nhật Query cache phiên từ response và invalidate dữ liệu của người xem để nhãn người dùng được làm mới. Credential và byte ảnh không lưu trong MutationCache; biến mutation dùng ticket tạm. Hồ sơ chỉ mở form sau nút; email/đơn vị/vai trò hiển thị ở phần thông tin.
+Thành công cập nhật Query cache phiên từ response và invalidate hồ sơ riêng cùng dữ liệu của người xem để nhãn người dùng được làm mới. Credential và byte ảnh không lưu trong MutationCache; biến mutation dùng ticket tạm. Thông tin nhận diện và thông tin cá nhân nằm chung một thẻ, mặc định chỉ xem, bấm Chỉnh sửa mới mở form; lưu/hủy trở về chế độ xem, có guard khi hủy draft. Đổi ảnh ở cột phải, chụp session.user.version tại lúc chọn ảnh để dùng phiên bản sau lần lưu hồ sơ gần nhất; vẫn giữ đối chiếu 412 nếu có cập nhật tiếp từ phiên khác. Email/bộ phận/vị trí/nhóm/dự án chỉ đọc trong hồ sơ cá nhân. Chi tiết tài khoản Admin cũng chỉ mở form sau nút Chỉnh sửa thông tin; không có field position độc lập.
+
+### getPersonalProfile
+
+`GET /api/auth/me/profile` đọc riêng hồ sơ của tài khoản trong phiên. Bắt buộc bearer; không nhận userId, body hoặc query (query thừa trả 422). Response 200 là Auth.PersonalProfileDTO: version, username, displayName, email, unit (tên bộ phận), systemRole, năm trường Users.PersonalInfoDTO và teams/projects dạng EntityLabel[]. Vị trí lấy từ systemRole: EMPLOYEE = Nhân viên chính thức, MANAGER = Leader, ADMIN = Admin. Không trả position, quyền, token, byte ảnh hay số liệu hiệu suất. Không có phiên trả 401.
+
+teams chỉ chứa nhóm ACTIVE có user trong memberIds; projects chỉ chứa dự án PLANNED/ACTIVE có tư cách thành viên chưa kết thúc. Cùng projection được dùng trong UserDTO quản trị qua GET /users/:userId (vẫn cần USERS_MANAGE). Không thêm thông tin riêng tư vào SessionDTO, UserRow hoặc GET /users/:userId/profile công khai.
+
+authService.getProfile/useProfileQuery dùng key `['auth', viewerId, 'getProfile']`, staleTime 0, chỉ chạy khi có phiên và mount một lần ở trang hồ sơ. Lưu hồ sơ cập nhật session và invalidate query này; dữ liệu cá nhân không persist vào Zustand/localStorage. Trang không dùng tab; form thông tin và mật khẩu mở độc lập, hủy chỉ xét draft của chính form đó, điều hướng vẫn giữ dirty guard và xử lý 412 như trước.
 
 ### getAvatar
 
@@ -3919,7 +3928,7 @@ Mock giữ avatarId trong model và byte ảnh trong DB tạm; reload/reset xóa
 
 Yêu cầu bearer và Idempotency-Key; không dùng If-Match vì currentPassword là điều kiện cập nhật. Thành công 200 {ok:true}; không trả credential hoặc cả hồ sơ. Phiên hiện tại tiếp tục hoạt động. Sai mật khẩu hiện tại trả 422 với field currentPassword; dữ liệu yếu/thừa trường trả 422; không có phiên hợp lệ trả 401/403. Request giống nhau cùng khóa replay kết quả, không đổi mật khẩu/audit lần nữa. Không thay đổi version hồ sơ vì không sửa trường hồ sơ.
 
-Form có Mật khẩu hiện tại/Mật khẩu mới/Nhập lại mật khẩu mới, kiểm tra xác nhận ở FE rồi chỉ gửi hai trường API. Form nằm trong mục Đổi mật khẩu của hồ sơ, mở sau thao tác; giữ nội dung khi lỗi, nhắc draft trước khi đổi mục. Hiển thị thành công bằng toast và dọn form. Mutation dùng ticket tạm, không giữ credential trong Query/Mutation cache, Zustand hoặc audit. Audit chỉ ghi sự kiện Đổi mật khẩu.
+Form có Mật khẩu hiện tại/Mật khẩu mới/Nhập lại mật khẩu mới, kiểm tra xác nhận ở FE rồi chỉ gửi hai trường API. Form nằm ở cột phải trang hồ sơ, chỉ mở sau nút Đổi mật khẩu; giữ nội dung khi lỗi, nhắc draft khi hủy form hoặc rời trang. Lưu/hủy thu lại form mà không bỏ bản nháp thông tin cá nhân đang mở. Hiển thị thành công bằng toast và dọn form. Mutation dùng ticket tạm, không giữ credential trong Query/Mutation cache, Zustand hoặc audit. Audit chỉ ghi sự kiện Đổi mật khẩu.
 
 ### getProfile
 

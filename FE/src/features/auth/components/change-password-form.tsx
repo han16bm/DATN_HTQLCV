@@ -2,6 +2,8 @@
 
 import { Form } from "@/components/forms/form";
 import { FormInput } from "@/components/forms/form-field";
+import { Button } from "@/components/ui/button";
+import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import { validationMessage } from "@/lib/forms/validation-message";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -10,7 +12,10 @@ import type { z } from "zod";
 import { useChangePasswordMutation } from "../hooks/use-auth-mutations";
 import { passwordFormSchema } from "../schemas/password.schema";
 
-export function ChangePasswordForm({ onSaved }: { onSaved: () => void }) {
+export function ChangePasswordForm({ onSaved, onCancel }: {
+  onSaved: () => void;
+  onCancel: () => void;
+}) {
   const change = useChangePasswordMutation();
   const form = useForm<z.input<typeof passwordFormSchema>>({
     resolver: zodResolver(passwordFormSchema, { error: validationMessage }),
@@ -27,6 +32,16 @@ export function ChangePasswordForm({ onSaved }: { onSaved: () => void }) {
       actions="start"
       form={form}
       submitLabel="Cập nhật mật khẩu"
+      cancel={
+        <Button
+          onClick={async () => {
+            if (!form.formState.isDirty || await confirmDiscard("Bỏ thay đổi mật khẩu chưa lưu?"))
+              onCancel();
+          }}
+        >
+          Hủy
+        </Button>
+      }
       onSubmit={async ({ currentPassword, newPassword }) => {
         await change.mutateAsync({ currentPassword, newPassword });
         onSaved();

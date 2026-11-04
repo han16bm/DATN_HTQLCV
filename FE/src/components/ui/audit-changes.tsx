@@ -22,6 +22,14 @@ const fields: Record<string, string> = {
   owner: "Người phụ trách",
   assignee: "Người thực hiện",
   projectRole: "Vai trò dự án",
+  displayName: "Họ tên",
+  username: "Tên đăng nhập",
+  email: "Email",
+  gender: "Giới tính",
+  birthDate: "Ngày sinh",
+  phone: "Số điện thoại",
+  permanentAddress: "Địa chỉ thường trú",
+  temporaryAddress: "Địa chỉ tạm trú",
 };
 type Value = AuditDto["before"];
 function valueText(value: Value | undefined, field: string): string {
@@ -42,7 +50,7 @@ function valueText(value: Value | undefined, field: string): string {
       : number(value);
   if (typeof value === "boolean") return value ? "Có" : "Không";
   if (field.endsWith("At")) return dateTime(value);
-  if (field === "startDate" || field === "workDate")
+  if (field === "startDate" || field === "workDate" || field === "birthDate")
     return new Intl.DateTimeFormat("vi-VN", {
       timeZone: "Asia/Ho_Chi_Minh",
     }).format(new Date(value));

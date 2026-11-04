@@ -32,6 +32,7 @@ Với object/mảng lồng nhau, tên có dấu chấm hoặc [] là đường d
 - [Users.ResetPasswordDTO](#usersresetpassworddto)
 - [Users.SystemRoleDTO](#userssystemroledto)
 - [Users.UserCreateDTO](#usersusercreatedto)
+- [Users.PersonalInfoDTO](#userspersonalinfodto)
 - [Users.UserListQueryDTO](#usersuserlistquerydto)
 - [Users.UserLockDTO](#usersuserlockdto)
 - [Users.UserPatchDTO](#usersuserpatchdto)
@@ -40,6 +41,7 @@ Với object/mảng lồng nhau, tên có dấu chấm hoặc [] là đường d
 - [Auth.LoginResponseDTO](#authloginresponsedto)
 - [Auth.LoginDTO](#authlogindto)
 - [Auth.SessionDTO](#authsessiondto)
+- [Auth.PersonalProfileDTO](#authpersonalprofiledto)
 - [Organization.TeamCreateDTO](#organizationteamcreatedto)
 - [Organization.TeamMembersDTO](#organizationteammembersdto)
 - [Organization.TeamPatchDTO](#organizationteampatchdto)
@@ -148,6 +150,20 @@ Với object/mảng lồng nhau, tên có dấu chấm hoặc [] là đường d
 | `systemRole` | Users.SystemRoleDTO | Có | Vai trò hệ thống, không tự cấp quyền mọi dự án. |
 | `initialPassword` | string | Có | độ dài ≥ 8; độ dài ≤ 128; Mật khẩu tạm khi cấp tài khoản; không trả về UserDTO. |
 
+Các trường trong Users.PersonalInfoDTO đều có thể truyền khi cấp tài khoản; bỏ qua thì khởi tạo null. Không nhận teams/projects trong body.
+
+## Users.PersonalInfoDTO
+
+Validation chung cho thông tin cá nhân của hồ sơ riêng và chi tiết tài khoản Admin. Tất cả trường tùy chọn khi PATCH, có mặt và nullable trong response. Chuỗi rỗng được chuẩn hóa null; chuỗi có nội dung được trim.
+
+| Trường | Kiểu | Ý nghĩa / ràng buộc |
+|---|---|---|
+| `gender` | enum(MALE, FEMALE, OTHER) · nullable | Nam, Nữ, Khác; null nếu chưa cập nhật. |
+| `birthDate` | string YYYY-MM-DD · nullable | Ngày sinh hợp lệ, không ở tương lai; không phải timestamp UTC. |
+| `phone` | string · nullable | Tối đa 32 ký tự, 7–15 chữ số; chấp nhận mã quốc gia và khoảng trắng/dấu phân cách. |
+| `permanentAddress` | string · nullable | Địa chỉ thường trú, tối đa 500 ký tự. |
+| `temporaryAddress` | string · nullable | Địa chỉ tạm trú, tối đa 500 ký tự. |
+
 ## Users.UserListQueryDTO
 
 | Trường | Kiểu | Bắt buộc | Ràng buộc / ý nghĩa |
@@ -176,13 +192,14 @@ Với object/mảng lồng nhau, tên có dấu chấm hoặc [] là đường d
 | `systemRole` | Users.SystemRoleDTO | Không | Vai trò hệ thống, không tự cấp quyền mọi dự án. |
 | `reason` | string | Không | độ dài ≥ 1; độ dài ≤ 2000; Lý do của thao tác; ghi audit, không mass assign vào entity. |
 
+UserPatchDTO cho phép sửa thêm năm trường trong Users.PersonalInfoDTO theo quyền USERS_MANAGE, giữ If-Match/idempotency và lý do khi đổi vai trò. Không nhận position/teams/projects; nhóm/dự án tiếp tục quản lý qua chức năng riêng. Vị trí hiển thị theo systemRole, không là field độc lập.
+
 ## Users.UserDTO
 
 | Trường | Kiểu | Bắt buộc | Ràng buộc / ý nghĩa |
 |---|---|---|---|
 | `id` | string | Có | độ dài ≥ 1; độ dài ≤ 100; Định danh do BE sinh, không tự đổi. |
 | `version` | integer | Có | > 0; Phiên bản đọc; gửi qua If-Match nếu contract yêu cầu. |
-| `createdAt` | string · UTC ISO 8601 có Z | Có | Thời điểm tạo UTC. |
 | `updatedAt` | string · UTC ISO 8601 có Z | Có | Thời điểm cập nhật UTC; không dùng thay thời điểm chuyển trạng thái. |
 | `username` | string | Có | độ dài ≥ 1; Tên đăng nhập nội bộ; trim đầu/cuối, giữ quy ước hoa/thường đã chốt. |
 | `displayName` | string | Có | độ dài ≥ 1; độ dài ≤ 255; Họ tên hiển thị. |
@@ -191,6 +208,8 @@ Với object/mảng lồng nhau, tên có dấu chấm hoặc [] là đường d
 | `systemRole` | Users.SystemRoleDTO | Có | Vai trò hệ thống, không tự cấp quyền mọi dự án. |
 | `status` | Users.UserStatusDTO | Có | Trạng thái theo enum của đúng model; không dùng chung enum cho mọi phân hệ. |
 | `unit` | Shared.EntityLabelDTO | Có | Nhãn đơn vị chỉ đọc; unit.id khớp unitId. |
+
+UserDTO quản trị còn trả `avatarUrl` nullable và năm trường Users.PersonalInfoDTO. Không có position: vị trí hiển thị theo systemRole (EMPLOYEE → Nhân viên chính thức, MANAGER → Leader, ADMIN → Admin). `teams` và `projects` là array<EntityLabel{id,name}> chỉ đọc, lấy từ phân công đang hiệu lực. Dự án phải PLANNED/ACTIVE và tư cách tham gia chưa kết thúc; nhóm phải ACTIVE. Không lưu bản sao hai mảng trên UserModel. UserRow cho bảng danh sách giữ các trường cũ, không trả thông tin cá nhân bổ sung hoặc các danh sách này.
 
 ## Users.UserStatusDTO
 
@@ -221,6 +240,22 @@ Quyền hiệu lực theo điều chỉnh ngày 30/10/2026 lấy từ permission
 | `projectAccess` | array<object> | Có | Phạm vi dự án đang tham gia và quyền hiệu lực. |
 | `projectAccess[].projectId` | string | Có | độ dài ≥ 1; độ dài ≤ 100; ID dự án; không đồng nghĩa ID service. |
 | `projectAccess[].permissions` | array<Permission> | Có | Quyền hiệu lực trong đúng projectId. |
+
+## Auth.PersonalProfileDTO
+
+GET /auth/me/profile chỉ phục vụ người dùng hiện tại; không nhận userId hoặc query. Dữ liệu bổ sung không đưa vào SessionDTO hay hồ sơ công khai.
+
+| Trường | Kiểu | Ý nghĩa |
+|---|---|---|
+| `version` | integer > 0 | Phiên bản hồ sơ đang sửa, dùng If-Match khi PATCH. |
+| `username` | string | Tên đăng nhập của chính tài khoản, chỉ đọc; không có trong payload cập nhật. |
+| `displayName` | string | Họ tên. |
+| `email` | string · email | Chỉ đọc trong hồ sơ cá nhân. |
+| `unit` | string | Tên bộ phận hiện tại, chỉ đọc. |
+| `gender`, `birthDate`, `phone`, `permanentAddress`, `temporaryAddress` | Theo Users.PersonalInfoDTO | Có mặt, nullable. |
+| `systemRole` | enum(EMPLOYEE, MANAGER, ADMIN) | Chỉ đọc; hiển thị vị trí Nhân viên chính thức/Leader/Admin. Không có position độc lập. |
+| `teams` | array<EntityLabel{id,name}> | Nhóm nhân sự ACTIVE mà user đang thuộc, chỉ đọc. |
+| `projects` | array<EntityLabel{id,name}> | Các dự án PLANNED/ACTIVE user đang tham gia, chỉ đọc; không gồm tư cách đã kết thúc. |
 
 ## Organization.TeamCreateDTO
 

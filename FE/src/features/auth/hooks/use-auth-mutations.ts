@@ -57,10 +57,13 @@ export function useUpdateProfileMutation() {
     onSuccess: async (result) => {
       await client.cancelQueries({ queryKey: authKeys.getSession(viewerId) });
       client.setQueryData(authKeys.getSession(viewerId), result);
-      await client.invalidateQueries({
-        predicate: (query) =>
-          query.queryKey[0] !== "auth" && query.queryKey[1] === viewerId,
-      });
+      await Promise.all([
+        client.invalidateQueries({ queryKey: authKeys.getProfile(viewerId) }),
+        client.invalidateQueries({
+          predicate: (query) =>
+            query.queryKey[0] !== "auth" && query.queryKey[1] === viewerId,
+        }),
+      ]);
     },
   });
   return {

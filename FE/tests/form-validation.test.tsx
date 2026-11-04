@@ -43,7 +43,7 @@ function UserForm({
   values: Partial<CreateUserInput>;
   onSubmit: (values: CreateUserInput) => Promise<void>;
 }) {
-  const form = useForm<CreateUserInput>({
+  const form = useForm<z.input<typeof createUserSchema>, unknown, CreateUserInput>({
     resolver: zodResolver(createUserSchema, { error: validationMessage }),
     defaultValues: { ...user, ...values },
   });

@@ -2,13 +2,14 @@
 
 import { PageSkeleton } from "@/components/ui/loading";
 import { SplitLayout } from "@/components/patterns/split-layout";
-import { PageHeader } from "@/components/ui/page";
+import { PageHeader, Panel } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListUnitsQuery } from "@/features/organization/hooks/use-organization-queries";
 import { useCrumbLabel } from "@/lib/use-crumb-label";
 import { useGetUserQuery } from "../hooks/use-users-queries";
 import { UserCommands } from "./user-commands";
 import { UserProfileForm } from "./user-profile-form";
+import { UserWorkInfo } from "./user-work-info";
 
 export function UserEditorPage({ userId }: { userId?: string }) {
   const query = useGetUserQuery(userId ?? "");
@@ -35,7 +36,19 @@ export function UserEditorPage({ userId }: { userId?: string }) {
       />
       {query.data ? (
         <SplitLayout
-          aside={<UserCommands user={query.data} reload={query.refetch} />}
+          aside={
+            <div className="grid gap-5">
+              <Panel title="Thông tin công việc">
+                <UserWorkInfo
+                  unit={query.data.unit.name}
+                  systemRole={query.data.systemRole}
+                  teams={query.data.teams}
+                  projects={query.data.projects}
+                />
+              </Panel>
+              <UserCommands user={query.data} reload={query.refetch} />
+            </div>
+          }
         >
           {form}
         </SplitLayout>

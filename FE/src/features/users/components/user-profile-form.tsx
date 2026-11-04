@@ -10,7 +10,7 @@ import {
 import type { FormOption } from "@/components/forms/form.types";
 import { Avatar } from "@/components/ui/avatar";
 import { StatusField, ButtonLink, Panel } from "@/components/ui/page";
-import { changedFields, dateTime, label, options } from "@/lib/format";
+import { changedFields, dateTime, options } from "@/lib/format";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
 import { validationMessage } from "@/lib/forms/validation-message";
@@ -29,7 +29,9 @@ import {
   updateUserSchema,
 } from "../schemas/user-form.schema";
 import { systemRoleSchema } from "../schemas/user.schema";
+import { genders } from "../schemas/personal-info.schema";
 import { type UserDto } from "../types/users.types";
+import { UserPersonalInfo } from "./user-personal-info";
 export function UserProfileForm({
   user,
   units,
@@ -63,12 +65,18 @@ export function UserProfileForm({
         .extend({ reason: z.string().trim().max(2000).optional() })
     : createUserSchema;
   type Values = z.input<typeof schema>;
+  type Output = z.output<typeof schema>;
   const defaults: Values = user
     ? {
         displayName: user.displayName,
         email: user.email,
         unitId: user.unitId,
         systemRole: user.systemRole,
+        gender: user.gender ?? "",
+        birthDate: user.birthDate ?? "",
+        phone: user.phone ?? "",
+        permanentAddress: user.permanentAddress ?? "",
+        temporaryAddress: user.temporaryAddress ?? "",
         reason: "",
       }
     : {
@@ -79,8 +87,8 @@ export function UserProfileForm({
         systemRole: "EMPLOYEE",
         initialPassword: "",
       };
-  const form = useForm<Values>({
-    resolver: zodResolver<Values, unknown, Values>(schema, {
+  const form = useForm<Values, unknown, Output>({
+    resolver: zodResolver(schema, {
       error: validationMessage,
     }),
     defaultValues: defaults,
@@ -117,26 +125,12 @@ export function UserProfileForm({
         </div>
       )}
       {user && !open ? (
-        <>
-          <dl className="m-0 grid gap-y-2 text-sm [&>div]:grid [&>div]:grid-cols-[7rem_minmax(0,1fr)] [&>div]:items-baseline [&>div]:gap-x-3 [&_dt]:text-fg-subtle [&_dd]:m-0 [&_dd]:min-w-0 [&_dd]:text-left [&_dd]:break-words">
-            <div>
-              <dt>Đơn vị</dt>
-              <dd>{user.unit.name}</dd>
-            </div>
-            <div>
-              <dt>Email</dt>
-              <dd>{user.email}</dd>
-            </div>
-            <div>
-              <dt>Vai trò hệ thống</dt>
-              <dd>{label(user.systemRole)}</dd>
-            </div>
-            <div>
-              <dt>Cập nhật lần cuối</dt>
-              <dd>{dateTime(user.updatedAt)}</dd>
-            </div>
-          </dl>
-        </>
+        <div className="grid gap-4">
+          <UserPersonalInfo user={user} />
+          <p className="m-0 border-t border-line pt-3 text-xs text-fg-subtle">
+            Cập nhật lần cuối: {dateTime(user.updatedAt)}
+          </p>
+        </div>
       ) : (
         <Form
           form={form}
@@ -153,6 +147,11 @@ export function UserProfileForm({
           compareFields={[
             { name: "displayName", label: "Họ tên" },
             { name: "email", label: "Email" },
+            { name: "gender", label: "Giới tính", options: genders },
+            { name: "birthDate", label: "Ngày sinh" },
+            { name: "phone", label: "Số điện thoại" },
+            { name: "permanentAddress", label: "Địa chỉ thường trú" },
+            { name: "temporaryAddress", label: "Địa chỉ tạm trú" },
             { name: "unitId", label: "Đơn vị", options: units },
             {
               name: "systemRole",
@@ -176,6 +175,11 @@ export function UserProfileForm({
                     "email",
                     "unitId",
                     "systemRole",
+                    "gender",
+                    "birthDate",
+                    "phone",
+                    "permanentAddress",
+                    "temporaryAddress",
                   ]),
                   ...(values.reason ? { reason: values.reason } : {}),
                 },
@@ -209,6 +213,11 @@ export function UserProfileForm({
             {...form.register("email")}
             error={errors.email}
           />
+          <FormSelect label="Giới tính" options={genders} width="short" {...form.register("gender")} error={errors.gender} />
+          <FormInput label="Ngày sinh" type="date" width="short" {...form.register("birthDate")} error={errors.birthDate} />
+          <FormInput label="Số điện thoại" type="tel" width="short" {...form.register("phone")} error={errors.phone} />
+          <FormTextarea label="Địa chỉ thường trú" width="medium" {...form.register("permanentAddress")} error={errors.permanentAddress} />
+          <FormTextarea label="Địa chỉ tạm trú" width="medium" {...form.register("temporaryAddress")} error={errors.temporaryAddress} />
           <FormSelect
             label="Đơn vị"
             required

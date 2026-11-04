@@ -19,8 +19,8 @@ export type UserDto = z.output<typeof userSchema>;
 export type UserQuery = z.input<typeof userQuerySchema>;
 export type UserRow = z.output<typeof userRowSchema>;
 export type UserList = Page<UserRow>;
-export type CreateUserInput = z.input<typeof createUserSchema>;
-export type UpdateUserInput = z.input<typeof updateUserSchema>;
+export type CreateUserInput = z.output<typeof createUserSchema>;
+export type UpdateUserInput = z.output<typeof updateUserSchema>;
 export type UpdateUserArgs = {
   userId: string;
   payload: UpdateUserInput;

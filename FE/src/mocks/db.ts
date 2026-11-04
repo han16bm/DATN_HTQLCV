@@ -51,6 +51,7 @@ import type {
 } from "@/features/attachments/types/attachments.types";
 import type {
   LoginInput,
+  PersonalProfileDto,
   SessionDto,
   UpdateProfileInput,
   ChangePasswordInput,
@@ -174,7 +175,7 @@ import seed from "./data.json";
 // Dữ liệu và kiểu lưu trữ.
 const userModel = z
   .object(userSchema.shape)
-  .omit({ unit: true, avatarUrl: true })
+  .omit({ unit: true, avatarUrl: true, teams: true, projects: true })
   .extend({ avatarId: idSchema.nullable().default(null) });
 const projectModel = z
   .object(projectSchema.shape)
@@ -522,8 +523,30 @@ const userRow = (user: User): UserRow => ({
   status: user.status,
   unit: unitRef(user.unitId),
 });
+const affiliations = (userId: string) => {
+  const projectIds = new Set(db.members
+    .filter((member) => member.userId === userId && !member.endedAt)
+    .map((member) => member.projectId));
+  return {
+    teams: db.teams
+      .filter((team) => team.status === "ACTIVE" && team.memberIds.includes(userId))
+      .map(({ id, name }) => ({ id, name })),
+    projects: db.projects
+      .filter((project) => projectIds.has(project.id) && ["PLANNED", "ACTIVE"].includes(project.status))
+      .map(({ id, name }) => ({ id, name })),
+  };
+};
+const personalInfo = (user: User) => ({
+  gender: user.gender,
+  birthDate: user.birthDate,
+  phone: user.phone,
+  permanentAddress: user.permanentAddress,
+  temporaryAddress: user.temporaryAddress,
+});
 const userDTO = (user: User): UserDto => ({
   ...userRow(user),
+  ...personalInfo(user),
+  ...affiliations(user.id),
   version: user.version,
   updatedAt: user.updatedAt,
 });
@@ -803,14 +826,24 @@ export const authDb = {
   getSession(accessToken: string | undefined) {
     return sessionDTO(sessionUser(accessToken));
   },
+  getProfile(viewer: User): PersonalProfileDto {
+    return {
+      version: viewer.version,
+      username: viewer.username,
+      displayName: viewer.displayName,
+      email: viewer.email,
+      systemRole: viewer.systemRole,
+      unit: unitRef(viewer.unitId).name,
+      ...personalInfo(viewer),
+      ...affiliations(viewer.id),
+    };
+  },
   async updateProfile(
     viewer: User,
     body: UpdateProfileInput,
     expectedVersion: string | null,
   ) {
     requireVersion(expectedVersion, viewer);
-    if (body.username !== undefined)
-      unique(body.username, viewer.email, viewer.id);
     const { avatar, ...data } = body;
     if (avatar) {
       const bytes = new Uint8Array(await avatar.slice(0, 12).arrayBuffer());
@@ -840,8 +873,8 @@ export const authDb = {
         );
     }
     const before = {
-      username: viewer.username,
       displayName: viewer.displayName,
+      ...personalInfo(viewer),
     };
     if (avatar) {
       if (viewer.avatarId) db.avatars.delete(viewer.avatarId);
@@ -1249,6 +1282,11 @@ export const usersDb = {
     const user = {
       ...entity(),
       updatedAt: now(),
+      gender: null,
+      birthDate: null,
+      phone: null,
+      permanentAddress: null,
+      temporaryAddress: null,
       ...data,
       avatarId: null,
       status: "ACTIVE" as const,
@@ -1333,6 +1371,7 @@ export const usersDb = {
       email: user.email,
       systemRole: user.systemRole,
       unitId: user.unitId,
+      ...personalInfo(user),
     };
     Object.assign(user, patch);
     touch(user);

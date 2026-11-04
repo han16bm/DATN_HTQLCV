@@ -170,6 +170,16 @@ Các yêu cầu riêng của DATN được giữ: quyền theo dự án, state m
 Theo yêu cầu ngày 25/10/2026, Admin có `ANALYTICS_VIEW` toàn hệ thống: dashboard, bộ lọc mọi đơn vị và dữ liệu chi tiết liên quan. Admin không có thêm quyền ghi dự án/công việc/nghiệm thu/xử lý cảnh báo; lập báo cáo cá nhân vẫn cần tư cách thành viên dự án. Manager tiếp tục xem trong phạm vi được cấp. Session trả thêm username/email để hiển thị hồ sơ cá nhân; token và credential tiếp tục giữ riêng.
 
 
+## Hồ sơ cá nhân và quản trị người dùng
+
+`GET /api/auth/me/profile` trả PersonalProfileDto cho chính tài khoản đăng nhập, qua authService.getProfile/useProfileQuery và key `['auth', viewerId, 'getProfile']`. Chỉ trang hồ sơ tải dữ liệu này; SessionDTO và UserRow không mang giới tính, ngày sinh, điện thoại, địa chỉ hay các danh sách nhóm/dự án. Hồ sơ công khai tiếp tục dùng DTO nhận diện/email riêng. Private profile trả systemRole; UI hiển thị vị trí theo role (Nhân viên chính thức/Leader/Admin), không có position độc lập.
+
+`personal-info.schema.ts` là nguồn validation chung của các trường cá nhân cho form tự sửa, quản trị và model mock. UserDTO quản trị có đầy đủ các trường này; teams/projects là projection chỉ đọc của quan hệ nhóm/thành viên dự án, không lưu bản sao trên UserModel. Model chỉ thêm gender/birthDate/phone/permanentAddress/temporaryAddress; dữ liệu khởi tạo ở data.json. Handler chỉ parse request/xác thực/gọi DB; DB dựng cùng projection cho hồ sơ cá nhân và chi tiết user Admin. position bị từ chối bởi whitelist strict của cả API tự sửa và quản trị. UserPersonalInfo/UserWorkInfo dùng chung cho hai trang; ProfileInfo quản lý chế độ xem/sửa, chỉ mount RHF form khi người dùng yêu cầu.
+
+ProfileInfo tải hồ sơ một lần cho toàn trang; ProfileHeader ở chế độ embedded nằm cùng thẻ với UserPersonalInfo hoặc form sửa. Cột phụ nhận các thao tác đổi ảnh/mật khẩu từ ProfilePage và hiển thị UserWorkInfo; không dùng tab hoặc query trùng cho mỗi phần. AvatarEditor chụp version hiện tại khi chọn ảnh; hai form hồ sơ/mật khẩu giữ bản nháp và kiểm tra hủy riêng, dirty guard điều hướng vẫn xét mọi form đang mở.
+
+PATCH /auth/me tiếp tục trả SessionDTO để cập nhật họ tên/ảnh trên khung ứng dụng, đồng thời mutation invalidate private profile và dữ liệu của viewer. Nullable field được gửi thành chuỗi rỗng qua multipart và chuẩn hóa null tại biên Zod; Input/Output của RHF tách rõ, service/DB nhận kiểu output đã kiểm tra. Giữ If-Match, idempotency, whitelist và đối chiếu phiên bản; không cho sửa username/email/đơn vị/vai trò/nhóm/dự án qua API tự sửa hồ sơ. Tên đăng nhập hiển thị chỉ đọc, không register/so sánh/gửi lại khi lưu. CreateUser vẫn nhận username và kiểm tra duy nhất, UpdateUser từ chối username như trước.
+
 ## Quy tắc viết code
 
 Ưu tiên đủ chức năng, gọn và dễ lần theo luồng. Tên dùng đúng ngữ cảnh: `AlertDto`, `TaskQuery`, `CreateTaskInput`, `UpdateTaskArgs`, `alertSchema`, `analyticsQuerySchema`. Không lặp tiền tố feature, không giữ biến chỉ gán lại tham số, không bọc `Promise.all` cho một request, không tạo biến chỉ để return ngay. Chỉ tách helper khi có trách nhiệm độc lập hoặc logic được dùng lại; không tạo factory để che lời gọi service/query.

@@ -1,8 +1,13 @@
 "use client";
+import { Button } from "@/components/ui/button";
 import { label } from "@/lib/format";
 import { ApiError } from "@/types/api/error";
+import { CircleAlert } from "lucide-react";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import type { CompareField } from "./form.types";
+
+// Lỗi gửi biểu mẫu: giữ nguyên dữ liệu người dùng đã nhập; khi xung đột phiên bản
+// (412) cho tải bản mới để đối chiếu rồi mới tiếp tục sửa.
 export function FormError({
   error,
   setError,
@@ -18,32 +23,41 @@ export function FormError({
 }) {
   const [comparison, setComparison] = useState<Record<string, unknown>>();
   return (
-    <div className="notice error wide" role="alert">
-      <p>{error.message}</p>
+    <div
+      role="alert"
+      className="col-span-12 grid gap-3 rounded-lg border border-danger-bold/40 bg-danger-bg p-4 text-sm"
+    >
+      <p className="m-0 flex items-start gap-2 font-medium text-danger-fg">
+        <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        {error.message}
+      </p>
       {error instanceof ApiError &&
         error.status === 412 &&
         onConflictReload && (
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                setComparison(await onConflictReload());
-              } catch (cause) {
-                setError(
-                  cause instanceof Error
-                    ? cause
-                    : new Error("Không tải được phiên bản mới."),
-                );
-              }
-            }}
-          >
-            Tải bản mới để đối chiếu
-          </button>
+          <div>
+            <Button
+              onClick={async () => {
+                try {
+                  setComparison(await onConflictReload());
+                } catch (cause) {
+                  setError(
+                    cause instanceof Error
+                      ? cause
+                      : new Error("Không tải được phiên bản mới."),
+                  );
+                }
+              }}
+            >
+              Tải bản mới để đối chiếu
+            </Button>
+          </div>
         )}
       {comparison !== undefined && (
-        <details open>
-          <summary>Bản mới nhất — nội dung bạn nhập được giữ lại</summary>
-          <dl>
+        <details open className="grid gap-2 text-fg">
+          <summary className="cursor-pointer font-medium">
+            Bản mới nhất — nội dung bạn nhập được giữ lại
+          </summary>
+          <dl className="m-0 grid gap-2 rounded-md bg-surface p-3">
             {fields.map((config) => {
               if (!(config.name in comparison)) return null;
               const value = comparison[config.name];
@@ -51,9 +65,12 @@ export function FormError({
                 config.options?.find((option) => option.value === value)
                   ?.label ?? label(String(value));
               return (
-                <div key={config.name}>
-                  <dt>{config.label}</dt>
-                  <dd>
+                <div
+                  key={config.name}
+                  className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-3"
+                >
+                  <dt className="text-fg-subtle">{config.label}</dt>
+                  <dd className="m-0 text-left break-words">
                     {value === null || value === undefined
                       ? "Không có"
                       : Array.isArray(value)
@@ -65,15 +82,16 @@ export function FormError({
             })}
           </dl>
           {onConflictAccept && (
-            <button
-              type="button"
-              onClick={() => {
-                onConflictAccept();
-                setError(null);
-              }}
-            >
-              Đã đối chiếu, tiếp tục chỉnh sửa
-            </button>
+            <div>
+              <Button
+                onClick={() => {
+                  onConflictAccept();
+                  setError(null);
+                }}
+              >
+                Đã đối chiếu, tiếp tục chỉnh sửa
+              </Button>
+            </div>
           )}
         </details>
       )}

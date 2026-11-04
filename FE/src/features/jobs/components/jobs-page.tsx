@@ -1,4 +1,7 @@
 "use client";
+import { DataTable } from "@/components/patterns/data-table";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 import { RecordStamp, stampText } from "@/components/ui/record-stamp";
 import { Form } from "@/components/forms/form";
@@ -10,7 +13,7 @@ import {
   RowDialogLinks,
 } from "@/components/ui/entity-dialog";
 import { PageSkeleton } from "@/components/ui/loading";
-import { DataTable, PageHeader } from "@/components/ui/page";
+import { PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { dateTime } from "@/lib/format";
 import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
@@ -81,7 +84,10 @@ export function JobsPage() {
           <span key="name">
             {job.name}
             {job.description && (
-              <span className="small muted"> — {job.description}</span>
+              <span className="text-xs text-fg-subtle">
+                {" "}
+                — {job.description}
+              </span>
             )}
           </span>,
           job.isEnabled ? "Đang bật" : "Đang tắt",
@@ -90,7 +96,10 @@ export function JobsPage() {
           dateTime(job.nextRunAt),
           <JobStatus key="status" value={job.lastStatus} />,
           stampText(job.updatedBy, job.updatedAt),
-          <span key="actions" className="row-actions">
+          <span
+            key="actions"
+            className="actions inline-flex items-center gap-1"
+          >
             <RowDialogLinks
               name={`job ${job.name}`}
               view={dialog.href("view", job.code)}
@@ -149,7 +158,7 @@ export function JobsPage() {
             />
           ) : (
             <>
-              <dl className="record-details">
+              <dl className="m-0 grid gap-y-2 text-sm [&>div]:grid [&>div]:grid-cols-[9rem_minmax(0,1fr)] [&>div]:items-baseline [&>div]:gap-x-3 [&_dt]:text-fg-subtle [&_dd]:m-0 [&_dd]:min-w-0 [&_dd]:text-left [&_dd]:break-words">
                 <div>
                   <dt>Mô tả</dt>
                   <dd>{selected.description ?? "—"}</dd>
@@ -169,9 +178,9 @@ export function JobsPage() {
               </dl>
               <JobRuns code={selected.code} />
               <DialogFooter>
-                <button type="button" onClick={dialog.close}>
+                <Button type="button" onClick={dialog.close}>
                   Đóng
-                </button>
+                </Button>
                 <ActionButton
                   pendingLabel="Đang chạy…"
                   onAction={async () => {
@@ -181,13 +190,13 @@ export function JobsPage() {
                 >
                   Chạy ngay
                 </ActionButton>
-                <button
+                <Button
                   type="button"
-                  className="primary"
+                  variant="primary"
                   onClick={() => dialog.switchTo("edit", selected.code)}
                 >
                   Chỉnh sửa
-                </button>
+                </Button>
               </DialogFooter>
             </>
           )}
@@ -228,9 +237,9 @@ function JobForm({
       compact
       form={form}
       cancel={
-        <button type="button" onClick={onCancel}>
+        <Button type="button" onClick={onCancel}>
           Hủy
-        </button>
+        </Button>
       }
       compareFields={[
         { name: "isEnabled", label: "Đang bật" },
@@ -248,8 +257,12 @@ function JobForm({
         onDone();
       }}
     >
-      <label className="checkbox-label form-field field-full">
-        <input type="checkbox" {...form.register("isEnabled")} />
+      <label className="col-span-12 flex items-center gap-2 text-sm text-fg">
+        <input
+          type="checkbox"
+          className="size-4 accent-(--color-action)"
+          {...form.register("isEnabled")}
+        />
         Bật chạy theo lịch
       </label>
       <FormInput
@@ -306,7 +319,7 @@ function JobRuns({ code }: { code: string }) {
         run.error ? (
           <details key="error">
             <summary>Xem lỗi</summary>
-            <p className="preserve-lines small">{run.error}</p>
+            <p className="whitespace-pre-wrap text-xs">{run.error}</p>
           </details>
         ) : (
           "—"

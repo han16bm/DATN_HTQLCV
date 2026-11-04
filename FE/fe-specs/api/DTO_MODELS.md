@@ -2,7 +2,7 @@
 
 Contract 0.3.0. Các bảng là đặc tả văn bản để Codex tạo schema/DTO sau. Tên kiểu có tiền tố nhóm để tránh trùng tên. Request và response được phân biệt; không dùng Partial<EntityDTO> làm body cập nhật.
 
-Rà tối giản ngày 31/10/2026: schema trong src/features là contract response hiện hành. Session projectAccess chỉ có projectId/permissions; LoginResponse không trả expiresAt. Snapshot.scope response chỉ có from/to (model giữ scope đầy đủ); AnalysisMeasure bỏ basis trong response, MetricDTO ở dashboard vẫn giữ basis để hiện Hiện tại/Trong kỳ. Alert trả handler: PersonRef|null thay handledBy. ID snapshot/analysisId/citation và version vẫn cần để kiểm tra/thao tác. Chi tiết từng màn ở ../../docs/REFACTOR_REVIEW.md.
+Rà tối giản ngày 31/10/2026: schema trong src/features là contract response hiện hành. Session projectAccess chỉ có projectId/permissions; LoginResponse không trả expiresAt. Snapshot.scope response chỉ có from/to (model giữ scope đầy đủ); AnalysisMeasure bỏ basis trong response, MetricDTO ở dashboard vẫn giữ basis để hiện Hiện tại/Trong kỳ. Alert trả handler: PersonRef|null thay handledBy. ID snapshot/analysisId/citation và version vẫn cần để kiểm tra/thao tác. Chi tiết từng màn ở ../../docs/ARCHITECTURE.md.
 
 ## Kiểu dùng chung
 
@@ -1240,3 +1240,7 @@ listAnalyticsFilterOptions trả PageDTO<Shared.EntityLabelDTO>. Với kind=PERS
 ProfileDto của GET /users/:userId/profile là object phẳng gồm id/displayName/avatarUrl nullable/unit (tên đơn vị)/systemRole/email, chỉ phục vụ card nhận diện và liên hệ của người đã đăng nhập. Không có thống kê, dự án hoặc phân trang; không dùng UserDTO quản trị để trả thừa field.
 
 Schema TaskDto hiện hành trả createdAt và firstStartedAt đã có trong model để hiển thị chi tiết công việc. firstStartedAt=null khi chưa bắt đầu, giữ mốc lần đầu khi tạm dừng/tiếp tục/bàn giao. TaskRow trả thêm firstStartedAt cho cột Ngày bắt đầu, không trả createdAt. Payload không nhận các mốc này; updatedAt/statusChangedAt/completedAt tiếp tục là dữ liệu nội bộ khi chưa có chỗ hiển thị.
+
+## DTO thông báo cá nhân — yêu cầu 03/11
+
+NotificationDto: id, type (sáu loại sự kiện tại NOTIFICATIONS.md, chọn icon), title (nội dung hiển thị), href (đúng đối tượng), createdAt, readAt nullable (phân biệt chưa đọc). List trả Page<NotificationDto>; summary chỉ unreadCount. Mark read chỉ trả id/readAt không null để FE cập nhật cache, không trả lặp nội dung/đường dẫn. Không nhận recipientId/userId trong request và không trả dữ liệu vận hành outbox. Tất cả dữ liệu ngoài UI lấy qua HTTP; chưa tích hợp BE thật.

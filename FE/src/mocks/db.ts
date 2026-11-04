@@ -1,5 +1,10 @@
 import { alertSchema } from "@/features/alerts/schemas/alerts.schema";
 import type {
+  NotificationDto,
+  NotificationQuery,
+  NotificationType,
+} from "@/features/notifications/types/notifications.types";
+import type {
   AlertDto,
   AlertQuery,
   AlertRow,
@@ -449,6 +454,12 @@ function createDatabase() {
       id: string;
       eventId: string;
       recipientId: string;
+      type: NotificationType;
+      taskId: string;
+      submissionId?: string;
+      alertId?: string;
+      createdAt: string;
+      readAt: string | null;
       status: "PENDING" | "SENT" | "FAILED";
       attemptCount: number;
     }[],
@@ -603,11 +614,21 @@ function audit(
     reason,
   });
 }
-function notify(recipientId: string) {
+function notify(
+  recipientId: string,
+  type: NotificationType,
+  taskId: string,
+  target: { submissionId?: string; alertId?: string } = {},
+) {
   db.outbox.push({
     id: crypto.randomUUID(),
     eventId: crypto.randomUUID(),
     recipientId,
+    type,
+    taskId,
+    ...target,
+    createdAt: now(),
+    readAt: null,
     status: "SENT",
     attemptCount: 1,
   });
@@ -3074,7 +3095,7 @@ export const tasksDb = {
       patch,
       changeReason ?? null,
     );
-    if (task.assigneeId) notify(task.assigneeId);
+    if (task.assigneeId) notify(task.assigneeId, "TASK_UPDATED", task.id);
     return taskDTO(task);
   },
   assignTask(
@@ -3125,7 +3146,7 @@ export const tasksDb = {
     });
     task.assigneeId = body.assigneeId;
     transition(user, task, "TODO", body.reason ?? null);
-    notify(body.assigneeId);
+    notify(body.assigneeId, "TASK_ASSIGNED", task.id);
     return taskDTO(task);
   },
   startTask(user: User, taskId: string, expectedVersion: string | null) {
@@ -3492,7 +3513,12 @@ export const submissionsDb = {
     db.submissions.push(submission);
     task.latestSubmissionId = submission.id;
     transition(user, task, "PENDING_REVIEW");
-    notify(db.projects.find((p) => p.id === task.projectId)!.ownerId);
+    notify(
+      db.projects.find((p) => p.id === task.projectId)!.ownerId,
+      "RESULT_SUBMITTED",
+      task.id,
+      { submissionId: submission.id },
+    );
     return { submission: submissionDTO(submission), task: taskDTO(task) };
   },
   approveSubmission(
@@ -3520,7 +3546,9 @@ export const submissionsDb = {
       (a) => a.taskId === task.id && !a.endedAt,
     ))
       a.endedAt = now();
-    notify(submission.submittedBy);
+    notify(submission.submittedBy, "RESULT_APPROVED", task.id, {
+      submissionId,
+    });
     return { submission: submissionDTO(submission), task: taskDTO(task) };
   },
   requestSubmissionRevision(
@@ -3544,7 +3572,9 @@ export const submissionsDb = {
     submission.requestedChanges = body.requestedChanges;
     touch(submission);
     transition(user, task, "IN_PROGRESS", body.reason);
-    notify(submission.submittedBy);
+    notify(submission.submittedBy, "CHANGES_REQUESTED", task.id, {
+      submissionId,
+    });
     return { submission: submissionDTO(submission), task: taskDTO(task) };
   },
 };
@@ -5002,7 +5032,7 @@ export function evaluateAlertRules() {
         continue;
       }
       if (!rule.active) continue;
-      db.alerts.push({
+      const alert = {
         ...entity(),
         createdAt: now(),
         projectId: task.projectId,
@@ -5010,8 +5040,8 @@ export function evaluateAlertRules() {
         ...stamp(),
         updatedAt: now(),
         type: rule.type,
-        severity: "HIGH",
-        status: "UNREAD",
+        severity: "HIGH" as const,
+        status: "UNREAD" as const,
         conditionActive: true,
         evidence: rule.evidence,
         dataAsOf: now(),
@@ -5019,11 +5049,12 @@ export function evaluateAlertRules() {
         resolutionNote: null,
         handledBy: null,
         handledAt: null,
-      });
+      };
+      db.alerts.push(alert);
       db.revision++;
       summary.created++;
       const owner = db.projects.find((p) => p.id === task.projectId)?.ownerId;
-      if (owner) notify(owner);
+      if (owner) notify(owner, "ALERT_CREATED", task.id, { alertId: alert.id });
     }
   }
   return summary;
@@ -5201,6 +5232,64 @@ export const analyticsDb = {
 };
 
 // Kiểm tra quyền khi gửi lại yêu cầu.
+const notificationText: Record<NotificationType, string> = {
+  TASK_ASSIGNED: "Bạn được giao công việc",
+  TASK_UPDATED: "Kế hoạch công việc đã thay đổi",
+  RESULT_SUBMITTED: "Có kết quả mới cần nghiệm thu",
+  RESULT_APPROVED: "Kết quả đã được chấp nhận",
+  CHANGES_REQUESTED: "Kết quả cần chỉnh sửa",
+  ALERT_CREATED: "Có cảnh báo mới cho công việc",
+};
+function visibleNotifications(user: User) {
+  return db.outbox.filter((notice) => {
+    if (notice.recipientId !== user.id) return false;
+    const task = db.tasks.find((item) => item.id === notice.taskId);
+    return Boolean(
+      task &&
+      visibleTask(user, task) &&
+      (!notice.alertId || can(user, "ANALYTICS_VIEW", task.projectId)),
+    );
+  });
+}
+function requireNotification(user: User, id: string) {
+  const notice = visibleNotifications(user).find((item) => item.id === id);
+  if (!notice)
+    throw new ApiError(404, "NOT_FOUND", "Không tìm thấy thông báo.");
+  return notice;
+}
+function notificationDTO(notice: (typeof db.outbox)[number]): NotificationDto {
+  const task = db.tasks.find((item) => item.id === notice.taskId)!;
+  return {
+    id: notice.id,
+    type: notice.type,
+    title: `${notificationText[notice.type]}: ${task.title}`,
+    href: notice.alertId
+      ? `/alerts/${notice.alertId}`
+      : `/tasks/${task.id}${notice.submissionId ? `/submissions/${notice.submissionId}` : ""}`,
+    createdAt: notice.createdAt,
+    readAt: notice.readAt,
+  };
+}
+export const notificationsDb = {
+  list(user: User, query: NotificationQuery) {
+    const items = visibleNotifications(user)
+      .reverse()
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return paginate(items.map(notificationDTO), query);
+  },
+  summary(user: User) {
+    return {
+      unreadCount: visibleNotifications(user).filter((notice) => !notice.readAt)
+        .length,
+    };
+  },
+  markRead(user: User, id: string) {
+    const notice = requireNotification(user, id);
+    notice.readAt ??= now();
+    return { id: notice.id, readAt: notice.readAt };
+  },
+};
+
 export function authorizeReplay(
   operation: string,
   action: Permission | null,
@@ -5208,6 +5297,7 @@ export function authorizeReplay(
   params: Record<string, string>,
   payload: Record<string, unknown>,
 ) {
+  if (params.notificationId) requireNotification(user, params.notificationId);
   let projectId =
     typeof params.projectId === "string" ? params.projectId : undefined;
   if (!projectId && typeof params.taskId === "string")

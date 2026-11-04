@@ -1,10 +1,12 @@
 "use client";
 
 import { Avatar } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { ModalHeader, modalClass, overlayClass } from "@/components/ui/overlay";
+import { cn } from "@/lib/cn";
 import { Spinner } from "@/components/ui/loading";
 import { ApiError } from "@/types/api/error";
 import * as Dialog from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
 import { useRef, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import type { SessionDto } from "../types/auth.types";
@@ -49,25 +51,22 @@ export function AvatarCropDialog({
   return (
     <Dialog.Root open onOpenChange={(open) => !open && !busy && onCancel()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="dialog-overlay" />
+        <Dialog.Overlay className={overlayClass()} />
         <Dialog.Content
-          className="dialog-content avatar-crop-dialog"
+          className={cn(
+            modalClass("md"),
+            "flex h-[min(640px,calc(100dvh-32px))] w-[min(520px,calc(100vw-32px))] flex-col gap-4 *:shrink-0",
+          )}
           aria-busy={busy}
         >
-          <div className="dialog-heading">
-            <Dialog.Title>Chỉnh sửa ảnh</Dialog.Title>
-            <Dialog.Close
-              className="icon-button"
-              aria-label="Đóng chỉnh sửa ảnh"
-              disabled={busy}
-            >
-              <X size={18} aria-hidden="true" />
-            </Dialog.Close>
-          </div>
-          <Dialog.Description className="small muted">
+          <ModalHeader title="Chỉnh sửa ảnh" closeLabel="Đóng chỉnh sửa ảnh" />
+          <Dialog.Description className="m-0 text-sm text-fg-subtle">
             Kéo ảnh để chọn vị trí và thu phóng vùng cắt.
           </Dialog.Description>
-          <div className="avatar-crop-area" inert={busy}>
+          <div
+            className="relative min-h-40 flex-[1_0_180px] overflow-hidden rounded-lg bg-[#1b2c43]"
+            inert={busy}
+          >
             <Cropper
               image={source.url}
               crop={crop}
@@ -94,9 +93,11 @@ export function AvatarCropDialog({
               cropperProps={{ "aria-label": "Vùng cắt ảnh" }}
             />
           </div>
-          <label className="avatar-zoom">
+          <label className="flex items-center gap-4 text-sm">
             Thu phóng
             <input
+              data-ui
+              className="flex-1 accent-action"
               type="range"
               min={1}
               max={3}
@@ -108,16 +109,18 @@ export function AvatarCropDialog({
             />
           </label>
           {error && (
-            <div className="notice error" role="alert">
-              <p>
+            <div
+              role="alert"
+              className="grid gap-2 rounded-lg border border-danger-bold/40 bg-danger-bg p-3 text-sm text-danger-fg"
+            >
+              <p className="m-0">
                 {error instanceof ApiError
                   ? (error.fields.find((field) => field.path[0] === "avatar")
                       ?.message ?? error.message)
                   : error.message}
               </p>
               {error instanceof ApiError && error.status === 412 && (
-                <button
-                  type="button"
+                <Button
                   onClick={async () => {
                     try {
                       setLatest(await onConflictReload());
@@ -127,18 +130,17 @@ export function AvatarCropDialog({
                   }}
                 >
                   Tải bản mới để đối chiếu
-                </button>
+                </Button>
               )}
             </div>
           )}
           {latest && (
-            <div className="avatar-comparison">
+            <div className="flex flex-wrap items-center gap-2.5">
               <Avatar name={latest.displayName} src={latest.avatarUrl} />
-              <span className="small muted">
+              <span className="text-xs text-fg-subtle">
                 Ảnh hiện tại. Vùng cắt đang chọn được giữ lại.
               </span>
-              <button
-                type="button"
+              <Button
                 onClick={() => {
                   onConflictAccept();
                   setLatest(undefined);
@@ -146,22 +148,21 @@ export function AvatarCropDialog({
                 }}
               >
                 Đã đối chiếu, tiếp tục chỉnh sửa
-              </button>
+              </Button>
             </div>
           )}
-          <div className="actions avatar-crop-actions">
-            <button type="button" disabled={busy} onClick={onCancel}>
+          <div className="flex flex-wrap justify-end gap-2.5">
+            <Button disabled={busy} onClick={onCancel}>
               Hủy
-            </button>
-            <button
-              type="button"
-              className="primary pending-button"
+            </Button>
+            <Button
+              variant="primary"
               disabled={!area || busy || Boolean(latest)}
               onClick={() => void confirm()}
             >
               {busy && <Spinner />}
               {busy ? "Đang cập nhật…" : "Cập nhật"}
-            </button>
+            </Button>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

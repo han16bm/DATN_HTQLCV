@@ -22,7 +22,7 @@ export function RecordStamp({
   updatedAt?: string | null;
 }) {
   return (
-    <span className="record-stamp small muted">
+    <span className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-subtle [&_strong]:font-medium [&_strong]:text-fg">
       {createdBy !== undefined && (
         <span>
           Tạo bởi <strong>{stampLabel(createdBy)}</strong>

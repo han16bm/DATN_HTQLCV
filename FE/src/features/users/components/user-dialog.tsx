@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@/components/ui/button";
 
 import {
   DialogFooter,
@@ -116,16 +117,16 @@ function UserDialogBody() {
           )}
           {mode === "view" && user && (
             <DialogFooter>
-              <button type="button" onClick={dialog.close}>
+              <Button type="button" onClick={dialog.close}>
                 Đóng
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className="primary"
+                variant="primary"
                 onClick={() => dialog.switchTo("edit", dialog.id)}
               >
                 Chỉnh sửa
-              </button>
+              </Button>
             </DialogFooter>
           )}
         </>

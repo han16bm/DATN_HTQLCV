@@ -1,8 +1,11 @@
 "use client";
 
 import { ActionButton } from "@/components/ui/action-button";
+import { Notice } from "@/components/ui/notice";
+import { Button } from "@/components/ui/button";
 import { PageSkeleton, Spinner } from "@/components/ui/loading";
-import { Badge, PageHeader, Panel } from "@/components/ui/page";
+import { PageHeader, Panel } from "@/components/ui/page";
+import { StatusLozenge } from "@/components/ui/lozenge";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { dateTime } from "@/lib/format";
 import Link from "next/link";
@@ -90,40 +93,40 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
           </>
         }
       />
-      <p className="metadata">
+      <p className="mb-3 text-xs text-fg-subtle">
         Cập nhật {dateTime(snapshot.dataAsOf)} ·{" "}
-        <Badge value={snapshot.quality.status} /> ·{" "}
-        <Badge value={detail.freshness.status} />
+        <StatusLozenge value={snapshot.quality.status} /> ·{" "}
+        <StatusLozenge value={detail.freshness.status} />
       </p>
       {detail.freshness.status === "OUTDATED" && (
-        <p className="notice">
+        <Notice tone="warning" className="mb-3">
           Dữ liệu đã thay đổi sau lần phân tích này.
           {detail.freshness.latestAnalysisId && (
             <>
               {" "}
               <Link
-                className="text-link"
+                className="font-medium text-selected-fg underline-offset-2 hover:underline"
                 href={`/analytics/details/${detail.freshness.latestAnalysisId}`}
               >
                 Xem dữ liệu mới
               </Link>
             </>
           )}
-        </p>
+        </Notice>
       )}
-      <div className="analysis-columns">
+      <div className="grid items-start gap-5 @min-[900px]/page:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <AnalysisSources snapshot={snapshot} />
-        <div className="analysis-ai">
+        <div className="grid min-w-0 gap-5">
           <Panel
             title="Nhận định và đề xuất AI"
             actions={
-              <div className="analysis-state">
+              <div className="flex items-center gap-2">
                 {explanation.lastSuccess && (
-                  <span className="small muted">
+                  <span className="text-xs text-fg-subtle">
                     {explanation.lastSuccess.modelDisplayName}
                   </span>
                 )}
-                <Badge value={explanation.status} />
+                <StatusLozenge value={explanation.status} />
               </div>
             }
           >
@@ -143,13 +146,19 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
               />
             )}
             {create.isPending && (
-              <p role="status" className="loading-inline">
+              <p
+                role="status"
+                className="m-0 inline-flex items-center gap-2 text-sm"
+              >
                 <Spinner />
                 Đang tiếp nhận yêu cầu diễn giải…
               </p>
             )}
             {["QUEUED", "RUNNING"].includes(explanation.status) && (
-              <p role="status" className="loading-inline">
+              <p
+                role="status"
+                className="m-0 inline-flex items-center gap-2 text-sm"
+              >
                 <Spinner />
                 Đang phân tích…
               </p>
@@ -157,7 +166,7 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
             {(detail.explanation.activeJobId ?? jobId) && (
               <p>
                 <Link
-                  className="text-link"
+                  className="font-medium text-selected-fg underline-offset-2 hover:underline"
                   href={`/analytics/jobs/${detail.explanation.activeJobId ?? jobId}`}
                 >
                   Xem tiến trình phân tích
@@ -165,10 +174,14 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
               </p>
             )}
             {tracking.paused && (
-              <p className="notice">
-                Phân tích đang mất nhiều thời gian hơn dự kiến.{" "}
-                <button onClick={tracking.resume}>Tiếp tục kiểm tra</button>
-              </p>
+              <Notice
+                tone="warning"
+                actions={
+                  <Button onClick={tracking.resume}>Tiếp tục kiểm tra</Button>
+                }
+              >
+                Phân tích đang mất nhiều thời gian hơn dự kiến.
+              </Notice>
             )}
             {tracking.query.isError && (
               <QueryErrorState
@@ -177,19 +190,19 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
               />
             )}
             {explanation.error && (
-              <p className="notice error">
+              <Notice tone="danger">
                 {explanation.error.message}
                 {explanation.error.retryAfterSeconds
                   ? ` Có thể thử lại sau ${explanation.error.retryAfterSeconds} giây.`
                   : ""}
-              </p>
+              </Notice>
             )}
             <AnalysisExplanation
               snapshot={snapshot}
               value={explanation.lastSuccess}
             />
             {!explanation.lastSuccess && (
-              <p className="preserve-lines">{detail.systemSummary}</p>
+              <p className="whitespace-pre-wrap">{detail.systemSummary}</p>
             )}
           </Panel>
           {snapshot.analysisType === "BOTTLENECK" && (

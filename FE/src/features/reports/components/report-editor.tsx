@@ -1,6 +1,8 @@
 "use client";
 
 import { Form } from "@/components/forms/form";
+import { SplitLayout } from "@/components/patterns/split-layout";
+import { Button } from "@/components/ui/button";
 import { FormMultiSelect, FormTextarea } from "@/components/forms/form-field";
 import { ActionButton } from "@/components/ui/action-button";
 import { PageSkeleton, Spinner } from "@/components/ui/loading";
@@ -92,8 +94,74 @@ export function ReportEditor({
   });
   const { errors } = form.formState;
   return (
-    <div className="report-layout">
-      <Panel title="Nội dung báo cáo" className="report-editor">
+    <SplitLayout
+      aside={
+        <aside aria-label="Thông tin kỳ báo cáo" className="grid gap-3">
+          <Panel title="Kỳ báo cáo">
+            <dl className="m-0 grid gap-y-2 text-sm [&>div]:grid [&>div]:grid-cols-[7rem_minmax(0,1fr)] [&>div]:items-baseline [&>div]:gap-x-3 [&_dt]:text-fg-subtle [&_dd]:m-0 [&_dd]:min-w-0 [&_dd]:text-left [&_dd]:break-words">
+              <div>
+                <dt>Dự án</dt>
+                <dd>{projectName}</dd>
+              </div>
+              <div>
+                <dt>Người lập</dt>
+                <dd>
+                  <UserBadge name={report.author.displayName} />
+                </dd>
+              </div>
+              <div>
+                <dt>Loại báo cáo</dt>
+                <dd>{label(report.periodType)}</dd>
+              </div>
+              <div>
+                <dt>Bắt đầu kỳ</dt>
+                <dd>{report.periodStart.split("-").reverse().join("/")}</dd>
+              </div>
+            </dl>
+          </Panel>
+          <Panel title="Số liệu nguồn">
+            {preview.isError ? (
+              <QueryErrorState error={preview.error} retry={preview.refetch} />
+            ) : !preview.data ? (
+              <PageSkeleton variant="cards" />
+            ) : (
+              <>
+                <dl className="m-0 grid gap-y-2 text-sm [&>div]:grid [&>div]:grid-cols-[7rem_minmax(0,1fr)] [&>div]:items-baseline [&>div]:gap-x-3 [&_dt]:text-fg-subtle [&_dd]:m-0 [&_dd]:min-w-0 [&_dd]:text-left [&_dd]:break-words">
+                  <div>
+                    <dt>Giờ công</dt>
+                    <dd>{hours(preview.data.totalMinutes)}</dd>
+                  </div>
+                  <div>
+                    <dt>Công việc</dt>
+                    <dd>{preview.data.items.length} việc</dd>
+                  </div>
+                  <div>
+                    <dt>Cập nhật</dt>
+                    <dd>{dateTime(preview.data.dataAsOf)}</dd>
+                  </div>
+                </dl>
+                {preview.data.partialPeriod && (
+                  <p className="text-xs text-fg-subtle">
+                    Kỳ báo cáo chưa kết thúc.
+                  </p>
+                )}
+                <ActionButton
+                  onAction={async () => {
+                    await refresh.mutateAsync({
+                      reportId: report.id,
+                      version: snapshot.base.version,
+                    });
+                  }}
+                >
+                  Làm mới số liệu
+                </ActionButton>
+              </>
+            )}
+          </Panel>
+        </aside>
+      }
+    >
+      <Panel title="Nội dung báo cáo">
         <Form
           form={form}
           compareFields={[
@@ -113,20 +181,21 @@ export function ReportEditor({
           ]}
           submitActions={
             <>
-              <button
+              <Button
                 type="submit"
-                className="pending-button"
+                className="inline-flex items-center gap-2"
                 onClick={() => {
                   send.current = false;
                 }}
               >
                 {form.formState.isSubmitting && !send.current && <Spinner />}
                 Lưu nháp
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="primary"
                 type="submit"
                 disabled={!preview.data}
-                className="primary pending-button"
+                className="inline-flex items-center gap-2"
                 aria-busy={form.formState.isSubmitting}
                 onClick={() => {
                   send.current = true;
@@ -134,7 +203,7 @@ export function ReportEditor({
               >
                 {form.formState.isSubmitting && send.current && <Spinner />}
                 Gửi báo cáo
-              </button>
+              </Button>
             </>
           }
           onConflictReload={() => snapshot.load(reload)}
@@ -216,74 +285,15 @@ export function ReportEditor({
             />
           )}
           {preview.data && (
-            <details className="wide report-source-details">
-              <summary>Công việc và giờ công trong kỳ</summary>
+            <details className="col-span-full pt-1">
+              <summary className="cursor-pointer py-2 text-sm font-medium text-selected-fg">
+                Công việc và giờ công trong kỳ
+              </summary>
               <ReportNumbers value={preview.data} />
             </details>
           )}
         </Form>
       </Panel>
-      <aside className="report-context" aria-label="Thông tin kỳ báo cáo">
-        <Panel title="Kỳ báo cáo">
-          <dl className="record-details">
-            <div>
-              <dt>Dự án</dt>
-              <dd>{projectName}</dd>
-            </div>
-            <div>
-              <dt>Người lập</dt>
-              <dd>
-                <UserBadge name={report.author.displayName} />
-              </dd>
-            </div>
-            <div>
-              <dt>Loại báo cáo</dt>
-              <dd>{label(report.periodType)}</dd>
-            </div>
-            <div>
-              <dt>Bắt đầu kỳ</dt>
-              <dd>{report.periodStart.split("-").reverse().join("/")}</dd>
-            </div>
-          </dl>
-        </Panel>
-        <Panel title="Số liệu nguồn">
-          {preview.isError ? (
-            <QueryErrorState error={preview.error} retry={preview.refetch} />
-          ) : !preview.data ? (
-            <PageSkeleton variant="cards" />
-          ) : (
-            <>
-              <dl className="record-details">
-                <div>
-                  <dt>Giờ công</dt>
-                  <dd>{hours(preview.data.totalMinutes)}</dd>
-                </div>
-                <div>
-                  <dt>Công việc</dt>
-                  <dd>{preview.data.items.length} việc</dd>
-                </div>
-                <div>
-                  <dt>Cập nhật</dt>
-                  <dd>{dateTime(preview.data.dataAsOf)}</dd>
-                </div>
-              </dl>
-              {preview.data.partialPeriod && (
-                <p className="small muted">Kỳ báo cáo chưa kết thúc.</p>
-              )}
-              <ActionButton
-                onAction={async () => {
-                  await refresh.mutateAsync({
-                    reportId: report.id,
-                    version: snapshot.base.version,
-                  });
-                }}
-              >
-                Làm mới số liệu
-              </ActionButton>
-            </>
-          )}
-        </Panel>
-      </aside>
-    </div>
+    </SplitLayout>
   );
 }

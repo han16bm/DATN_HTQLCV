@@ -11,7 +11,7 @@ npm run dev
 
 Mở `http://localhost:3000`. Tài khoản development: `minh`, `lan`, `huy`, `admin`; mật khẩu `Mock@12345`. Dữ liệu giả lập reset khi reload. Admin quản trị tài khoản không tự có quyền công việc dự án.
 
-Seed dùng mốc máy chủ thử nghiệm 23/10/2026 để lặp lại các ca tiến độ/deadline. Khi thử ghi giờ hoặc lập báo cáo, chọn ngày/kỳ phù hợp với mốc dữ liệu này.
+Khi khởi động browser mock, các công việc còn hạn tự nhận hạn hôm nay + 6 ngày; các case quá hạn và snapshot lịch sử giữ nguyên. Node test dùng seed cố định để tái lập.
 
 ```powershell
 npm run typecheck
@@ -25,11 +25,10 @@ Code được tổ chức theo feature: `api` chứa service HTTP và query key;
 Luồng dữ liệu: component → hook → service → HTTP → MSW handler → DB tạm. Handler parse request và định dạng response; CRUD, quyền, trạng thái và audit nằm trong `mocks/db.ts`, seed/policy nằm trong `mocks/data.json`.
 
 - [Kiến trúc tham khảo vietcd/frontend](docs/ARCHITECTURE.md)
-- [Kết quả đọc fe-specs và các điểm cần chốt](docs/SPEC_REVIEW.md)
-- [Trạng thái thực tế và phần chưa triển khai](docs/IMPLEMENTATION_STATUS.md)
-- [Đặc tả FE gốc](fe-specs/README.md)
+- [Thiết kế hiện tại và phạm vi QA](docs/DESIGN.md)
+- [Đặc tả nghiệp vụ và API](fe-specs/README.md)
 
-Đã nối các luồng chính S01–S43 với 83 HTTP route và 82 hàm service. Đăng nhập `minh` để quản lý dự án/nghiệm thu/phân tích; `lan`, `huy` để thực hiện công việc; `admin` để quản trị tài khoản/tổ chức.
+Các luồng nghiệp vụ gọi HTTP và được kiểm thử qua MSW; danh mục API ở fe-specs/api/API_CATALOG.md. Đăng nhập `minh` để quản lý dự án/nghiệm thu/phân tích; `lan`, `huy` để thực hiện công việc; `admin` để quản trị tài khoản/tổ chức.
 
 Chỉnh `.env` để chuyển chế độ:
 
@@ -40,4 +39,4 @@ NEXT_PUBLIC_API_BASE_URL=/api
 NEXT_PUBLIC_MSW_DELAY=400
 ```
 
-Khi nối Gateway thật, đặt `NEXT_PUBLIC_API_MODE=http` và `NEXT_PUBLIC_API_BASE_URL` bằng URL đầy đủ, ví dụ `http://localhost:8080/api`. Không dùng `.env.development`; khởi động lại dev server sau khi sửa `.env`, hoặc build lại khi chạy production. Cả hai chế độ đều dùng cùng Axios client, không gọi trực tiếp mock DB. AI hiện dùng diễn giải mô phỏng; browser QA và các phần cần BE xác nhận được ghi trong tài liệu trạng thái.
+Khi nối Gateway thật, đặt `NEXT_PUBLIC_API_MODE=http` và `NEXT_PUBLIC_API_BASE_URL` bằng URL đầy đủ, ví dụ `http://localhost:8080/api`. Không dùng `.env.development`; khởi động lại dev server sau khi sửa `.env`, hoặc build lại khi chạy production. Cả hai chế độ đều dùng cùng Axios client, không gọi trực tiếp mock DB. AI hiện dùng diễn giải mô phỏng; giới hạn QA được ghi trong docs/DESIGN.md.

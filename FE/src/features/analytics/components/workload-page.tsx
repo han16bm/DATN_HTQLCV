@@ -1,7 +1,7 @@
 "use client";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import { DataTable } from "@/components/ui/page";
+import { DataTable } from "@/components/patterns/data-table";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { hours, number } from "@/lib/format";
@@ -26,8 +26,9 @@ export function WorkloadPage() {
         <>
           <Metadata value={query.data.metadata} />
           <DataTable
+            loading={query.isFetching}
             description={
-              <p className="small muted">
+              <p className="text-xs text-fg-subtle">
                 Chưa có lịch làm việc để xác định mức độ bận của nhân sự.
               </p>
             }
@@ -53,9 +54,12 @@ export function WorkloadPage() {
                 ? "Chưa đủ dữ liệu"
                 : hours(p.capacityMinutes),
               number(p.utilizationRate, "%"),
-              <div key="links" className="actions">
+              <div
+                key="links"
+                className="actions flex flex-wrap items-center gap-2"
+              >
                 <Link
-                  className="detail-link"
+                  className="inline-flex min-h-7 items-center rounded-sm px-1.5 text-sm font-medium whitespace-nowrap text-selected-fg hover:bg-hover"
                   href={`/tasks?assigneeId=${encodeURIComponent(p.userId)}${scope.query.projectId ? `&projectId=${encodeURIComponent(scope.query.projectId)}` : ""}`}
                 >
                   Công việc

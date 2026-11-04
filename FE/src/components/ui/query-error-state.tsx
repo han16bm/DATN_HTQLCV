@@ -1,6 +1,7 @@
 "use client";
 import { ApiError } from "@/types/api/error";
 import { ActionButton } from "./action-button";
+import { Notice } from "./notice";
 
 export function QueryErrorState({
   error,
@@ -19,23 +20,30 @@ export function QueryErrorState({
       ? details.ip
       : undefined;
   return (
-    <div role="alert" className="notice error">
-      <h2>
-        {ipBlocked
+    <Notice
+      tone="danger"
+      title={
+        ipBlocked
           ? "IP của bạn không được phép truy cập khu quản trị"
           : status === 403
             ? "Bạn chưa được cấp quyền"
             : status === 404
               ? "Không tìm thấy nội dung"
-              : "Chưa tải được dữ liệu"}
-      </h2>
+              : "Chưa tải được dữ liệu"
+      }
+      actions={
+        retry && ![401, 403, 404].includes(status) ? (
+          <ActionButton onAction={retry} pendingLabel="Đang tải lại…">
+            Thử tải lại
+          </ActionButton>
+        ) : undefined
+      }
+      className="mb-3"
+    >
       <p>{error.message}</p>
-      {typeof ip === "string" && <p className="small">Địa chỉ IP: {ip}</p>}
-      {retry && ![401, 403, 404].includes(status) && (
-        <ActionButton onAction={retry} pendingLabel="Đang tải lại…">
-          Thử tải lại
-        </ActionButton>
+      {typeof ip === "string" && (
+        <p className="text-xs text-fg-subtle">Địa chỉ IP: {ip}</p>
       )}
-    </div>
+    </Notice>
   );
 }

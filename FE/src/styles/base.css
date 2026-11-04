@@ -1,0 +1,73 @@
+/* Nền chung của ứng dụng: chữ, màu nền, vòng focus. Không chứa style thành phần. */
+@layer base {
+  html {
+    scroll-padding-top: calc(var(--topbar-h) + 16px);
+    scrollbar-gutter: stable;
+  }
+  body {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    background: var(--color-page);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  h1,
+  h2,
+  h3,
+  p {
+    text-wrap: pretty;
+  }
+}
+
+/* Ngăn kéo menu di động trượt vào từ trái. */
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Hiệu ứng mở/đóng của lớp phủ, hộp thoại và ngăn kéo bên phải. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes slide-out-right {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Người dùng chọn giảm chuyển động: bỏ hiệu ứng, giữ nguyên trạng thái cuối. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

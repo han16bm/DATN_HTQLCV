@@ -12,7 +12,8 @@ type Session = SessionDto | null | undefined;
 const readsEveryProject: readonly Permission[] = ["ANALYTICS_VIEW"];
 
 // Có quyền ở phạm vi hệ thống, hoặc ở đúng dự án khi truyền projectId. Quyền
-// quản trị tài khoản không kéo theo quyền đọc, sửa hay nghiệm thu dự án.
+// quản trị tài khoản không kéo theo quyền sửa hay nghiệm thu dự án; Admin chỉ được xem
+// qua ANALYTICS_VIEW ở phạm vi hệ thống.
 export function hasPermission(
   session: Session,
   permission: Permission,
@@ -43,6 +44,12 @@ export function hasAnyPermission(session: Session, permission: Permission) {
     )
   );
 }
+
+// Thấy việc của người khác (quyền ở ít nhất một dự án hoặc xem toàn hệ thống): khi đó
+// lối tắt "Việc của tôi" mới có ích; thành viên thường chỉ thấy việc của chính mình.
+export const seesOthersTasks = (session: Session) =>
+  hasPermission(session, "ANALYTICS_VIEW") ||
+  Boolean(session?.projectAccess.some((access) => access.permissions.length));
 
 // Các mã thuộc nhóm ADMIN trong danh mục chức năng (ADMIN_MODULES 1.1).
 const adminPermissions: readonly Permission[] = [

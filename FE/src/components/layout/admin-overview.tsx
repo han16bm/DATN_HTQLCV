@@ -1,6 +1,9 @@
 "use client";
+import { DataTable } from "@/components/patterns/data-table";
+import { Metric, MetricStrip } from "@/components/patterns/metric";
+import { StatusLozenge } from "@/components/ui/lozenge";
 import { Skeleton } from "@/components/ui/loading";
-import { DataTable, PageHeader, Panel } from "@/components/ui/page";
+import { PageHeader, Panel } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { useListAuditLogsQuery } from "@/features/audit-logs/hooks/use-audit-logs-queries";
@@ -27,7 +30,7 @@ export function AdminOverview() {
   return (
     <>
       <PageHeader title="Tổng quan quản trị" />
-      <section className="overview-stats" aria-label="Chỉ số quản trị">
+      <MetricStrip aria-label="Chỉ số quản trị">
         {can("USERS_MANAGE") && (
           <>
             <UserCount status="ACTIVE" title="Tài khoản hoạt động" />
@@ -36,15 +39,18 @@ export function AdminOverview() {
         )}
         {can("PERMISSIONS_MANAGE") && <GroupCount />}
         {can("SETTINGS_MANAGE") && <WhitelistStat />}
-      </section>
-      <div className="admin-overview-grid">
+      </MetricStrip>
+      <div className="grid items-start gap-5 xl:grid-cols-2">
         {can("JOBS_MANAGE") && <JobsCard />}
         {can("AUDIT_VIEW") && <RecentAudits />}
         <Panel title="Lối tắt">
-          <ul className="admin-shortcuts">
+          <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2">
             {shortcuts.map((item) => (
               <li key={item.href}>
-                <Link className="text-link" href={item.href}>
+                <Link
+                  className="font-medium text-selected-fg underline-offset-2 hover:underline"
+                  href={item.href}
+                >
                   {item.label}
                 </Link>
               </li>
@@ -70,15 +76,13 @@ function Stat({
   children: ReactNode;
 }) {
   return (
-    <Link className="overview-stat" href={href} aria-busy={pending}>
-      <span>{title}</span>
-      <strong>
-        {pending ? <Skeleton className="skeleton-count" /> : children}
-      </strong>
-      <span className={`small ${error ? "field-error" : "muted"}`}>
-        {error ? "Không tải được số liệu" : "Xem chi tiết"}
-      </span>
-    </Link>
+    <Metric
+      label={title}
+      href={href}
+      tone={error ? "danger" : undefined}
+      value={pending ? <Skeleton className="my-2 h-5 w-12" /> : children}
+      hint={error ? "Không tải được số liệu" : "Xem chi tiết"}
+    />
   );
 }
 
@@ -130,11 +134,6 @@ function WhitelistStat() {
   );
 }
 
-const jobStatus: Record<string, string> = {
-  SUCCEEDED: "Thành công",
-  FAILED: "Lỗi",
-  RUNNING: "Đang chạy",
-};
 function JobsCard() {
   const query = useListJobsQuery();
   if (query.isError)
@@ -147,19 +146,14 @@ function JobsCard() {
       rows={(query.data ?? []).map((job) => [
         <Link
           key="job"
-          className="text-link"
+          className="font-medium text-selected-fg underline-offset-2 hover:underline"
           href={`/admin/jobs?dialog=view&id=${encodeURIComponent(job.code)}`}
         >
           {job.name}
         </Link>,
         dateTime(job.lastRunAt),
         job.lastStatus ? (
-          <span
-            key="status"
-            className={`badge ${job.lastStatus.toLowerCase()}`}
-          >
-            {jobStatus[job.lastStatus]}
-          </span>
+          <StatusLozenge key="status" value={job.lastStatus} />
         ) : (
           "Chưa chạy"
         ),
@@ -176,7 +170,10 @@ function RecentAudits() {
     <DataTable
       title="Thao tác gần đây"
       headerActions={
-        <Link className="text-link" href="/admin/audit-logs">
+        <Link
+          className="font-medium text-selected-fg underline-offset-2 hover:underline"
+          href="/admin/audit-logs"
+        >
           Xem nhật ký
         </Link>
       }

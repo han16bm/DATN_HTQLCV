@@ -1,9 +1,11 @@
 "use client";
+import { DataTable } from "@/components/patterns/data-table";
+import { Select } from "@/components/ui/select";
 
 import { Form } from "@/components/forms/form";
 import { FormMultiSelect, FormTextarea } from "@/components/forms/form-field";
 import { PageSkeleton } from "@/components/ui/loading";
-import { DataTable } from "@/components/ui/page";
+
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import {
   FeatureName,
@@ -173,8 +175,12 @@ function PermissionsForm({
         }}
       >
         {session?.user.isSysAdmin && (
-          <label className="checkbox-label form-field field-full">
-            <input type="checkbox" {...form.register("isSysAdmin")} />
+          <label className="col-span-12 flex items-center gap-2 text-sm text-fg">
+            <input
+              type="checkbox"
+              className="size-4 accent-(--color-action)"
+              {...form.register("isSysAdmin")}
+            />
             Quản trị tối cao (Sysadmin) — có mọi mã quyền đang bật
           </label>
         )}
@@ -190,7 +196,7 @@ function PermissionsForm({
             />
           )}
         />
-        <div className="form-field field-full">
+        <div className="col-span-12 min-w-0">
           <DataTable
             title="Quyền theo từng mã"
             widths={[46, 14, 24, 16]}
@@ -201,7 +207,7 @@ function PermissionsForm({
               </span>,
               feature.isGroup ? "" : fromGroups.has(feature.code) ? "Có" : "—",
               feature.isGroup ? null : (
-                <select
+                <Select
                   key="state"
                   aria-label={`Thiết lập riêng cho ${feature.name}`}
                   value={stateOf(feature.code)}
@@ -214,16 +220,22 @@ function PermissionsForm({
                       {state.label}
                     </option>
                   ))}
-                </select>
+                </Select>
               ),
               feature.isGroup ? (
                 ""
               ) : effective(feature) ? (
-                <span key="on" className="badge active">
+                <span
+                  key="on"
+                  className="inline-flex items-center rounded-sm px-1.5 py-px text-xs leading-4 font-semibold whitespace-nowrap bg-success-bg text-success-fg"
+                >
                   Có hiệu lực
                 </span>
               ) : (
-                <span key="off" className="badge inactive">
+                <span
+                  key="off"
+                  className="inline-flex items-center rounded-sm px-1.5 py-px text-xs leading-4 font-semibold whitespace-nowrap bg-sunken text-fg-subtle"
+                >
                   Không
                 </span>
               ),

@@ -1,6 +1,7 @@
 "use client";
 
 import { Form } from "@/components/forms/form";
+import { Notice } from "@/components/ui/notice";
 import { FormInput, FormSelect } from "@/components/forms/form-field";
 import { PageSkeleton } from "@/components/ui/loading";
 import { PageHeader, Panel } from "@/components/ui/page";
@@ -101,11 +102,14 @@ export function NewReportPage() {
           </Form>
         )}
         {existing && (
-          <p className="notice">
-            <Link className="text-link" href={`/reports/${existing}`}>
+          <Notice className="mt-3">
+            <Link
+              className="font-medium text-selected-fg underline-offset-2 hover:underline"
+              href={`/reports/${existing}`}
+            >
               Mở báo cáo đã có cho kỳ này
             </Link>
-          </p>
+          </Notice>
         )}
       </Panel>
     </>

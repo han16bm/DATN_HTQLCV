@@ -1,7 +1,12 @@
 "use client";
+import { FilterBar, FilterField } from "@/components/patterns/filter-bar";
+import { DataTable } from "@/components/patterns/data-table";
+import { StatusLozenge } from "@/components/ui/lozenge";
+import { Select } from "@/components/ui/select";
+import { SearchInput } from "@/components/ui/input";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import { Badge, ButtonLink, DataTable, PageHeader } from "@/components/ui/page";
+import { ButtonLink, PageHeader } from "@/components/ui/page";
 import { RowDialogLinks } from "@/components/ui/entity-dialog";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
@@ -38,19 +43,17 @@ export function UsersPage() {
           </ButtonLink>
         }
       />
-      <section className="panel filters">
-        <label>
-          Tìm kiếm
-          <input
-            type="search"
+      <FilterBar label="Bộ lọc tài khoản">
+        <FilterField label="Tìm kiếm" search>
+          <SearchInput
             placeholder="Tên, email hoặc tên đăng nhập"
             value={filter.get("q")}
             onChange={(e) => filter.set("q", e.target.value)}
           />
-        </label>
-        <label>
-          Trạng thái
-          <select
+        </FilterField>
+        <FilterField label="Trạng thái">
+          <Select
+            fit
             value={filter.get("status")}
             onChange={(e) => filter.set("status", e.target.value)}
           >
@@ -60,11 +63,11 @@ export function UsersPage() {
                 {label(v)}
               </option>
             ))}
-          </select>
-        </label>
-        <label>
-          Đơn vị
-          <select
+          </Select>
+        </FilterField>
+        <FilterField label="Đơn vị">
+          <Select
+            fit
             value={filter.get("unitId")}
             onChange={(e) => filter.set("unitId", e.target.value)}
           >
@@ -74,12 +77,12 @@ export function UsersPage() {
                 {u.name}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </FilterField>
         {groups.data && (
-          <label>
-            Nhóm quyền
-            <select
+          <FilterField label="Nhóm quyền">
+            <Select
+              fit
               value={filter.get("groupId")}
               onChange={(e) => filter.set("groupId", e.target.value)}
             >
@@ -89,10 +92,10 @@ export function UsersPage() {
                   {g.name}
                 </option>
               ))}
-            </select>
-          </label>
+            </Select>
+          </FilterField>
         )}
-      </section>
+      </FilterBar>
       {units.isError && (
         <QueryErrorState error={units.error} retry={units.refetch} />
       )}
@@ -123,16 +126,26 @@ export function UsersPage() {
               href={`/users/${encodeURIComponent(u.id)}`}
               detail={`${u.email} · ${u.username}`}
             />,
-            <span key="groups" className="tag-list">
-              {u.isSysAdmin && <span className="badge active">Sysadmin</span>}
+            <span
+              key="groups"
+              className="m-0 flex list-none flex-wrap gap-1.5 p-0"
+            >
+              {u.isSysAdmin && (
+                <span className="inline-flex items-center rounded-sm px-1.5 py-px text-xs leading-4 font-semibold whitespace-nowrap bg-success-bg text-success-fg">
+                  Sysadmin
+                </span>
+              )}
               {u.groups.slice(0, 2).map((g) => (
-                <span key={g.id} className="badge">
+                <span
+                  key={g.id}
+                  className="inline-flex items-center rounded-sm px-1.5 py-px text-xs leading-4 font-semibold whitespace-nowrap bg-sunken text-fg-subtle"
+                >
                   {g.label}
                 </span>
               ))}
               {u.groups.length > 2 && (
                 <span
-                  className="small muted"
+                  className="text-xs text-fg-subtle"
                   title={u.groups.map((g) => g.label).join(", ")}
                 >
                   +{u.groups.length - 2}
@@ -141,7 +154,7 @@ export function UsersPage() {
               {!u.isSysAdmin && !u.groups.length && "—"}
             </span>,
             u.unit.name,
-            <Badge key="status" value={u.status} />,
+            <StatusLozenge key="status" value={u.status} />,
             <RowDialogLinks
               key="detail"
               name={`hồ sơ ${u.displayName}`}

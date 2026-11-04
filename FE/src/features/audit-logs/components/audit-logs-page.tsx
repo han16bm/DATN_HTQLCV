@@ -1,4 +1,10 @@
 "use client";
+import { cn } from "@/lib/cn";
+import { FilterBar, FilterField } from "@/components/patterns/filter-bar";
+import { DataTable } from "@/components/patterns/data-table";
+import { Select } from "@/components/ui/select";
+import { Input, SearchInput } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 import {
   DialogFooter,
@@ -6,7 +12,7 @@ import {
   RowDialogLinks,
 } from "@/components/ui/entity-dialog";
 import { PageSkeleton } from "@/components/ui/loading";
-import { DataTable, PageHeader } from "@/components/ui/page";
+import { PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { useListUsersQuery } from "@/features/users/hooks/use-users-queries";
@@ -50,35 +56,31 @@ export function AuditLogsPage() {
   return (
     <>
       <PageHeader title="Nhật ký hệ thống" />
-      <section className="panel filters">
-        <label>
-          Tìm kiếm
-          <input
-            type="search"
+      <FilterBar label="Bộ lọc nhật ký">
+        <FilterField label="Tìm kiếm" search>
+          <SearchInput
             placeholder="Mã đối tượng, hành động hoặc lý do"
             value={filter.get("q")}
             onChange={(e) => filter.set("q", e.target.value)}
           />
-        </label>
-        <label>
-          Từ ngày
-          <input
+        </FilterField>
+        <FilterField label="Từ ngày">
+          <Input
             type="date"
             value={filter.get("from")}
             onChange={(e) => filter.set("from", e.target.value)}
           />
-        </label>
-        <label>
-          Đến ngày
-          <input
+        </FilterField>
+        <FilterField label="Đến ngày">
+          <Input
             type="date"
             value={filter.get("to")}
             onChange={(e) => filter.set("to", e.target.value)}
           />
-        </label>
-        <label>
-          Loại đối tượng
-          <select
+        </FilterField>
+        <FilterField label="Loại đối tượng">
+          <Select
+            fit
             value={filter.get("entityType")}
             onChange={(e) => filter.set("entityType", e.target.value)}
           >
@@ -88,12 +90,12 @@ export function AuditLogsPage() {
                 {entityTypeLabel(type)}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </FilterField>
         {users.data && (
-          <label>
-            Người thao tác
-            <select
+          <FilterField label="Người thao tác">
+            <Select
+              fit
               value={filter.get("actorId")}
               onChange={(e) => filter.set("actorId", e.target.value)}
             >
@@ -104,19 +106,17 @@ export function AuditLogsPage() {
                   {u.displayName}
                 </option>
               ))}
-            </select>
-          </label>
+            </Select>
+          </FilterField>
         )}
-        <label>
-          Hành động
-          <input
-            type="search"
+        <FilterField label="Hành động" search>
+          <SearchInput
             placeholder="Đúng tên hành động"
             value={filter.get("action")}
             onChange={(e) => filter.set("action", e.target.value)}
           />
-        </label>
-      </section>
+        </FilterField>
+      </FilterBar>
       {query.isError ? (
         <QueryErrorState error={query.error} retry={query.refetch} />
       ) : !query.data ? (
@@ -138,7 +138,7 @@ export function AuditLogsPage() {
             <UserBadge key="actor" name={item.actor.label} />,
             <span key="entity">
               {entityTypeLabel(item.entityType)}
-              <span className="small muted"> · {item.entityId}</span>
+              <span className="text-xs text-fg-subtle"> · {item.entityId}</span>
             </span>,
             item.action,
             item.reason ? (
@@ -169,9 +169,9 @@ export function AuditLogsPage() {
         >
           <AuditLogDetail auditLogId={dialog.id} />
           <DialogFooter>
-            <button type="button" onClick={dialog.close}>
+            <Button type="button" onClick={dialog.close}>
               Đóng
-            </button>
+            </Button>
           </DialogFooter>
         </EntityDialog>
       )}
@@ -187,17 +187,19 @@ function AuditLogDetail({ auditLogId }: { auditLogId: string }) {
   const item = query.data;
   return (
     <>
-      <h3>{item.action}</h3>
-      <div className="history-detail-meta">
+      <h3 className="m-0 text-heading-sm font-semibold">{item.action}</h3>
+      <div className="flex flex-wrap items-center gap-3">
         <UserBadge name={item.actor.label} />
-        <time className="small muted" dateTime={item.at}>
+        <time className="text-xs text-fg-subtle" dateTime={item.at}>
           {dateTime(item.at)}
         </time>
       </div>
-      <p className="small muted">
+      <p className="text-xs text-fg-subtle">
         {entityTypeLabel(item.entityType)} · {item.entityId}
       </p>
-      {item.reason && <p className="preserve-lines small">{item.reason}</p>}
+      {item.reason && (
+        <p className="whitespace-pre-wrap text-xs">{item.reason}</p>
+      )}
       <FieldDiff before={item.before} after={item.after} />
     </>
   );
@@ -218,22 +220,30 @@ function FieldDiff({ before, after }: { before: Json; after: Json }) {
   const next = fieldsOf(after);
   const keys = [...new Set([...Object.keys(previous), ...Object.keys(next)])];
   if (!keys.length)
-    return <p className="muted small">Không có dữ liệu trước/sau.</p>;
+    return (
+      <p className="text-xs text-fg-subtle">Không có dữ liệu trước/sau.</p>
+    );
   return (
-    <div className="audit-changes">
-      <dl>
+    <div className="overflow-hidden rounded-lg border border-line">
+      <dl className="m-0 divide-y divide-line text-sm">
         {keys.map((key) => {
           const changed =
             JSON.stringify(previous[key]) !== JSON.stringify(next[key]);
           return (
-            <div key={key} className={changed ? "changed" : undefined}>
-              <dt>{key}</dt>
+            <div
+              key={key}
+              className={cn(
+                "grid gap-2 px-3 py-2 sm:grid-cols-[10rem_1fr_1fr] [&_dd]:m-0 [&_dd]:grid [&_dd]:min-w-0 [&_dd]:gap-0.5 [&_dd]:break-words",
+                changed && "bg-warning-bg/60",
+              )}
+            >
+              <dt className="font-medium break-all text-fg">{key}</dt>
               <dd>
-                <span className="small muted">Trước</span>
+                <span className="text-xs text-fg-subtle">Trước</span>
                 {text(previous[key])}
               </dd>
               <dd>
-                <span className="small muted">Sau</span>
+                <span className="text-xs text-fg-subtle">Sau</span>
                 {text(next[key])}
               </dd>
             </div>

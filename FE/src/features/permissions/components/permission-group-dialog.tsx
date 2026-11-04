@@ -1,4 +1,6 @@
 "use client";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 import { Form } from "@/components/forms/form";
 import {
@@ -84,9 +86,9 @@ function GroupDialogBody() {
     else dialog.close();
   };
   const cancel = (
-    <button type="button" onClick={onCancel}>
+    <Button type="button" onClick={onCancel}>
       Hủy
-    </button>
+    </Button>
   );
   const reload: Reload = () => query.refetch();
   const saved = () => dialog.switchTo("view", dialog.id);
@@ -154,25 +156,25 @@ function GroupDialogBody() {
         )}
         {readOnly && (
           <DialogFooter>
-            <button type="button" onClick={dialog.close}>
+            <Button type="button" onClick={dialog.close}>
               Đóng
-            </button>
+            </Button>
             {(group.status !== "ACTIVE" || !group.isSystem) && (
-              <button
+              <Button
                 type="button"
                 className={group.status === "ACTIVE" ? "danger" : undefined}
                 onClick={() => setStatusOpen(true)}
               >
                 {group.status === "ACTIVE" ? "Ngừng sử dụng" : "Kích hoạt"}
-              </button>
+              </Button>
             )}
-            <button
+            <Button
               type="button"
-              className="primary"
+              variant="primary"
               onClick={() => dialog.switchTo("edit", dialog.id)}
             >
               Chỉnh sửa
-            </button>
+            </Button>
           </DialogFooter>
         )}
       </>
@@ -266,8 +268,10 @@ function CreateGroup({
         name="features"
         control={form.control}
         render={({ field }) => (
-          <div className="form-field field-full">
-            <span className="field-label">Quyền</span>
+          <div className="col-span-12 min-w-0">
+            <span className="mb-1.5 block text-sm font-medium text-fg">
+              Quyền
+            </span>
             <FeatureChecklist
               features={features}
               value={field.value}
@@ -344,10 +348,10 @@ function GroupInfoForm({ group, readOnly, reload, cancel, onSaved }: TabProps) {
         onSaved();
       }}
     >
-      <div className="form-field field-short">
+      <div className="col-span-12 min-w-0 @min-[420px]/form:col-span-6 @min-[600px]/form:col-span-4">
         <label htmlFor={`code-${group.id}`}>Mã nhóm</label>
-        <input id={`code-${group.id}`} value={group.code} disabled readOnly />
-        <p className="small muted">
+        <Input id={`code-${group.id}`} value={group.code} disabled readOnly />
+        <p className="text-xs text-fg-subtle">
           {group.isSystem
             ? "Nhóm hệ thống, không được ngừng sử dụng."
             : `${group.members.length} thành viên`}
@@ -419,7 +423,7 @@ function GroupFeaturesForm({
         name="features"
         control={form.control}
         render={({ field }) => (
-          <div className="form-field field-full">
+          <div className="col-span-12 min-w-0">
             <FeatureChecklist
               features={features}
               value={field.value}
@@ -487,7 +491,7 @@ function GroupMembersForm({
         )}
       />
       {readOnly && (
-        <p className="small muted form-field field-full">
+        <p className="col-span-12 m-0 text-xs text-fg-subtle">
           {group.members.map((m) => m.label).join(", ") || "Chưa có thành viên"}
         </p>
       )}
@@ -516,7 +520,7 @@ function GroupStatusForm({
   const active = snapshot.base.status === "ACTIVE";
   return (
     <>
-      <p className="muted">
+      <p className="text-fg-subtle">
         {active
           ? "Thành viên sẽ mất các quyền đến từ nhóm này."
           : "Thành viên sẽ nhận lại các quyền của nhóm."}
@@ -524,9 +528,9 @@ function GroupStatusForm({
       <ReasonForm
         submitLabel={active ? "Ngừng sử dụng" : "Kích hoạt"}
         cancel={
-          <button type="button" onClick={onDone}>
+          <Button type="button" onClick={onDone}>
             Hủy
-          </button>
+          </Button>
         }
         compareFields={[{ name: "status", label: "Trạng thái" }]}
         onConflictReload={() => snapshot.load(reload)}

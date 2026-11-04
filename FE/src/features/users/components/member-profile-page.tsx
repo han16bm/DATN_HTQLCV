@@ -26,7 +26,7 @@ export function MemberProfilePage({ userId }: { userId: string }) {
           )
         }
       />
-      <div className="member-profile">
+      <div className="max-w-3xl">
         <ProfileHeader
           name={user.displayName}
           avatarUrl={user.avatarUrl}
@@ -34,11 +34,14 @@ export function MemberProfilePage({ userId }: { userId: string }) {
           role={user.groups.join(", ") || undefined}
         />
         <Panel title="Thông tin liên hệ">
-          <dl className="record-details">
+          <dl className="m-0 grid gap-y-2 text-sm [&>div]:grid [&>div]:grid-cols-[9rem_minmax(0,1fr)] [&>div]:items-baseline [&>div]:gap-x-3 [&_dt]:text-fg-subtle [&_dd]:m-0 [&_dd]:min-w-0 [&_dd]:text-left [&_dd]:break-words">
             <div>
               <dt>Email</dt>
               <dd>
-                <a className="text-link" href={`mailto:${user.email}`}>
+                <a
+                  className="font-medium text-selected-fg underline-offset-2 hover:underline"
+                  href={`mailto:${user.email}`}
+                >
                   {user.email}
                 </a>
               </dd>

@@ -1,4 +1,9 @@
 "use client";
+import { DataTable } from "@/components/patterns/data-table";
+import { StatusLozenge } from "@/components/ui/lozenge";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 import { ReasonForm } from "@/components/forms/reason-form";
 import {
@@ -7,12 +12,7 @@ import {
   RowDialogLinks,
 } from "@/components/ui/entity-dialog";
 import { PageSkeleton } from "@/components/ui/loading";
-import {
-  Badge,
-  DataTable,
-  PageHeader,
-  StatusField,
-} from "@/components/ui/page";
+import { PageHeader, StatusField } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { RecordStamp, stampText } from "@/components/ui/record-stamp";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
@@ -59,14 +59,17 @@ export function FeaturesPage() {
           <span key="name" style={{ paddingLeft: depth * 24 }}>
             <FeatureName feature={feature} />
             {feature.description && (
-              <span className="small muted"> — {feature.description}</span>
+              <span className="text-xs text-fg-subtle">
+                {" "}
+                — {feature.description}
+              </span>
             )}
           </span>,
           feature.path ?? "—",
           feature.isGroup ? (
             "Nhóm"
           ) : (
-            <Badge
+            <StatusLozenge
               key="status"
               value={feature.isActive ? "ACTIVE" : "INACTIVE"}
             />
@@ -75,18 +78,21 @@ export function FeaturesPage() {
             ? ""
             : stampText(feature.updatedBy, feature.updatedAt),
           feature.isGroup ? null : (
-            <span key="actions" className="row-actions">
+            <span
+              key="actions"
+              className="actions inline-flex items-center gap-1"
+            >
               <RowDialogLinks
                 name={`mã ${feature.code}`}
                 view={dialog.href("view", feature.code)}
               />
               {locked(feature) ? (
-                <span className="muted" title={lockedReason}>
+                <span className="text-fg-subtle" title={lockedReason}>
                   Tắt
                 </span>
               ) : (
                 <Link
-                  className="detail-link"
+                  className="inline-flex min-h-7 items-center rounded-sm px-1.5 text-sm font-medium whitespace-nowrap text-selected-fg transition-colors hover:bg-hover active:bg-pressed motion-reduce:transition-none pointer-coarse:min-h-11"
                   scroll={false}
                   href={dialog.href("edit", feature.code)}
                 >
@@ -130,14 +136,17 @@ export function FeaturesPage() {
             />
           ) : (
             <>
-              <fieldset className="form-fields" disabled>
-                <div className="form-field field-medium">
+              <fieldset
+                className="m-0 grid min-w-0 grid-cols-12 items-start gap-4 border-0 p-0"
+                disabled
+              >
+                <div className="col-span-12 min-w-0 @min-[420px]/form:col-span-6">
                   <label htmlFor="feature-code">Mã quyền</label>
-                  <input id="feature-code" value={selected.code} readOnly />
+                  <Input id="feature-code" value={selected.code} readOnly />
                 </div>
-                <div className="form-field field-medium">
+                <div className="col-span-12 min-w-0 @min-[420px]/form:col-span-6">
                   <label htmlFor="feature-parent">Nhóm</label>
-                  <input
+                  <Input
                     id="feature-parent"
                     readOnly
                     value={
@@ -146,18 +155,18 @@ export function FeaturesPage() {
                     }
                   />
                 </div>
-                <div className="form-field field-full">
+                <div className="col-span-12 min-w-0">
                   <label htmlFor="feature-description">Mô tả</label>
-                  <textarea
+                  <Textarea
                     id="feature-description"
                     rows={2}
                     readOnly
                     value={selected.description ?? ""}
                   />
                 </div>
-                <div className="form-field field-medium">
+                <div className="col-span-12 min-w-0 @min-[420px]/form:col-span-6">
                   <label htmlFor="feature-path">Đường dẫn</label>
-                  <input
+                  <Input
                     id="feature-path"
                     readOnly
                     value={selected.path ?? "—"}
@@ -165,18 +174,18 @@ export function FeaturesPage() {
                 </div>
               </fieldset>
               <DialogFooter>
-                <button type="button" onClick={dialog.close}>
+                <Button type="button" onClick={dialog.close}>
                   Đóng
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  className="primary"
+                  variant="primary"
                   disabled={locked(selected)}
                   title={locked(selected) ? lockedReason : undefined}
                   onClick={() => dialog.switchTo("edit", selected.code)}
                 >
                   {selected.isActive ? "Tắt mã quyền" : "Bật mã quyền"}
-                </button>
+                </Button>
               </DialogFooter>
             </>
           )}
@@ -201,7 +210,7 @@ function FeatureToggleForm({
   const mutation = useUpdateFeatureMutation();
   return (
     <>
-      <p className="muted">
+      <p className="text-fg-subtle">
         {snapshot.base.isActive
           ? "Mọi tài khoản đang có mã này sẽ mất quyền ngay ở lần gọi tiếp theo."
           : "Mã này sẽ có hiệu lực lại với các nhóm và tài khoản đang được cấp."}
@@ -209,9 +218,9 @@ function FeatureToggleForm({
       <ReasonForm
         submitLabel={snapshot.base.isActive ? "Tắt mã quyền" : "Bật mã quyền"}
         cancel={
-          <button type="button" onClick={onCancel}>
+          <Button type="button" onClick={onCancel}>
             Hủy
-          </button>
+          </Button>
         }
         compareFields={[{ name: "isActive", label: "Đang bật" }]}
         onConflictReload={() => snapshot.load(reload)}

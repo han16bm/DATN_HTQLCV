@@ -1,9 +1,12 @@
 "use client";
 
+import { FilterBar, FilterField } from "@/components/patterns/filter-bar";
+import { Select } from "@/components/ui/select";
 import { PageSkeleton } from "@/components/ui/loading";
-import { Badge, DataTable, DetailLink, PageHeader } from "@/components/ui/page";
+import { DetailLink, PageHeader } from "@/components/ui/page";
+import { StatusLozenge } from "@/components/ui/lozenge";
+import { DataTable } from "@/components/patterns/data-table";
 import { QueryErrorState } from "@/components/ui/query-error-state";
-import { AnalyticsTabs } from "@/features/analytics/components/analytics-tabs";
 import { useListAnalyticsFilterOptionsQuery } from "@/features/analytics/hooks/use-analytics-queries";
 import { useListProjectsQuery } from "@/features/projects/hooks/use-projects-queries";
 import { hasAnyPermission } from "@/lib/auth/access";
@@ -20,7 +23,7 @@ export function AlertsPage() {
   const f = useUrlFilters();
   const status = alertStatusSchema.safeParse(f.get("status"));
   const level = alertSeveritySchema.safeParse(f.get("severity"));
-  // Cảnh báo mở cho mọi nhân viên: chỉ người có quyền phân tích mới dùng tab và danh mục dự án của Phân tích
+  // Cảnh báo mở cho mọi nhân viên: chỉ người có quyền phân tích mới dùng danh mục dự án của Phân tích
   const analyst = hasAnyPermission(useSession().session, "ANALYTICS_VIEW");
   const analyticsProjects = useListAnalyticsFilterOptionsQuery(
     { kind: "PROJECT", pageSize: 100 },
@@ -36,14 +39,11 @@ export function AlertsPage() {
   });
   return (
     <>
-      <PageHeader
-        title="Cảnh báo"
-        navigation={analyst ? <AnalyticsTabs /> : undefined}
-      />
-      <section className="panel filters">
-        <label>
-          Dự án
-          <select
+      <PageHeader title="Cảnh báo" />
+      <FilterBar label="Bộ lọc cảnh báo">
+        <FilterField label="Dự án">
+          <Select
+            fit
             value={f.get("projectId")}
             onChange={(e) => f.set("projectId", e.target.value)}
           >
@@ -53,8 +53,8 @@ export function AlertsPage() {
                 {p.name}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </FilterField>
         {[
           {
             name: "status",
@@ -67,9 +67,9 @@ export function AlertsPage() {
             values: alertSeveritySchema.options,
           },
         ].map((config) => (
-          <label key={config.name}>
-            {config.title}
-            <select
+          <FilterField key={config.name} label={config.title}>
+            <Select
+              fit
               value={f.get(config.name)}
               onChange={(e) => f.set(config.name, e.target.value)}
             >
@@ -79,10 +79,10 @@ export function AlertsPage() {
                   {o.label}
                 </option>
               ))}
-            </select>
-          </label>
+            </Select>
+          </FilterField>
         ))}
-      </section>
+      </FilterBar>
       {projects.isError && (
         <QueryErrorState error={projects.error} retry={projects.refetch} />
       )}
@@ -92,6 +92,7 @@ export function AlertsPage() {
         <PageSkeleton variant="table" />
       ) : (
         <DataTable
+          loading={q.isFetching}
           pagination={{
             ...q.data.pagination,
             onPage: (p) => f.set("page", String(p)),
@@ -110,13 +111,13 @@ export function AlertsPage() {
             label(a.type),
             <span
               key="target"
-              className="task-name"
+              className="block max-w-[30ch] truncate"
               title={a.taskTitle ?? undefined}
             >
               {a.taskTitle ?? "Dự án"}
             </span>,
-            <Badge key="severity" value={a.severity} />,
-            <Badge key="status" value={a.status} />,
+            <StatusLozenge key="severity" value={a.severity} />,
+            <StatusLozenge key="status" value={a.status} />,
             a.conditionActive ? "Còn điều kiện phát sinh" : "Điều kiện đã hết",
             <DetailLink
               key="detail"

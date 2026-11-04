@@ -5,7 +5,9 @@ import {
   CircleCheckBig,
   ClipboardList,
   FileChartColumn,
+  FileText,
   FolderKanban,
+  Gauge,
   House,
   LayoutDashboard,
   ListTree,
@@ -14,12 +16,30 @@ import {
   ShieldEllipsis,
   SlidersHorizontal,
   Timer,
+  Layers,
+  ListFilter,
+  TriangleAlert,
+  UserRound,
   Users,
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
 
 export type Area = "workspace" | "admin";
+export type NavChild = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  active: boolean;
+};
+// Mục có mục con hiện thành menu thả xuống ngay trên nút của nó (như Jira); mục con
+// suy ra từ trang đang mở để giữ phạm vi lọc khi chuyển giữa các mục.
+export type NavContext = {
+  userId: string;
+  seesOthers: boolean;
+  pathname: string;
+  search: URLSearchParams;
+};
 export type NavItem = {
   href: string;
   label: string;
@@ -27,14 +47,95 @@ export type NavItem = {
   match: RegExp;
   // Tiêu đề nhóm trong sidebar khu quản trị; mục đầu nhóm mang tiêu đề.
   group?: string;
+  placement?: "sidebar" | "header";
+  children?: (context: NavContext) => NavChild[];
 };
+
+const analyticsPaths = [
+  "/dashboard",
+  "/analytics/risks",
+  "/analytics/workload",
+  "/analytics/bottlenecks",
+  "/analytics/summary",
+];
+// Các màn phân tích dùng chung phạm vi lọc trên URL; cảnh báo là mục riêng cho mọi nhân viên.
+function analyticsChildren({ pathname, search }: NavContext): NavChild[] {
+  const scope =
+    analyticsPaths.includes(pathname) && search.size ? `?${search}` : "";
+  return [
+    { href: "/dashboard", label: "Tổng quan", icon: ChartNoAxesCombined },
+    { href: "/analytics/risks", label: "Nguy cơ trễ hạn", icon: TriangleAlert },
+    { href: "/analytics/workload", label: "Khối lượng", icon: Gauge },
+    { href: "/analytics/bottlenecks", label: "Điểm nghẽn", icon: Layers },
+    { href: "/analytics/summary", label: "Tổng hợp", icon: FileText },
+  ].map((item) => ({
+    ...item,
+    active: pathname === item.href,
+    href: item.href + scope,
+  }));
+}
+
+// Lối tắt lọc của danh sách công việc: giữ dự án, tìm kiếm và chế độ xem đang chọn,
+// bỏ trang; chọn lại mục đang bật thì tắt bộ lọc đó.
+function taskChildren({
+  userId,
+  seesOthers,
+  pathname,
+  search,
+}: NavContext): NavChild[] {
+  const here = pathname === "/tasks";
+  const base = new URLSearchParams(here ? search : undefined);
+  const mine = here && base.get("assigneeId") === userId;
+  const overdue = here && base.get("overdue") === "true";
+  const href = (change: (next: URLSearchParams) => void) => {
+    const next = new URLSearchParams(base);
+    next.delete("page");
+    change(next);
+    return `/tasks${next.size ? `?${next}` : ""}`;
+  };
+  return [
+    {
+      href: href((next) => {
+        next.delete("assigneeId");
+        next.delete("overdue");
+        next.delete("status");
+      }),
+      label: "Tất cả",
+      icon: ClipboardList,
+      active: here && !base.get("assigneeId") && !overdue,
+    },
+    ...(seesOthers
+      ? [
+          {
+            href: href((next) => {
+              if (mine) next.delete("assigneeId");
+              else next.set("assigneeId", userId);
+            }),
+            label: "Việc của tôi",
+            icon: UserRound,
+            active: mine,
+          },
+        ]
+      : []),
+    {
+      href: href((next) => {
+        next.delete("status");
+        if (overdue) next.delete("overdue");
+        else next.set("overdue", "true");
+      }),
+      label: "Việc quá hạn",
+      icon: ListFilter,
+      active: overdue,
+    },
+  ];
+}
 
 // Hai khu vực có menu riêng; quyền mở từng mục do canVisit (lib/auth/access).
 export const navigation: Record<Area, NavItem[]> = {
   workspace: [
     {
       href: "/workspace",
-      label: "Công việc của tôi",
+      label: "Tổng quan",
       icon: House,
       match: /^\/workspace/,
     },
@@ -49,10 +150,12 @@ export const navigation: Record<Area, NavItem[]> = {
       label: "Công việc",
       icon: ClipboardList,
       match: /^\/tasks(?:\/|$)/,
+      children: taskChildren,
     },
     {
       href: "/reviews",
       label: "Nghiệm thu",
+      placement: "header",
       icon: CircleCheckBig,
       match: /^\/reviews(?:\/|$)/,
     },
@@ -63,16 +166,19 @@ export const navigation: Record<Area, NavItem[]> = {
       match: /^\/reports(?:\/|$)/,
     },
     {
-      href: "/dashboard",
-      label: "Phân tích",
-      icon: ChartNoAxesCombined,
-      match: /^\/(?:dashboard|analytics)(?:\/|$)/,
-    },
-    {
+      // Thông báo cá nhân về công việc: mở cho mọi nhân viên, BE lọc theo người nhận.
       href: "/alerts",
       label: "Cảnh báo",
       icon: Bell,
       match: /^\/alerts(?:\/|$)/,
+    },
+    {
+      href: "/dashboard",
+      label: "Phân tích",
+      placement: "header",
+      icon: ChartNoAxesCombined,
+      match: /^\/(?:dashboard|analytics)(?:\/|$)/,
+      children: analyticsChildren,
     },
   ],
   admin: [
@@ -172,7 +278,49 @@ const lists = new Set([
   "/admin/audit-logs",
 ]);
 export const listRoute = (path: string) =>
-  lists.has(path) || /^\/projects\/[^/]+\/tasks$/.test(path);
+  lists.has(path) || /^\/projects\/(?!new$)[^/]+(?:\/tasks)?$/.test(path);
+
+export type PageSearch = Record<string, string | string[] | undefined>;
+
+// Liên kết cũ của dự án trở về trang chi tiết, giữ đúng bộ lọc của từng vùng.
+export function projectUrl(
+  projectId: string,
+  search: PageSearch = {},
+  section?: "tasks" | "members" | "history",
+) {
+  const query = new URLSearchParams();
+  for (const [key, values] of Object.entries(search)) {
+    for (const value of Array.isArray(values) ? values : [values])
+      if (value !== undefined) query.append(key, value);
+  }
+  const keys =
+    section === "members"
+      ? ["q", "page"]
+      : section === "history"
+        ? ["page"]
+        : [];
+  for (const key of keys) {
+    const value = query.get(key);
+    if (value !== null) {
+      query.set(`${section}.${key}`, value);
+      query.delete(key);
+    }
+  }
+  query.delete("tab");
+  return `/projects/${encodeURIComponent(projectId)}${query.size ? `?${query}` : ""}${section ? `#${section}` : ""}`;
+}
+
+// Dự án đang xem để bộ chọn dự án hiển thị: ID trong /projects/:id, hoặc dự án
+// cha của công việc đang mở (tên công việc đã đăng ký kèm projectId).
+export function currentProjectId(
+  pathname: string,
+  entity: (kind: string, id: string) => { parentId?: string } | undefined,
+) {
+  const project = /^\/projects\/([^/]+)/.exec(pathname);
+  if (project) return project[1] === "new" ? undefined : d(project[1]);
+  const task = /^\/tasks\/([^/]+)/.exec(pathname);
+  return task ? entity("task", d(task[1]))?.parentId : undefined;
+}
 
 // Đích sau đăng nhập chỉ nhận đường dẫn trong ứng dụng, tránh chuyển hướng ra ngoài.
 export function safeNext(value: string | null) {
@@ -211,14 +359,20 @@ export function trailFor(ctx: TrailContext): Trail | null {
   // khi khác cha trực tiếp (như công việc cá nhân), cùng bộ lọc và phân trang.
   const { previous, pathname } = ctx;
   if (!isAppPath(previous)) return trail;
-  const from = previous.split("?")[0];
+  const from = previous.split(/[?#]/)[0];
   if (
-    listRoute(trail.back.split("?")[0]) &&
+    listRoute(trail.back.split(/[?#]/)[0]) &&
     listRoute(from) &&
+    (!/^\/projects\/[^/]+$/.test(from) || /^\/tasks\/[^/]+$/.test(pathname)) &&
     from !== pathname &&
     areaOf(from) === areaOf(pathname)
   )
-    return { ...trail, back: previous };
+    return {
+      ...trail,
+      back: /^\/projects\/[^/]+$/.test(from)
+        ? previous.split("#")[0] + "#tasks"
+        : previous,
+    };
   return trail;
 }
 
@@ -233,7 +387,9 @@ function buildTrail(ctx: TrailContext): Trail | null {
     ctx.entity("project", id)?.label ?? pending;
   // Công việc của dự án nằm trong khu dự án; chưa biết dự án thì dùng danh sách chung.
   const tasks = (projectId?: string) =>
-    projectId ? list(`/projects/${e(projectId)}/tasks`) : list("/tasks");
+    projectId
+      ? list(`/projects/${e(projectId)}`).split("#")[0] + "#tasks"
+      : list("/tasks");
   const contextual = (fallback: string) =>
     isAppPath(ctx.previous) && ctx.previous.split("?")[0] !== pathname
       ? ctx.previous

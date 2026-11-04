@@ -1,4 +1,10 @@
 "use client";
+import { FilterBar, FilterField } from "@/components/patterns/filter-bar";
+import { DataTable } from "@/components/patterns/data-table";
+import { StatusLozenge } from "@/components/ui/lozenge";
+import { Select } from "@/components/ui/select";
+import { SearchInput } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 import { Form } from "@/components/forms/form";
 import {
@@ -14,12 +20,7 @@ import {
   RowDialogLinks,
 } from "@/components/ui/entity-dialog";
 import { PageSkeleton } from "@/components/ui/loading";
-import {
-  Badge,
-  DataTable,
-  PageHeader,
-  StatusField,
-} from "@/components/ui/page";
+import { PageHeader, StatusField } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { RecordStamp, stampText } from "@/components/ui/record-stamp";
 import { changedFields } from "@/lib/format";
@@ -79,28 +80,26 @@ export function SettingsPage() {
         title="Cấu hình tập trung"
         description="Cấu hình mọi service đọc từ cơ sở dữ liệu. Không lưu secret, chuỗi kết nối hay khóa ký ở đây."
         actions={
-          <button
+          <Button
             type="button"
-            className="primary"
+            variant="primary"
             onClick={() => dialog.open("create")}
           >
             Thêm cấu hình
-          </button>
+          </Button>
         }
       />
-      <section className="panel filters">
-        <label>
-          Tìm key
-          <input
-            type="search"
+      <FilterBar label="Bộ lọc cấu hình">
+        <FilterField label="Tìm key" search>
+          <SearchInput
             placeholder="Ví dụ Auth:MaxFailedAttempts"
             value={filter.get("q")}
             onChange={(e) => filter.set("q", e.target.value)}
           />
-        </label>
-        <label>
-          Service
-          <select
+        </FilterField>
+        <FilterField label="Service">
+          <Select
+            fit
             value={filter.get("serviceType")}
             onChange={(e) => filter.set("serviceType", e.target.value)}
           >
@@ -110,11 +109,11 @@ export function SettingsPage() {
                 {v}
               </option>
             ))}
-          </select>
-        </label>
-        <label>
-          Nhóm
-          <select
+          </Select>
+        </FilterField>
+        <FilterField label="Nhóm">
+          <Select
+            fit
             value={filter.get("group")}
             onChange={(e) => filter.set("group", e.target.value)}
           >
@@ -124,9 +123,9 @@ export function SettingsPage() {
                 {group}
               </option>
             ))}
-          </select>
-        </label>
-      </section>
+          </Select>
+        </FilterField>
+      </FilterBar>
       {query.isError ? (
         <QueryErrorState error={query.error} retry={query.refetch} />
       ) : !query.data ? (
@@ -157,37 +156,52 @@ export function SettingsPage() {
                 <span key="name">
                   {s.name}
                   {s.description && (
-                    <span className="small muted"> — {s.description}</span>
+                    <span className="text-xs text-fg-subtle">
+                      {" "}
+                      — {s.description}
+                    </span>
                   )}
                 </span>,
                 <code key="value">{s.value}</code>,
-                <span key="status" className="tag-list">
-                  <Badge value={s.isActive ? "ACTIVE" : "INACTIVE"} />
+                <span
+                  key="status"
+                  className="m-0 flex list-none flex-wrap gap-1.5 p-0"
+                >
+                  <StatusLozenge value={s.isActive ? "ACTIVE" : "INACTIVE"} />
                   {s.requiresRestart && (
-                    <span className="badge">Cần khởi động lại</span>
+                    <span className="inline-flex items-center rounded-sm px-1.5 py-px text-xs leading-4 font-semibold whitespace-nowrap bg-sunken text-fg-subtle">
+                      Cần khởi động lại
+                    </span>
                   )}
-                  {!s.known && <span className="badge">Tuỳ biến</span>}
+                  {!s.known && (
+                    <span className="inline-flex items-center rounded-sm px-1.5 py-px text-xs leading-4 font-semibold whitespace-nowrap bg-sunken text-fg-subtle">
+                      Tuỳ biến
+                    </span>
+                  )}
                 </span>,
                 <span
                   key="stamp"
-                  className="small"
+                  className="text-xs"
                   title={`Thêm bởi ${stampText(s.createdBy, s.createdAt)}`}
                 >
                   {stampText(s.updatedBy, s.updatedAt)}
                 </span>,
-                <span key="actions" className="row-actions">
+                <span
+                  key="actions"
+                  className="actions inline-flex items-center gap-1"
+                >
                   <RowDialogLinks
                     name={`cấu hình ${s.key}`}
                     view={dialog.href("view", s.id)}
                     edit={dialog.href("edit", s.id)}
                   />
-                  <button
+                  <Button
                     type="button"
-                    className="link-button"
+                    variant="subtle"
                     onClick={() => toggle.open(`setting-status-${s.id}`)}
                   >
                     {s.isActive ? "Tắt" : "Bật"}
-                  </button>
+                  </Button>
                 </span>,
               ])}
           />
@@ -210,9 +224,15 @@ export function SettingsPage() {
                   value={selected.isActive ? "ACTIVE" : "INACTIVE"}
                 />
                 {selected.requiresRestart && (
-                  <span className="badge">Cần khởi động lại</span>
+                  <span className="inline-flex items-center rounded-sm px-1.5 py-px text-xs leading-4 font-semibold whitespace-nowrap bg-sunken text-fg-subtle">
+                    Cần khởi động lại
+                  </span>
                 )}
-                {!selected.known && <span className="badge">Tuỳ biến</span>}
+                {!selected.known && (
+                  <span className="inline-flex items-center rounded-sm px-1.5 py-px text-xs leading-4 font-semibold whitespace-nowrap bg-sunken text-fg-subtle">
+                    Tuỳ biến
+                  </span>
+                )}
               </>
             )
           }
@@ -340,9 +360,9 @@ function SettingForm({
         readOnly={mode === "view"}
         submitLabel={editing ? "Lưu cấu hình" : "Thêm cấu hình"}
         cancel={
-          <button type="button" onClick={onCancel}>
+          <Button type="button" onClick={onCancel}>
             Hủy
-          </button>
+          </Button>
         }
         compareFields={[
           { name: "value", label: "Giá trị" },
@@ -442,10 +462,11 @@ function SettingForm({
           error={errors.description}
         />
         {dataType === "BOOL" ? (
-          <div className="form-field field-full">
-            <label className="checkbox-label">
+          <div className="col-span-12 min-w-0">
+            <label className="flex items-center gap-2 text-sm text-fg">
               <input
                 type="checkbox"
+                className="size-4 accent-(--color-action)"
                 role="switch"
                 checked={value === "true"}
                 onChange={(e) =>
@@ -457,7 +478,7 @@ function SettingForm({
               Bật
             </label>
             {errors.value && (
-              <span className="field-error" role="alert">
+              <span className="mt-1.5 mb-0 text-sm text-danger-fg" role="alert">
                 {errors.value.message}
               </span>
             )}
@@ -482,7 +503,7 @@ function SettingForm({
           />
         )}
         {setting?.requiresRestart && (
-          <p className="small muted form-field field-full">
+          <p className="col-span-12 m-0 text-xs text-fg-subtle">
             Cần khởi động lại service để giá trị mới có hiệu lực.
           </p>
         )}
@@ -497,12 +518,12 @@ function SettingForm({
       </Form>
       {mode === "view" && setting && (
         <DialogFooter>
-          <button type="button" onClick={onClose}>
+          <Button type="button" onClick={onClose}>
             Đóng
-          </button>
-          <button type="button" className="primary" onClick={onEdit}>
+          </Button>
+          <Button type="button" variant="primary" onClick={onEdit}>
             Chỉnh sửa
-          </button>
+          </Button>
         </DialogFooter>
       )}
     </>

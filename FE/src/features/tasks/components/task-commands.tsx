@@ -1,5 +1,7 @@
 "use client";
 import { hasPermission } from "@/lib/auth/access";
+import { Field } from "@/components/forms/form-field";
+import { Select } from "@/components/ui/select";
 
 import { Form } from "@/components/forms/form";
 import { FormSelect, FormTextarea } from "@/components/forms/form-field";
@@ -135,23 +137,26 @@ export function TaskExecutionDialog({ task, reload }: TaskDialogProps) {
     : actions[0].value;
   return (
     <HashDialog name="execution" title="Thực hiện hoặc dừng công việc">
-      <label>
-        Thao tác
-        <select
-          value={action}
-          onChange={async (e) => {
-            const value = e.target.value;
-            if (await confirmDiscard()) setChoice(value);
-          }}
-        >
-          {actions.map((a) => (
-            <option key={a.value} value={a.value}>
-              {a.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <div className="section-gap">
+      <Field label="Thao tác" className="max-w-80">
+        {(a11y) => (
+          <Select
+            size="form"
+            {...a11y}
+            value={action}
+            onChange={async (e) => {
+              const value = e.target.value;
+              if (await confirmDiscard()) setChoice(value);
+            }}
+          >
+            {actions.map((a) => (
+              <option key={a.value} value={a.value}>
+                {a.label}
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
+      <div className="mt-4">
         <ExecutionForm
           key={action}
           action={action}

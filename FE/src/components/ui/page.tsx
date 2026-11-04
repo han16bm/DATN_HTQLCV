@@ -1,59 +1,119 @@
 "use client";
-import { label } from "@/lib/format";
+import { cn } from "@/lib/cn";
 import Link from "next/link";
-import { type ComponentProps, type ReactNode } from "react";
+import { useId, type ReactNode } from "react";
+import { buttonClass } from "./button";
+import { StatusLozenge } from "./lozenge";
+
+// Tên và hành động chính chung một hàng; metadata/trạng thái ở tầng đọc thứ hai.
+// `level={2}` cho phần con trong trang (ví dụ việc cá nhân ở trang chủ).
 export function PageHeader({
   title,
   description,
   actions,
   status,
-  navigation,
   level = 1,
 }: {
   title: string;
   description?: ReactNode;
   actions?: ReactNode;
   status?: ReactNode;
-  navigation?: ReactNode;
-  // Phần con trong trang (ví dụ công việc cá nhân ở trang chủ) dùng h2.
   level?: 1 | 2;
 }) {
   const Heading = level === 1 ? "h1" : "h2";
   return (
-    <header className={level === 1 ? "page-heading" : "page-heading section"}>
-      <div className="page-title">
-        <Heading>{title}</Heading>
+    <header
+      className={cn(
+        "flex flex-wrap items-start justify-between gap-x-4 gap-y-2",
+        level === 1 ? "mb-5" : "mb-3",
+      )}
+    >
+      <div className="min-w-0">
+        <Heading
+          className={cn(
+            "m-0 font-semibold text-fg",
+            level === 1 ? "text-heading-lg" : "text-heading-sm",
+          )}
+        >
+          {title}
+        </Heading>
+        {status && (
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+            {status}
+          </div>
+        )}
+        {description && (
+          <p className="mt-1 mb-0 max-w-[80ch] text-sm text-fg-subtle">
+            {description}
+          </p>
+        )}
       </div>
-      {actions && <div className="actions">{actions}</div>}
-      {status && <div className="page-status">{status}</div>}
-      {description && <p className="muted">{description}</p>}
-      {navigation && <div className="page-header-nav">{navigation}</div>}
+      {actions && (
+        <div className="flex flex-wrap items-center gap-2">{actions}</div>
+      )}
     </header>
   );
 }
+
+// Tiêu đề và hành động nằm ngoài bề mặt dữ liệu; không lồng thẻ trắng quanh bảng.
 export function Panel({
   title,
   children,
   className = "",
   actions,
+  flush = false,
+  compact = false,
 }: {
   title?: string;
   children: ReactNode;
   className?: string;
   actions?: ReactNode;
+  // Thân không đệm, cho nội dung tự có khung (bảng, xem trước PDF).
+  flush?: boolean;
+  // Mật độ gọn cho cột phụ và ngăn kéo; giữ cùng thứ bậc và khung dữ liệu.
+  compact?: boolean;
 }) {
+  const titleId = useId();
   return (
-    <section className={`panel ${className}`}>
+    <section
+      data-slot="panel"
+      aria-labelledby={title ? titleId : undefined}
+      className={cn("min-w-0", className)}
+    >
       {(title || actions) && (
-        <div className="panel-heading">
-          {title && <h2>{title}</h2>}
-          {actions}
+        <div
+          className={cn(
+            "mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2",
+            compact ? "min-h-7" : "min-h-8",
+          )}
+        >
+          {title && (
+            <h2
+              id={titleId}
+              className={cn(
+                "m-0 font-semibold text-fg",
+                compact ? "text-sm" : "text-heading-sm",
+              )}
+            >
+              {title}
+            </h2>
+          )}
+          {actions && <div className="flex items-center gap-2">{actions}</div>}
         </div>
       )}
-      <div className="panel-body card">{children}</div>
+      <div
+        data-slot="panel-body"
+        className={cn(
+          "min-w-0 overflow-hidden rounded-lg border border-line bg-surface",
+          !flush && (compact ? "p-3 [&>*+*]:mt-2" : "p-4 [&>*+*]:mt-3"),
+        )}
+      >
+        {children}
+      </div>
     </section>
   );
 }
+
 export function ButtonLink({
   href,
   children,
@@ -64,11 +124,20 @@ export function ButtonLink({
   primary?: boolean;
 }) {
   return (
-    <Link className={`button ${primary ? "primary" : ""}`} href={href}>
+    <Link
+      className={buttonClass(primary ? "primary" : "secondary")}
+      href={href}
+    >
       {children}
     </Link>
   );
 }
+
+// Cùng kiểu chữ cho hành động Chi tiết, dù mở trang hay ngăn kéo.
+export const detailClass =
+  "inline-flex min-h-7 items-center rounded-sm px-1.5 text-sm font-medium whitespace-nowrap text-selected-fg transition-colors hover:bg-hover active:bg-pressed motion-reduce:transition-none pointer-coarse:min-h-11";
+
+// Liên kết "Chi tiết" cuối hàng: chỉ là chữ, không viền, không gạch chân khi rê.
 export function DetailLink({
   href,
   label = "Xem chi tiết",
@@ -77,26 +146,18 @@ export function DetailLink({
   label?: string;
 }) {
   return (
-    <Link href={href} className="detail-link" aria-label={label} title={label}>
+    <Link href={href} aria-label={label} title={label} className={detailClass}>
       Chi tiết
     </Link>
   );
 }
-export function Empty({
-  message = "Chưa tìm thấy kết quả. Hãy thử điều chỉnh bộ lọc.",
-}: {
-  message?: string;
-}) {
-  return (
-    <div className="empty-state">
-      <h2>Chưa có dữ liệu</h2>
-      <p className="muted">{message}</p>
-    </div>
-  );
-}
-export function Badge({ value }: { value: string }) {
-  return <span className={`badge ${value.toLowerCase()}`}>{label(value)}</span>;
-}
+
+// Tên mục trong bảng: một dòng, cắt bằng dấu … (đủ tên ở thuộc tính title).
+export const nameClass = "block max-w-[30ch] truncate";
+// Liên kết trong dòng chữ.
+export const linkClass =
+  "font-medium text-selected-fg underline-offset-2 hover:underline";
+
 export function StatusField({
   label = "Trạng thái",
   value,
@@ -105,153 +166,9 @@ export function StatusField({
   value: string;
 }) {
   return (
-    <span className="status-field">
-      <span>{label}:</span>
-      <Badge value={value} />
+    <span className="inline-flex items-center gap-1.5 text-xs text-fg-subtle">
+      <span className="whitespace-nowrap">{label}:</span>
+      <StatusLozenge value={value} />
     </span>
-  );
-}
-export function DataTable({
-  headers,
-  rows,
-  actions = false,
-  title,
-  headerActions,
-  description,
-  pagination,
-  widths,
-}: {
-  headers: string[];
-  rows: ReactNode[][];
-  actions?: boolean;
-  title?: string;
-  headerActions?: ReactNode;
-  description?: ReactNode;
-  pagination?: ComponentProps<typeof Pagination>;
-  widths?: number[];
-}) {
-  return (
-    <section className="data-table" data-columns={headers.length}>
-      {(title || headerActions) && (
-        <div className="table-heading">
-          {title && <h2>{title}</h2>}
-          {headerActions && <div className="actions">{headerActions}</div>}
-        </div>
-      )}
-      <div className="table-card">
-        {description && <div className="table-note">{description}</div>}
-        <div
-          className="table-scroll"
-          tabIndex={0}
-          role="region"
-          aria-label={title ?? "Bảng dữ liệu"}
-        >
-          <table aria-label={title} data-columns={headers.length}>
-            {widths && (
-              <colgroup>
-                {widths.map((width, index) => (
-                  <col key={index} style={{ width: `${width}%` }} />
-                ))}
-              </colgroup>
-            )}
-            <thead>
-              <tr>
-                {headers.map((h, i) => (
-                  <th
-                    key={i}
-                    scope="col"
-                    className={
-                      actions && i === headers.length - 1
-                        ? "table-actions"
-                        : undefined
-                    }
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, i) => (
-                <tr key={i}>
-                  {row.map((cell, j) => (
-                    <td
-                      key={j}
-                      className={
-                        actions && j === row.length - 1
-                          ? "table-actions"
-                          : undefined
-                      }
-                    >
-                      {cell}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!rows.length && <Empty />}
-        </div>
-        <Pagination {...(pagination ?? { total: rows.length })} />
-      </div>
-    </section>
-  );
-}
-type NavProps = {
-  label: string;
-  items: { href: string; label: string; active: boolean }[];
-};
-export function SectionNav({ label, items }: NavProps) {
-  return (
-    <nav className="section-nav" aria-label={label}>
-      {items.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          aria-current={item.active ? "page" : undefined}
-        >
-          {item.label}
-        </Link>
-      ))}
-    </nav>
-  );
-}
-export function Pagination({
-  page = 1,
-  total,
-  pageSize = total || 1,
-  onPage,
-}: {
-  page?: number;
-  pageSize?: number;
-  total: number;
-  onPage?: (page: number) => void;
-}) {
-  const pages = Math.max(1, Math.ceil(total / pageSize));
-  return (
-    <div className="table-footer">
-      <span className="small muted">{total} kết quả</span>
-      {onPage && (total > pageSize || page > 1) && (
-        <nav className="actions" aria-label="Phân trang">
-          <button
-            type="button"
-            disabled={page <= 1}
-            onClick={() => onPage(page - 1)}
-          >
-            Trước
-          </button>
-          <span className="small" aria-live="polite">
-            Trang {page} / {pages}
-          </span>
-          <button
-            type="button"
-            disabled={page * pageSize >= total}
-            onClick={() => onPage(page + 1)}
-          >
-            Sau
-          </button>
-        </nav>
-      )}
-    </div>
   );
 }

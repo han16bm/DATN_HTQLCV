@@ -1,4 +1,8 @@
 "use client";
+import { cn } from "@/lib/cn";
+import { DataTable } from "@/components/patterns/data-table";
+import { StatusLozenge } from "@/components/ui/lozenge";
+import { Button } from "@/components/ui/button";
 
 import { RecordStamp, stampText } from "@/components/ui/record-stamp";
 import { Form } from "@/components/forms/form";
@@ -12,12 +16,7 @@ import {
   EntityDialog,
   RowDialogLinks,
 } from "@/components/ui/entity-dialog";
-import {
-  Badge,
-  DataTable,
-  PageHeader,
-  StatusField,
-} from "@/components/ui/page";
+import { PageHeader, StatusField } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useUpdateSettingMutation } from "@/features/settings/hooks/use-settings-mutations";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
@@ -71,17 +70,22 @@ export function IpWhitelistPage() {
       <PageHeader
         title="IP whitelist khu quản trị"
         actions={
-          <button
+          <Button
             type="button"
-            className="primary"
+            variant="primary"
             onClick={() => entryDialog.open("create")}
           >
             Thêm địa chỉ
-          </button>
+          </Button>
         }
       />
       <section
-        className={`notice ${data.enabled ? "" : "error"}`}
+        className={cn(
+          "mb-5 grid gap-1 rounded-lg border px-4 py-3 text-sm [&_h2]:m-0 [&_h2]:text-sm [&_h2]:font-semibold [&_p]:m-0",
+          data.enabled
+            ? "border-success-fg/25 bg-success-bg"
+            : "border-warning-fg/25 bg-warning-bg",
+        )}
         aria-label="Trạng thái IP whitelist"
       >
         <h2>IP whitelist đang {data.enabled ? "bật" : "tắt"}</h2>
@@ -91,8 +95,8 @@ export function IpWhitelistPage() {
             ? "Chỉ các địa chỉ trong danh sách đang hoạt động mới vào được khu quản trị."
             : "Mọi địa chỉ IP đều vào được khu quản trị."}
         </p>
-        <div className="actions section-gap">
-          <button
+        <div className="actions mt-2 flex flex-wrap items-center gap-2">
+          <Button
             type="button"
             onClick={() => {
               snapshot.saved(data);
@@ -100,7 +104,7 @@ export function IpWhitelistPage() {
             }}
           >
             {data.enabled ? "Tắt whitelist" : "Bật whitelist"}
-          </button>
+          </Button>
         </div>
       </section>
       <DataTable
@@ -118,10 +122,16 @@ export function IpWhitelistPage() {
         rows={data.entries.map((item) => [
           <code key="cidr">{item.cidr}</code>,
           item.description ?? "—",
-          <Badge key="status" value={item.isActive ? "ACTIVE" : "INACTIVE"} />,
+          <StatusLozenge
+            key="status"
+            value={item.isActive ? "ACTIVE" : "INACTIVE"}
+          />,
           stampText(item.createdBy, item.createdAt),
           stampText(item.updatedBy, item.updatedAt),
-          <div key="actions" className="actions">
+          <div
+            key="actions"
+            className="actions flex flex-wrap items-center gap-2"
+          >
             <RowDialogLinks
               name={`địa chỉ ${item.cidr}`}
               view={entryDialog.href("view", item.id)}
@@ -139,13 +149,13 @@ export function IpWhitelistPage() {
             >
               {item.isActive ? "Tắt" : "Bật"}
             </ActionButton>
-            <button
+            <Button
               type="button"
-              className="link-button"
+              variant="subtle"
               onClick={() => dialog.open(`ip-delete-${item.id}`)}
             >
               Xóa
-            </button>
+            </Button>
           </div>,
         ])}
       />
@@ -279,9 +289,9 @@ function EntryForm({
         readOnly={mode === "view"}
         submitLabel={editing ? "Lưu địa chỉ" : "Thêm vào danh sách"}
         cancel={
-          <button type="button" onClick={onCancel}>
+          <Button type="button" onClick={onCancel}>
             Hủy
-          </button>
+          </Button>
         }
         compareFields={[
           { name: "cidr", label: "IP hoặc CIDR" },
@@ -322,9 +332,11 @@ function EntryForm({
           error={errors.cidr}
         />
         {mode !== "view" && (
-          <div className="form-field field-short">
-            <span className="field-label">IP hiện tại: {currentIp}</span>
-            <button
+          <div className="col-span-12 min-w-0 @min-[420px]/form:col-span-6 @min-[600px]/form:col-span-4">
+            <span className="mb-1.5 block text-sm font-medium text-fg">
+              IP hiện tại: {currentIp}
+            </span>
+            <Button
               type="button"
               onClick={() =>
                 form.setValue("cidr", currentIp, {
@@ -334,7 +346,7 @@ function EntryForm({
               }
             >
               Thêm IP hiện tại
-            </button>
+            </Button>
           </div>
         )}
         <FormInput
@@ -353,12 +365,12 @@ function EntryForm({
       </Form>
       {mode === "view" && entry && (
         <DialogFooter>
-          <button type="button" onClick={onClose}>
+          <Button type="button" onClick={onClose}>
             Đóng
-          </button>
-          <button type="button" className="primary" onClick={onEdit}>
+          </Button>
+          <Button type="button" variant="primary" onClick={onEdit}>
             Chỉnh sửa
-          </button>
+          </Button>
         </DialogFooter>
       )}
     </>
@@ -374,10 +386,10 @@ function DeleteEntry({
 }) {
   const remove = useDeleteIpWhitelistEntryMutation();
   return (
-    <div className="actions">
-      <button type="button" onClick={onDone}>
+    <div className="actions flex flex-wrap items-center gap-2">
+      <Button type="button" onClick={onDone}>
         Hủy
-      </button>
+      </Button>
       <ActionButton
         primary
         pendingLabel="Đang xóa…"

@@ -1,14 +1,12 @@
-import { ProjectMembersPage } from "@/features/project-members/components/project-members-page";
-import { Suspense } from "react";
+import { projectUrl, type PageSearch } from "@/lib/navigation";
+import { redirect } from "next/navigation";
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ projectId: string }>;
+  searchParams: Promise<PageSearch>;
 }) {
   const { projectId } = await params;
-  return (
-    <Suspense>
-      <ProjectMembersPage projectId={projectId} />
-    </Suspense>
-  );
+  redirect(projectUrl(projectId, await searchParams, "members"));
 }

@@ -1,7 +1,10 @@
 "use client";
 import { useState, type ReactNode } from "react";
+import { Button } from "./button";
 import { Spinner } from "./loading";
 
+// Nút chạy một thao tác bất đồng bộ: khóa nút, hiện vòng quay và nhãn đang xử lý,
+// báo lỗi ngay dưới nút nếu thất bại.
 export function ActionButton({
   children,
   onAction,
@@ -16,11 +19,10 @@ export function ActionButton({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   return (
-    <div>
-      <button
-        type="button"
+    <div className="inline-flex flex-col items-start gap-1">
+      <Button
+        variant={primary ? "primary" : "secondary"}
         disabled={busy}
-        className={`pending-button ${primary ? "primary" : ""}`}
         aria-busy={busy}
         onClick={async () => {
           setBusy(true);
@@ -40,9 +42,9 @@ export function ActionButton({
       >
         {busy && <Spinner />}
         {busy ? pendingLabel : children}
-      </button>
+      </Button>
       {error && (
-        <p className="field-error" role="alert">
+        <p role="alert" className="m-0 text-sm text-danger-fg">
           {error}
         </p>
       )}

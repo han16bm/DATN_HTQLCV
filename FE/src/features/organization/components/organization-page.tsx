@@ -1,8 +1,10 @@
 "use client";
+import { DataTable } from "@/components/patterns/data-table";
+import { StatusLozenge } from "@/components/ui/lozenge";
 
 import { PageSkeleton } from "@/components/ui/loading";
 import { RowDialogLinks } from "@/components/ui/entity-dialog";
-import { Badge, ButtonLink, DataTable, PageHeader } from "@/components/ui/page";
+import { ButtonLink, PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useEntityDialog } from "@/lib/forms/use-entity-dialog";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
@@ -38,7 +40,7 @@ export function OrganizationPage() {
           headers={["Đơn vị", "Trạng thái", "Hành động"]}
           rows={query.data.items.map((unit) => [
             unit.name,
-            <Badge key="status" value={unit.status} />,
+            <StatusLozenge key="status" value={unit.status} />,
             <RowDialogLinks
               key="detail"
               name={`đơn vị ${unit.name}`}

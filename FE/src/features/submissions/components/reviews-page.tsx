@@ -1,15 +1,19 @@
 "use client";
+import { FilterBar, FilterField } from "@/components/patterns/filter-bar";
+import { SearchInput } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { hasPermission } from "@/lib/auth/access";
 
+import { DataTable } from "@/components/patterns/data-table";
 import { PageSkeleton } from "@/components/ui/loading";
-import { DataTable, DetailLink, PageHeader } from "@/components/ui/page";
+import { DetailLink, PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { useListProjectsQuery } from "@/features/projects/hooks/use-projects-queries";
 import { useSession } from "@/lib/auth/session-context";
 import { dateTime } from "@/lib/format";
-import Link from "next/link";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
+import Link from "next/link";
 import { useListReviewQueueQuery } from "../hooks/use-submissions-queries";
 
 export function ReviewsPage() {
@@ -24,19 +28,17 @@ export function ReviewsPage() {
   return (
     <>
       <PageHeader title="Kết quả chờ nghiệm thu" />
-      <div className="panel filters">
-        <label className="filter-search">
-          Tìm công việc
-          <input
-            type="search"
+      <FilterBar label="Bộ lọc nghiệm thu">
+        <FilterField label="Tìm công việc" search>
+          <SearchInput
             placeholder="Nhập tên công việc…"
             value={f.get("q")}
             onChange={(e) => f.set("q", e.target.value)}
           />
-        </label>
-        <label>
-          Dự án
-          <select
+        </FilterField>
+        <FilterField label="Dự án">
+          <Select
+            fit
             value={f.get("projectId")}
             onChange={(e) => f.set("projectId", e.target.value)}
           >
@@ -48,9 +50,9 @@ export function ReviewsPage() {
                   {p.name}
                 </option>
               ))}
-          </select>
-        </label>
-      </div>
+          </Select>
+        </FilterField>
+      </FilterBar>
       {projects.isError && (
         <QueryErrorState error={projects.error} retry={projects.refetch} />
       )}
@@ -60,6 +62,7 @@ export function ReviewsPage() {
         <PageSkeleton variant="table" />
       ) : (
         <DataTable
+          loading={q.isFetching}
           pagination={{
             ...q.data.pagination,
             onPage: (p) => f.set("page", String(p)),
@@ -77,7 +80,7 @@ export function ReviewsPage() {
           rows={q.data.items.map((s) => [
             <Link
               key="task"
-              className="issue-link task-name"
+              className="block max-w-[30ch] truncate font-medium text-fg hover:text-selected-fg hover:underline"
               title={s.taskTitle}
               href={`/tasks/${s.taskId}/submissions/${s.id}`}
             >

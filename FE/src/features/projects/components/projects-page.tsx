@@ -1,14 +1,13 @@
 "use client";
+import { FilterBar, FilterField } from "@/components/patterns/filter-bar";
+import { SearchInput } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { canVisit } from "@/lib/auth/access";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import {
-  Badge,
-  ButtonLink,
-  DataTable,
-  DetailLink,
-  PageHeader,
-} from "@/components/ui/page";
+import { ButtonLink, DetailLink, PageHeader } from "@/components/ui/page";
+import { StatusLozenge } from "@/components/ui/lozenge";
+import { DataTable } from "@/components/patterns/data-table";
 import { ProjectTile } from "@/components/ui/project-tile";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
@@ -42,19 +41,17 @@ export function ProjectsPage() {
           )
         }
       />
-      <section className="panel filters">
-        <label>
-          Tìm dự án
-          <input
-            type="search"
+      <FilterBar label="Bộ lọc dự án">
+        <FilterField label="Tìm dự án" search>
+          <SearchInput
             value={filters.get("q")}
             onChange={(e) => filters.set("q", e.target.value)}
             placeholder="Tìm theo tên hoặc mã dự án"
           />
-        </label>
-        <label>
-          Trạng thái
-          <select
+        </FilterField>
+        <FilterField label="Trạng thái">
+          <Select
+            fit
             value={filters.get("status")}
             onChange={(e) => filters.set("status", e.target.value)}
           >
@@ -64,11 +61,11 @@ export function ProjectsPage() {
                 {label(v)}
               </option>
             ))}
-          </select>
-        </label>
-        <label>
-          Đơn vị
-          <select
+          </Select>
+        </FilterField>
+        <FilterField label="Đơn vị">
+          <Select
+            fit
             value={filters.get("unitId")}
             onChange={(e) => filters.set("unitId", e.target.value)}
           >
@@ -83,9 +80,9 @@ export function ProjectsPage() {
                   {u.name}
                 </option>
               ))}
-          </select>
-        </label>
-      </section>
+          </Select>
+        </FilterField>
+      </FilterBar>
       {scope.isError && (
         <QueryErrorState error={scope.error} retry={scope.refetch} />
       )}
@@ -95,6 +92,7 @@ export function ProjectsPage() {
       )}{" "}
       {query.data && !query.isError && (
         <DataTable
+          loading={query.isFetching}
           pagination={{
             ...query.data.pagination,
             onPage: (p) => filters.set("page", String(p)),
@@ -111,15 +109,18 @@ export function ProjectsPage() {
             "Hành động",
           ]}
           rows={query.data.items.map((p) => [
-            <div key="project" className="project-row">
+            <div key="project" className="flex min-w-0 items-center gap-2.5">
               <ProjectTile id={p.id} small />
-              <Link className="issue-link" href={`/projects/${p.id}`}>
+              <Link
+                className="font-medium text-fg hover:text-selected-fg hover:underline"
+                href={`/projects/${p.id}`}
+              >
                 {p.name}
               </Link>
             </div>,
             p.unit.name,
             <UserBadge key="owner" name={p.owner.displayName} />,
-            <Badge key="status" value={p.status} />,
+            <StatusLozenge key="status" value={p.status} />,
             p.startDate.split("-").reverse().join("/"),
             dateTime(p.dueAt),
             <DetailLink

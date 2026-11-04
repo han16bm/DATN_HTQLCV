@@ -1,6 +1,8 @@
 "use client";
 
-import { Badge, DataTable, DetailLink } from "@/components/ui/page";
+import { DetailLink } from "@/components/ui/page";
+import { StatusLozenge } from "@/components/ui/lozenge";
+import { DataTable } from "@/components/patterns/data-table";
 import { dateTime, hours } from "@/lib/format";
 import type { ReactNode } from "react";
 import { type ReportPreviewDto } from "../types/reports.types";
@@ -18,7 +20,7 @@ export function ReportNumbers({
       title={frozen ? "Số liệu đã chốt" : "Số liệu từ nhật ký"}
       headerActions={actions}
       description={
-        <p className="metadata">
+        <p className="mb-3 text-xs text-fg-subtle">
           {frozen ? "Số liệu chốt tại" : "Số liệu nguồn tại"}{" "}
           {dateTime(value.dataAsOf)} · {hours(value.totalMinutes)}
           {value.partialPeriod && " · Kỳ chưa kết thúc"}
@@ -33,10 +35,14 @@ export function ReportNumbers({
         "Hành động",
       ]}
       rows={value.items.map((t) => [
-        <span key="title" className="task-name" title={t.title}>
+        <span
+          key="title"
+          className="block max-w-[30ch] truncate"
+          title={t.title}
+        >
           {t.title}
         </span>,
-        <Badge key="status" value={t.status} />,
+        <StatusLozenge key="status" value={t.status} />,
         String(t.minutes),
         <DetailLink
           key="detail"

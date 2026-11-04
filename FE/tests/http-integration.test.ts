@@ -220,7 +220,8 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
       mimeType: "application/pdf",
     });
     const task = await apiClient.get<Record<string, unknown>>("/tasks/t-3");
-    for (const field of ["updatedAt", "statusChangedAt", "completedAt"]) {
+    // updatedAt là dấu vết cập nhật công khai (ADMIN_MODULES 8.4); mốc trạng thái vẫn ẩn.
+    for (const field of ["statusChangedAt", "completedAt"]) {
       expect(task.data).not.toHaveProperty(field);
       expect(db.tasks.find((item) => item.id === "t-3")).toHaveProperty(field);
     }
@@ -510,15 +511,39 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
     await signIn("admin");
     const task = await tasksService.getTask("t-3");
     expect(task.id).toBe("t-3");
+    const project = await projectsService.getProject("p-main");
     await expect(
       tasksService.cancelTask(
         task.id,
         { reason: "Kiểm tra quyền" },
-        { version: task.version, key: "admin-denied-write" },
+        { version: task.version, key: "admin-denied-cancel" },
       ),
-    ).rejects.toMatchObject({
+    ).rejects.toMatchObject({ status: 403, code: "FORBIDDEN" });
+    await expect(
+      tasksService.createTask(
+        "p-main",
+        {
+          title: "Admin không được tạo việc",
+          description: "Kiểm tra quyền",
+          acceptanceCriteria: "Bị từ chối",
+          priority: "NORMAL",
+          dueAt: "2026-10-30T10:00:00.000Z",
+          estimatedMinutes: 60,
+        },
+        { key: "admin-denied-create" },
+      ),
+    ).rejects.toMatchObject({ status: 403, code: "FORBIDDEN" });
+    await expect(
+      projectsService.updateProject(
+        project.id,
+        { ownerId: "u-huy", changeReason: "Admin không được đổi" },
+        { version: project.version, key: "admin-denied-project" },
+      ),
+    ).rejects.toMatchObject({ status: 403, code: "FORBIDDEN" });
+    // Người ngoài dự án và không có quyền xem toàn hệ thống vẫn không đọc được.
+    await signIn("lan");
+    await expect(tasksService.getTask("t-other")).rejects.toMatchObject({
       status: 403,
-      code: "FORBIDDEN",
     });
   });
   it("normalizes 401 and preserves password whitespace", async () => {

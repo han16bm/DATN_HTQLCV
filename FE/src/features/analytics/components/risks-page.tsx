@@ -1,7 +1,8 @@
 "use client";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import { Badge, DataTable } from "@/components/ui/page";
+import { StatusLozenge } from "@/components/ui/lozenge";
+import { DataTable } from "@/components/patterns/data-table";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import Link from "next/link";
@@ -25,6 +26,7 @@ export function RisksPage() {
         <>
           <Metadata value={query.data.metadata} />
           <DataTable
+            loading={query.isFetching}
             title="Nguy cơ theo dự án"
             actions
             widths={[22, 12, 15, 13, 28, 10]}
@@ -38,7 +40,7 @@ export function RisksPage() {
             ]}
             rows={query.data.projects.map((p) => [
               p.projectName,
-              <Badge key="risk" value={p.riskLevel} />,
+              <StatusLozenge key="risk" value={p.riskLevel} />,
               `${p.overdueCount} / ${p.atRiskCount}`,
               String(p.insufficientDataCount),
               p.evidence.join(" "),
@@ -50,6 +52,7 @@ export function RisksPage() {
             ])}
           />
           <DataTable
+            loading={query.isFetching}
             title="Công việc cần đối chiếu"
             actions
             widths={[25, 16, 15, 23, 11, 10]}
@@ -65,7 +68,7 @@ export function RisksPage() {
               <Link
                 key={t.taskId}
                 href={`/tasks/${t.taskId}`}
-                className="text-link task-name"
+                className="font-medium text-selected-fg underline-offset-2 hover:underline block max-w-[30ch] truncate"
                 title={t.taskTitle}
               >
                 {t.taskTitle}
@@ -75,9 +78,9 @@ export function RisksPage() {
               ) : (
                 "Chưa phân công"
               ),
-              <Badge key="category" value={t.category} />,
+              <StatusLozenge key="category" value={t.category} />,
               t.evidence.join(" "),
-              <Badge key="quality" value={t.quality.status} />,
+              <StatusLozenge key="quality" value={t.quality.status} />,
               <AnalysisLink
                 key="detail"
                 value={t.analysisRef}

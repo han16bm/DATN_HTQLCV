@@ -45,7 +45,10 @@ export function DomainActionLink({
   label?: string;
 }) {
   return value ? (
-    <Link className="text-link" href={actionHref(value)}>
+    <Link
+      className="font-medium text-selected-fg underline-offset-2 hover:underline"
+      href={actionHref(value)}
+    >
       {label}
     </Link>
   ) : null;

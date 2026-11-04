@@ -1,8 +1,9 @@
 "use client";
 
+import { Button, buttonClass } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/loading";
-import { QueryErrorState } from "@/components/ui/query-error-state";
 import { Panel } from "@/components/ui/page";
+import { QueryErrorState } from "@/components/ui/query-error-state";
 import { fileSize } from "@/lib/format";
 import { ExternalLink, FileText } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -47,95 +48,114 @@ export function PdfPreview({
   return (
     <Panel
       title="Báo cáo đính kèm"
-      className="pdf-preview"
+      compact
+      className="grid"
       actions={
         item && (
-          <div className="actions pdf-actions">
+          <div className="flex flex-wrap items-center gap-2">
             {pdf && (
-              <button
-                type="button"
+              <Button
                 aria-expanded={open}
+                className="h-7 px-2"
                 onClick={() => setOpen(!open)}
               >
                 {open ? "Thu gọn" : "Xem trước"}
-              </button>
+              </Button>
             )}
             {url && (
               <a
-                className="button"
+                className={`${buttonClass()} h-7 px-2`}
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <ExternalLink size={14} aria-hidden="true" />
+                <ExternalLink className="size-3.5" aria-hidden="true" />
                 Mở tab mới
               </a>
             )}
-            <button
-              type="button"
-              className="pending-button"
+            <Button
+              className="h-7 px-2"
               aria-busy={pending}
               disabled={pending || item.status !== "READY"}
               onClick={() => void download(item.id, item.filename)}
             >
               {pending && <Spinner />}
               Tải xuống
-            </button>
+            </Button>
           </div>
         )
       }
     >
-      {!attachmentId && (
-        <div className="pdf-empty">
-          <FileText size={28} aria-hidden="true" />
-          <p>Chưa có báo cáo đính kèm.</p>
-        </div>
-      )}
-      {(picker || item) && (
-        <div className="pdf-file">
-          <FileText size={16} aria-hidden="true" />
-          {picker ??
-            (item && (
-              <span className="pdf-name" title={item.filename}>
-                {item.filename}
+      <div className="grid gap-2">
+        {!attachmentId && (
+          <div
+            data-slot="pdf-empty"
+            className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-md bg-sunken/50 p-4 text-center text-sm text-fg-subtle"
+          >
+            <FileText className="size-6" aria-hidden="true" />
+            <p className="m-0">Chưa có báo cáo đính kèm.</p>
+          </div>
+        )}
+        {(picker || item) && (
+          <div className="flex min-w-0 items-center gap-2">
+            <FileText
+              className="size-4 shrink-0 text-danger-fg"
+              aria-hidden="true"
+            />
+            {picker ??
+              (item && (
+                <span
+                  className="block min-w-0 max-w-[30ch] truncate text-sm font-medium"
+                  title={item.filename}
+                >
+                  {item.filename}
+                </span>
+              ))}
+            {item && (
+              <span className="shrink-0 text-xs whitespace-nowrap text-fg-subtle">
+                {fileSize(item.sizeBytes)}
               </span>
-            ))}
-          {item && (
-            <span className="small muted">{fileSize(item.sizeBytes)}</span>
-          )}
-        </div>
-      )}
-      {meta.isError && (
-        <QueryErrorState error={meta.error} retry={meta.refetch} />
-      )}
-      {attachmentId && !meta.isError && !item && (
-        <p role="status" className="loading-inline">
-          <Spinner />
-          Đang tải thông tin tệp…
-        </p>
-      )}
-      {item && !pdf && (
-        <p className="small muted">
-          Tệp này không phải PDF nên không xem trước được; hãy tải xuống.
-        </p>
-      )}
-      {pdf && open && content.isError && (
-        <QueryErrorState error={content.error} retry={content.refetch} />
-      )}
-      {pdf && open && !content.isError && !url && (
-        <p role="status" className="loading-inline">
-          <Spinner />
-          Đang tải bản xem trước…
-        </p>
-      )}
-      {pdf && open && url && (
-        <iframe
-          className="pdf-frame"
-          title={`Xem trước ${item.filename}`}
-          src={url}
-        />
-      )}
-      {item && error && <QueryErrorState error={error} />}
+            )}
+          </div>
+        )}
+        {meta.isError && (
+          <QueryErrorState error={meta.error} retry={meta.refetch} />
+        )}
+        {attachmentId && !meta.isError && !item && (
+          <p
+            role="status"
+            className="m-0 inline-flex items-center gap-2 text-sm"
+          >
+            <Spinner />
+            Đang tải thông tin tệp…
+          </p>
+        )}
+        {item && !pdf && (
+          <p className="m-0 text-xs text-fg-subtle">
+            Tệp này không phải PDF nên không xem trước được; hãy tải xuống.
+          </p>
+        )}
+        {pdf && open && content.isError && (
+          <QueryErrorState error={content.error} retry={content.refetch} />
+        )}
+        {pdf && open && !content.isError && !url && (
+          <p
+            role="status"
+            className="m-0 inline-flex items-center gap-2 text-sm"
+          >
+            <Spinner />
+            Đang tải bản xem trước…
+          </p>
+        )}
+        {pdf && open && url && (
+          <iframe
+            className="block h-[min(65vh,600px)] min-h-[360px] w-full rounded-md border border-line bg-[#525659]"
+            title={`Xem trước ${item.filename}`}
+            src={url}
+          />
+        )}
+        {item && error && <QueryErrorState error={error} />}
+      </div>
     </Panel>
   );
 }

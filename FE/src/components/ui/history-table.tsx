@@ -1,39 +1,35 @@
 "use client";
 
 import type { AuditDto } from "@/types/common";
-import {
-  useId,
-  useRef,
-  useState,
-  type ComponentProps,
-  type ReactNode,
-} from "react";
+import { useId, useState, type ComponentProps, type ReactNode } from "react";
 import { dateTime, eventLabel } from "@/lib/format";
 import { AuditChanges } from "./audit-changes";
-import { DataTable } from "./page";
+import { DataTable } from "@/components/patterns/data-table";
+import { detailClass } from "./page";
+import { SlidePanel } from "./slide-panel";
 import { UserBadge } from "./user-badge";
-import * as Dialog from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
 
 export function HistoryTable({
   title,
   items,
   pagination,
   headerActions,
+  loading,
 }: {
   title: string;
   items: AuditDto[];
   pagination?: ComponentProps<typeof DataTable>["pagination"];
   headerActions?: ReactNode;
+  loading?: boolean;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
-  const trigger = useRef<HTMLButtonElement>(null);
   const selected = items.find((item) => item.id === selectedId);
   const detailId = useId();
   return (
     <div>
       <DataTable
+        loading={loading}
         widths={[21, 23, 38, 18]}
         title={title}
         headerActions={headerActions}
@@ -46,14 +42,14 @@ export function HistoryTable({
           eventLabel(item.action),
           <button
             key="detail"
+            data-ui
             type="button"
-            className="link-button"
+            className={detailClass}
             aria-label={`Xem thay đổi: ${eventLabel(item.action)}`}
             aria-expanded={open && selectedId === item.id}
             aria-controls={detailId}
             aria-haspopup="dialog"
-            onClick={(event) => {
-              trigger.current = event.currentTarget;
+            onClick={() => {
               setSelectedId(item.id);
               setOpen(true);
             }}
@@ -62,45 +58,36 @@ export function HistoryTable({
           </button>,
         ])}
       />
-      <Dialog.Root open={open && Boolean(selected)} onOpenChange={setOpen}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="dialog-overlay history-overlay" />
-          <Dialog.Content
-            id={detailId}
-            className="drawer-content"
-            aria-describedby={undefined}
-            onCloseAutoFocus={(event) => {
-              event.preventDefault();
-              trigger.current?.focus();
-            }}
-          >
-            <div className="dialog-heading">
-              <Dialog.Title>Chi tiết thay đổi</Dialog.Title>
-              <Dialog.Close
-                className="icon-button"
-                aria-label="Đóng chi tiết lịch sử"
-              >
-                <X size={18} />
-              </Dialog.Close>
+      <SlidePanel
+        id={detailId}
+        size="sm"
+        open={open && Boolean(selected)}
+        onOpenChange={setOpen}
+        title="Chi tiết thay đổi"
+        closeLabel="Đóng chi tiết lịch sử"
+      >
+        {selected && (
+          <>
+            <div className="grid gap-2 border-b border-line pb-3">
+              <h3 className="m-0 text-sm font-semibold text-fg">
+                {eventLabel(selected.action)}
+              </h3>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <UserBadge name={selected.actor.displayName} />
+                <time className="text-xs text-fg-subtle" dateTime={selected.at}>
+                  {dateTime(selected.at)}
+                </time>
+              </div>
+              {selected.reason && (
+                <p className="m-0 text-xs break-words whitespace-pre-wrap text-fg-subtle">
+                  {selected.reason}
+                </p>
+              )}
             </div>
-            {selected && (
-              <>
-                <h3 className="section-gap">{eventLabel(selected.action)}</h3>
-                <div className="history-detail-meta">
-                  <UserBadge name={selected.actor.displayName} />
-                  <time className="small muted" dateTime={selected.at}>
-                    {dateTime(selected.at)}
-                  </time>
-                </div>
-                {selected.reason && (
-                  <p className="preserve-lines small">{selected.reason}</p>
-                )}
-                <AuditChanges before={selected.before} after={selected.after} />
-              </>
-            )}
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+            <AuditChanges before={selected.before} after={selected.after} />
+          </>
+        )}
+      </SlidePanel>
     </div>
   );
 }

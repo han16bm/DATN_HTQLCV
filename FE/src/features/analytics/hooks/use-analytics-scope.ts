@@ -34,6 +34,5 @@ export function useAnalyticsScope() {
   return {
     parsed,
     query: parsed.success ? parsed.data : { from: "", to: "" },
-    suffix: `?${params}`,
   };
 }

@@ -2,7 +2,10 @@
 import { hasPermission } from "@/lib/auth/access";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import { PageHeader, SectionNav, StatusField } from "@/components/ui/page";
+import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
+import { MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
+import { PageHeader, StatusField } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
 import { SubmitResultDialog } from "@/features/submissions/components/submit-result-dialog";
@@ -60,149 +63,98 @@ export function TaskShell({
     hasPermission(session, "TASKS_REVIEW", task.projectId) &&
     (!path.startsWith(`${root}/submissions/`) ||
       path === `${root}/submissions/${task.latestSubmissionId}`);
-  const navigation = (
-    <SectionNav
-      label="Mục công việc"
-      items={[
-        { href: root, label: "Chi tiết", active: path === root },
-        {
-          href: `${root}/time-logs`,
-          label: "Giờ công",
-          active: path === `${root}/time-logs`,
-        },
-        {
-          href: `${root}/submissions`,
-          label: "Kết quả",
-          active: path.startsWith(`${root}/submissions`),
-        },
-        {
-          href: `${root}/history`,
-          label: "Lịch sử",
-          active: path === `${root}/history`,
-        },
-        ...(path === `${root}/edit`
-          ? [{ href: path, label: "Điều chỉnh", active: true }]
-          : []),
-      ]}
-    />
-  );
   return (
     <>
-      <div className="task-header">
+      <div className="pt-2">
         <PageHeader
           title={task.title}
-          navigation={navigation}
           status={
-            <>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
               <StatusField value={task.status} />
               <StatusField label="Ưu tiên" value={task.priority} />
               {task.isOverdue && (
                 <StatusField label="Tiến độ" value="OVERDUE" />
               )}
-            </>
+            </div>
           }
           actions={
             <>
               {review && (
-                <button
-                  className="primary"
-                  onClick={() => dialog.open("review")}
-                >
+                <Button variant="primary" onClick={() => dialog.open("review")}>
                   Quyết định nghiệm thu
-                </button>
+                </Button>
               )}
               {working && (
                 <>
-                  <button
-                    className="primary"
+                  <Button
+                    variant="primary"
                     onClick={() => dialog.open("submit")}
                   >
                     Nộp kết quả
-                  </button>
-                  <button onClick={() => dialog.open("time-log")}>
+                  </Button>
+                  <Button onClick={() => dialog.open("time-log")}>
                     Ghi giờ công
-                  </button>
+                  </Button>
                 </>
               )}
               {start && (
-                <button
-                  className="primary"
+                <Button
+                  variant="primary"
                   onClick={() => dialog.open("execution")}
                 >
                   Bắt đầu
-                </button>
+                </Button>
               )}
               {assign && (
-                <button
-                  className="primary"
+                <Button
+                  variant="primary"
                   onClick={() => dialog.open("assignment")}
                 >
                   Giao việc
-                </button>
+                </Button>
               )}
               {(working || change || stop) && (
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger asChild>
-                    <button
-                      type="button"
-                      className="icon-button bordered"
-                      aria-label="Thao tác công việc"
+                    <IconButton
+                      label="Thao tác công việc"
+                      className="border border-line-input"
                     >
-                      <Ellipsis size={18} aria-hidden="true" />
-                    </button>
+                      <Ellipsis className="size-[18px]" aria-hidden="true" />
+                    </IconButton>
                   </DropdownMenu.Trigger>
-                  <DropdownMenu.Portal>
-                    <DropdownMenu.Content
-                      className="account-menu"
-                      align="end"
-                      sideOffset={8}
-                      collisionPadding={12}
-                    >
-                      {working && (
-                        <DropdownMenu.Item
-                          className="account-menu-item"
-                          onSelect={() => dialog.open("attachment")}
+                  <MenuContent>
+                    {working && (
+                      <MenuItem onSelect={() => dialog.open("attachment")}>
+                        Tải minh chứng
+                      </MenuItem>
+                    )}
+                    {change && (
+                      <>
+                        {path !== `${root}/edit` && (
+                          <MenuItem asChild>
+                            <Link href={`${root}/edit`}>Điều chỉnh</Link>
+                          </MenuItem>
+                        )}
+                        {!assign && (
+                          <MenuItem onSelect={() => dialog.open("assignment")}>
+                            Bàn giao
+                          </MenuItem>
+                        )}
+                      </>
+                    )}
+                    {stop && (
+                      <>
+                        {(working || change) && <MenuSeparator />}
+                        <MenuItem
+                          tone="danger"
+                          onSelect={() => dialog.open("execution")}
                         >
-                          Tải minh chứng
-                        </DropdownMenu.Item>
-                      )}
-                      {change && (
-                        <>
-                          {path !== `${root}/edit` && (
-                            <DropdownMenu.Item asChild>
-                              <Link
-                                className="account-menu-item"
-                                href={`${root}/edit`}
-                              >
-                                Điều chỉnh
-                              </Link>
-                            </DropdownMenu.Item>
-                          )}
-                          {!assign && (
-                            <DropdownMenu.Item
-                              className="account-menu-item"
-                              onSelect={() => dialog.open("assignment")}
-                            >
-                              Bàn giao
-                            </DropdownMenu.Item>
-                          )}
-                        </>
-                      )}
-                      {stop && (
-                        <>
-                          {(working || change) && (
-                            <DropdownMenu.Separator className="account-menu-separator" />
-                          )}
-                          <DropdownMenu.Item
-                            className="account-menu-item danger"
-                            onSelect={() => dialog.open("execution")}
-                          >
-                            {working ? "Tạm dừng / hủy" : "Hủy công việc"}
-                          </DropdownMenu.Item>
-                        </>
-                      )}
-                    </DropdownMenu.Content>
-                  </DropdownMenu.Portal>
+                          {working ? "Tạm dừng / hủy" : "Hủy công việc"}
+                        </MenuItem>
+                      </>
+                    )}
+                  </MenuContent>
                 </DropdownMenu.Root>
               )}
             </>

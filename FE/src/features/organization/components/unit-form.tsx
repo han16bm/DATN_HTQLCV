@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@/components/ui/button";
 
 import { Form } from "@/components/forms/form";
 import {
@@ -81,9 +82,9 @@ export function UnitForm({
       <ReasonForm
         label="Lý do ngừng sử dụng"
         cancel={
-          <button type="button" onClick={() => setClosing(false)}>
+          <Button type="button" onClick={() => setClosing(false)}>
             Hủy
-          </button>
+          </Button>
         }
         submitLabel="Xác nhận ngừng sử dụng"
         compareFields={[
@@ -109,9 +110,9 @@ export function UnitForm({
         form={form}
         readOnly={mode === "view"}
         cancel={
-          <button type="button" onClick={onCancel}>
+          <Button type="button" onClick={onCancel}>
             Hủy
-          </button>
+          </Button>
         }
         submitLabel={editing ? "Lưu thông tin" : "Thêm đơn vị"}
         compareFields={[
@@ -182,24 +183,24 @@ export function UnitForm({
       </Form>
       {mode === "view" && unit && (
         <DialogFooter>
-          <button type="button" onClick={onClose}>
+          <Button type="button" onClick={onClose}>
             Đóng
-          </button>
+          </Button>
           {unit.status === "ACTIVE" && (
             <>
-              <button
+              <Button
                 type="button"
-                className="danger"
+                variant="danger"
                 onClick={() => {
                   snapshot.saved(unit);
                   setClosing(true);
                 }}
               >
                 Ngừng sử dụng đơn vị
-              </button>
-              <button type="button" className="primary" onClick={onEdit}>
+              </Button>
+              <Button type="button" variant="primary" onClick={onEdit}>
                 Chỉnh sửa
-              </button>
+              </Button>
             </>
           )}
         </DialogFooter>

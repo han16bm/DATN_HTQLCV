@@ -1,77 +1,62 @@
 "use client";
-import { hasPermission } from "@/lib/auth/access";
+import { seesOthersTasks } from "@/lib/auth/access";
 
-import { Form } from "@/components/forms/form";
-import { FormSelect } from "@/components/forms/form-field";
+import { FilterBar, FilterField } from "@/components/patterns/filter-bar";
 import { Avatar } from "@/components/ui/avatar";
-import { HashDialog } from "@/components/ui/dialog";
-import { Priority } from "@/components/ui/priority";
-import { PageSkeleton } from "@/components/ui/loading";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { HeaderActions } from "@/components/ui/header-actions";
-import {
-  Badge,
-  DataTable,
-  DetailLink,
-  Empty,
-  PageHeader,
-  Pagination,
-} from "@/components/ui/page";
-import { QueryErrorState } from "@/components/ui/query-error-state";
+import { SearchInput } from "@/components/ui/input";
+import { PageSkeleton, Spinner } from "@/components/ui/loading";
+import { StatusLozenge } from "@/components/ui/lozenge";
+import { DetailLink, PageHeader } from "@/components/ui/page";
 import { UserBadge } from "@/components/ui/user-badge";
+import { DataTable } from "@/components/patterns/data-table";
+import { Pagination } from "@/components/ui/pagination";
+import { Priority } from "@/components/ui/priority";
+import { QueryErrorState } from "@/components/ui/query-error-state";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Select } from "@/components/ui/select";
 import { useListProjectMembersQuery } from "@/features/project-members/hooks/use-project-members-queries";
 import { useListProjectsQuery } from "@/features/projects/hooks/use-projects-queries";
 import { useSession } from "@/lib/auth/session-context";
 import { dateTime, label } from "@/lib/format";
-import { useHashDialog } from "@/lib/forms/use-hash-dialog";
-import { validationMessage } from "@/lib/forms/validation-message";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Columns3, List } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { useListTasksQuery } from "../hooks/use-tasks-queries";
 import { prioritySchema, taskStatusSchema } from "../schemas/task.schema";
+import { CreateTaskAction } from "./create-task-action";
 
 export function TaskListPage({
-  personal = false,
   projectId: fixedProjectId,
 }: {
-  personal?: boolean;
   projectId?: string;
 }) {
   const { session } = useSession();
   const filters = useUrlFilters();
   const search = useSearchParams();
   const router = useRouter();
-  const dialog = useHashDialog();
   const status = taskStatusSchema.safeParse(filters.get("status"));
   const priority = prioritySchema.safeParse(filters.get("priority"));
   const projectId = fixedProjectId ?? filters.get("projectId");
-  const projects = useListProjectsQuery({ pageSize: 100 });
-  const members = useListProjectMembersQuery(
-    projectId,
+  const projects = useListProjectsQuery(
     { pageSize: 100 },
-    { enabled: !personal },
+    { enabled: !fixedProjectId },
   );
+  const members = useListProjectMembersQuery(projectId, { pageSize: 100 });
   const query = useListTasksQuery({
     q: filters.get("q") || undefined,
     projectId: projectId || undefined,
     status: status.success ? status.data : undefined,
     priority: priority.success ? priority.data : undefined,
-    assigneeId: personal
-      ? session?.user.id
-      : filters.get("assigneeId") || undefined,
+    assigneeId: filters.get("assigneeId") || undefined,
     overdue: filters.get("overdue") === "true" ? true : undefined,
     page: filters.page,
     pageSize: 20,
   });
   const board = filters.get("view") === "board";
-  const manageable =
-    projects.data?.items.filter(
-      (p) =>
-        p.status === "ACTIVE" && hasPermission(session, "TASKS_MANAGE", p.id),
-    ) ?? [];
   const filtered = [
     "q",
     "status",
@@ -81,72 +66,58 @@ export function TaskListPage({
     ...(fixedProjectId ? [] : ["projectId"]),
   ].some((key) => filters.get(key));
   const data = query.data;
+  const clearFilters = () =>
+    filters.setMany({
+      q: "",
+      status: "",
+      overdue: "",
+      priority: "",
+      assigneeId: "",
+      ...(fixedProjectId ? {} : { projectId: "" }),
+    });
   const setView = (view: string) => {
     const next = new URLSearchParams(search);
     if (view) next.set("view", view);
     else next.delete("view");
-    router.replace(`?${next}`, { scroll: false });
+    router.replace(`?${next}${window.location.hash}`, { scroll: false });
   };
-  const form = useForm({
-    resolver: zodResolver(z.object({ projectId: z.string().min(1) }).strict(), {
-      error: validationMessage,
-    }),
-    defaultValues: {},
-  });
-  const { errors } = form.formState;
-  const createButton = manageable.length > 0 && (
-    <div className="task-create">
-      {personal && <span className="small muted">Dự án bạn quản lý</span>}
-      <button
-        className="primary"
-        onClick={() =>
-          projectId && manageable.some((p) => p.id === projectId)
-            ? router.push(`/projects/${projectId}/tasks/new`)
-            : dialog.open("choose-task-project")
-        }
-      >
-        Tạo công việc
-      </button>
-    </div>
-  );
-  const viewButtons = (
-    <div className="segmented" role="group" aria-label="Chế độ xem">
-      <button type="button" aria-pressed={!board} onClick={() => setView("")}>
-        Danh sách
-      </button>
-      <button
-        type="button"
-        aria-pressed={board}
-        onClick={() => setView("board")}
-      >
-        Bảng trạng thái
-      </button>
-    </div>
-  );
+  const create = <CreateTaskAction projectId={projectId || undefined} />;
   return (
     <>
-      {!fixedProjectId && (
-        <PageHeader
-          title={personal ? "Việc của tôi" : "Công việc"}
-          level={personal ? 2 : 1}
-          actions={createButton}
-        />
-      )}
-      {fixedProjectId && <HeaderActions>{createButton}</HeaderActions>}
-      <section className="filters" aria-label="Bộ lọc công việc">
-        <label className="filter-search">
-          Tìm công việc
-          <input
-            type="search"
+      {!fixedProjectId && <PageHeader title="Công việc" actions={create} />}
+      {fixedProjectId && <HeaderActions>{create}</HeaderActions>}
+      <FilterBar
+        label="Bộ lọc công việc"
+        tools={
+          <>
+            {filtered && (
+              <Button variant="subtle" onClick={clearFilters}>
+                Xóa bộ lọc
+              </Button>
+            )}
+            <SegmentedControl
+              label="Chế độ xem"
+              value={board ? "board" : ""}
+              onChange={setView}
+              options={[
+                { value: "", label: "Danh sách", icon: List },
+                { value: "board", label: "Bảng trạng thái", icon: Columns3 },
+              ]}
+            />
+          </>
+        }
+      >
+        <FilterField label="Tìm công việc" search>
+          <SearchInput
             placeholder="Nhập tên công việc…"
             value={filters.get("q")}
             onChange={(e) => filters.set("q", e.target.value)}
           />
-        </label>
+        </FilterField>
         {!fixedProjectId && (
-          <label>
-            Dự án
-            <select
+          <FilterField label="Dự án">
+            <Select
+              fit
               value={projectId}
               onChange={(e) => {
                 filters.setMany({
@@ -161,12 +132,12 @@ export function TaskListPage({
                   {p.name}
                 </option>
               ))}
-            </select>
-          </label>
+            </Select>
+          </FilterField>
         )}
-        <label>
-          Trạng thái
-          <select
+        <FilterField label="Trạng thái">
+          <Select
+            fit
             value={
               filters.get("overdue") === "true"
                 ? "OVERDUE"
@@ -186,12 +157,12 @@ export function TaskListPage({
                 {label(v)}
               </option>
             ))}
-          </select>
-        </label>
-        {!personal && projectId && (
-          <label>
-            Người thực hiện
-            <select
+          </Select>
+        </FilterField>
+        {projectId && (
+          <FilterField label="Người thực hiện">
+            <Select
+              fit
               value={filters.get("assigneeId")}
               onChange={(e) => filters.set("assigneeId", e.target.value)}
             >
@@ -201,12 +172,12 @@ export function TaskListPage({
                   {m.user.displayName}
                 </option>
               ))}
-            </select>
-          </label>
+            </Select>
+          </FilterField>
         )}
-        <label>
-          Ưu tiên
-          <select
+        <FilterField label="Ưu tiên">
+          <Select
+            fit
             value={filters.get("priority")}
             onChange={(e) => filters.set("priority", e.target.value)}
           >
@@ -216,105 +187,104 @@ export function TaskListPage({
                 {label(v)}
               </option>
             ))}
-          </select>
-        </label>
-        {!personal && (
-          <button
-            type="button"
-            className="filter-chip"
-            aria-pressed={filters.get("assigneeId") === session?.user.id}
+          </Select>
+        </FilterField>
+        {seesOthersTasks(session) && session && (
+          <Button
+            selected={filters.get("assigneeId") === session.user.id}
             onClick={() =>
               filters.set(
                 "assigneeId",
-                filters.get("assigneeId") === session?.user.id
+                filters.get("assigneeId") === session.user.id
                   ? ""
-                  : (session?.user.id ?? ""),
+                  : session.user.id,
               )
             }
           >
             Việc của tôi
-          </button>
+          </Button>
         )}
-        {filtered && (
-          <div className="filter-tools">
-            <button
-              type="button"
-              className="link-button"
-              onClick={() =>
-                filters.setMany({
-                  q: "",
-                  status: "",
-                  overdue: "",
-                  priority: "",
-                  assigneeId: "",
-                  ...(fixedProjectId ? {} : { projectId: "" }),
-                })
-              }
-            >
-              Xóa bộ lọc
-            </button>
-          </div>
-        )}
-        {viewButtons}
-      </section>
-      {projects.isError && (
+      </FilterBar>
+      {!fixedProjectId && projects.isError && (
         <QueryErrorState error={projects.error} retry={projects.refetch} />
       )}
-      {!personal && members.isError && (
+      {members.isError && (
         <QueryErrorState error={members.error} retry={members.refetch} />
       )}
       {query.isError && (
         <QueryErrorState error={query.error} retry={query.refetch} />
-      )}{" "}
+      )}
       {query.isPending && <PageSkeleton variant="table" />}
       {data && !query.isError && (
-        <>
+        <div className="mb-4">
           {board ? (
-            <div className="board-surface">
+            <div className="relative" aria-busy={query.isFetching || undefined}>
+              {query.isFetching && (
+                <div
+                  role="status"
+                  aria-label="Đang cập nhật bảng trạng thái"
+                  className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-surface/60"
+                >
+                  <Spinner />
+                </div>
+              )}
               <div
-                className="board"
+                className="flex items-start gap-2.5 overflow-x-auto overscroll-x-contain pb-2"
                 tabIndex={0}
                 role="region"
                 aria-label="Bảng trạng thái công việc"
               >
-                {taskStatusSchema.options.map((status) => {
-                  const items = data.items.filter((t) => t.status === status);
+                {taskStatusSchema.options.map((s) => {
+                  const items = data.items.filter((t) => t.status === s);
                   return (
                     <section
-                      key={status}
-                      className="board-column"
-                      data-status={status}
-                      aria-label={label(status)}
+                      key={s}
+                      className="w-[216px] shrink-0 rounded-lg bg-sunken p-2"
+                      data-status={s}
+                      aria-label={label(s)}
                     >
-                      <h2>
-                        {label(status)}
-                        <span className="board-count">{items.length}</span>
+                      <h2 className="m-0 mb-2 flex items-center gap-1.5 px-1 text-sm font-semibold text-fg-subtle">
+                        {label(s)}
+                        <span className="rounded-full bg-line px-1.5 text-xs font-medium text-fg-subtle">
+                          {items.length}
+                        </span>
                       </h2>
                       {items.map((t) => (
                         <Link
                           key={t.id}
-                          className="board-card"
+                          className="mb-2 grid gap-2 rounded-md border border-line bg-surface p-3 last:mb-0 hover:border-line-input"
                           href={`/tasks/${t.id}`}
                         >
-                          <span className="board-card-title" title={t.title}>
+                          <span
+                            className="line-clamp-2 text-sm leading-snug font-medium text-fg"
+                            title={t.title}
+                          >
                             {t.title}
                           </span>
                           {!fixedProjectId && (
-                            <span className="small muted">
+                            <span className="text-xs text-fg-subtle">
                               {t.project.name}
                             </span>
                           )}
-                          <span className="board-card-meta">
-                            <Priority value={t.priority} />
-                            <span
-                              className={`small ${t.isOverdue ? "task-overdue" : "muted"}`}
-                            >
-                              {dateTime(t.dueAt)}
+                          <span className="flex items-center justify-between gap-2">
+                            <span className="grid gap-0.5 text-xs">
+                              <Priority value={t.priority} />
+                              <span
+                                className={
+                                  t.isOverdue
+                                    ? "font-medium text-danger-fg"
+                                    : "text-fg-subtle"
+                                }
+                              >
+                                {dateTime(t.dueAt)}
+                              </span>
                             </span>
                             {t.assignee ? (
                               <Avatar name={t.assignee.displayName} />
                             ) : (
-                              <span className="small muted">Chưa giao</span>
+                              <span className="text-xs text-fg-subtle">
+                                Chưa giao
+                              </span>
                             )}
                           </span>
                         </Link>
@@ -323,30 +293,27 @@ export function TaskListPage({
                   );
                 })}
               </div>
-              {!data.items.length && <Empty />}
-              <Pagination
-                {...data.pagination}
-                onPage={(p) => filters.set("page", String(p))}
-              />
             </div>
           ) : (
             <DataTable
+              fit={Boolean(fixedProjectId)}
+              loading={query.isFetching}
+              filtered={filtered}
+              onClearFilters={clearFilters}
               pagination={{
                 ...data.pagination,
                 onPage: (p) => filters.set("page", String(p)),
               }}
               actions
               widths={
-                personal
-                  ? [28, 12, 20, 15, 15, 10]
-                  : fixedProjectId
-                    ? [24, 17, 11, 18, 11, 11, 8]
-                    : [21, 12, 14, 10, 13, 11, 11, 8]
+                fixedProjectId
+                  ? [21, 16, 11, 17, 12, 12, 11]
+                  : [21, 12, 14, 10, 13, 11, 11, 8]
               }
               headers={[
                 "Công việc",
-                ...(fixedProjectId || personal ? [] : ["Dự án"]),
-                ...(personal ? [] : ["Người thực hiện"]),
+                ...(fixedProjectId ? [] : ["Dự án"]),
+                "Người thực hiện",
                 "Ưu tiên",
                 "Trạng thái",
                 "Ngày bắt đầu",
@@ -354,41 +321,55 @@ export function TaskListPage({
                 "Hành động",
               ]}
               rows={data.items.map((t) => [
-                <div key="task">
-                  <Link
-                    key="title"
-                    className="issue-link task-name"
-                    title={t.title}
-                    href={`/tasks/${t.id}`}
-                  >
-                    {t.title}
-                  </Link>
-                  {personal && (
-                    <span className="small muted task-project">
-                      {t.project.name}
-                    </span>
-                  )}
-                </div>,
-                ...(fixedProjectId || personal ? [] : [t.project.name]),
-                ...(personal
-                  ? []
-                  : [
-                      t.assignee ? (
-                        <UserBadge
-                          key="assignee"
-                          name={t.assignee.displayName}
-                        />
-                      ) : (
-                        "Chưa phân công"
-                      ),
-                    ]),
-                <Priority key="priority" value={t.priority} />,
-                <span key="state" className="page-status">
-                  <Badge value={t.status} />
-                  {t.isOverdue && <Badge value="OVERDUE" />}
+                <Link
+                  key="title"
+                  className="block max-w-[30ch] truncate font-medium text-fg hover:text-selected-fg hover:underline"
+                  title={t.title}
+                  href={`/tasks/${t.id}`}
+                >
+                  {t.title}
+                </Link>,
+                ...(fixedProjectId ? [] : [t.project.name]),
+                t.assignee ? (
+                  <UserBadge key="assignee" name={t.assignee.displayName} />
+                ) : (
+                  "Chưa phân công"
+                ),
+                <span
+                  key="priority"
+                  className={
+                    fixedProjectId
+                      ? "text-xs [&>span]:whitespace-normal"
+                      : undefined
+                  }
+                >
+                  <Priority value={t.priority} />
                 </span>,
-                t.firstStartedAt ? dateTime(t.firstStartedAt) : "Chưa bắt đầu",
-                dateTime(t.dueAt),
+                <span
+                  key="state"
+                  className="flex flex-wrap items-center gap-1 [&>span]:whitespace-normal"
+                >
+                  <StatusLozenge value={t.status} />
+                  {t.isOverdue && <StatusLozenge value="OVERDUE" />}
+                </span>,
+                <span
+                  key="start"
+                  className={
+                    fixedProjectId ? "text-xs tabular-nums" : undefined
+                  }
+                >
+                  {t.firstStartedAt
+                    ? dateTime(t.firstStartedAt)
+                    : "Chưa bắt đầu"}
+                </span>,
+                <span
+                  key="due"
+                  className={
+                    fixedProjectId ? "text-xs tabular-nums" : undefined
+                  }
+                >
+                  {dateTime(t.dueAt)}
+                </span>,
                 <DetailLink
                   key="detail"
                   href={`/tasks/${t.id}`}
@@ -397,27 +378,29 @@ export function TaskListPage({
               ])}
             />
           )}
-        </>
+          {board && !data.items.length && (
+            <EmptyState
+              title={filtered ? "Không có kết quả phù hợp" : undefined}
+              message={
+                filtered
+                  ? "Hãy thử đổi hoặc xóa bộ lọc."
+                  : "Chưa có công việc nào để hiển thị."
+              }
+              action={
+                filtered ? (
+                  <Button onClick={clearFilters}>Xóa bộ lọc</Button>
+                ) : undefined
+              }
+            />
+          )}
+          {board && (
+            <Pagination
+              {...data.pagination}
+              onPage={(p) => filters.set("page", String(p))}
+            />
+          )}
+        </div>
       )}
-      <HashDialog name="choose-task-project" title="Chọn dự án tạo công việc">
-        <Form
-          compact
-          form={form}
-          onSubmit={async (values) => {
-            dialog.close();
-            router.push(`/projects/${values.projectId}/tasks/new`);
-          }}
-          submitLabel="Mở biểu mẫu"
-        >
-          <FormSelect
-            label="Dự án bạn quản lý"
-            required
-            options={manageable.map((p) => ({ value: p.id, label: p.name }))}
-            {...form.register("projectId")}
-            error={errors.projectId}
-          />
-        </Form>
-      </HashDialog>
     </>
   );
 }

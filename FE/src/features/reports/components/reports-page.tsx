@@ -1,14 +1,13 @@
 "use client";
+import { FilterBar, FilterField } from "@/components/patterns/filter-bar";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { hasPermission } from "@/lib/auth/access";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import {
-  Badge,
-  ButtonLink,
-  DataTable,
-  DetailLink,
-  PageHeader,
-} from "@/components/ui/page";
+import { ButtonLink, DetailLink, PageHeader } from "@/components/ui/page";
+import { StatusLozenge } from "@/components/ui/lozenge";
+import { DataTable } from "@/components/patterns/data-table";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { useListProjectMembersQuery } from "@/features/project-members/hooks/use-project-members-queries";
@@ -55,10 +54,10 @@ export function ReportsPage() {
           </ButtonLink>
         }
       />
-      <section className="panel filters">
-        <label>
-          Dự án
-          <select
+      <FilterBar label="Bộ lọc báo cáo">
+        <FilterField label="Dự án">
+          <Select
+            fit
             value={f.get("projectId")}
             onChange={(e) =>
               f.setMany({ projectId: e.target.value, authorId: "" })
@@ -70,11 +69,11 @@ export function ReportsPage() {
                 {p.name}
               </option>
             ))}
-          </select>
-        </label>
-        <label>
-          Loại kỳ
-          <select
+          </Select>
+        </FilterField>
+        <FilterField label="Loại kỳ">
+          <Select
+            fit
             value={f.get("periodType")}
             onChange={(e) => f.set("periodType", e.target.value)}
           >
@@ -84,23 +83,23 @@ export function ReportsPage() {
                 {o.label}
               </option>
             ))}
-          </select>
-        </label>
-        <label>
-          Trạng thái
-          <select
+          </Select>
+        </FilterField>
+        <FilterField label="Trạng thái">
+          <Select
+            fit
             value={f.get("status")}
             onChange={(e) => f.set("status", e.target.value)}
           >
             <option value="">Tất cả</option>
             <option value="DRAFT">Nháp của tôi</option>
             <option value="SUBMITTED">Đã gửi</option>
-          </select>
-        </label>
+          </Select>
+        </FilterField>
         {filterAuthors && (
-          <label>
-            Người lập
-            <select
+          <FilterField label="Người lập">
+            <Select
+              fit
               value={f.get("authorId")}
               onChange={(e) => f.set("authorId", e.target.value)}
             >
@@ -110,26 +109,24 @@ export function ReportsPage() {
                   {m.user.displayName}
                 </option>
               ))}
-            </select>
-          </label>
+            </Select>
+          </FilterField>
         )}
-        <label>
-          Từ ngày
-          <input
+        <FilterField label="Từ ngày">
+          <Input
             type="date"
             value={f.get("from")}
             onChange={(e) => f.set("from", e.target.value)}
           />
-        </label>
-        <label>
-          Đến ngày
-          <input
+        </FilterField>
+        <FilterField label="Đến ngày">
+          <Input
             type="date"
             value={f.get("to")}
             onChange={(e) => f.set("to", e.target.value)}
           />
-        </label>
-      </section>
+        </FilterField>
+      </FilterBar>
       {projects.isError && (
         <QueryErrorState error={projects.error} retry={projects.refetch} />
       )}
@@ -142,6 +139,7 @@ export function ReportsPage() {
         <PageSkeleton variant="table" />
       ) : (
         <DataTable
+          loading={q.isFetching}
           pagination={{
             ...q.data.pagination,
             onPage: (p) => f.set("page", String(p)),
@@ -161,7 +159,7 @@ export function ReportsPage() {
             r.project.name,
             <UserBadge key="author" name={r.author.displayName} />,
             r.totalMinutes !== null ? hours(r.totalMinutes) : "Chưa chốt",
-            <Badge key="status" value={r.status} />,
+            <StatusLozenge key="status" value={r.status} />,
             <DetailLink
               key="detail"
               href={`/reports/${r.id}${r.status === "DRAFT" ? "/edit" : ""}`}

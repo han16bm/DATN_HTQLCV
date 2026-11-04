@@ -26,12 +26,22 @@ function leaves(features: FeatureDto[], code: string): string[] {
 
 export function FeatureName({ feature }: { feature: FeatureDto }) {
   return (
-    <span className={feature.isActive ? undefined : "muted"}>
+    <span
+      className={
+        feature.isActive
+          ? "inline-flex flex-wrap items-center gap-1.5"
+          : "inline-flex flex-wrap items-center gap-1.5 text-fg-subtle"
+      }
+    >
       {feature.isGroup ? <strong>{feature.name}</strong> : feature.name}
       {!feature.isGroup && (
-        <span className="small muted"> · {feature.code}</span>
+        <span className="text-xs text-fg-subtle"> · {feature.code}</span>
       )}
-      {!feature.isActive && <span className="badge inactive">Đang tắt</span>}
+      {!feature.isActive && (
+        <span className="inline-flex items-center rounded-sm px-1.5 py-px text-xs leading-4 font-semibold whitespace-nowrap bg-sunken text-fg-subtle">
+          Đang tắt
+        </span>
+      )}
     </span>
   );
 }
@@ -49,7 +59,11 @@ export function FeatureChecklist({
   disabled?: boolean;
 }) {
   return (
-    <ul className="feature-tree" role="group" aria-label="Quyền">
+    <ul
+      className="m-0 grid max-h-[50dvh] list-none gap-1 overflow-y-auto rounded-lg border border-line p-3"
+      role="group"
+      aria-label="Quyền"
+    >
       {featureTree(features).map(({ feature, depth }) => {
         const codes = feature.isGroup
           ? leaves(features, feature.code)
@@ -58,9 +72,10 @@ export function FeatureChecklist({
         const checked = codes.length > 0 && selected.length === codes.length;
         return (
           <li key={feature.code} style={{ paddingLeft: depth * 24 }}>
-            <label className="checkbox-label">
+            <label className="flex items-center gap-2 text-sm text-fg">
               <input
                 type="checkbox"
+                className="size-4 accent-(--color-action)"
                 disabled={disabled || !codes.length}
                 checked={checked}
                 ref={(input) => {

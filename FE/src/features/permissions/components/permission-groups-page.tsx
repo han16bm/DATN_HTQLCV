@@ -1,8 +1,13 @@
 "use client";
+import { FilterBar, FilterField } from "@/components/patterns/filter-bar";
+import { DataTable } from "@/components/patterns/data-table";
+import { StatusLozenge } from "@/components/ui/lozenge";
+import { Select } from "@/components/ui/select";
+import { SearchInput } from "@/components/ui/input";
 
 import { PageSkeleton } from "@/components/ui/loading";
 import { RowDialogLinks } from "@/components/ui/entity-dialog";
-import { Badge, ButtonLink, DataTable, PageHeader } from "@/components/ui/page";
+import { ButtonLink, PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { label } from "@/lib/format";
 import { useEntityDialog } from "@/lib/forms/use-entity-dialog";
@@ -30,19 +35,17 @@ export function PermissionGroupsPage() {
           </ButtonLink>
         }
       />
-      <section className="panel filters">
-        <label>
-          Tìm kiếm
-          <input
-            type="search"
+      <FilterBar label="Bộ lọc nhóm quyền">
+        <FilterField label="Tìm kiếm" search>
+          <SearchInput
             placeholder="Mã hoặc tên nhóm"
             value={filter.get("q")}
             onChange={(e) => filter.set("q", e.target.value)}
           />
-        </label>
-        <label>
-          Trạng thái
-          <select
+        </FilterField>
+        <FilterField label="Trạng thái">
+          <Select
+            fit
             value={filter.get("status")}
             onChange={(e) => filter.set("status", e.target.value)}
           >
@@ -52,9 +55,9 @@ export function PermissionGroupsPage() {
                 {label(v)}
               </option>
             ))}
-          </select>
-        </label>
-      </section>
+          </Select>
+        </FilterField>
+      </FilterBar>
       {query.isError ? (
         <QueryErrorState error={query.error} retry={query.refetch} />
       ) : !query.data ? (
@@ -77,7 +80,7 @@ export function PermissionGroupsPage() {
             group.name,
             String(group.memberIds.length),
             String(group.features.length),
-            <Badge key="status" value={group.status} />,
+            <StatusLozenge key="status" value={group.status} />,
             group.isSystem ? "Có" : "—",
             <RowDialogLinks
               key="detail"

@@ -1,6 +1,6 @@
 # Cấu trúc FE theo feature
 
-Áp dụng tổ chức hiện hành theo yêu cầu refactor ngày 25/10/2026 tại [ARCHITECTURE.md](../../docs/ARCHITECTURE.md) và [REFACTOR_REVIEW.md](../../docs/REFACTOR_REVIEW.md). Feature dùng `api`, `schemas`, `types`, `hooks`, `components`; import nội bộ tương đối, import trực tiếp và không có barrel/registry/generator. Không tạo interface `*.contract.ts` lặp chữ ký service. Form có `useForm` + `zodResolver` và field trực tiếp; phần dùng chung chỉ giữ control, hiển thị, dirty và lỗi/xung đột. Các bố cục `shared/model/contract` trong ví dụ gốc bên dưới được thay bằng cấu trúc hiện hành này; nghiệp vụ vẫn theo catalog.
+Áp dụng tổ chức hiện hành theo yêu cầu refactor ngày 25/10/2026 tại [ARCHITECTURE.md](../../docs/ARCHITECTURE.md) và [Kiến trúc hiện hành](../../docs/ARCHITECTURE.md). Feature dùng `api`, `schemas`, `types`, `hooks`, `components`; import nội bộ tương đối, import trực tiếp và không có barrel/registry/generator. Không tạo interface `*.contract.ts` lặp chữ ký service. Form có `useForm` + `zodResolver` và field trực tiếp; phần dùng chung chỉ giữ control, hiển thị, dirty và lỗi/xung đột. Các bố cục `shared/model/contract` trong ví dụ gốc bên dưới được thay bằng cấu trúc hiện hành này; nghiệp vụ vẫn theo catalog.
 
 ## Kiến trúc được chọn
 
@@ -105,7 +105,7 @@ Client Query invalidation không tự làm mới RSC cache. Nếu một tài ngu
 
 Feature analytics bổ sung model snapshot/explanation/job; API function cho getAnalysisDetail và hooks theo ma trận 0.3.0. Các DTO tham chiếu PersonRef/EntityLabel nằm ở shared/contracts; không import analytics vào tasks/users chỉ để lấy nhãn. AnalysisRef/DomainAction cũng là value contract dùng chung thuần dữ liệu để alerts có thể dùng mà không tạo vòng phụ thuộc.
 
-Trong analytics, tách giao diện Overview/AnalysisList/AnalysisDetail/MetricPanel/EvidencePanel/AiExplanationPanel/AnalysisJobStatus. Skeleton/lỗi của AI nằm trong AiExplanationPanel; không quản lý server state bằng Zustand hoặc một useEffect fetch riêng. Formatter thời gian/phần trăm/giờ và label trạng thái là pure function ở shared/model; màu/spacing theo DESIGN_SYSTEM.md.
+Trong analytics, tách giao diện Overview/AnalysisList/AnalysisDetail/MetricPanel/EvidencePanel/AiExplanationPanel/AnalysisJobStatus. Skeleton/lỗi của AI nằm trong AiExplanationPanel; không quản lý server state bằng Zustand hoặc một useEffect fetch riêng. Formatter thời gian/phần trăm/giờ và label trạng thái là pure function ở shared/model; màu/spacing theo ../../docs/DESIGN.md.
 
 Không đưa LLM SDK/key/provider call vào FE. Recommendation đi qua route mapper enum và permission policy, không tự gọi mutation nghiệp vụ. Đặt các lời fixture trong mocks, không hard-code narrative vào component.
 

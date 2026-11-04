@@ -1,6 +1,9 @@
 "use client";
 
 import { Form } from "@/components/forms/form";
+import { Button } from "@/components/ui/button";
+import { Field } from "@/components/forms/form-field";
+import { Select } from "@/components/ui/select";
 import { FormTextarea } from "@/components/forms/form-field";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
@@ -31,20 +34,23 @@ export function ReviewForm({
     if (await confirmDiscard("Bỏ quyết định nghiệm thu chưa lưu?")) close();
   };
   return (
-    <div className="review-form">
-      <label className="form-field review-decision">
-        Quyết định
-        <select
-          value={decision}
-          onChange={async (e) => {
-            const value = e.target.value;
-            if (await confirmDiscard()) setDecision(value);
-          }}
-        >
-          <option value="APPROVE">Chấp nhận kết quả</option>
-          <option value="REVISION">Yêu cầu chỉnh sửa</option>
-        </select>
-      </label>
+    <div className="w-full max-w-[760px]">
+      <Field label="Quyết định" className="mb-4 max-w-80">
+        {(a11y) => (
+          <Select
+            size="form"
+            {...a11y}
+            value={decision}
+            onChange={async (e) => {
+              const value = e.target.value;
+              if (await confirmDiscard()) setDecision(value);
+            }}
+          >
+            <option value="APPROVE">Chấp nhận kết quả</option>
+            <option value="REVISION">Yêu cầu chỉnh sửa</option>
+          </Select>
+        )}
+      </Field>
       <DecisionForm
         key={decision}
         decision={decision}
@@ -90,9 +96,9 @@ function DecisionForm({
       compact
       form={form}
       cancel={
-        <button type="button" onClick={cancel}>
+        <Button type="button" onClick={cancel}>
           Hủy
-        </button>
+        </Button>
       }
       submitLabel="Xác nhận quyết định"
       compareFields={[

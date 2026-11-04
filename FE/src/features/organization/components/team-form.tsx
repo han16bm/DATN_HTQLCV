@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@/components/ui/button";
 
 import { Form } from "@/components/forms/form";
 import {
@@ -79,18 +80,18 @@ export function TeamForm({
   const unitId = useWatch({ control: form.control, name: "unitId" });
   const { errors } = form.formState;
   const cancel = (
-    <button type="button" onClick={onCancel}>
+    <Button type="button" onClick={onCancel}>
       Hủy
-    </button>
+    </Button>
   );
   if (closing && team)
     return (
       <ReasonForm
         label="Lý do ngừng sử dụng"
         cancel={
-          <button type="button" onClick={() => setClosing(false)}>
+          <Button type="button" onClick={() => setClosing(false)}>
             Hủy
-          </button>
+          </Button>
         }
         submitLabel="Xác nhận ngừng sử dụng"
         compareFields={[
@@ -112,24 +113,24 @@ export function TeamForm({
     );
   const footer = mode === "view" && team && (
     <DialogFooter>
-      <button type="button" onClick={onClose}>
+      <Button type="button" onClick={onClose}>
         Đóng
-      </button>
+      </Button>
       {team.status === "ACTIVE" && (
         <>
-          <button
+          <Button
             type="button"
-            className="danger"
+            variant="danger"
             onClick={() => {
               snapshot.saved(team);
               setClosing(true);
             }}
           >
             Ngừng sử dụng nhóm
-          </button>
-          <button type="button" className="primary" onClick={onEdit}>
+          </Button>
+          <Button type="button" variant="primary" onClick={onEdit}>
             Chỉnh sửa
-          </button>
+          </Button>
         </>
       )}
     </DialogFooter>

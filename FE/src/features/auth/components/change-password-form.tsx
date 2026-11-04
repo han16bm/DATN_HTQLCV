@@ -24,6 +24,7 @@ export function ChangePasswordForm({ onSaved }: { onSaved: () => void }) {
   return (
     <Form
       compact
+      actions="start"
       form={form}
       submitLabel="Cập nhật mật khẩu"
       onSubmit={async ({ currentPassword, newPassword }) => {

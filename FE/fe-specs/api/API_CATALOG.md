@@ -1,6 +1,6 @@
 # Đặc tả API, DTO và trường được thay đổi
 
-Contract đề xuất **0.3.0** · Tài liệu **0.4** · cập nhật 24/10/2026. Có 79 operation, gồm các operation nghiệp vụ, chi tiết LLM và phản hồi điểm nghẽn. Mọi request vẫn đi qua public Gateway.
+Hợp đồng hiện hành **86 endpoint HTTP**, cập nhật 03/11/2026: 83 endpoint sẵn có và 3 endpoint thông báo cá nhân theo yêu cầu mới. Phần nghiệp vụ/LLM tiếp tục hợp đồng 0.3.0, tài liệu 0.4; phần mở rộng được ghi riêng ở NOTIFICATIONS.md. Mọi request vẫn đi qua public Gateway.
 
 Rà ngày 31/10/2026: vẫn 83 route hiện hành; không triển khai /permission-groups và đã bỏ service dự phòng không có caller/handler. Response theo schema: LoginResponse chỉ session/accessToken; Session.projectAccess chỉ projectId/permissions; snapshot.scope chỉ from/to và AnalysisMeasure không có basis (model vẫn giữ dữ liệu nguồn); AlertDto.handler là PersonRef|null thay handledBy. GET lần nộp thêm sort=sequence|-sequence, sắp xếp trước pagination; khung báo cáo dùng 5 lần/trang và chọn từng tệp.
 
@@ -10,8 +10,13 @@ LLM có sẵn chạy qua adapter BE. Số liệu do BE tính. GET tổng quan/da
 
 ## Ma trận nhanh
 
+Bổ sung theo yêu cầu tiếp tục ngày 03/11/2026: **86 endpoint HTTP**. Chuông cá nhân gọi API thông báo của mock BE, không thêm trang inbox hoặc quyền quản trị mới. Hợp đồng mới và các quy tắc nhận/đọc ở [NOTIFICATIONS.md](NOTIFICATIONS.md); backend thật cần triển khai ba endpoint này.
+
 | Operation | Method và path | HTTP | Cách gọi | Màn |
 |---|---|---|---|---|
+| listNotifications | `GET /api/notifications` | 200 | useQuery khi mở chuông | Header |
+| getNotificationSummary | `GET /api/notifications/summary` | 200 | useQuery, poll 30 giây | Header |
+| readNotification | `PATCH /api/notifications/:notificationId` | 200 | useMutation, idempotency | Chuông |
 | [login](#login) | `POST /api/auth/login` | 200 | useMutation | S01 |
 | [logout](#logout) | `POST /api/auth/logout` | 200 | useMutation | S01, S02 |
 | [refreshSession](#refreshsession) | `POST /api/auth/refresh` | 200 | Auth adapter single-flight; không tạo query định kỳ | S01, S02 |

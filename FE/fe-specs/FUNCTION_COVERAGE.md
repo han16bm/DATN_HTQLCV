@@ -8,7 +8,7 @@ Tài liệu FE **0.4**, contract đề xuất **0.3.0**, rà soát ngày **24/10
 
 Bản 0.3 đã có 27 mã UC nhưng chưa đủ chi tiết để coi mọi luồng đều khép kín. Bản 0.4 bổ sung phản hồi xác nhận/bác bỏ điểm nghẽn (UC-D04 bước 6), bảo đảm tổng hợp theo mẫu khi LLM lỗi (UC-D06), làm rõ mức nguy cơ cấp dự án, bộ lọc nhóm/đơn vị và nguồn lookup đúng quyền. Quy tắc dedupe cảnh báo và thông báo sau commit được đưa vào mock/rule để không bị bỏ sót khi code.
 
-Chỉ xuất 24 ảnh màn chính. Toàn bộ 43 màn/biểu mẫu/hộp thoại vẫn có route, field, action, quyền và API; state và sitemap chuyển sang TXT. Việc bỏ ảnh biến thể không cắt luồng thay thế hoặc ngoại lệ.
+Toàn bộ 43 màn/biểu mẫu/hộp thoại giữ route, field, action, quyền và API; state và sitemap ở TXT. Giao diện theo bộ thiết kế hiện tại, không dùng bản ảnh bàn giao cũ làm ràng buộc bố cục.
 
 ## Ma trận chức năng
 
@@ -63,4 +63,4 @@ Chỉ xuất 24 ảnh màn chính. Toàn bộ 43 màn/biểu mẫu/hộp thoại
 - Không thêm thiết kế dữ liệu tổng thể/ERD của người 3. Mock model và projection chỉ mô tả dữ liệu cần cho nghiệp vụ/HTTP.
 - Không thêm chat, lương/chi phí, đăng ký công khai, inbox thông báo hoặc AI tự điều hành. Notification delivery là trách nhiệm BE sau commit; không phải một màn mới.
 
-Để kiểm tra một chức năng: tra dòng UC ở đây → SCREEN_SPECIFICATIONS.md → API_CATALOG/DTO → state TXT và MOCK_MODELS → checklist/KT tương ứng. Codex phải báo luồng thay thế/ngoại lệ chưa làm, không chỉ đối chiếu tên màn.
+Để kiểm tra một chức năng: tra dòng UC ở đây → src/features và state TXT → API_CATALOG/DTO → state TXT và MOCK_MODELS → checklist/KT tương ứng. Codex phải báo luồng thay thế/ngoại lệ chưa làm, không chỉ đối chiếu tên màn.

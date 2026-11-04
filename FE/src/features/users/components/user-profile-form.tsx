@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@/components/ui/button";
 
 import { Form } from "@/components/forms/form";
 import {
@@ -80,12 +81,14 @@ export function UserProfileForm({
   return (
     <>
       {user && (
-        <div className="account-identity">
-          <Avatar name={user.displayName} src={user.avatarUrl} large />
-          <div>
-            <strong>{user.displayName}</strong>
-            <span className="small muted">{user.username}</span>
-            <span className="small muted">{accessText(user)}</span>
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <Avatar name={user.displayName} src={user.avatarUrl} size="lg" />
+          <div className="grid min-w-0 flex-1 gap-0.5">
+            <strong className="font-semibold text-fg">
+              {user.displayName}
+            </strong>
+            <span className="text-xs text-fg-subtle">{user.username}</span>
+            <span className="text-xs text-fg-subtle">{accessText(user)}</span>
           </div>
           <StatusField value={user.status} />
         </div>
@@ -95,9 +98,9 @@ export function UserProfileForm({
         readOnly={mode === "view"}
         submitLabel={user ? "Lưu thông tin" : "Tạo tài khoản"}
         cancel={
-          <button type="button" onClick={onCancel}>
+          <Button type="button" onClick={onCancel}>
             Hủy
-          </button>
+          </Button>
         }
         compareFields={[
           { name: "displayName", label: "Họ tên" },

@@ -3,7 +3,7 @@
 import { useSession } from "@/lib/auth/session-context";
 import type { QueryOptions } from "@/lib/query/use-query-access";
 import { useQueryAccess } from "@/lib/query/use-query-access";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { projectsKeys } from "../api/projects.keys";
 import { projectsService } from "../api/projects.service";
 import {
@@ -15,14 +15,40 @@ import {
   type ProjectQuery,
 } from "../types/projects.types";
 
-export function useListProjectsQuery(query: ProjectQuery = {}) {
+export function useListProjectsQuery(
+  query: ProjectQuery = {},
+  options: QueryOptions = {},
+) {
   const viewerId = useSession().session?.user.id;
 
   const filters = projectQuerySchema.safeParse(query).data ?? query;
   const result = useQuery({
     queryKey: projectsKeys.listProjects(viewerId, filters),
     queryFn: ({ signal }) => projectsService.listProjects(filters, { signal }),
-    enabled: Boolean(viewerId),
+    enabled: options.enabled !== false && Boolean(viewerId),
+    staleTime: 30000,
+  });
+  return useQueryAccess(result, "projects");
+}
+
+// Danh sách dự án tải dần theo trang cho bộ chọn dự án trên header.
+export function useInfiniteProjectsQuery(
+  query: Omit<ProjectQuery, "page"> = {},
+  options: QueryOptions = {},
+) {
+  const viewerId = useSession().session?.user.id;
+
+  const filters = projectQuerySchema.safeParse(query).data ?? query;
+  const result = useInfiniteQuery({
+    queryKey: projectsKeys.listProjectsInfinite(viewerId, filters),
+    queryFn: ({ pageParam, signal }) =>
+      projectsService.listProjects({ ...filters, page: pageParam }, { signal }),
+    initialPageParam: 1,
+    getNextPageParam: ({ pagination }) =>
+      pagination.page * pagination.pageSize < pagination.total
+        ? pagination.page + 1
+        : undefined,
+    enabled: options.enabled !== false && Boolean(viewerId),
     staleTime: 30000,
   });
   return useQueryAccess(result, "projects");

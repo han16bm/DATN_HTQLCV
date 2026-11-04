@@ -2,7 +2,11 @@
 import { useUI } from "@/stores/ui-store";
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
 import { TriangleAlert } from "lucide-react";
+import { Button } from "./button";
+import { modalClass, overlayClass } from "./overlay";
 
+// Hỏi trước khi bỏ dữ liệu chưa lưu. Mặc định focus vào "Ở lại" (hành động an toàn);
+// "Bỏ thay đổi" là Danger vì làm mất dữ liệu.
 export function ConfirmDialog() {
   const pending = useUI((s) => s.confirmation);
   const answer = useUI((s) => s.answer);
@@ -14,27 +18,25 @@ export function ConfirmDialog() {
       }}
     >
       <AlertDialog.Portal>
-        <AlertDialog.Overlay className="confirm-overlay" />
-        <AlertDialog.Content className="confirm-content">
-          <span className="confirm-icon">
-            <TriangleAlert size={23} aria-hidden="true" />
+        <AlertDialog.Overlay className={overlayClass("confirm")} />
+        <AlertDialog.Content className={modalClass("sm", "confirm")}>
+          <span className="mb-3 grid size-10 place-items-center rounded-full bg-warning-bg text-warning-fg">
+            <TriangleAlert className="size-5" aria-hidden="true" />
           </span>
-          <AlertDialog.Title>Thay đổi chưa được lưu</AlertDialog.Title>
-          <AlertDialog.Description>{pending?.message}</AlertDialog.Description>
-          <div className="confirm-actions">
+          <AlertDialog.Title className="m-0 text-heading-md font-semibold text-fg">
+            Thay đổi chưa được lưu
+          </AlertDialog.Title>
+          <AlertDialog.Description className="mt-1.5 mb-0 text-sm text-fg-subtle">
+            {pending?.message}
+          </AlertDialog.Description>
+          <div className="mt-6 flex flex-wrap justify-end gap-2.5">
             <AlertDialog.Cancel asChild>
-              <button type="button" onClick={() => answer(false)}>
-                Ở lại
-              </button>
+              <Button onClick={() => answer(false)}>Ở lại</Button>
             </AlertDialog.Cancel>
             <AlertDialog.Action asChild>
-              <button
-                type="button"
-                className="primary"
-                onClick={() => answer(true)}
-              >
+              <Button variant="danger" onClick={() => answer(true)}>
                 Bỏ thay đổi
-              </button>
+              </Button>
             </AlertDialog.Action>
           </div>
         </AlertDialog.Content>

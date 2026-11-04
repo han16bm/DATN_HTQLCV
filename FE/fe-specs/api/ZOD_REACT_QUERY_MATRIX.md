@@ -15,10 +15,15 @@ Contract 0.3.0; cập nhật LLM và màn S43.
 - background refetch giữ nội dung cũ có chỉ báo đang làm mới; lỗi refetch có banner và thời điểm dữ liệu. Không thay toàn bộ trang bằng skeleton nếu đã có dữ liệu hợp lệ.
 - Response Zod lỗi: ContractError, không ghi dữ liệu vào cache. Mutation có thể đã thành công trên server: đọc lại hoặc retry cùng idempotency key, không tạo thao tác mới bằng key mới.
 
-## Ma trận 83 endpoint HTTP
+## Ma trận 86 endpoint HTTP
+
+Ba endpoint thông báo được bổ sung theo yêu cầu 03/11; hợp đồng chi tiết ở NOTIFICATIONS.md. Query key có viewer; summary poll 30s, danh sách chỉ enabled khi chuông mở. Mark read dùng useMutation/idempotency; response id/readAt cập nhật list cache của viewer và invalidate summary, không version vì chỉ chuyển sang đã đọc một chiều. Không dùng Zustand lưu danh sách/count từ server.
 
 | Operation | Hook / adapter | Zod kiểm tra | Query key / cache | Điều kiện / staleTime |
 |---|---|---|---|---|
+| `listNotifications` | `useNotifications` · useQuery | query + success/error JSON | ['notifications', viewerId, 'list', {page,pageSize}] | Có phiên và chuông mở; staleTime 0 |
+| `getNotificationSummary` | `useNotificationSummary` · useQuery | empty query + success/error JSON | ['notifications', viewerId, 'summary'] | Có phiên; poll 30 giây khi hoạt động |
+| `readNotification` | `useReadNotification` · useMutation | ID + body read:true + success/error JSON | Mutation ['notifications', viewerId, 'read']; cập nhật list cache, invalidate summary | Theo thao tác; idempotency; retry false |
 | `login` | `useLoginMutation` · useMutation | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: all-session-cache | Theo thao tác hợp lệ; retry false |
 | `logout` | `AuthObserver.signOut` · thao tác đăng xuất | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: all-session-cache | Theo thao tác hợp lệ; retry false |
 | `refreshSession` | `refreshSessionSingleFlight` · Auth adapter single-flight; không tạo query định kỳ | params + query + body + success/error JSON | Không có query key cho kết quả thao tác. Nhóm làm mới: auth | Auth adapter single-flight, tối đa một lượt replay |

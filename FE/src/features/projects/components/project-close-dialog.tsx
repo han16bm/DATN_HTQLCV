@@ -1,6 +1,8 @@
 "use client";
 
 import { Form } from "@/components/forms/form";
+import { Field } from "@/components/forms/form-field";
+import { Select } from "@/components/ui/select";
 import { FormTextarea } from "@/components/forms/form-field";
 import { HashDialog } from "@/components/ui/dialog";
 import { PageSkeleton } from "@/components/ui/loading";
@@ -63,28 +65,31 @@ export function ProjectCloseDialog({
             </div>
           </dl>
           {!checks.data.canClose ? (
-            <div className="hint">
+            <div className="rounded-lg border border-info-fg/25 bg-info-bg px-3 py-2 text-sm">
               Cần xử lý các mục còn tồn trước khi đóng dự án. Không tự hủy công
               việc hoặc bỏ qua kết quả chờ xét.
             </div>
           ) : (
             <>
-              <label className="form-field section-gap">
-                Thao tác
-                <select
-                  value={action}
-                  onChange={async (e) => {
-                    const value = e.target.value;
-                    if (await confirmDiscard()) setAction(value);
-                  }}
-                >
-                  {project.status === "ACTIVE" && (
-                    <option value="COMPLETE">Kết thúc dự án</option>
-                  )}
-                  <option value="CANCEL">Hủy dự án</option>
-                </select>
-              </label>
-              <div className="section-gap">
+              <Field label="Thao tác" className="mt-4">
+                {(a11y) => (
+                  <Select
+                    size="form"
+                    {...a11y}
+                    value={action}
+                    onChange={async (e) => {
+                      const value = e.target.value;
+                      if (await confirmDiscard()) setAction(value);
+                    }}
+                  >
+                    {project.status === "ACTIVE" && (
+                      <option value="COMPLETE">Kết thúc dự án</option>
+                    )}
+                    <option value="CANCEL">Hủy dự án</option>
+                  </Select>
+                )}
+              </Field>
+              <div className="mt-4">
                 <CloseForm
                   key={action}
                   action={action}

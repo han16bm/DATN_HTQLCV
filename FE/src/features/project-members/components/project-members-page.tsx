@@ -1,4 +1,9 @@
 "use client";
+import { FilterBar, FilterField } from "@/components/patterns/filter-bar";
+import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
+import { MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
+import { SearchInput } from "@/components/ui/input";
 import { hasPermission } from "@/lib/auth/access";
 
 import { Form } from "@/components/forms/form";
@@ -6,7 +11,7 @@ import { FormInput, FormSelect } from "@/components/forms/form-field";
 import { ReasonForm } from "@/components/forms/reason-form";
 import { HashDialog } from "@/components/ui/dialog";
 import { PageSkeleton } from "@/components/ui/loading";
-import { DataTable } from "@/components/ui/page";
+import { DataTable } from "@/components/patterns/data-table";
 import { HeaderActions } from "@/components/ui/header-actions";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
@@ -61,34 +66,33 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
     <>
       <HeaderActions>
         {manage && (
-          <button
-            className="primary"
+          <Button
+            variant="primary"
             onClick={() => {
               form.reset();
               dialog.open("add-member");
             }}
           >
             Thêm thành viên
-          </button>
+          </Button>
         )}
       </HeaderActions>
-      <section className="filters" aria-label="Tìm thành viên">
-        <label className="filter-search">
-          Tìm thành viên
-          <input
-            type="search"
+      <FilterBar label="Tìm thành viên">
+        <FilterField label="Tìm thành viên" search>
+          <SearchInput
             placeholder="Nhập tên thành viên…"
             value={filters.get("q")}
             onChange={(e) => filters.set("q", e.target.value)}
           />
-        </label>
-      </section>
+        </FilterField>
+      </FilterBar>
       {query.isError ? (
         <QueryErrorState error={query.error} retry={query.refetch} />
       ) : !query.data ? (
         <PageSkeleton variant="table" />
       ) : (
         <DataTable
+          loading={query.isFetching}
           pagination={{
             ...query.data.pagination,
             onPage: (p) => filters.set("page", String(p)),
@@ -107,50 +111,37 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
             manage && !m.endedAt && m.projectRole !== "OWNER" && (
               <DropdownMenu.Root key="actions">
                 <DropdownMenu.Trigger asChild>
-                  <button
-                    type="button"
-                    className="icon-button"
-                    aria-label={`Thao tác ${m.user.displayName}`}
-                  >
-                    <Ellipsis size={17} aria-hidden="true" />
-                  </button>
+                  <IconButton label={`Thao tác ${m.user.displayName}`}>
+                    <Ellipsis className="size-[17px]" aria-hidden="true" />
+                  </IconButton>
                 </DropdownMenu.Trigger>
-                <DropdownMenu.Portal>
-                  <DropdownMenu.Content
-                    className="account-menu"
-                    align="end"
-                    sideOffset={6}
-                    collisionPadding={12}
+                <MenuContent sideOffset={6}>
+                  <MenuItem
+                    onSelect={() => {
+                      setEditing(m);
+                      dialog.open("member-role");
+                    }}
                   >
-                    <DropdownMenu.Item
-                      className="account-menu-item"
-                      onSelect={() => {
-                        setEditing(m);
-                        dialog.open("member-role");
-                      }}
+                    Đổi vai trò
+                  </MenuItem>
+                  <MenuItem asChild>
+                    <Link
+                      href={`/projects/${projectId}/tasks?assigneeId=${m.userId}`}
                     >
-                      Đổi vai trò
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Item asChild>
-                      <Link
-                        className="account-menu-item"
-                        href={`/projects/${projectId}/tasks?assigneeId=${m.userId}`}
-                      >
-                        Bàn giao việc
-                      </Link>
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Separator className="account-menu-separator" />
-                    <DropdownMenu.Item
-                      className="account-menu-item danger"
-                      onSelect={() => {
-                        setEnding(m);
-                        dialog.open("end-member");
-                      }}
-                    >
-                      Kết thúc
-                    </DropdownMenu.Item>
-                  </DropdownMenu.Content>
-                </DropdownMenu.Portal>
+                      Bàn giao việc
+                    </Link>
+                  </MenuItem>
+                  <MenuSeparator />
+                  <MenuItem
+                    tone="danger"
+                    onSelect={() => {
+                      setEnding(m);
+                      dialog.open("end-member");
+                    }}
+                  >
+                    Kết thúc
+                  </MenuItem>
+                </MenuContent>
               </DropdownMenu.Root>
             ),
           ])}

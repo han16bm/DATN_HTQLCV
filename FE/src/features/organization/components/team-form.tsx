@@ -1,6 +1,7 @@
 "use client";
 
 import { Form } from "@/components/forms/form";
+import { Button } from "@/components/ui/button";
 import {
   FormInput,
   FormMultiSelect,
@@ -73,13 +74,13 @@ export function TeamForm({
         .map((person) => person.label)
     : [];
   const cancelButton = (
-    <button type="button" onClick={cancel}>
+    <Button type="button" onClick={cancel}>
       Hủy
-    </button>
+    </Button>
   );
   const commands = team?.status === "ACTIVE" && mode === null && (
     <>
-      <button
+      <Button
         type="button"
         onClick={() => {
           snapshot.saved(team);
@@ -88,29 +89,29 @@ export function TeamForm({
         }}
       >
         Chỉnh sửa thông tin
-      </button>
-      <button type="button" onClick={() => setMode("members")}>
+      </Button>
+      <Button type="button" onClick={() => setMode("members")}>
         Chọn thành viên
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="danger"
         type="button"
-        className="danger"
         onClick={() => {
           snapshot.saved(team);
           setMode("close");
         }}
       >
         Ngừng sử dụng nhóm
-      </button>
+      </Button>
     </>
   );
   return (
     <Panel
-      className="record-card"
+      className="max-w-[880px]"
       title={team ? team.name : "Thông tin nhóm"}
       actions={
         team && (
-          <div className="actions">
+          <div className="actions flex flex-wrap items-center gap-2">
             <StatusField value={team.status} />
             {commands}
           </div>
@@ -239,7 +240,7 @@ export function TeamForm({
         />
       ) : (
         <>
-          <dl className="record-details">
+          <dl className="m-0 grid gap-y-2 text-sm [&>div]:grid [&>div]:grid-cols-[7rem_minmax(0,1fr)] [&>div]:items-baseline [&>div]:gap-x-3 [&_dt]:text-fg-subtle [&_dd]:m-0 [&_dd]:min-w-0 [&_dd]:text-left [&_dd]:break-words">
             <div>
               <dt>Đơn vị</dt>
               <dd>
@@ -252,7 +253,7 @@ export function TeamForm({
               <dd>{team.memberIds.length}</dd>
             </div>
           </dl>
-          <p className="small muted member-summary">
+          <p className="text-xs text-fg-subtle mt-3">
             {names.join(", ") ||
               (team.memberIds.length
                 ? `${team.memberIds.length} thành viên`

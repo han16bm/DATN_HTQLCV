@@ -48,6 +48,7 @@ function valueText(value: Value | undefined, field: string): string {
     }).format(new Date(value));
   return label(value);
 }
+// Chỉ các trường thực sự đổi, mỗi trường một khối "Trước / Sau" để so sánh nhanh.
 export function AuditChanges({
   before,
   after,
@@ -63,25 +64,30 @@ export function AuditChanges({
   );
   if (!keys.length)
     return (
-      <span className="muted small">Không có thay đổi trường dữ liệu.</span>
+      <span className="text-xs text-fg-subtle">
+        Không có thay đổi trường dữ liệu.
+      </span>
     );
   return (
-    <div className="audit-changes">
-      <dl>
-        {keys.map((key) => (
-          <div key={key}>
-            <dt>{fields[key] ?? key}</dt>
-            <dd>
-              <span className="small muted">Trước</span>
-              {valueText(previous[key], key)}
-            </dd>
-            <dd>
-              <span className="small muted">Sau</span>
-              {valueText(next[key], key)}
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </div>
+    <dl className="m-0 mt-2 grid gap-2">
+      {keys.map((key) => (
+        <div
+          key={key}
+          className="grid grid-cols-2 gap-x-3 gap-y-1 rounded-lg border border-line bg-sunken/50 p-2.5"
+        >
+          <dt className="col-span-full text-sm font-medium text-fg">
+            {fields[key] ?? key}
+          </dt>
+          <dd className="m-0 min-w-0 text-left text-sm break-words whitespace-pre-wrap text-fg">
+            <span className="block text-xs text-fg-subtle">Trước</span>
+            {valueText(previous[key], key)}
+          </dd>
+          <dd className="m-0 min-w-0 text-left text-sm break-words whitespace-pre-wrap text-fg">
+            <span className="block text-xs text-fg-subtle">Sau</span>
+            {valueText(next[key], key)}
+          </dd>
+        </div>
+      ))}
+    </dl>
   );
 }

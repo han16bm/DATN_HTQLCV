@@ -89,8 +89,12 @@ function SubmissionForm({
   const router = useRouter();
   return (
     <>
-      <h3>Tiêu chí nghiệm thu</h3>
-      <p className="preserve-lines">{task.acceptanceCriteria}</p>
+      <h3 className="m-0 mb-1 text-sm font-semibold text-fg">
+        Tiêu chí nghiệm thu
+      </h3>
+      <p className="m-0 mb-4 text-sm whitespace-pre-wrap text-fg">
+        {task.acceptanceCriteria}
+      </p>
       <Form
         form={form}
         onConflictReload={() => snapshot.load(reload)}

@@ -1,4 +1,10 @@
-import { safeNext, trailFor, type TrailContext } from "@/lib/navigation";
+import {
+  currentProjectId,
+  navigation,
+  safeNext,
+  trailFor,
+  type TrailContext,
+} from "@/lib/navigation";
 import { describe, expect, it } from "vitest";
 
 function context(
@@ -21,6 +27,45 @@ const known: Record<string, { label: string; parentId?: string }> = {
   "submission:s-1": { label: "Lần nộp 2" },
 };
 const entities: TrailContext["entity"] = (kind, id) => known[`${kind}:${id}`];
+
+it("combines quick task filters, keeps list context and clears only the selected filter", () => {
+  const menu = navigation.workspace.find(
+    (item) => item.href === "/tasks",
+  )!.children!;
+  const query = new URLSearchParams(
+    "projectId=p-1&q=API&view=board&page=3&assigneeId=u-me&overdue=true",
+  );
+  const items = menu({
+    userId: "u-me",
+    role: "MANAGER",
+    pathname: "/tasks",
+    search: query,
+  });
+  expect(items.filter((item) => item.active).map((item) => item.label)).toEqual(
+    ["Việc của tôi", "Việc quá hạn"],
+  );
+  const mine = new URL(items[1].href, "http://localhost");
+  expect(Object.fromEntries(mine.searchParams)).toEqual({
+    projectId: "p-1",
+    q: "API",
+    view: "board",
+    overdue: "true",
+  });
+  const overdue = new URL(items[2].href, "http://localhost");
+  expect(Object.fromEntries(overdue.searchParams)).toEqual({
+    projectId: "p-1",
+    q: "API",
+    view: "board",
+    assigneeId: "u-me",
+  });
+  const another = menu({
+    userId: "u-me",
+    role: "MANAGER",
+    pathname: "/tasks",
+    search: new URLSearchParams("assigneeId=u-other"),
+  });
+  expect(another.some((item) => item.active)).toBe(false);
+});
 
 describe("breadcrumb trail", () => {
   it("has no trail on top-level pages", () => {
@@ -151,5 +196,27 @@ describe("post-login destination", () => {
       "https://evil.example",
     ])
       expect(safeNext(value)).toBe("/workspace");
+  });
+});
+
+describe("current project for the project switcher", () => {
+  it("reads the project from the URL and from the parent of an open task", () => {
+    expect(currentProjectId("/projects/p-1", entities)).toBe("p-1");
+    expect(currentProjectId("/projects/p-1/tasks/new", entities)).toBe("p-1");
+    expect(currentProjectId("/projects/a%20b", entities)).toBe("a b");
+    expect(currentProjectId("/tasks/t-1/time-logs", entities)).toBe("p-1");
+  });
+
+  it("has no project on aggregate pages, new-project form or unknown tasks", () => {
+    for (const url of [
+      "/workspace",
+      "/projects",
+      "/projects/new",
+      "/tasks",
+      "/dashboard",
+      "/admin/users",
+    ])
+      expect(currentProjectId(url, entities)).toBeUndefined();
+    expect(currentProjectId("/tasks/t-9", entities)).toBeUndefined();
   });
 });

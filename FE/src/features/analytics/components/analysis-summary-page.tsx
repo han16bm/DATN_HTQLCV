@@ -1,7 +1,9 @@
 "use client";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import { Badge, DataTable, Panel } from "@/components/ui/page";
+import { Panel } from "@/components/ui/page";
+import { StatusLozenge } from "@/components/ui/lozenge";
+import { DataTable } from "@/components/patterns/data-table";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { metricValue } from "@/lib/format";
 import { useGetAnalysisSummaryQuery } from "../hooks/use-analytics-queries";
@@ -23,14 +25,15 @@ export function AnalysisSummaryPage() {
       ) : (
         <>
           <Metadata value={query.data.metadata} />
-          <Panel title="Tổng hợp theo số liệu" className="text-card">
-            <p className="preserve-lines">{query.data.summaryText}</p>
+          <Panel title="Tổng hợp theo số liệu" className="max-w-[760px]">
+            <p className="whitespace-pre-wrap">{query.data.summaryText}</p>
             <AnalysisLink
               value={query.data.overviewRef}
               label="Mở diễn giải và đề xuất AI"
             />
           </Panel>
           <DataTable
+            loading={query.isFetching}
             title="Điểm cần chú ý"
             actions
             widths={[26, 45, 15, 14]}
@@ -38,11 +41,12 @@ export function AnalysisSummaryPage() {
             rows={query.data.highlights.map((h) => [
               h.title,
               h.description,
-              <Badge key="severity" value={h.severity} />,
+              <StatusLozenge key="severity" value={h.severity} />,
               <AnalysisLink key="analysis" value={h.analysisRef} />,
             ])}
           />
           <DataTable
+            loading={query.isFetching}
             title="Thông số và dữ liệu cần bổ sung"
             widths={[30, 15, 55]}
             headers={["Chỉ số", "Giá trị", "Ý nghĩa"]}

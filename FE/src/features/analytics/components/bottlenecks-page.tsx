@@ -1,7 +1,9 @@
 "use client";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import { Badge, ButtonLink, DataTable } from "@/components/ui/page";
+import { ButtonLink } from "@/components/ui/page";
+import { StatusLozenge } from "@/components/ui/lozenge";
+import { DataTable } from "@/components/patterns/data-table";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { hours } from "@/lib/format";
@@ -26,6 +28,7 @@ export function BottlenecksPage() {
         <>
           <Metadata value={query.data.metadata} />
           <DataTable
+            loading={query.isFetching}
             actions
             widths={[12, 21, 14, 15, 8, 20, 10]}
             headers={[
@@ -38,11 +41,11 @@ export function BottlenecksPage() {
               "Hành động",
             ]}
             rows={query.data.items.map((t) => [
-              <Badge key="stage" value={t.stage} />,
+              <StatusLozenge key="stage" value={t.stage} />,
               <Link
                 key={t.taskId}
                 href={`/tasks/${t.taskId}`}
-                className="text-link task-name"
+                className="font-medium text-selected-fg underline-offset-2 hover:underline block max-w-[30ch] truncate"
                 title={t.taskTitle}
               >
                 {t.taskTitle}

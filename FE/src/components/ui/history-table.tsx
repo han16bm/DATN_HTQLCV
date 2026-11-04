@@ -10,21 +10,23 @@ import {
 } from "react";
 import { dateTime, eventLabel } from "@/lib/format";
 import { AuditChanges } from "./audit-changes";
-import { DataTable } from "./page";
+import { DataTable } from "@/components/patterns/data-table";
+import { ModalHeader, drawerClass, overlayClass } from "./overlay";
 import { UserBadge } from "./user-badge";
 import * as Dialog from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
 
 export function HistoryTable({
   title,
   items,
   pagination,
   headerActions,
+  loading,
 }: {
   title: string;
   items: AuditDto[];
   pagination?: ComponentProps<typeof DataTable>["pagination"];
   headerActions?: ReactNode;
+  loading?: boolean;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -34,6 +36,7 @@ export function HistoryTable({
   return (
     <div>
       <DataTable
+        loading={loading}
         widths={[21, 23, 38, 18]}
         title={title}
         headerActions={headerActions}
@@ -46,8 +49,9 @@ export function HistoryTable({
           eventLabel(item.action),
           <button
             key="detail"
+            data-ui
             type="button"
-            className="link-button"
+            className="min-h-7 rounded-sm px-1.5 text-sm font-medium text-selected-fg hover:bg-hover"
             aria-label={`Xem thay đổi: ${eventLabel(item.action)}`}
             aria-expanded={open && selectedId === item.id}
             aria-controls={detailId}
@@ -64,36 +68,39 @@ export function HistoryTable({
       />
       <Dialog.Root open={open && Boolean(selected)} onOpenChange={setOpen}>
         <Dialog.Portal>
-          <Dialog.Overlay className="dialog-overlay history-overlay" />
+          <Dialog.Overlay className={overlayClass("dialog", true)} />
           <Dialog.Content
             id={detailId}
-            className="drawer-content"
+            className={drawerClass}
             aria-describedby={undefined}
             onCloseAutoFocus={(event) => {
               event.preventDefault();
               trigger.current?.focus();
             }}
           >
-            <div className="dialog-heading">
-              <Dialog.Title>Chi tiết thay đổi</Dialog.Title>
-              <Dialog.Close
-                className="icon-button"
-                aria-label="Đóng chi tiết lịch sử"
-              >
-                <X size={18} />
-              </Dialog.Close>
-            </div>
+            <ModalHeader
+              compact
+              title="Chi tiết thay đổi"
+              closeLabel="Đóng chi tiết lịch sử"
+            />
             {selected && (
               <>
-                <h3 className="section-gap">{eventLabel(selected.action)}</h3>
-                <div className="history-detail-meta">
+                <h3 className="mt-2 mb-0 text-sm font-semibold text-fg">
+                  {eventLabel(selected.action)}
+                </h3>
+                <div className="my-2 flex flex-wrap items-center gap-x-3 gap-y-2">
                   <UserBadge name={selected.actor.displayName} />
-                  <time className="small muted" dateTime={selected.at}>
+                  <time
+                    className="text-xs text-fg-subtle"
+                    dateTime={selected.at}
+                  >
                     {dateTime(selected.at)}
                   </time>
                 </div>
                 {selected.reason && (
-                  <p className="preserve-lines small">{selected.reason}</p>
+                  <p className="text-xs whitespace-pre-wrap">
+                    {selected.reason}
+                  </p>
                 )}
                 <AuditChanges before={selected.before} after={selected.after} />
               </>

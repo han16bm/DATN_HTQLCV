@@ -9,6 +9,8 @@ export const projectsKeys = {
     ["projects", viewerId ?? "anonymous"] as const,
   listProjects: (viewerId: ViewerId, query: ProjectQuery) =>
     [...projectsKeys.viewer(viewerId), "listProjects", query] as const,
+  listProjectsInfinite: (viewerId: ViewerId, query: ProjectQuery) =>
+    [...projectsKeys.viewer(viewerId), "listProjectsInfinite", query] as const,
   getProject: (viewerId: ViewerId, projectId: string) =>
     [...projectsKeys.viewer(viewerId), "getProject", projectId] as const,
   getProjectClosureChecks: (viewerId: ViewerId, projectId: string) =>

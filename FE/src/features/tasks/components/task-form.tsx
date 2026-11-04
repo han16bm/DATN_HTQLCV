@@ -134,28 +134,6 @@ export function TaskForm({
           {...form.register("title")}
           error={errors.title}
         />
-        <FormSelect
-          label="Ưu tiên"
-          required
-          width="short"
-          options={options(prioritySchema.options)}
-          {...form.register("priority")}
-          error={errors.priority}
-        />
-        <FormInput
-          label="Hạn hoàn thành (giờ Việt Nam)"
-          type="datetime-local"
-          required
-          {...form.register("dueAt")}
-          error={errors.dueAt}
-        />
-        <FormInput
-          label="Thời gian dự kiến (phút)"
-          type="number"
-          required
-          {...form.register("estimatedMinutes", { valueAsNumber: true })}
-          error={errors.estimatedMinutes}
-        />
         <FormTextarea
           label="Mô tả"
           width="medium"
@@ -168,6 +146,33 @@ export function TaskForm({
           required
           {...form.register("acceptanceCriteria")}
           error={errors.acceptanceCriteria}
+        />
+        <h3 className="col-span-12 m-0 border-t border-line pt-4 text-sm font-semibold text-fg">
+          Kế hoạch thực hiện
+        </h3>
+        <FormSelect
+          label="Ưu tiên"
+          required
+          width="short"
+          options={options(prioritySchema.options)}
+          {...form.register("priority")}
+          error={errors.priority}
+        />
+        <FormInput
+          label="Hạn hoàn thành (giờ Việt Nam)"
+          width="short"
+          type="datetime-local"
+          required
+          {...form.register("dueAt")}
+          error={errors.dueAt}
+        />
+        <FormInput
+          label="Thời gian dự kiến (phút)"
+          width="short"
+          type="number"
+          required
+          {...form.register("estimatedMinutes", { valueAsNumber: true })}
+          error={errors.estimatedMinutes}
         />
         {task && (
           <FormTextarea

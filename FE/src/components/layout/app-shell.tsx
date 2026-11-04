@@ -1,22 +1,31 @@
 "use client";
-import { BrandLogo } from "@/components/ui/brand-logo";
+import { IconButton } from "@/components/ui/icon-button";
+import { Notice } from "@/components/ui/notice";
+import { ButtonLink } from "@/components/ui/page";
 import { Spinner } from "@/components/ui/loading";
 import { canVisit } from "@/lib/auth/access";
 import { useSession } from "@/lib/auth/session-context";
+import { cn } from "@/lib/cn";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
-import { type Area } from "@/lib/navigation";
+import type { Area } from "@/lib/navigation";
 import { useUI } from "@/stores/ui-store";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useIsFetching } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Menu, X } from "lucide-react";
-import Link from "next/link";
+import { X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { Suspense, useEffect, useRef, type ReactNode } from "react";
-import { AvatarMenu } from "./avatar-menu";
+import {
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { BreadcrumbTrail } from "./breadcrumb-trail";
 import { DirtyNavigationGuard } from "./dirty-navigation-guard";
 import { NavigationTracker } from "./navigation-tracker";
-import { PageNav } from "./page-nav";
-import { SidebarContent } from "./sidebar-content";
+import { SectionSlot } from "./section-nav";
+import { SideNav } from "./side-nav";
+import { TopBar } from "./top-bar";
 
 // Phiên hết hạn hoặc bị thu hồi: về đăng nhập và nhớ trang đang mở để quay lại.
 function loginUrl() {
@@ -33,9 +42,6 @@ export function AppShell({
   area: Area;
   children: ReactNode;
 }) {
-  const fetching = useIsFetching({
-    predicate: (query) => query.queryKey[0] !== "auth",
-  });
   const { session, loading, signOut } = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -44,6 +50,13 @@ export function AppShell({
   const setSidebar = useUI((s) => s.setSidebar);
   const toggleSidebar = useUI((s) => s.toggleSidebar);
   const leaving = useRef(false);
+  const [navSlot, setNavSlot] = useState<HTMLElement | null>(null);
+  // Chức năng chung ở sidebar của mọi role; mục quản lý bổ sung ở header.
+  const sidebar = area === "workspace";
+  const slots = useMemo(
+    () => ({ nav: navSlot, enabled: sidebar }),
+    [navSlot, sidebar],
+  );
   useEffect(() => {
     if (!loading && !session && !leaving.current) router.replace(loginUrl());
   }, [loading, session, router]);
@@ -58,9 +71,32 @@ export function AppShell({
     window.addEventListener("resize", close);
     return () => window.removeEventListener("resize", close);
   }, [setSidebar]);
+  // Ctrl+[ thu gọn/mở rộng sidebar như Jira.
+  useEffect(() => {
+    if (!sidebar) return;
+    const shortcut = (event: KeyboardEvent) => {
+      if (
+        event.ctrlKey &&
+        !event.altKey &&
+        !event.metaKey &&
+        event.key === "["
+      ) {
+        event.preventDefault();
+        toggleSidebar();
+        document
+          .querySelector<HTMLButtonElement>("[data-sidebar-toggle]")
+          ?.focus();
+      }
+    };
+    window.addEventListener("keydown", shortcut);
+    return () => window.removeEventListener("keydown", shortcut);
+  }, [sidebar, toggleSidebar]);
   if (loading || !session)
     return (
-      <div className="boot-state" role="status">
+      <div
+        className="flex min-h-screen items-center justify-center gap-3.5 text-sm text-fg"
+        role="status"
+      >
         <Spinner />
         Đang tải phiên làm việc…
       </div>
@@ -76,110 +112,115 @@ export function AppShell({
     await signOut();
     router.replace("/login");
   };
-  const sidebar = (
-    <SidebarContent
-      area={area}
-      session={session}
-      collapsed={collapsed}
-      toggle={
-        <button
-          type="button"
-          className="icon-button sidebar-toggle"
-          aria-label={
-            collapsed ? "Mở rộng thanh điều hướng" : "Thu gọn thanh điều hướng"
-          }
-          onClick={toggleSidebar}
-        >
-          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-        </button>
-      }
-    />
-  );
   return (
     <Dialog.Root open={open} onOpenChange={setSidebar}>
-      <div className={`workspace ${collapsed ? "sidebar-collapsed" : ""}`}>
-        <Suspense>
-          <DirtyNavigationGuard />
-          <NavigationTracker />
-        </Suspense>
-        <header className="topbar">
-          <Dialog.Trigger
-            className="icon-button menu-toggle"
-            aria-label="Mở menu"
+      <SectionSlot value={slots}>
+        <div className="min-h-screen">
+          <a
+            href="#main"
+            className="sr-only z-50 rounded-md bg-surface px-3 py-2 text-sm font-medium text-selected-fg shadow-overlay focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
           >
-            <Menu size={20} />
-          </Dialog.Trigger>
-          <Link href="/workspace" className="brand" aria-label="Cổng công việc">
-            <BrandLogo />
-          </Link>
-          {area === "admin" && (
-            <span className="area-label">Quản trị hệ thống</span>
+            Bỏ qua điều hướng
+          </a>
+          <Suspense>
+            <DirtyNavigationGuard />
+            <NavigationTracker />
+          </Suspense>
+          <TopBar
+            area={area}
+            session={session}
+            sidebar={sidebar}
+            onSignOut={logout}
+          />
+          {sidebar && (
+            <aside
+              aria-label="Thanh điều hướng"
+              className={cn(
+                "nav-surface fixed top-(--topbar-h) bottom-0 left-0 z-30 hidden flex-col px-2 pt-3 pb-2 md:flex",
+                "motion-safe:transition-[width] motion-safe:duration-150",
+                collapsed ? "w-(--sidebar-w-collapsed)" : "w-(--sidebar-w)",
+              )}
+            >
+              <Suspense>
+                <SideNav
+                  area={area}
+                  session={session}
+                  collapsed={collapsed}
+                  slot={setNavSlot}
+                />
+              </Suspense>
+            </aside>
           )}
-          <div className="actions">
-            {fetching > 0 && <Spinner label="Đang cập nhật dữ liệu" />}
-            <AvatarMenu
-              key={pathname}
-              area={area}
-              session={session}
-              onSignOut={logout}
-            />
-          </div>
-        </header>
-        <aside
-          className={`sidebar desktop-sidebar ${collapsed ? "collapsed" : ""}`}
-          aria-label="Thanh điều hướng"
-        >
-          <Suspense>{sidebar}</Suspense>
-        </aside>
-        <Dialog.Portal>
-          <Dialog.Overlay className="sidebar-overlay" />
-          <Dialog.Content
-            className="sidebar mobile-sidebar"
-            aria-describedby={undefined}
-          >
-            <Dialog.Title className="sr-only">Menu điều hướng</Dialog.Title>
-            <div className="mobile-sidebar-header">
-              <BrandLogo />
-              <Dialog.Close className="icon-button" aria-label="Đóng menu">
-                <X size={18} />
-              </Dialog.Close>
-            </div>
-            <Suspense>
-              <SidebarContent
-                area={area}
-                session={session}
-                onNavigate={() => setSidebar(false)}
-              />
-            </Suspense>
-          </Dialog.Content>
-        </Dialog.Portal>
-        <div className="workspace-main">
-          <main className="content">
-            {canVisit(session, pathname) ? (
-              <>
-                <Suspense>
-                  <PageNav />
-                </Suspense>
-                <div className="page-surface">{children}</div>
-              </>
-            ) : (
-              <div className="page-surface">
-                <div role="alert" className="notice error">
-                  <h2>Bạn chưa được cấp quyền</h2>
-                  <p>
-                    Tài khoản của bạn chưa được cấp quyền truy cập trang này.
-                  </p>
-                  <div className="actions section-gap">
-                    <Link className="button" href="/workspace">
-                      Về không gian làm việc
-                    </Link>
-                  </div>
-                </div>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 z-60 bg-overlay md:hidden" />
+            <Dialog.Content
+              aria-describedby={undefined}
+              className="nav-surface fixed inset-y-0 left-0 z-61 flex w-[min(300px,86vw)] flex-col px-2 pt-2 pb-2 shadow-overlay outline-none md:hidden motion-safe:animate-[drawer-in_180ms_ease-out]"
+            >
+              <div className="mb-2 flex items-center justify-between pl-2.5">
+                <Dialog.Title className="m-0 text-sm font-semibold text-fg">
+                  Menu điều hướng
+                </Dialog.Title>
+                <Dialog.Close asChild>
+                  <IconButton label="Đóng menu">
+                    <X className="size-[18px]" aria-hidden="true" />
+                  </IconButton>
+                </Dialog.Close>
               </div>
+              <Suspense>
+                <SideNav
+                  area={area}
+                  session={session}
+                  drawer
+                  onNavigate={() => setSidebar(false)}
+                />
+              </Suspense>
+            </Dialog.Content>
+          </Dialog.Portal>
+          <div
+            className={cn(
+              "pt-(--topbar-h) motion-safe:transition-[padding] motion-safe:duration-150",
+              sidebar &&
+                (collapsed
+                  ? "md:pl-(--sidebar-w-collapsed)"
+                  : "md:pl-(--sidebar-w)"),
             )}
-          </main>
+          >
+            <main
+              id="main"
+              tabIndex={-1}
+              className="mx-auto w-full max-w-(--content-data) px-4 pt-5 pb-10 outline-none md:px-6 lg:px-8"
+            >
+              {canVisit(session, pathname) ? (
+                <>
+                  <Suspense>
+                    <BreadcrumbTrail />
+                  </Suspense>
+                  <div className="@container/page min-w-0 wrap-anywhere">
+                    {children}
+                  </div>
+                </>
+              ) : (
+                <div className="@container/page min-w-0 wrap-anywhere">
+                  <Notice
+                    tone="danger"
+                    title="Bạn chưa được cấp quyền"
+                    actions={
+                      <ButtonLink href="/workspace">
+                        Về không gian làm việc
+                      </ButtonLink>
+                    }
+                  >
+                    <p>
+                      Tài khoản của bạn chưa được cấp quyền truy cập trang này.
+                    </p>
+                  </Notice>
+                </div>
+              )}
+            </main>
+          </div>
         </div>
-      </div>
+      </SectionSlot>
     </Dialog.Root>
   );
 }

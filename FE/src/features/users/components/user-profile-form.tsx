@@ -1,6 +1,7 @@
 "use client";
 
 import { Form } from "@/components/forms/form";
+import { Button } from "@/components/ui/button";
 import {
   FormInput,
   FormSelect,
@@ -90,7 +91,7 @@ export function UserProfileForm({
       title="Thông tin tài khoản"
       actions={
         user && !open ? (
-          <button
+          <Button
             type="button"
             onClick={() => {
               snapshot.saved(user);
@@ -99,23 +100,25 @@ export function UserProfileForm({
             }}
           >
             Chỉnh sửa thông tin
-          </button>
+          </Button>
         ) : undefined
       }
     >
       {user && (
-        <div className="account-identity">
+        <div className="mb-3 flex flex-wrap items-center gap-3">
           <Avatar name={user.displayName} src={user.avatarUrl} large />
-          <div>
-            <strong>{user.displayName}</strong>
-            <span className="small muted">{user.username}</span>
+          <div className="grid min-w-0 flex-1 leading-snug">
+            <strong className="text-sm font-semibold text-fg">
+              {user.displayName}
+            </strong>
+            <span className="text-xs text-fg-subtle">{user.username}</span>
           </div>
           <StatusField value={user.status} />
         </div>
       )}
       {user && !open ? (
         <>
-          <dl className="record-details">
+          <dl className="m-0 grid gap-y-2 text-sm [&>div]:grid [&>div]:grid-cols-[7rem_minmax(0,1fr)] [&>div]:items-baseline [&>div]:gap-x-3 [&_dt]:text-fg-subtle [&_dd]:m-0 [&_dd]:min-w-0 [&_dd]:text-left [&_dd]:break-words">
             <div>
               <dt>Đơn vị</dt>
               <dd>{user.unit.name}</dd>
@@ -140,9 +143,9 @@ export function UserProfileForm({
           submitLabel={user ? "Lưu thông tin" : "Tạo tài khoản"}
           cancel={
             user ? (
-              <button type="button" onClick={cancel}>
+              <Button type="button" onClick={cancel}>
                 Hủy
-              </button>
+              </Button>
             ) : (
               <ButtonLink href="/admin/users">Hủy</ButtonLink>
             )

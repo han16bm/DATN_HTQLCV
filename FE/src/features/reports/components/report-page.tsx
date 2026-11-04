@@ -1,6 +1,9 @@
 "use client";
 
 import { PageSkeleton } from "@/components/ui/loading";
+import { KeyValue, KeyValueList } from "@/components/patterns/key-value";
+import { SplitLayout } from "@/components/patterns/split-layout";
+import { Notice } from "@/components/ui/notice";
 import {
   StatusField,
   ButtonLink,
@@ -39,7 +42,7 @@ export function ReportPage({
       <PageHeader
         title={`${label(r.periodType)} · ${r.periodStart.split("-").reverse().join("/")}`}
         description={
-          <span className="person-meta">
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <UserBadge name={r.author.displayName} />
             <span>{project.data?.name ?? "Đang tải dự án…"}</span>
           </span>
@@ -47,57 +50,59 @@ export function ReportPage({
         status={<StatusField value={r.status} />}
       />
       {r.status === "SUBMITTED" && r.snapshot ? (
-        <div className="report-layout">
-          <div className="report-document">
-            <Panel title="Nội dung báo cáo">
-              <section>
-                <h3>Kết quả thực hiện</h3>
-                <p className="prose">{r.achievements}</p>
-              </section>
-              <section className="acceptance-section">
-                <h3>Khó khăn</h3>
-                <p className="preserve-lines">
-                  {r.blockers || "Không có khó khăn bổ sung."}
-                </p>
-              </section>
-              <section className="acceptance-section">
-                <h3>Kế hoạch tiếp theo</h3>
-                <p className="preserve-lines">{r.nextPlan}</p>
-              </section>
-              {r.zeroTimeReason && (
-                <p>Lý do không có giờ công: {r.zeroTimeReason}</p>
-              )}
-            </Panel>
-            <ReportNumbers value={r.snapshot} frozen />
-          </div>
-          <aside className="report-context" aria-label="Số liệu đã chốt">
-            <Panel title="Thông tin báo cáo">
-              <dl className="record-details">
-                <div>
-                  <dt>Dự án</dt>
-                  <dd>{project.data?.name ?? "Đang tải dự án…"}</dd>
-                </div>
-                <div>
-                  <dt>Người lập</dt>
-                  <dd>
+        <SplitLayout
+          aside={
+            <aside aria-label="Số liệu đã chốt">
+              <Panel title="Thông tin báo cáo">
+                <KeyValueList>
+                  <KeyValue label="Dự án">
+                    {project.data?.name ?? "Đang tải dự án…"}
+                  </KeyValue>
+                  <KeyValue label="Người lập">
                     <UserBadge name={r.author.displayName} />
-                  </dd>
-                </div>
-                <div>
-                  <dt>Giờ công</dt>
-                  <dd>{hours(r.snapshot.totalMinutes)}</dd>
-                </div>
-                <div>
-                  <dt>Chốt số liệu</dt>
-                  <dd>{dateTime(r.snapshot.dataAsOf)}</dd>
-                </div>
-              </dl>
-              <p className="small muted">
-                Nội dung và số liệu được lưu tại thời điểm gửi.
-              </p>
-            </Panel>
-          </aside>
-        </div>
+                  </KeyValue>
+                  <KeyValue label="Giờ công">
+                    {hours(r.snapshot.totalMinutes)}
+                  </KeyValue>
+                  <KeyValue label="Chốt số liệu">
+                    {dateTime(r.snapshot.dataAsOf)}
+                  </KeyValue>
+                </KeyValueList>
+                <p className="m-0 text-xs text-fg-subtle">
+                  Nội dung và số liệu được lưu tại thời điểm gửi.
+                </p>
+              </Panel>
+            </aside>
+          }
+        >
+          <Panel title="Nội dung báo cáo">
+            <div className="grid gap-4">
+              {[
+                ["Kết quả thực hiện", r.achievements],
+                ["Khó khăn", r.blockers || "Không có khó khăn bổ sung."],
+                ["Kế hoạch tiếp theo", r.nextPlan],
+              ].map(([title, text], index) => (
+                <section
+                  key={title}
+                  className={index ? "border-t border-line pt-3" : undefined}
+                >
+                  <h3 className="m-0 mb-1 text-sm font-semibold text-fg">
+                    {title}
+                  </h3>
+                  <p className="m-0 max-w-[80ch] text-sm leading-relaxed whitespace-pre-wrap text-fg">
+                    {text}
+                  </p>
+                </section>
+              ))}
+              {r.zeroTimeReason && (
+                <p className="m-0 text-sm">
+                  Lý do không có giờ công: {r.zeroTimeReason}
+                </p>
+              )}
+            </div>
+          </Panel>
+          <ReportNumbers value={r.snapshot} frozen />
+        </SplitLayout>
       ) : project.isError ? (
         <QueryErrorState error={project.error} retry={project.refetch} />
       ) : project.isPending ? (
@@ -113,14 +118,14 @@ export function ReportPage({
           />
         ) : (
           <Panel>
-            <p>Báo cáo đang ở bản nháp.</p>
+            <p className="m-0 text-sm">Báo cáo đang ở bản nháp.</p>
             <ButtonLink href={`/reports/${r.id}/edit`}>Mở bản nháp</ButtonLink>
           </Panel>
         )
       ) : (
-        <p className="notice">
+        <Notice>
           Báo cáo chỉ được tra cứu trong trạng thái dự án hiện tại.
-        </p>
+        </Notice>
       )}
     </>
   );

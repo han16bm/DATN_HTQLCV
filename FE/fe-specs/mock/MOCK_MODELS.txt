@@ -3001,10 +3001,10 @@ FULL bổ sung Audit t-6 cho lần hủy: actor u-pm, at=2026-10-22T09:00:00.000
   Dashboard nhiều dự án: p-main có 5 việc không hủy, 20%, 1 việc quá hạn, 360 phút; p-planned không có việc, completionRate=null, actualMinutes=0, overdueCount=0. Không đổi null thành 0%.
 
 19.4 NotificationDeliveryModel nội bộ mô phỏng QT-T33/QT-D06.
-  Field: id, eventId, recipientId, eventType, status PENDING/SENT/FAILED, attemptCount, nextAttemptAt nullable, lastError nullable. Không trả credential/provider stack.
+  Model tạm hiện hành (mở rộng theo yêu cầu 03/11): id, eventId, recipientId, type, taskId, submissionId/alertId tùy loại, createdAt, readAt nullable, status PENDING/SENT/FAILED, attemptCount. Tham số retry kênh gửi ngoài thuộc BE thực, chưa mô phỏng lịch retry. Không trả recipientId/eventId/status/attemptCount hoặc credential/provider stack trong API thông báo.
   Chỉ tạo sau commit giao việc/nộp/duyệt/yêu cầu sửa/đổi kế hoạch. Lỗi gửi giữ nghiệp vụ đã lưu; retry cùng eventId+recipientId không tạo lại task/submission/decision.
   Cảnh báo dedupe theo project+subject+type+analysisWindow; vấn đề còn thì cập nhật evidence/dataAsOf và không phát thông báo trùng liên tục. Điều kiện hết đặt conditionActive=false, giữ quyết định xử lý/lịch sử.
-  Scheduler rule chạy độc lập GET/LLM. Không thêm chuông thông báo hoặc API inbox vào FE khi tài liệu nguồn chưa yêu cầu một màn inbox.
+  Scheduler rule chạy độc lập GET/LLM. Người dùng đã yêu cầu chuông thông báo ngày 03/11: cho phép 3 API list/summary/mark read theo api/NOTIFICATIONS.md, vẫn không thêm trang inbox. Notification dùng sự kiện có thật, GET không tạo sự kiện; đánh dấu đọc không đổi trạng thái công việc.
 
 
 19.5 Bộ lọc có nguồn được phép.

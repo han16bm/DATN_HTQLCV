@@ -183,7 +183,9 @@ it.each(["minh", "lan"])(
       });
       const panel = heading.closest("section")!;
       expect(within(panel).getByText("Chưa có báo cáo đính kèm.")).toBeTruthy();
-      expect(panel.querySelector(".panel-body .pdf-empty")).toBeTruthy();
+      expect(
+        panel.querySelector('[data-slot="panel-body"] [data-slot="pdf-empty"]'),
+      ).toBeTruthy();
       expect(panel.querySelector("iframe")).toBeNull();
       expect(within(panel).queryByRole("button")).toBeNull();
       expect(paths.some((path) => path.includes("/attachments/"))).toBe(false);

@@ -52,11 +52,11 @@ Nêu màn/UC đã hoàn thành, file chính đã đổi, contract thay đổi n�
 
 ## Cách dùng bộ tài liệu
 
-Đọc README và AGENTS.md trước. Chọn đợt triển khai, tra MAIN_SCREENS.md/ảnh màn chính và đặc tả đầy đủ Sxx, tra API/DTO tương ứng, sau đó viết code. State/sitemap ở TXT, không tạo thêm route hoặc PNG cho từng state. Khi tài liệu có thiếu hoặc mâu thuẫn làm đổi nghiệp vụ, ghi chính xác điểm cần giải quyết và các file liên quan trước khi thay contract.
+Đọc README và AGENTS.md trước. Chọn đợt triển khai, tra source màn hiện hành và nghiệp vụ Sxx, tra API/DTO tương ứng, sau đó viết code. State/sitemap ở TXT, không tạo thêm route hoặc PNG cho từng state. Khi tài liệu có thiếu hoặc mâu thuẫn làm đổi nghiệp vụ, ghi chính xác điểm cần giải quyết và các file liên quan trước khi thay contract.
 
 ## Nghiệm thu bản thiết kế và thay đổi LLM
 
-- Dựng đủ màn theo ảnh mới và DESIGN_SYSTEM.md, giữ font; kiểm tra desktop/tablet/mobile, contrast/focus và quyền của persona trong ảnh.
+- Dựng đủ chức năng theo source/schema và thiết kế hiện tại; kiểm tra desktop/tablet/mobile, contrast/focus và quyền của persona trong ảnh.
 - Kiểm tra 5 biến thể S43: RISK, WORKLOAD, BOTTLENECK, SUMMARY, METRIC; các thông số/căn cứ/lời phân tích khớp nhau.
 - Dashboard/GET không gọi provider; mở chi tiết reuse/create một lần; refocus/StrictMode không tạo thêm job.
 - Kiểm tra loading AI giữ metrics, lỗi giữ metrics/lastSuccess, partial/null không bị kết luận sai, outdated không ghép dữ liệu, expired refetch ref, late-result không ghi nhầm key.

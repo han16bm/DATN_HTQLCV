@@ -1,9 +1,6 @@
-import { useId } from "react";
-
-// Logo Cổng công việc: ô gradient xanh – tím, lối vào hình vòm (cổng) bên trong
+// Logo Cổng công việc: ô xanh biển, lối vào hình vòm (cổng) bên trong
 // có dấu tích hoàn thành. Cùng hình dùng cho thanh trên, đăng nhập và favicon.
 function BrandMark({ size = 28 }: { size?: number }) {
-  const id = useId();
   return (
     <svg
       width={size}
@@ -12,21 +9,7 @@ function BrandMark({ size = 28 }: { size?: number }) {
       aria-hidden="true"
       focusable="false"
     >
-      <defs>
-        <linearGradient
-          id={id}
-          x1="2"
-          y1="2"
-          x2="30"
-          y2="30"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop offset="0" stopColor="#2b87ff" />
-          <stop offset="0.55" stopColor="#0c66e4" />
-          <stop offset="1" stopColor="#6e5dc6" />
-        </linearGradient>
-      </defs>
-      <rect width="32" height="32" rx="9" fill={`url(#${id})`} />
+      <rect width="32" height="32" rx="8" fill="var(--color-action)" />
       <path
         d="M8.5 24.5V15a7.5 7.5 0 0 1 15 0v9.5"
         fill="none"
@@ -63,10 +46,12 @@ export function BrandLogo({
   large?: boolean;
 }) {
   return (
-    <span className={`brand-logo${large ? " brand-logo-large" : ""}`}>
+    <span className="inline-flex items-center gap-2.5">
       <BrandMark size={size} />
-      <span className="brand-word">
-        Cổng<span> công việc</span>
+      <span
+        className={`font-semibold tracking-tight text-fg ${large ? "text-xl" : "text-base"}`}
+      >
+        Cổng<span className="font-normal text-fg-subtle"> công việc</span>
       </span>
     </span>
   );

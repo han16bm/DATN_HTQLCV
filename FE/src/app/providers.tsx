@@ -1,5 +1,6 @@
 "use client";
 import { AuthObserver } from "@/features/auth/components/auth-observer";
+import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Spinner } from "@/components/ui/loading";
 import { shouldRetryQuery } from "@/services/http-error";
@@ -48,14 +49,20 @@ export function Providers({ children }: { children: ReactNode }) {
   }, []);
   if (error)
     return (
-      <div role="alert" className="boot-state">
+      <div
+        role="alert"
+        className="flex min-h-screen items-center justify-center gap-3.5 text-sm text-fg"
+      >
         Chưa thể mở không gian làm việc.{" "}
-        <button onClick={() => window.location.reload()}>Tải lại</button>
+        <Button onClick={() => window.location.reload()}>Tải lại</Button>
       </div>
     );
   if (!ready)
     return (
-      <div role="status" className="boot-state">
+      <div
+        role="status"
+        className="flex min-h-screen items-center justify-center gap-3.5 text-sm text-fg"
+      >
         <Spinner />
         Đang chuẩn bị không gian làm việc…
       </div>

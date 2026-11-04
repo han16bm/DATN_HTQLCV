@@ -1,6 +1,7 @@
 "use client";
 
 import { Form, type FormProps } from "@/components/forms/form";
+import { Button } from "@/components/ui/button";
 import {
   FormInput,
   FormSelect,
@@ -58,8 +59,8 @@ export function UserCommands({
     setMode(null);
   };
   const actions = (
-    <div className="actions">
-      <button
+    <div className="actions flex flex-wrap items-center gap-2">
+      <Button
         onClick={async () => {
           if (await confirmDiscard()) {
             snapshot.saved(user);
@@ -68,8 +69,8 @@ export function UserCommands({
         }}
       >
         {isLocked ? "Mở khóa tài khoản" : "Khóa tài khoản"}
-      </button>
-      <button
+      </Button>
+      <Button
         onClick={async () => {
           if (await confirmDiscard()) {
             snapshot.saved(user);
@@ -78,7 +79,7 @@ export function UserCommands({
         }}
       >
         Cấp lại mật khẩu
-      </button>
+      </Button>
     </div>
   );
   return (
@@ -88,7 +89,7 @@ export function UserCommands({
       actions={actions}
     >
       {mode === "lock" && !isLocked && (
-        <p className="small muted section-gap">
+        <p className="text-xs text-fg-subtle mt-4">
           Khóa thông thường yêu cầu bàn giao việc mở. Khóa khẩn cấp thu hồi truy
           cập ngay.
         </p>

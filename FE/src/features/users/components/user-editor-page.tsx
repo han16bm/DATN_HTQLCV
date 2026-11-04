@@ -1,6 +1,7 @@
 "use client";
 
 import { PageSkeleton } from "@/components/ui/loading";
+import { SplitLayout } from "@/components/patterns/split-layout";
 import { PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useListUnitsQuery } from "@/features/organization/hooks/use-organization-queries";
@@ -19,22 +20,28 @@ export function UserEditorPage({ userId }: { userId?: string }) {
     return <PageSkeleton variant="form" />;
   if (query.isError)
     return <QueryErrorState error={query.error} retry={query.refetch} />;
+  const form = (
+    <UserProfileForm
+      key={userId ?? "new"}
+      user={query.data}
+      units={units.data.items.map((u) => ({ value: u.id, label: u.name }))}
+      reload={() => query.refetch()}
+    />
+  );
   return (
     <>
       <PageHeader
         title={userId ? "Chi tiết tài khoản" : "Cấp tài khoản nội bộ"}
       />
-      <div className={query.data ? "account-layout" : undefined}>
-        <UserProfileForm
-          key={userId ?? "new"}
-          user={query.data}
-          units={units.data.items.map((u) => ({ value: u.id, label: u.name }))}
-          reload={() => query.refetch()}
-        />
-        {query.data && (
-          <UserCommands user={query.data} reload={query.refetch} />
-        )}
-      </div>
+      {query.data ? (
+        <SplitLayout
+          aside={<UserCommands user={query.data} reload={query.refetch} />}
+        >
+          {form}
+        </SplitLayout>
+      ) : (
+        form
+      )}
     </>
   );
 }

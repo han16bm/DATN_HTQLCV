@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/components/ui/select";
 import { useState } from "react";
 import { useGetAttachmentsQuery } from "../hooks/use-attachments-queries";
 import { PdfPreview } from "./pdf-preview";
@@ -21,9 +22,9 @@ export function AttachmentViewer({
       attachmentId={selected}
       picker={
         attachmentIds.length > 1 ? (
-          <label className="viewer-select">
+          <label className="min-w-0 max-w-[280px] flex-1">
             <span className="sr-only">Tệp báo cáo</span>
-            <select
+            <Select
               value={selected}
               onChange={(event) => setPicked(event.target.value)}
             >
@@ -32,7 +33,7 @@ export function AttachmentViewer({
                   {files[index]?.data?.filename ?? `Tệp ${index + 1}`}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
         ) : undefined
       }

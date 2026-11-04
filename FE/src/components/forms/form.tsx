@@ -1,6 +1,8 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/loading";
+import { cn } from "@/lib/cn";
 import { useUI } from "@/stores/ui-store";
 import { ApiError } from "@/types/api/error";
 import { useEffect, useId, useState, type ReactNode } from "react";
@@ -21,6 +23,9 @@ export type FormProps<
   submitDisabled?: boolean;
   submitActions?: ReactNode;
   cancel?: ReactNode;
+  // Chân hành động canh phải (mặc định) hoặc canh trái, không kẻ viền, cho biểu
+  // mẫu một cột như hồ sơ cá nhân.
+  actions?: "end" | "start";
   compareFields?: CompareField[];
   onConflictReload?: () => Promise<Record<string, unknown>>;
   onConflictAccept?: () => void;
@@ -35,6 +40,7 @@ export function Form<Input extends FieldValues, Output extends FieldValues>({
   submitDisabled = false,
   submitActions,
   cancel,
+  actions = "end",
   compareFields = [],
   onConflictReload,
   onConflictAccept,
@@ -73,15 +79,22 @@ export function Form<Input extends FieldValues, Output extends FieldValues>({
     }
   }
 
+  // Biểu mẫu không kéo giãn quá rộng: 760px (gọn) hoặc 960px.
   return (
     <form
-      className={`form${compact ? " form-compact" : ""}`}
+      className={cn(
+        "@container/form min-w-0",
+        compact ? "max-w-[760px]" : "max-w-[960px]",
+      )}
       noValidate
       onSubmit={form.handleSubmit(submit)}
     >
-      <fieldset className="form-fields" disabled={isSubmitting}>
+      <fieldset
+        className="m-0 grid min-w-0 grid-cols-12 items-start gap-4 border-0 p-0"
+        disabled={isSubmitting}
+      >
         {submitActions && (
-          <div className="form-actions wide">
+          <div className="col-span-12 flex flex-wrap items-center justify-end gap-2.5 border-b border-line pb-4">
             {cancel}
             {submitActions}
           </div>
@@ -97,17 +110,24 @@ export function Form<Input extends FieldValues, Output extends FieldValues>({
           />
         )}
         {!submitActions && (
-          <div className="form-actions wide">
+          <div
+            className={cn(
+              "col-span-12 flex flex-wrap items-center gap-2.5",
+              actions === "start"
+                ? "justify-start pt-1"
+                : "mt-1 justify-end border-t border-line pt-4",
+            )}
+          >
             {cancel}
-            <button
-              className="primary pending-button"
+            <Button
+              variant="primary"
               type="submit"
               disabled={submitDisabled}
               aria-busy={isSubmitting}
             >
               {isSubmitting && <Spinner />}
               {isSubmitting ? "Đang lưu…" : submitLabel}
-            </button>
+            </Button>
           </div>
         )}
       </fieldset>

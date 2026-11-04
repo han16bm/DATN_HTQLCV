@@ -1,8 +1,13 @@
 "use client";
 import { hasPermission } from "@/lib/auth/access";
+import { TaskStepper } from "./task-stepper";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import { PageHeader, SectionNav, StatusField } from "@/components/ui/page";
+import { SectionNav } from "@/components/layout/section-nav";
+import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
+import { MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
+import { PageHeader, StatusField } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
 import { SubmitResultDialog } from "@/features/submissions/components/submit-result-dialog";
@@ -12,7 +17,14 @@ import { useSession } from "@/lib/auth/session-context";
 import { useHashDialog } from "@/lib/forms/use-hash-dialog";
 import { useCrumbLabel } from "@/lib/use-crumb-label";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { Ellipsis } from "lucide-react";
+import {
+  Clock,
+  Ellipsis,
+  FileCheck,
+  FileText,
+  History,
+  Settings,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode } from "react";
@@ -64,150 +76,137 @@ export function TaskShell({
     <SectionNav
       label="Mục công việc"
       items={[
-        { href: root, label: "Chi tiết", active: path === root },
+        {
+          href: root,
+          label: "Chi tiết",
+          icon: FileText,
+          active: path === root,
+        },
         {
           href: `${root}/time-logs`,
           label: "Giờ công",
+          icon: Clock,
           active: path === `${root}/time-logs`,
         },
         {
           href: `${root}/submissions`,
           label: "Kết quả",
+          icon: FileCheck,
           active: path.startsWith(`${root}/submissions`),
         },
         {
           href: `${root}/history`,
           label: "Lịch sử",
+          icon: History,
           active: path === `${root}/history`,
         },
         ...(path === `${root}/edit`
-          ? [{ href: path, label: "Điều chỉnh", active: true }]
+          ? [{ href: path, label: "Điều chỉnh", icon: Settings, active: true }]
           : []),
       ]}
     />
   );
   return (
     <>
-      <div className="task-header">
+      {navigation}
+      <div className="pt-2">
         <PageHeader
           title={task.title}
-          navigation={navigation}
           status={
-            <>
-              <StatusField value={task.status} />
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
               <StatusField label="Ưu tiên" value={task.priority} />
               {task.isOverdue && (
                 <StatusField label="Tiến độ" value="OVERDUE" />
               )}
-            </>
+            </div>
           }
           actions={
             <>
               {review && (
-                <button
-                  className="primary"
-                  onClick={() => dialog.open("review")}
-                >
+                <Button variant="primary" onClick={() => dialog.open("review")}>
                   Quyết định nghiệm thu
-                </button>
+                </Button>
               )}
               {working && (
                 <>
-                  <button
-                    className="primary"
+                  <Button
+                    variant="primary"
                     onClick={() => dialog.open("submit")}
                   >
                     Nộp kết quả
-                  </button>
-                  <button onClick={() => dialog.open("time-log")}>
+                  </Button>
+                  <Button onClick={() => dialog.open("time-log")}>
                     Ghi giờ công
-                  </button>
+                  </Button>
                 </>
               )}
               {start && (
-                <button
-                  className="primary"
+                <Button
+                  variant="primary"
                   onClick={() => dialog.open("execution")}
                 >
                   Bắt đầu
-                </button>
+                </Button>
               )}
               {assign && (
-                <button
-                  className="primary"
+                <Button
+                  variant="primary"
                   onClick={() => dialog.open("assignment")}
                 >
                   Giao việc
-                </button>
+                </Button>
               )}
               {(working || change || stop) && (
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger asChild>
-                    <button
-                      type="button"
-                      className="icon-button bordered"
-                      aria-label="Thao tác công việc"
+                    <IconButton
+                      label="Thao tác công việc"
+                      className="border border-line-input"
                     >
-                      <Ellipsis size={18} aria-hidden="true" />
-                    </button>
+                      <Ellipsis className="size-[18px]" aria-hidden="true" />
+                    </IconButton>
                   </DropdownMenu.Trigger>
-                  <DropdownMenu.Portal>
-                    <DropdownMenu.Content
-                      className="account-menu"
-                      align="end"
-                      sideOffset={8}
-                      collisionPadding={12}
-                    >
-                      {working && (
-                        <DropdownMenu.Item
-                          className="account-menu-item"
-                          onSelect={() => dialog.open("attachment")}
+                  <MenuContent>
+                    {working && (
+                      <MenuItem onSelect={() => dialog.open("attachment")}>
+                        Tải minh chứng
+                      </MenuItem>
+                    )}
+                    {change && (
+                      <>
+                        {path !== `${root}/edit` && (
+                          <MenuItem asChild>
+                            <Link href={`${root}/edit`}>Điều chỉnh</Link>
+                          </MenuItem>
+                        )}
+                        {!assign && (
+                          <MenuItem onSelect={() => dialog.open("assignment")}>
+                            Bàn giao
+                          </MenuItem>
+                        )}
+                      </>
+                    )}
+                    {stop && (
+                      <>
+                        {(working || change) && <MenuSeparator />}
+                        <MenuItem
+                          tone="danger"
+                          onSelect={() => dialog.open("execution")}
                         >
-                          Tải minh chứng
-                        </DropdownMenu.Item>
-                      )}
-                      {change && (
-                        <>
-                          {path !== `${root}/edit` && (
-                            <DropdownMenu.Item asChild>
-                              <Link
-                                className="account-menu-item"
-                                href={`${root}/edit`}
-                              >
-                                Điều chỉnh
-                              </Link>
-                            </DropdownMenu.Item>
-                          )}
-                          {!assign && (
-                            <DropdownMenu.Item
-                              className="account-menu-item"
-                              onSelect={() => dialog.open("assignment")}
-                            >
-                              Bàn giao
-                            </DropdownMenu.Item>
-                          )}
-                        </>
-                      )}
-                      {stop && (
-                        <>
-                          {(working || change) && (
-                            <DropdownMenu.Separator className="account-menu-separator" />
-                          )}
-                          <DropdownMenu.Item
-                            className="account-menu-item danger"
-                            onSelect={() => dialog.open("execution")}
-                          >
-                            {working ? "Tạm dừng / hủy" : "Hủy công việc"}
-                          </DropdownMenu.Item>
-                        </>
-                      )}
-                    </DropdownMenu.Content>
-                  </DropdownMenu.Portal>
+                          {working ? "Tạm dừng / hủy" : "Hủy công việc"}
+                        </MenuItem>
+                      </>
+                    )}
+                  </MenuContent>
                 </DropdownMenu.Root>
               )}
             </>
           }
         />
+      </div>
+
+      <div className="mb-5 min-w-0 overflow-x-auto rounded-lg border border-line bg-surface px-4 py-2">
+        <TaskStepper status={task.status} />
       </div>
 
       {project.isError && (

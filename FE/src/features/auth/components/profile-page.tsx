@@ -1,6 +1,9 @@
 "use client";
 
 import { Form } from "@/components/forms/form";
+import { Field } from "@/components/forms/form-field";
+import { Input } from "@/components/ui/input";
+import { ProfileHeader } from "@/components/ui/profile-header";
 import { FormInput } from "@/components/forms/form-field";
 import { ButtonLink, PageHeader } from "@/components/ui/page";
 import { useSession } from "@/lib/auth/session-context";
@@ -77,10 +80,16 @@ function ProfileDetails({ user }: { user: SessionDto["user"] }) {
           </ButtonLink>
         }
       />
-      <section className="profile-settings">
-        <div className="profile-settings-toolbar">
+      <section className="max-w-3xl">
+        <ProfileHeader
+          name={user.displayName}
+          avatarUrl={user.avatarUrl}
+          unit={user.unit.name}
+          role={label(user.systemRole)}
+        />
+        <div className="mb-4 rounded-lg bg-sunken p-1">
           <div
-            className="profile-tabs"
+            className="flex gap-1 overflow-x-auto"
             role="tablist"
             aria-label="Mục hồ sơ"
             onKeyDown={(event) => {
@@ -109,16 +118,18 @@ function ProfileDetails({ user }: { user: SessionDto["user"] }) {
           >
             {sections.map(({ value, label, icon: Icon }) => (
               <button
+                data-ui
                 key={value}
                 id={`${id}-${value}`}
                 type="button"
                 role="tab"
+                className="inline-flex min-h-9 flex-1 shrink-0 items-center justify-center gap-2 rounded-md px-3 text-sm text-fg-subtle transition-colors hover:bg-hover aria-selected:bg-surface aria-selected:font-medium aria-selected:text-selected-fg pointer-coarse:min-h-11"
                 aria-selected={section === value}
                 aria-controls={`${id}-content`}
                 tabIndex={section === value ? 0 : -1}
                 onClick={() => void changeSection(value)}
               >
-                <Icon size={16} aria-hidden="true" />
+                <Icon className="size-4" aria-hidden="true" />
                 {label}
               </button>
             ))}
@@ -126,31 +137,30 @@ function ProfileDetails({ user }: { user: SessionDto["user"] }) {
         </div>
         <div
           id={`${id}-content`}
-          className="profile-content"
+          className="rounded-lg border border-line bg-surface p-5"
           role="tabpanel"
           aria-labelledby={`${id}-${section}`}
           tabIndex={0}
         >
           {section === "info" ? (
-            <div className="profile-info">
-              <div className="form-field">
-                <label htmlFor={`${id}-email`}>Email</label>
-                <input
-                  id={`${id}-email`}
-                  type="email"
-                  value={user.email}
-                  readOnly
-                  autoComplete="email"
-                />
-              </div>
+            <div className="grid gap-4">
+              <Field label="Email" width="full">
+                {(a11y) => (
+                  <Input
+                    size="form"
+                    {...a11y}
+                    type="email"
+                    value={user.email}
+                    readOnly
+                    autoComplete="email"
+                  />
+                )}
+              </Field>
               <ProfileInfoForm
                 user={snapshot.base}
                 onSubmit={onSubmit}
                 {...conflict}
               />
-              <p className="small muted">
-                {user.unit.name} · {label(user.systemRole)}
-              </p>
             </div>
           ) : section === "avatar" ? (
             <AvatarEditor
@@ -185,6 +195,7 @@ function ProfileInfoForm({
   return (
     <Form
       compact
+      actions="start"
       form={form}
       onSubmit={onSubmit}
       submitLabel="Lưu hồ sơ"
@@ -197,14 +208,14 @@ function ProfileInfoForm({
       <FormInput
         label="Họ tên"
         required
-        width="full"
+        width="medium"
         {...form.register("displayName")}
         error={errors.displayName}
       />
       <FormInput
         label="Tên đăng nhập"
         required
-        width="full"
+        width="medium"
         {...form.register("username")}
         error={errors.username}
       />

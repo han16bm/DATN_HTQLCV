@@ -1,0 +1,85 @@
+/*
+ * Token giao diện: nguồn duy nhất cho màu, chữ, bóng và kích thước khung.
+ * Tên theo vai trò (không theo mã hex). Khoảng cách và bo góc dùng thang mặc
+ * định của Tailwind (p-2 = 8px, rounded-md = 6px, rounded-lg = 8px).
+ *
+ * Bảng màu: nền xám xanh nhạt, bề mặt trắng, một màu nhấn xanh chàm trầm cho hành
+ * động và mục đang chọn; màu xanh lá chỉ dành cho "thành công" nên không lẫn với
+ * hành động. Mọi cặp chữ/nền đạt WCAG AA (chữ ≥ 4,5:1; viền ô nhập và vòng focus ≥ 3:1).
+ */
+@theme {
+  /* chữ: body = text-sm (14/20), phụ = text-xs (12/16) có sẵn */
+  --text-heading-lg: 1.5rem;
+  --text-heading-lg--line-height: 2rem;
+  --text-heading-md: 1.125rem;
+  --text-heading-md--line-height: 1.5rem;
+  --text-heading-sm: 1rem;
+  --text-heading-sm--line-height: 1.5rem;
+  --text-metric: 1.5rem;
+  --text-metric--line-height: 1.75rem;
+
+  /* nền và chữ */
+  --color-page: #f3f7fa;
+  --color-surface: #fdfefe;
+  --color-sunken: #edf3f7;
+  --color-fg: #213547;
+  --color-fg-subtle: #526579;
+  --color-fg-subtlest: #5b7082;
+  --color-line: #dce5ed;
+  --color-line-input: #7d8c9c;
+  --color-focus: #096e9d;
+  --color-overlay: rgb(15 23 42 / 0.42);
+  --color-hover: rgb(15 23 42 / 0.05);
+  --color-pressed: rgb(15 23 42 / 0.11);
+
+  /* hành động tách khỏi trạng thái */
+  --color-action: #096e9d;
+  --color-action-hover: #075d87;
+  --color-action-pressed: #064d70;
+  --color-selected-bg: #e5f2f9;
+  --color-selected-fg: #085d88;
+
+  /* Điều hướng xanh, chữ trắng; chỉ áp dụng trong nav-surface. */
+  --color-nav: #1177aa;
+  --color-nav-fg: #ffffff;
+  --color-nav-muted: #ffffff;
+  --color-nav-hover: #0874a3;
+  --color-nav-selected: #066a98;
+  --color-nav-line: rgb(255 255 255 / 0.2);
+
+  /* trạng thái */
+  --color-success-bg: #e4f5ea;
+  --color-success-fg: #17623a;
+  --color-warning-bg: #fff3d1;
+  --color-warning-fg: #7a4b00;
+  --color-danger-bg: #fde9e7;
+  --color-danger-fg: #a8271c;
+  --color-info-bg: #e5f2f9;
+  --color-info-fg: #085d88;
+  --color-danger-bold: #c8382b;
+  --color-danger-bold-hover: #a8271c;
+
+  --shadow-raised: 0 1px 2px rgb(15 23 42 / 0.16), 0 0 1px rgb(15 23 42 / 0.2);
+  --shadow-overlay:
+    0 8px 20px -4px rgb(15 23 42 / 0.2), 0 0 1px rgb(15 23 42 / 0.3);
+}
+
+/* Font nạp bằng next/font ở app/layout.tsx; inline để var() được tính tại chỗ dùng. */
+@theme inline {
+  --font-sans: var(--font-app), "Segoe UI", sans-serif;
+}
+
+/*
+ * Mật độ: khung và điều khiển gọn để thấy được nhiều nội dung trong một màn.
+ * Header 52, sidebar 224/64, ô 32 (biểu mẫu 36), hàng bảng 44.
+ */
+:root {
+  --topbar-h: 52px;
+  --sidebar-w: 224px;
+  --sidebar-w-collapsed: 64px;
+  --control-h: 32px;
+  --control-h-form: 36px;
+  --content-data: 1680px;
+  --content-form: 720px;
+  --content-reading: 880px;
+}

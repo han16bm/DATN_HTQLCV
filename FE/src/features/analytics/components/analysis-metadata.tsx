@@ -1,13 +1,13 @@
 "use client";
 
-import { Badge } from "@/components/ui/page";
+import { StatusLozenge } from "@/components/ui/lozenge";
 import { dateTime } from "@/lib/format";
 import { type AnalysisMetaDto } from "../types/analytics.types";
 export function Metadata({ value }: { value: AnalysisMetaDto }) {
   return (
-    <p className="metadata">
+    <p className="mb-3 text-xs text-fg-subtle">
       Cập nhật {dateTime(value.dataAsOf)} ·{" "}
-      <Badge value={value.quality.status} />
+      <StatusLozenge value={value.quality.status} />
     </p>
   );
 }

@@ -1,6 +1,12 @@
 "use client";
 
+import { FilterField } from "@/components/patterns/filter-bar";
+import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
+import { Input } from "@/components/ui/input";
+import { Notice } from "@/components/ui/notice";
 import { PageHeader } from "@/components/ui/page";
+import { Select } from "@/components/ui/select";
 import {
   prioritySchema,
   taskStatusSchema,
@@ -8,10 +14,10 @@ import {
 import { label } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import * as Popover from "@radix-ui/react-popover";
+import { X } from "lucide-react";
 import { type ReactNode } from "react";
 import { useListAnalyticsFilterOptionsQuery } from "../hooks/use-analytics-queries";
 import type { useAnalyticsScope } from "../hooks/use-analytics-scope";
-import { AnalyticsTabs } from "./analytics-tabs";
 
 export function AnalyticsFrame({
   title,
@@ -30,7 +36,6 @@ export function AnalyticsFrame({
     <>
       <PageHeader
         title={title}
-        navigation={<AnalyticsTabs suffix={scope.suffix} />}
         description={
           scope.parsed.success &&
           `${scope.query.from.split("-").reverse().join("/")} – ${scope.query.to.split("-").reverse().join("/")}`
@@ -38,54 +43,60 @@ export function AnalyticsFrame({
         actions={
           <Popover.Root>
             <Popover.Trigger asChild>
-              <button
-                type="button"
-                className="filter-button"
-                aria-label="Bộ lọc"
-              >
+              <Button aria-label="Bộ lọc">
                 Bộ lọc{" "}
                 {filterCount > 0 && (
-                  <span className="filter-count" aria-hidden="true">
+                  <span
+                    className="rounded-full bg-action px-1.5 text-xs font-semibold text-white"
+                    aria-hidden="true"
+                  >
                     {filterCount}
                   </span>
                 )}
-              </button>
+              </Button>
             </Popover.Trigger>
             <Popover.Portal>
               <Popover.Content
-                className="analytics-filter-popover"
+                className="z-70 w-[min(420px,calc(100vw-32px))] rounded-lg border border-line bg-surface p-3.5 shadow-overlay"
                 align="end"
                 sideOffset={8}
                 collisionPadding={16}
                 aria-label="Bộ lọc phân tích"
               >
-                <div className="analytics-filter-heading">
-                  <h2>Bộ lọc</h2>
-                  <Popover.Close aria-label="Đóng bộ lọc">×</Popover.Close>
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="m-0 text-heading-sm font-semibold text-fg">
+                    Bộ lọc
+                  </h2>
+                  <Popover.Close asChild>
+                    <IconButton label="Đóng bộ lọc">
+                      <X className="size-4" aria-hidden="true" />
+                    </IconButton>
+                  </Popover.Close>
                 </div>
-                <div className="analytics-filter-fields">
+                <div className="grid gap-3 sm:grid-cols-2">
                   <LookupFilter kind="UNIT" name="unitId" label="Đơn vị" />
                   <LookupFilter kind="PROJECT" name="projectId" label="Dự án" />
-                  <label>
-                    Từ ngày
-                    <input
+                  <FilterField label="Từ ngày">
+                    <Input
                       type="date"
                       value={scope.query.from}
                       onChange={(e) => f.set("from", e.target.value)}
                     />
-                  </label>
-                  <label>
-                    Đến ngày
-                    <input
+                  </FilterField>
+                  <FilterField label="Đến ngày">
+                    <Input
                       type="date"
                       value={scope.query.to}
                       onChange={(e) => f.set("to", e.target.value)}
                     />
-                  </label>
+                  </FilterField>
                 </div>
-                <details className="analytics-more-filters">
-                  <summary>Bộ lọc khác</summary>
-                  <div className="analytics-filter-fields">
+                <details className="mt-3 border-t border-line pt-2">
+                  <summary className="cursor-pointer py-1 text-sm font-medium text-selected-fg">
+                    Bộ lọc khác
+                  </summary>
+                  <div className="mt-2" />
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <LookupFilter kind="TEAM" name="teamId" label="Nhóm" />
                     <LookupFilter
                       kind="PERSON"
@@ -109,9 +120,8 @@ export function AnalyticsFrame({
                         values: prioritySchema.options,
                       },
                     ].map((field) => (
-                      <label key={field.name}>
-                        {field.title}
-                        <select
+                      <FilterField key={field.name} label={field.title}>
+                        <Select
                           value={f.get(field.name)}
                           onChange={(e) => f.set(field.name, e.target.value)}
                         >
@@ -121,14 +131,13 @@ export function AnalyticsFrame({
                               {label(v)}
                             </option>
                           ))}
-                        </select>
-                      </label>
+                        </Select>
+                      </FilterField>
                     ))}
                   </div>
                 </details>
-                <div className="analytics-filter-actions">
-                  <button
-                    type="button"
+                <div className="mt-3 flex justify-end gap-2 border-t border-line pt-3">
+                  <Button
                     onClick={() =>
                       f.setMany({
                         unitId: "",
@@ -144,11 +153,9 @@ export function AnalyticsFrame({
                     }
                   >
                     Đặt lại
-                  </button>
+                  </Button>
                   <Popover.Close asChild>
-                    <button type="button" className="primary">
-                      Xong
-                    </button>
+                    <Button variant="primary">Xong</Button>
                   </Popover.Close>
                 </div>
               </Popover.Content>
@@ -157,9 +164,9 @@ export function AnalyticsFrame({
         }
       />
       {!scope.parsed.success ? (
-        <p className="notice error">
+        <Notice tone="danger">
           Bộ lọc không hợp lệ. Kiểm tra lại ngày và phạm vi đã chọn.
-        </p>
+        </Notice>
       ) : (
         children
       )}
@@ -187,9 +194,8 @@ function LookupFilter({
     pageSize: 100,
   });
   return (
-    <label>
-      {caption}
-      <select
+    <FilterField label={caption}>
+      <Select
         aria-label={caption}
         value={f.get(name)}
         onChange={(e) => {
@@ -219,10 +225,10 @@ function LookupFilter({
             {i.name}
           </option>
         ))}
-      </select>
+      </Select>
       {query.isError && (
-        <span className="field-error">Không tải được lựa chọn.</span>
+        <span className="text-sm text-danger-fg">Không tải được lựa chọn.</span>
       )}
-    </label>
+    </FilterField>
   );
 }

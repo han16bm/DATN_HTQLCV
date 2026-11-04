@@ -1,6 +1,7 @@
 "use client";
 
 import { Avatar } from "@/components/ui/avatar";
+import { buttonClass } from "@/components/ui/button";
 import { UserRound } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { avatarSchema } from "../schemas/profile.schema";
@@ -29,16 +30,19 @@ export function AvatarEditor({
   );
   return (
     <>
-      <div className="profile-avatar-editor">
+      <div className="grid justify-items-center gap-4 p-2 text-center">
         <Avatar
           name={user.displayName}
           src={user.avatarUrl}
           large
           fallback={<UserRound size={56} strokeWidth={1.5} />}
         />
-        <label className="avatar-picker">
+        <label
+          className={`${buttonClass()} relative h-10 cursor-pointer px-5 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus`}
+        >
           Chọn ảnh
           <input
+            className="sr-only"
             type="file"
             accept="image/jpeg,image/png,image/webp"
             aria-invalid={Boolean(error)}
@@ -56,11 +60,11 @@ export function AvatarEditor({
             }}
           />
         </label>
-        <p className="small muted" id={`${id}-hint`}>
+        <p className="m-0 text-xs text-fg-subtle" id={`${id}-hint`}>
           Ảnh JPG, PNG hoặc WebP, tối đa 2 MB.
         </p>
         {error && (
-          <p className="field-error" role="alert" id={`${id}-error`}>
+          <p className="text-sm text-danger-fg" role="alert" id={`${id}-error`}>
             {error}
           </p>
         )}

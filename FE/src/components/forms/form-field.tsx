@@ -1,5 +1,10 @@
 "use client";
 
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/cn";
+import { CircleAlert } from "lucide-react";
 import {
   useId,
   useLayoutEffect,
@@ -18,17 +23,31 @@ type FieldProps = {
   width?: "short" | "medium" | "long" | "full";
 };
 
-function Field({
+// Số cột (trên lưới 12 cột của Form) theo bề rộng của chính biểu mẫu, không theo
+// màn hình: hộp thoại hẹp cũng tự xếp một cột.
+const columns = {
+  short:
+    "col-span-12 @min-[420px]/form:col-span-6 @min-[600px]/form:col-span-4",
+  medium: "col-span-12 @min-[420px]/form:col-span-6",
+  long: "col-span-12 @min-[600px]/form:col-span-8",
+  full: "col-span-12",
+};
+
+// Nhãn thật ở trên ô; lỗi ngay dưới ô và thay chỗ của gợi ý, kèm biểu tượng để
+// không chỉ dựa vào màu.
+export function Field({
   label,
   error,
   hint,
   width = "medium",
   required,
   select,
+  className,
   children,
 }: FieldProps & {
   required?: boolean;
   select?: boolean;
+  className?: string;
   children: (props: {
     id: string;
     "aria-invalid": boolean;
@@ -46,21 +65,35 @@ function Field({
   else if (message?.startsWith("Phải là "))
     message = `${label} phải là ${message.slice(8)}`;
   return (
-    <div className={`form-field field-${width}`}>
-      <label htmlFor={id}>
+    <div className={cn("min-w-0", columns[width], className)}>
+      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-fg">
         {label}
         {required && " *"}
       </label>
       {children({
         id,
         "aria-invalid": Boolean(error),
-        "aria-describedby": error ? `${id}-error` : undefined,
+        "aria-describedby": error
+          ? `${id}-error`
+          : hint
+            ? `${id}-hint`
+            : undefined,
       })}
-      {hint && <p className="small muted">{hint}</p>}
-      {message && (
-        <span id={`${id}-error`} className="field-error" role="alert">
+      {message ? (
+        <p
+          id={`${id}-error`}
+          role="alert"
+          className="mt-1.5 mb-0 flex items-start gap-1.5 text-sm text-danger-fg"
+        >
+          <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           {message}
-        </span>
+        </p>
+      ) : (
+        hint && (
+          <p id={`${id}-hint`} className="mt-1.5 mb-0 text-xs text-fg-subtle">
+            {hint}
+          </p>
+        )
       )}
     </div>
   );
@@ -99,7 +132,17 @@ export function FormInput({
       required={props.required}
       select={props.type === "date" || props.type === "datetime-local"}
     >
-      {(a11y) => <input {...props} {...a11y} />}
+      {(a11y) => (
+        <Input
+          {...props}
+          {...a11y}
+          size="form"
+          className={cn(
+            props.type === "number" && "tabular-nums",
+            props.className,
+          )}
+        />
+      )}
     </Field>
   );
 }
@@ -125,14 +168,14 @@ export function FormSelect({
       select
     >
       {(a11y) => (
-        <select {...props} {...a11y}>
+        <Select {...props} {...a11y} size="form">
           <option value="">Chọn {label.toLocaleLowerCase("vi")}</option>
           {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
-        </select>
+        </Select>
       )}
     </Field>
   );
@@ -177,7 +220,7 @@ export function FormTextarea({
       required={props.required}
     >
       {(a11y) => (
-        <textarea
+        <Textarea
           {...props}
           {...a11y}
           rows={2}

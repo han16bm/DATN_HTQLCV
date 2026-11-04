@@ -1,7 +1,9 @@
 "use client";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import { Badge, DataTable, DetailLink } from "@/components/ui/page";
+import { DetailLink } from "@/components/ui/page";
+import { StatusLozenge } from "@/components/ui/lozenge";
+import { DataTable } from "@/components/patterns/data-table";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { dateTime } from "@/lib/format";
@@ -14,6 +16,7 @@ export function SubmissionsPage({ taskId }: { taskId: string }) {
   if (!q.data) return <PageSkeleton variant="table" />;
   return (
     <DataTable
+      loading={q.isFetching}
       title="Các lần nộp kết quả"
       pagination={{
         ...q.data.pagination,
@@ -32,7 +35,7 @@ export function SubmissionsPage({ taskId }: { taskId: string }) {
         `Lần ${s.sequence}`,
         <UserBadge key="submitter" name={s.submitter.displayName} />,
         dateTime(s.submittedAt),
-        <Badge key="state" value={s.status} />,
+        <StatusLozenge key="state" value={s.status} />,
         <DetailLink
           key="detail"
           href={`/tasks/${taskId}/submissions/${s.id}`}

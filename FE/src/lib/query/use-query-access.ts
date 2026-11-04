@@ -19,10 +19,9 @@ export function useAccessErrorHandler() {
     [client, viewerId, refresh],
   );
 }
-export function useQueryAccess<T>(
-  query: UseQueryResult<T, Error>,
-  feature: string,
-) {
+export function useQueryAccess<
+  Q extends Pick<UseQueryResult<unknown, Error>, "data" | "error">,
+>(query: Q, feature: string) {
   const client = useQueryClient();
   const { session } = useSession();
   const handleError = useAccessErrorHandler();

@@ -1,7 +1,10 @@
 "use client";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import { Pagination, StatusField } from "@/components/ui/page";
+import { FilterField } from "@/components/patterns/filter-bar";
+import { Select } from "@/components/ui/select";
+import { StatusField } from "@/components/ui/page";
+import { Pagination } from "@/components/ui/pagination";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { AttachmentViewer } from "@/features/attachments/components/attachment-viewer";
 import {
@@ -30,15 +33,17 @@ export function TaskReportPreview({
   const s = query.data;
   const rows = list.data?.items ?? (s ? [s] : []);
   return (
-    <section className="report-preview">
-      <div className="panel-heading">
-        <h2>Báo cáo kết quả</h2>
+    <section className="grid min-w-0 gap-2.5">
+      <div className="flex min-h-8 flex-wrap items-center justify-between gap-2">
+        <h2 className="m-0 text-heading-sm font-semibold text-fg">
+          Báo cáo kết quả
+        </h2>
         {s && <StatusField value={s.status} />}
       </div>
-      <div className="report-picker">
-        <label className="viewer-select">
-          Lần nộp
-          <select
+      <div className="flex flex-wrap items-end gap-3">
+        <FilterField label="Lần nộp">
+          <Select
+            fit
             value={selected}
             disabled={!rows.length || list.isFetching}
             onChange={(event) => setPicked(event.target.value)}
@@ -49,11 +54,11 @@ export function TaskReportPreview({
                 {row.id === submissionId ? " (mới nhất)" : ""}
               </option>
             ))}
-          </select>
-        </label>
-        <label className="viewer-select">
-          Sắp xếp
-          <select
+          </Select>
+        </FilterField>
+        <FilterField label="Sắp xếp">
+          <Select
+            fit
             value={sort}
             onChange={(event) => {
               setSort(
@@ -65,8 +70,8 @@ export function TaskReportPreview({
           >
             <option value="-sequence">Mới nhất trước</option>
             <option value="sequence">Cũ nhất trước</option>
-          </select>
-        </label>
+          </Select>
+        </FilterField>
       </div>
       {list.isError && (
         <QueryErrorState error={list.error} retry={list.refetch} />
@@ -84,6 +89,7 @@ export function TaskReportPreview({
       )}
       {list.data && (
         <Pagination
+          className="rounded-lg border border-line"
           {...list.data.pagination}
           onPage={(value) => {
             setPage(value);

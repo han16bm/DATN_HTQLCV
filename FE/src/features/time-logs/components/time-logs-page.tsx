@@ -1,7 +1,9 @@
 "use client";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import { Badge, DataTable, PageHeader } from "@/components/ui/page";
+import { PageHeader } from "@/components/ui/page";
+import { StatusLozenge } from "@/components/ui/lozenge";
+import { DataTable } from "@/components/patterns/data-table";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
@@ -35,6 +37,7 @@ export function TimeLogsPage({ taskId }: { taskId: string }) {
         <PageSkeleton variant="table" />
       ) : (
         <DataTable
+          loading={query.isFetching}
           pagination={{
             ...query.data.pagination,
             onPage: (p) => filters.set("page", String(p)),
@@ -56,11 +59,13 @@ export function TimeLogsPage({ taskId }: { taskId: string }) {
             <div key="description">
               {l.description}
               {l.voidReason && (
-                <p className="small muted">Lý do loại: {l.voidReason}</p>
+                <p className="text-xs text-fg-subtle">
+                  Lý do loại: {l.voidReason}
+                </p>
               )}
             </div>,
             l.status === "VOID" ? (
-              <Badge key="state" value="VOID" />
+              <StatusLozenge key="state" value="VOID" />
             ) : (
               "Còn hiệu lực"
             ),
@@ -69,7 +74,7 @@ export function TimeLogsPage({ taskId }: { taskId: string }) {
             l.status === "ACTIVE" ? (
               <Link
                 key="edit"
-                className="text-link"
+                className="font-medium text-selected-fg underline-offset-2 hover:underline"
                 href={`/tasks/${taskId}?timeLogId=${l.id}&logPage=${filters.page}#time-log`}
               >
                 Sửa / loại khỏi tổng

@@ -31,17 +31,17 @@ function ReviewContent({ task }: { task: TaskDto }) {
     query.data.submittedBy === session?.user.id
   )
     return (
-      <p className="muted">
+      <p className="text-fg-subtle">
         Lần nộp này không thể nghiệm thu. Hãy kiểm tra lại kết quả đã nộp.
       </p>
     );
   return (
     <>
-      <p className="metadata person-meta">
+      <p className="mb-3 text-xs text-fg-subtle flex flex-wrap items-center gap-x-3 gap-y-2">
         <span>Lần nộp {query.data.sequence}</span>
         <UserBadge name={query.data.submitter.displayName} />
       </p>
-      <p className="preserve-lines section-gap">{query.data.summary}</p>
+      <p className="whitespace-pre-wrap mt-4">{query.data.summary}</p>
       <ReviewForm
         key={query.data.id}
         submission={query.data}

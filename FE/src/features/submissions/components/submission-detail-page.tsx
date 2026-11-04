@@ -1,7 +1,14 @@
 "use client";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import { StatusField, PageHeader, Panel } from "@/components/ui/page";
+import { KeyValue, KeyValueList } from "@/components/patterns/key-value";
+import { SplitLayout } from "@/components/patterns/split-layout";
+import {
+  PageHeader,
+  Panel,
+  StatusField,
+  linkClass,
+} from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { AttachmentViewer } from "@/features/attachments/components/attachment-viewer";
@@ -35,71 +42,69 @@ export function SubmissionDetailPage({
         level={2}
         status={<StatusField value={s.status} />}
       />
-      <div className="issue-layout">
-        <div className="issue-main">
-          <Panel title="Kết quả đã nộp">
-            <p className="metadata person-meta">
-              <UserBadge name={s.submitter.displayName} />
-              <time dateTime={s.submittedAt}>{dateTime(s.submittedAt)}</time>
-            </p>
-            <p className="preserve-lines">{s.summary}</p>
-            {s.links.map((url, i) => (
-              <p key={i}>
-                <a
-                  className="text-link"
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {url}
-                </a>
+      <SplitLayout
+        aside={
+          <aside aria-label="Thông tin nghiệm thu" className="grid gap-3">
+            <Panel title="Tiêu chí nghiệm thu">
+              <p className="m-0 text-sm whitespace-pre-wrap text-fg">
+                {t.acceptanceCriteria}
               </p>
-            ))}
-          </Panel>
-          <AttachmentViewer attachmentIds={s.attachmentIds} />
-          {s.reviewedAt && (
-            <Panel title="Kết quả nghiệm thu">
-              <p className="person-meta">
-                {s.reviewer && <UserBadge name={s.reviewer.displayName} />}
-                <time dateTime={s.reviewedAt}>{dateTime(s.reviewedAt)}</time>
-              </p>
-              <p className="preserve-lines">
-                {s.reviewComment || "Không có nhận xét bổ sung."}
-              </p>
-              {s.requestedChanges && (
-                <p className="preserve-lines">
-                  Nội dung cần sửa: {s.requestedChanges}
-                </p>
-              )}
             </Panel>
-          )}
-        </div>
-        <aside className="issue-side" aria-label="Thông tin nghiệm thu">
-          <Panel title="Tiêu chí nghiệm thu">
-            <p className="preserve-lines">{t.acceptanceCriteria}</p>
-          </Panel>
-          <Panel title="Thông tin lần nộp">
-            <dl className="record-details">
-              <div>
-                <dt>Hạn tại lúc nộp</dt>
-                <dd>{dateTime(s.dueAtSnapshot)}</dd>
-              </div>
-              <div>
-                <dt>Tình trạng nộp</dt>
-                <dd>
+            <Panel title="Thông tin lần nộp">
+              <KeyValueList>
+                <KeyValue label="Hạn tại lúc nộp">
+                  {dateTime(s.dueAtSnapshot)}
+                </KeyValue>
+                <KeyValue label="Tình trạng nộp">
                   {s.submittedAt > s.dueAtSnapshot
                     ? "Nộp sau hạn"
                     : "Nộp trong hạn"}
-                </dd>
-              </div>
-              <div>
-                <dt>Giờ công tại lúc nộp</dt>
-                <dd>{hours(s.actualMinutesSnapshot)}</dd>
-              </div>
-            </dl>
+                </KeyValue>
+                <KeyValue label="Giờ công tại lúc nộp">
+                  {hours(s.actualMinutesSnapshot)}
+                </KeyValue>
+              </KeyValueList>
+            </Panel>
+          </aside>
+        }
+      >
+        <Panel title="Kết quả đã nộp">
+          <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-fg-subtle">
+            <UserBadge name={s.submitter.displayName} />
+            <time dateTime={s.submittedAt}>{dateTime(s.submittedAt)}</time>
+          </p>
+          <p className="m-0 text-sm whitespace-pre-wrap text-fg">{s.summary}</p>
+          {s.links.map((url, i) => (
+            <p key={i} className="m-0 text-sm">
+              <a
+                className={linkClass}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {url}
+              </a>
+            </p>
+          ))}
+        </Panel>
+        <AttachmentViewer attachmentIds={s.attachmentIds} />
+        {s.reviewedAt && (
+          <Panel title="Kết quả nghiệm thu">
+            <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-fg-subtle">
+              {s.reviewer && <UserBadge name={s.reviewer.displayName} />}
+              <time dateTime={s.reviewedAt}>{dateTime(s.reviewedAt)}</time>
+            </p>
+            <p className="m-0 text-sm whitespace-pre-wrap text-fg">
+              {s.reviewComment || "Không có nhận xét bổ sung."}
+            </p>
+            {s.requestedChanges && (
+              <p className="m-0 text-sm whitespace-pre-wrap text-fg">
+                Nội dung cần sửa: {s.requestedChanges}
+              </p>
+            )}
           </Panel>
-        </aside>
-      </div>
+        )}
+      </SplitLayout>
     </>
   );
 }

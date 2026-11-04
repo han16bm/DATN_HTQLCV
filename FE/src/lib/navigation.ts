@@ -1,30 +1,140 @@
+import type { SessionDto } from "@/features/auth/types/auth.types";
 import {
+  BellRing,
   Building2,
   ChartNoAxesCombined,
   CircleCheckBig,
   ClipboardList,
   FileChartColumn,
+  FileText,
   FolderKanban,
+  Gauge,
   House,
+  Layers,
+  ListFilter,
+  TriangleAlert,
+  UserRound,
   Users,
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
 
 export type Area = "workspace" | "admin";
+export type NavChild = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  active: boolean;
+};
+// Mục có mục con hiện thành menu thả xuống ngay trên nút của nó (như Jira); mục con
+// suy ra từ trang đang mở để giữ phạm vi lọc khi chuyển giữa các mục.
+export type NavContext = {
+  userId: string;
+  role: SessionDto["user"]["systemRole"];
+  pathname: string;
+  search: URLSearchParams;
+};
 export type NavItem = {
   href: string;
   label: string;
   icon: LucideIcon;
   match: RegExp;
+  placement?: "sidebar" | "header";
+  children?: (context: NavContext) => NavChild[];
 };
+
+const analyticsPaths = [
+  "/dashboard",
+  "/analytics/risks",
+  "/analytics/workload",
+  "/analytics/bottlenecks",
+  "/analytics/summary",
+];
+// Các màn phân tích dùng chung phạm vi lọc trên URL; cảnh báo có bộ lọc riêng.
+function analyticsChildren({ pathname, search }: NavContext): NavChild[] {
+  const scope =
+    analyticsPaths.includes(pathname) && search.size ? `?${search}` : "";
+  return [
+    { href: "/dashboard", label: "Tổng quan", icon: ChartNoAxesCombined },
+    { href: "/analytics/risks", label: "Nguy cơ trễ hạn", icon: TriangleAlert },
+    { href: "/analytics/workload", label: "Khối lượng", icon: Gauge },
+    { href: "/analytics/bottlenecks", label: "Điểm nghẽn", icon: Layers },
+    { href: "/analytics/summary", label: "Tổng hợp", icon: FileText },
+  ]
+    .map((item) => ({
+      ...item,
+      active: pathname === item.href,
+      href: item.href + scope,
+    }))
+    .concat({
+      href: "/alerts",
+      label: "Cảnh báo",
+      icon: BellRing,
+      active: pathname === "/alerts",
+    });
+}
+
+// Lối tắt lọc của danh sách công việc: giữ dự án, tìm kiếm và chế độ xem đang chọn,
+// bỏ trang; chọn lại mục đang bật thì tắt bộ lọc đó.
+function taskChildren({
+  userId,
+  role,
+  pathname,
+  search,
+}: NavContext): NavChild[] {
+  const here = pathname === "/tasks";
+  const base = new URLSearchParams(here ? search : undefined);
+  const mine = here && base.get("assigneeId") === userId;
+  const overdue = here && base.get("overdue") === "true";
+  const href = (change: (next: URLSearchParams) => void) => {
+    const next = new URLSearchParams(base);
+    next.delete("page");
+    change(next);
+    return `/tasks${next.size ? `?${next}` : ""}`;
+  };
+  return [
+    {
+      href: href((next) => {
+        next.delete("assigneeId");
+        next.delete("overdue");
+        next.delete("status");
+      }),
+      label: "Tất cả",
+      icon: ClipboardList,
+      active: here && !base.get("assigneeId") && !overdue,
+    },
+    ...(role === "EMPLOYEE"
+      ? []
+      : [
+          {
+            href: href((next) => {
+              if (mine) next.delete("assigneeId");
+              else next.set("assigneeId", userId);
+            }),
+            label: "Việc của tôi",
+            icon: UserRound,
+            active: mine,
+          },
+        ]),
+    {
+      href: href((next) => {
+        next.delete("status");
+        if (overdue) next.delete("overdue");
+        else next.set("overdue", "true");
+      }),
+      label: "Việc quá hạn",
+      icon: ListFilter,
+      active: overdue,
+    },
+  ];
+}
 
 // Hai khu vực có menu riêng; quyền mở từng mục do canVisit (lib/auth/access).
 export const navigation: Record<Area, NavItem[]> = {
   workspace: [
     {
       href: "/workspace",
-      label: "Công việc của tôi",
+      label: "Tổng quan",
       icon: House,
       match: /^\/workspace/,
     },
@@ -39,10 +149,12 @@ export const navigation: Record<Area, NavItem[]> = {
       label: "Công việc",
       icon: ClipboardList,
       match: /^\/tasks(?:\/|$)/,
+      children: taskChildren,
     },
     {
       href: "/reviews",
       label: "Nghiệm thu",
+      placement: "header",
       icon: CircleCheckBig,
       match: /^\/reviews(?:\/|$)/,
     },
@@ -55,8 +167,10 @@ export const navigation: Record<Area, NavItem[]> = {
     {
       href: "/dashboard",
       label: "Phân tích",
+      placement: "header",
       icon: ChartNoAxesCombined,
       match: /^\/(?:dashboard|analytics|alerts)(?:\/|$)/,
+      children: analyticsChildren,
     },
   ],
   admin: [
@@ -104,6 +218,18 @@ const lists = new Set([
 ]);
 export const listRoute = (path: string) =>
   lists.has(path) || /^\/projects\/[^/]+\/tasks$/.test(path);
+
+// Dự án đang xem để bộ chọn dự án hiển thị: ID trong /projects/:id, hoặc dự án
+// cha của công việc đang mở (tên công việc đã đăng ký kèm projectId).
+export function currentProjectId(
+  pathname: string,
+  entity: (kind: string, id: string) => { parentId?: string } | undefined,
+) {
+  const project = /^\/projects\/([^/]+)/.exec(pathname);
+  if (project) return project[1] === "new" ? undefined : d(project[1]);
+  const task = /^\/tasks\/([^/]+)/.exec(pathname);
+  return task ? entity("task", d(task[1]))?.parentId : undefined;
+}
 
 // Đích sau đăng nhập chỉ nhận đường dẫn trong ứng dụng, tránh chuyển hướng ra ngoài.
 export function safeNext(value: string | null) {

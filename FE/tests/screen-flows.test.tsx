@@ -2,7 +2,7 @@
 import { AdminShell } from "@/components/layout/admin-shell";
 import { WorkspaceShell } from "@/components/layout/workspace-shell";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { DataTable } from "@/components/ui/page";
+import { DataTable } from "@/components/patterns/data-table";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { ReportsPage } from "@/features/reports/components/reports-page";
 import { UsersPage } from "@/features/users/components/users-page";
@@ -52,7 +52,7 @@ import { DashboardPage } from "@/features/analytics/components/dashboard-page";
 import { ProjectShell } from "@/features/projects/components/project-shell";
 import { ProjectDetailPage } from "@/features/projects/components/project-detail-page";
 import { ProjectEditorPage } from "@/features/projects/components/project-editor-page";
-import { WorkspaceOverview } from "@/features/projects/components/workspace-overview";
+import { TodayPage } from "@/features/tasks/components/today-page";
 import {
   useGetTaskQuery,
   useListTasksQuery,
@@ -171,15 +171,23 @@ it("shows loading feedback before listing actual start dates from the task respo
   const session = await login("minh");
   const result = await tasksService.listTasks();
   vi.stubEnv("NEXT_PUBLIC_MSW_DELAY", "80");
-  show(
+  const client = show(
     <WorkspaceShell>
       <TaskListPage />
     </WorkspaceShell>,
     session,
   );
   expect(screen.getByRole("status", { name: "Đang tải dữ liệu" })).toBeTruthy();
-  await screen.findByRole("status", { name: "Đang cập nhật dữ liệu" });
-  await screen.findByRole("columnheader", { name: "Ngày bắt đầu" });
+  const header = screen
+    .getByRole("button", { name: "Mở menu tài khoản" })
+    .closest("header")!;
+  expect(within(header).queryByRole("status")).toBeNull();
+  // Tiêu đề cột hiện ngay cùng khung xương; dữ liệu chỉ có sau khi tải xong.
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("status", { name: "Đang tải dữ liệu" }),
+    ).toBeNull(),
+  );
   const table = screen.getByRole("table");
   const column = within(table)
     .getAllByRole("columnheader")
@@ -194,6 +202,25 @@ it("shows loading feedback before listing actual start dates from the task respo
     );
   }
   expect(screen.queryByRole("status", { name: "Đang tải dữ liệu" })).toBeNull();
+  let refresh!: Promise<void>;
+  act(() => {
+    refresh = client.refetchQueries({
+      queryKey: tasksKeys.viewer(session.user.id),
+    });
+  });
+  const busy = await screen.findByRole("status", {
+    name: "Đang cập nhật bảng",
+  });
+  expect(screen.getByRole("main").contains(busy)).toBe(true);
+  expect(within(header).queryByRole("status")).toBeNull();
+  await act(async () => {
+    await refresh;
+  });
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("status", { name: "Đang cập nhật bảng" }),
+    ).toBeNull(),
+  );
 });
 it("retries a failed HTTP read, shows pending feedback, and replaces the error with recovered data", async () => {
   const session = await login("lan");
@@ -646,60 +673,84 @@ it("changes the password in its own profile section and keeps credentials out of
       .user.id,
   ).toBe(session.user.id);
 });
-it.each([
-  ["lan", 2],
-  ["minh", 3],
-] as const)(
-  "shows personal overview counts and relevant cards for %s",
-  async (username, count) => {
+it.each(["lan", "minh"] as const)(
+  "lists open work in one table with quick actions in a menu and a side rail for %s",
+  async (username) => {
+    const user = userEvent.setup();
     const session = await login(username);
-    const expected = await tasksService.listTasks({
+    const mine = await tasksService.listTasks({
       assigneeId: session.user.id,
-      overdue: true,
-      pageSize: 1,
+      pageSize: 100,
     });
-    show(
-      <WorkspaceOverview>
-        <TaskListPage personal />
-      </WorkspaceOverview>,
-      session,
+    const open = mine.items.filter((t) =>
+      ["NEW", "TODO", "IN_PROGRESS", "PENDING_REVIEW"].includes(t.status),
     );
-    const stats = screen.getByRole("region", { name: "Số liệu cá nhân" });
-    expect(within(stats).getAllByRole("link")).toHaveLength(count);
-    const overdue = within(stats).getByRole("link", {
-      name: /^Công việc quá hạn/,
+    show(<TodayPage />, session);
+    const list = await screen.findByRole("region", { name: "Việc của tôi" });
+    const chips = within(list).getByRole("group", {
+      name: "Lọc theo mức cần làm",
     });
-    await within(overdue).findByText(String(expected.pagination.total));
-    expect(overdue.getAttribute("href")).toBe(
-      `/tasks?overdue=true&assigneeId=${session.user.id}`,
-    );
     expect(
-      Boolean(within(stats).queryByRole("link", { name: /^Chờ nghiệm thu/ })),
+      within(chips).getByRole("button", { name: /^Tất cả/ }).textContent,
+    ).toContain(String(open.length));
+    // Chỉ một bảng, không chia theo trạng thái; mỗi việc một hàng.
+    if (open.length === 0)
+      expect(
+        within(list).getByText("Bạn đã xử lý hết công việc đang mở"),
+      ).toBeTruthy();
+    else {
+      const table = await within(list).findByRole("table");
+      expect(within(list).getAllByRole("table")).toHaveLength(1);
+      expect(within(table).getAllByRole("row")).toHaveLength(open.length + 1);
+    }
+    const quick = [
+      ["IN_PROGRESS", "Nộp kết quả", "#submit"],
+      ["TODO", "Bắt đầu", "#execution"],
+    ] as const;
+    for (const task of open) {
+      const link = within(list).getByRole("link", { name: task.title });
+      expect(link.getAttribute("href")).toBe(`/tasks/${task.id}`);
+      // Thao tác nhanh nằm trong menu thả xuống của hàng, không phải nút rải rác.
+      const entry = quick.find(([status]) => status === task.status);
+      await user.click(
+        within(list).getByRole("button", { name: `Thao tác: ${task.title}` }),
+      );
+      const menu = await screen.findByRole("menu");
+      if (entry)
+        expect(
+          within(menu)
+            .getByRole("menuitem", { name: entry[1] })
+            .getAttribute("href"),
+        ).toBe(`/tasks/${task.id}${entry[2]}`);
+      expect(
+        within(menu)
+          .getByRole("menuitem", { name: "Xem chi tiết" })
+          .getAttribute("href"),
+      ).toBe(`/tasks/${task.id}`);
+      await user.keyboard("{Escape}");
+      await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+    }
+    const rail = screen.getByRole("complementary", { name: "Cần chú ý" });
+    expect(
+      within(rail).getByRole("region", { name: "Báo cáo nháp" }),
+    ).toBeTruthy();
+    expect(
+      Boolean(within(rail).queryByRole("region", { name: "Chờ nghiệm thu" })),
     ).toBe(username === "minh");
-    const draft = within(stats).getByRole("link", { name: /^Báo cáo nháp/ });
-    expect(draft.getAttribute("href")).toContain(`authorId=${session.user.id}`);
-    const recent = screen.getByRole("region", { name: "Dự án của tôi" });
+    const projects = within(rail).getByRole("region", {
+      name: "Dự án của tôi",
+    });
     expect(
       (
-        await within(recent).findByRole("link", {
+        await within(projects).findByRole("link", {
           name: /Cổng quản lý nội bộ/,
         })
       ).getAttribute("href"),
     ).toBe("/projects/p-main");
-    const filters = screen.getByRole("region", { name: "Bộ lọc công việc" });
-    expect(
-      within(filters).getByRole("group", { name: "Chế độ xem" }),
-    ).toBeTruthy();
-    expect(
-      within(filters).queryByRole("button", { name: "Tạo công việc" }),
-    ).toBeNull();
     if (username === "minh") {
       const create = await screen.findByRole("button", {
         name: "Tạo công việc",
       });
-      expect(
-        within(create.closest("header")!).getByText("Dự án bạn quản lý"),
-      ).toBeTruthy();
       await userEvent.setup().click(create);
       const dialog = await screen.findByRole("dialog", {
         name: "Chọn dự án tạo công việc",
@@ -714,10 +765,26 @@ it.each([
       expect(
         screen.queryByRole("button", { name: "Tạo công việc" }),
       ).toBeNull();
-      expect(screen.queryByText("Dự án bạn quản lý")).toBeNull();
     }
   },
 );
+it("narrows the day's work to one urgency group from the chips", async () => {
+  const session = await login("lan");
+  show(<TodayPage />, session);
+  const list = await screen.findByRole("region", { name: "Việc của tôi" });
+  const user = userEvent.setup();
+  // Bảng chỉ có sau khi danh sách việc của tôi tải xong; lan có một việc đang làm
+  // và một việc sắp tới.
+  const table = await within(list).findByRole("table");
+  expect(within(table).getAllByRole("row")).toHaveLength(3);
+  const chip = within(list).getByRole("button", { name: /^Đang thực hiện/ });
+  await user.click(chip);
+  expect(chip.getAttribute("aria-pressed")).toBe("true");
+  expect(within(list).getAllByRole("table")).toHaveLength(1);
+  expect(within(table).getAllByRole("row")).toHaveLength(2);
+  await user.click(within(list).getByRole("button", { name: /^Tất cả/ }));
+  expect(within(table).getAllByRole("row")).toHaveLength(3);
+});
 it("prompts for the unit by name and blocks account creation when it is unselected", async () => {
   const session = await login("admin");
   const count = db.users.length;
@@ -738,18 +805,25 @@ it("switches compact analytics sections while preserving the selected scope", as
     "",
     "/analytics/risks?unitId=unit-product&projectId=p-main&from=2026-10-01&to=2026-10-23",
   );
-  show(<RisksPage />, session);
-  const tabs = screen.getByRole("navigation", { name: "Mục phân tích" });
-  const menu = within(tabs);
+  show(
+    <WorkspaceShell>
+      <RisksPage />
+    </WorkspaceShell>,
+    session,
+  );
+  await userEvent
+    .setup()
+    .click(screen.getByRole("button", { name: "Phân tích" }));
+  const menu = within(await screen.findByRole("menu"));
   expect(
     menu
-      .getByRole("link", { name: "Nguy cơ trễ hạn" })
+      .getByRole("menuitem", { name: "Nguy cơ trễ hạn" })
       .getAttribute("aria-current"),
   ).toBe("page");
   expect(screen.queryByRole("combobox", { name: "Mục phân tích" })).toBeNull();
   expect(screen.queryByRole("combobox", { name: "Đơn vị" })).toBeNull();
   const target = new URL(
-    menu.getByRole("link", { name: "Khối lượng" }).getAttribute("href")!,
+    menu.getByRole("menuitem", { name: "Khối lượng" }).getAttribute("href")!,
     location.origin,
   );
   expect(target.pathname).toBe("/analytics/workload");
@@ -760,7 +834,7 @@ it("switches compact analytics sections while preserving the selected scope", as
     to: "2026-10-23",
   });
   expect(
-    menu.getByRole("link", { name: "Cảnh báo" }).getAttribute("href"),
+    menu.getByRole("menuitem", { name: "Cảnh báo" }).getAttribute("href"),
   ).toBe("/alerts");
 });
 it("opens collapsed analytics filters, clears dependent selections, resets and returns focus after Escape", async () => {
@@ -817,7 +891,7 @@ it("keeps the table, title, empty state and pagination inside one shared card", 
   expect(within(card).getByRole("heading", { name: "Danh sách" })).toBeTruthy();
   const surface = screen
     .getByRole("table", { name: "Danh sách" })
-    .closest(".table-card")!;
+    .closest('[data-slot="card"]')!;
   expect(
     surface.contains(within(card).getByRole("heading", { name: "Danh sách" })),
   ).toBe(false);
@@ -910,7 +984,7 @@ it("shows review task titles from the queue response without fetching every task
     server.events.removeListener("request:start", observe);
   }
 });
-it("keeps the work menu flat, marks nested routes active and preserves links when the sidebar is collapsed", async () => {
+it("splits common and management functions and guards unsaved changes from both menus", async () => {
   const session = await login("minh");
   history.replaceState(null, "", "/projects/p-main/edit");
   show(
@@ -920,64 +994,64 @@ it("keeps the work menu flat, marks nested routes active and preserves links whe
     session,
   );
   const user = userEvent.setup();
-  const sidebar = screen.getByRole("complementary", {
-    name: "Thanh điều hướng",
-  });
+  const main = screen.getByRole("navigation", { name: "Điều hướng chính" });
+  expect(main.closest("aside")).toBeTruthy();
   expect(
-    within(sidebar)
-      .getByRole("link", { name: "Dự án" })
-      .getAttribute("aria-current"),
-  ).toBe("page");
-  expect(
-    within(sidebar)
+    within(main)
       .getAllByRole("link")
-      .map((link) => link.getAttribute("aria-label")),
-  ).toEqual([
-    "Công việc của tôi",
-    "Dự án",
-    "Công việc",
-    "Nghiệm thu",
-    "Báo cáo",
-    "Phân tích",
-  ]);
-  // Mục Công việc có lối tắt bộ lọc như mục Filters của Jira.
-  await user.click(
-    within(sidebar).getByRole("button", { name: "Mở rộng Công việc" }),
-  );
+      .map((link) => link.textContent),
+  ).toEqual(["Tổng quan", "Dự án", "Báo cáo"]);
+  const management = screen.getByRole("navigation", {
+    name: "Điều hướng quản lý",
+  });
+  expect(management.closest("header")).toBeTruthy();
   expect(
-    within(sidebar).getByRole("button", { name: "Việc của tôi" }),
+    within(management).getByRole("button", { name: "Phân tích" }),
   ).toBeTruthy();
   expect(
-    within(sidebar).getByRole("button", { name: "Việc quá hạn" }),
-  ).toBeTruthy();
-  await user.click(
-    screen.getByRole("button", { name: "Thu gọn thanh điều hướng" }),
-  );
-  expect(
-    screen.getByRole("button", { name: "Mở rộng thanh điều hướng" }),
-  ).toBeTruthy();
-  expect(within(sidebar).getByRole("link", { name: "Dự án" })).toBeTruthy();
+    within(management).queryByRole("button", { name: "Công việc" }),
+  ).toBeNull();
+  expect(screen.getByRole("button", { name: /^Dự án:/ })).toBeTruthy();
+  expect(within(main).getByRole("button", { name: "Công việc" })).toBeTruthy();
   act(() => useUI.getState().markDirty("navigation-test", true));
-  await user.click(within(sidebar).getByRole("link", { name: "Công việc" }));
+  await user.click(
+    within(management).getByRole("link", { name: "Nghiệm thu" }),
+  );
   const confirm = await screen.findByRole("alertdialog", {
     name: "Thay đổi chưa được lưu",
   });
-  expect(confirm.className).toBe("confirm-content");
   expect(document.activeElement).toBe(
     within(confirm).getByRole("button", { name: "Ở lại" }),
   );
   await user.click(within(confirm).getByRole("button", { name: "Ở lại" }));
   expect(useUI.getState().dirtyForms).toEqual(["navigation-test"]);
   expect(nav.push).not.toHaveBeenCalled();
-  await user.click(within(sidebar).getByRole("link", { name: "Công việc" }));
+  await user.click(within(main).getByRole("link", { name: "Báo cáo" }));
   await user.click(
     within(await screen.findByRole("alertdialog")).getByRole("button", {
       name: "Bỏ thay đổi",
     }),
   );
-  await waitFor(() => expect(nav.push).toHaveBeenCalledWith("/tasks"));
+  await waitFor(() => expect(nav.push).toHaveBeenCalledWith("/reports"));
   expect(useUI.getState().dirtyForms).toEqual([]);
-  expect(useUI.getState().sidebarCollapsed).toBe(true);
+  expect(useUI.getState().sidebarCollapsed).toBe(false);
+});
+it("marks the open section on the header with aria-current", async () => {
+  const session = await login("minh");
+  history.replaceState(null, "", "/reviews");
+  show(
+    <WorkspaceShell>
+      <p>Nghiệm thu</p>
+    </WorkspaceShell>,
+    session,
+  );
+  const main = screen.getByRole("navigation", { name: "Điều hướng quản lý" });
+  expect(
+    within(main)
+      .getAllByRole("link")
+      .filter((link) => link.getAttribute("aria-current") === "page")
+      .map((link) => link.textContent),
+  ).toEqual(["Nghiệm thu"]);
 });
 it("opens an accessible mobile menu, filters roles and restores focus after Escape", async () => {
   const session = await login("lan");
@@ -991,8 +1065,14 @@ it("opens an accessible mobile menu, filters roles and restores focus after Esca
   const trigger = screen.getByRole("button", { name: "Mở menu" });
   await user.click(trigger);
   const dialog = await screen.findByRole("dialog", { name: "Menu điều hướng" });
-  expect(within(dialog).getByRole("link", { name: "Công việc" })).toBeTruthy();
-  expect(within(dialog).queryByRole("link", { name: "Phân tích" })).toBeNull();
+  await user.click(within(dialog).getByRole("button", { name: "Công việc" }));
+  expect(within(dialog).getByRole("link", { name: "Tất cả" })).toBeTruthy();
+  expect(
+    within(dialog).queryByRole("link", { name: "Việc của tôi" }),
+  ).toBeNull();
+  expect(
+    within(dialog).queryByRole("button", { name: "Phân tích" }),
+  ).toBeNull();
   expect(within(dialog).queryByRole("link", { name: "Tài khoản" })).toBeNull();
   await user.keyboard("{Escape}");
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
@@ -1014,13 +1094,11 @@ it("keeps account actions in the avatar menu and shows the signed-in profile", a
     session,
   );
   const user = userEvent.setup();
-  const sidebar = screen.getByRole("complementary", {
-    name: "Thanh điều hướng",
-  });
-  expect(within(sidebar).queryByText("Đăng xuất")).toBeNull();
+  const main = screen.getByRole("navigation", { name: "Điều hướng chính" });
+  expect(within(main).queryByText("Đăng xuất")).toBeNull();
   // Quản trị không nằm trong menu làm việc; Admin chưa được cấp quyền phân tích.
-  expect(within(sidebar).queryByRole("link", { name: "Phân tích" })).toBeNull();
-  expect(within(sidebar).queryByRole("link", { name: "Tài khoản" })).toBeNull();
+  expect(within(main).queryByRole("button", { name: "Phân tích" })).toBeNull();
+  expect(within(main).queryByRole("link", { name: "Tài khoản" })).toBeNull();
   const email = screen.getByRole("textbox", { name: "Email" });
   expect(email).toHaveProperty("value", "admin@example.test");
   expect(email).toHaveProperty("readOnly", true);
@@ -1140,6 +1218,38 @@ it("marks project history as the active tab from the URL without a separate perm
   expect(menu.queryByRole("link", { name: "Bảng" })).toBeNull();
 });
 
+it.each([
+  { username: "lan", visible: false },
+  { username: "minh", visible: true },
+  { username: "admin", visible: true },
+])(
+  "shows the own-task filter only when useful for $username and preserves the list context",
+  async ({ username, visible }) => {
+    const session = await login(username);
+    history.replaceState(
+      null,
+      "",
+      "/tasks?projectId=p-main&q=API&view=board&page=2",
+    );
+    show(<TaskListPage />, session);
+    const filters = within(
+      screen.getByRole("region", { name: "Bộ lọc công việc" }),
+    );
+    const mine = filters.queryByRole("button", { name: "Việc của tôi" });
+    expect(Boolean(mine)).toBe(visible);
+    if (!mine) return;
+    await userEvent.setup().click(mine);
+    const target = new URL(nav.replace.mock.calls.at(-1)![0], location.href);
+    expect(target.pathname).toBe("/tasks");
+    expect(Object.fromEntries(target.searchParams)).toEqual({
+      projectId: "p-main",
+      q: "API",
+      view: "board",
+      assigneeId: session.user.id,
+    });
+  },
+);
+
 it("keeps creation in the project header and the view buttons with filters while preserving task filters", async () => {
   history.replaceState(
     null,
@@ -1162,7 +1272,8 @@ it("keeps creation in the project header and the view buttons with filters while
   expect(screen.getAllByRole("button", { name: "Tạo công việc" })).toHaveLength(
     1,
   );
-  expect(header.getByRole("navigation", { name: "Mục dự án" })).toBeTruthy();
+  // Thanh mục dự án nằm ở header toàn cục (hoặc dải tab trong trang khi màn hẹp).
+  expect(screen.getByRole("navigation", { name: "Mục dự án" })).toBeTruthy();
   expect(header.queryByRole("group", { name: "Chế độ xem" })).toBeNull();
   const filters = within(
     screen.getByRole("region", { name: "Bộ lọc công việc" }),
@@ -1349,9 +1460,11 @@ it("opens the latest review from the task header and shows its decision form imm
     name: "Quyết định nghiệm thu",
   });
   expect(review.closest("header")).toBeTruthy();
+  const progress = screen.getByRole("list", { name: "Tiến trình công việc" });
   expect(
-    within(review.closest("header")!).getByText("Trạng thái:"),
-  ).toBeTruthy();
+    progress.querySelector('[aria-current="step"]')?.textContent,
+  ).toContain("Chờ nghiệm thu");
+  expect(review.closest("header")!.contains(progress)).toBe(false);
   await userEvent.setup().click(review);
   const dialog = await screen.findByRole("dialog", {
     name: "Quyết định nghiệm thu",
@@ -1470,7 +1583,7 @@ it("renders translated task history and real before/after values without raw JSO
   });
   const row = event.closest("tr")!;
   expect(within(row).getByText("Nguyễn Minh")).toBeTruthy();
-  expect(row.querySelector(".avatar")).not.toBeNull();
+  expect(row.querySelector('span[aria-hidden="true"]')).not.toBeNull();
   expect(event.textContent).toBe("Chi tiết");
   expect(screen.getByRole("columnheader", { name: "Hành động" })).toBeTruthy();
   expect(screen.queryByRole("dialog")).toBeNull();
@@ -1658,7 +1771,7 @@ it("edits team members inside one card with a searchable selection box", async (
   show(<TeamEditorPage teamId="team-main" />, session);
   const user = userEvent.setup();
   const edit = await screen.findByRole("button", { name: "Chọn thành viên" });
-  expect(document.querySelectorAll(".panel")).toHaveLength(1);
+  expect(document.querySelectorAll('[data-slot="panel"]')).toHaveLength(1);
   expect(screen.queryByRole("textbox")).toBeNull();
   expect(screen.queryByRole("checkbox")).toBeNull();
   await user.click(edit);
@@ -1681,7 +1794,7 @@ it("edits team members inside one card with a searchable selection box", async (
     version: 2,
   });
   expect(screen.queryByRole("textbox")).toBeNull();
-  expect(document.querySelectorAll(".panel")).toHaveLength(1);
+  expect(document.querySelectorAll('[data-slot="panel"]')).toHaveLength(1);
   await user.click(screen.getByRole("button", { name: "Chỉnh sửa thông tin" }));
   await user.type(screen.getByRole("textbox", { name: "Tên nhóm *" }), " mới");
   await user.type(
@@ -2382,14 +2495,12 @@ it("opens analytics and review entries from the permissions in the session, not 
     </WorkspaceShell>,
     session,
   );
-  const sidebar = screen.getByRole("complementary", {
-    name: "Thanh điều hướng",
-  });
-  for (const name of ["Phân tích", "Nghiệm thu"])
-    expect(within(sidebar).getByRole("link", { name })).toBeTruthy();
+  const main = screen.getByRole("navigation", { name: "Điều hướng quản lý" });
+  expect(within(main).getByRole("button", { name: "Phân tích" })).toBeTruthy();
+  expect(within(main).getByRole("link", { name: "Nghiệm thu" })).toBeTruthy();
   // Quản trị hệ thống không còn nằm trong menu làm việc.
   for (const name of ["Tài khoản", "Đơn vị", "Nhóm nhân sự"])
-    expect(within(sidebar).queryByRole("link", { name })).toBeNull();
+    expect(within(main).queryByRole("link", { name })).toBeNull();
   cleanup();
   const revoked = structuredClone(session);
   revoked.projectAccess = revoked.projectAccess.map((project) => ({
@@ -2402,11 +2513,9 @@ it("opens analytics and review entries from the permissions in the session, not 
     </WorkspaceShell>,
     revoked,
   );
-  const after = screen.getByRole("complementary", {
-    name: "Thanh điều hướng",
-  });
-  for (const name of ["Phân tích", "Nghiệm thu"])
-    expect(within(after).queryByRole("link", { name })).toBeNull();
+  expect(
+    screen.queryByRole("navigation", { name: "Điều hướng quản lý" }),
+  ).toBeNull();
 });
 
 it("shows only the administration entry the account is permitted to open", async () => {
@@ -2424,17 +2533,18 @@ it("shows only the administration entry the account is permitted to open", async
       "Tài khoản của bạn chưa được cấp quyền truy cập trang này.",
     ),
   ).toBeTruthy();
-  const sidebar = screen.getByRole("complementary", {
-    name: "Thanh điều hướng",
-  });
-  expect(within(sidebar).queryByRole("link", { name: "Tài khoản" })).toBeNull();
+  const admin = screen.getByRole("navigation", { name: "Điều hướng quản trị" });
+  expect(admin.closest("header")).toBeTruthy();
+  expect(within(admin).queryByRole("link", { name: "Tài khoản" })).toBeNull();
   for (const name of ["Đơn vị", "Nhóm nhân sự"])
-    expect(within(sidebar).getByRole("link", { name })).toBeTruthy();
-  const back = within(sidebar).getByRole("link", {
+    expect(within(admin).getByRole("link", { name })).toBeTruthy();
+  const back = within(admin.closest("header")!).getByRole("link", {
     name: "Về không gian làm việc",
   });
   expect(back.getAttribute("href")).toBe("/workspace");
-  expect(within(sidebar).queryByRole("link", { name: "Dự án" })).toBeNull();
+  // Khu quản trị không có bộ chọn dự án và không có sidebar theo ngữ cảnh.
+  expect(screen.queryByRole("button", { name: /^Dự án:/ })).toBeNull();
+  expect(screen.queryByRole("complementary")).toBeNull();
 });
 
 it("keeps administration out of the work area for people without administration permissions", async () => {
@@ -2517,16 +2627,21 @@ it.each([
           "Tài khoản của bạn chưa được cấp quyền truy cập trang này.",
         ),
       ).toBeTruthy();
-      expect(requests).toEqual([]);
+      expect(requests.map((url) => new URL(url).pathname)).toEqual([
+        "/api/notifications/summary",
+      ]);
       if (username !== "minh") {
-        const sidebar = screen.getByRole("complementary", {
-          name: "Thanh điều hướng",
+        expect(
+          screen.queryByRole("navigation", { name: "Điều hướng quản lý" }),
+        ).toBeNull();
+        const main = screen.getByRole("navigation", {
+          name: "Điều hướng chính",
         });
         expect(
-          within(sidebar).queryByRole("link", { name: "Phân tích" }),
+          within(main).queryByRole("button", { name: "Phân tích" }),
         ).toBeNull();
         expect(
-          within(sidebar).queryByRole("link", { name: "Nghiệm thu" }),
+          within(main).queryByRole("link", { name: "Nghiệm thu" }),
         ).toBeNull();
       }
     } finally {

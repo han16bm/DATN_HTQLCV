@@ -1,6 +1,6 @@
 # Quy tắc Zod, chuẩn hóa và trường thay đổi
 
-Theo yêu cầu refactor ngày 25/10/2026: mỗi feature form khai báo `useForm` có kiểu và `zodResolver`, không dùng bộ dựng field hoặc resolver metadata chung. Schema sửa tái sử dụng whitelist/constraint của schema tạo; `changedFields` trả patch có kiểu từ output đã kiểm tra nên không parse lại patch. Service chỉ gửi HTTP; API client kiểm tra response một lần. Hook danh sách chuẩn hóa filter một lần cho cả key và HTTP; filter không hợp lệ vẫn nhận lỗi API thay vì bị tắt vô thời hạn. Xem [bảng từng luồng](../../docs/REFACTOR_REVIEW.md).
+Theo yêu cầu refactor ngày 25/10/2026: mỗi feature form khai báo `useForm` có kiểu và `zodResolver`, không dùng bộ dựng field hoặc resolver metadata chung. Schema sửa tái sử dụng whitelist/constraint của schema tạo; `changedFields` trả patch có kiểu từ output đã kiểm tra nên không parse lại patch. Service chỉ gửi HTTP; API client kiểm tra response một lần. Hook danh sách chuẩn hóa filter một lần cho cả key và HTTP; filter không hợp lệ vẫn nhận lỗi API thay vì bị tắt vô thời hạn. Xem [Kiến trúc hiện hành](../../docs/ARCHITECTURE.md).
 
 ## API nào dùng Zod
 

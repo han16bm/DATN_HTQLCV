@@ -1,8 +1,14 @@
 "use client";
 
+import { DataTable } from "@/components/patterns/data-table";
+import { KeyValue, KeyValueList } from "@/components/patterns/key-value";
+import { MetricStrip } from "@/components/patterns/metric";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageSkeleton } from "@/components/ui/loading";
-import { Badge, DataTable, Empty, Panel } from "@/components/ui/page";
+import { StatusLozenge } from "@/components/ui/lozenge";
+import { Panel, linkClass } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { cn } from "@/lib/cn";
 import { dateTime, hours, label, metricValue, number } from "@/lib/format";
 import Link from "next/link";
 import {
@@ -23,21 +29,28 @@ import type { MetricDto } from "../types/analytics.types";
 import { AnalysisLink } from "./analysis-links";
 import { AnalyticsFrame } from "./analytics-frame";
 
+const basisText = (metric: MetricDto) =>
+  `${metric.basis === "CURRENT" ? "Hiện tại" : "Trong kỳ"}${
+    metric.denominator !== null ? ` · Tổng ${number(metric.denominator)}` : ""
+  }`;
+
+// Chỉ số chính: số lớn, cơ sở tính nhỏ bên dưới, lối vào phân tích chi tiết.
 function MetricCard({ metric }: { metric: MetricDto }) {
   return (
-    <article className="metric-card" aria-label={metric.label}>
-      <h3>{metric.label}</h3>
+    <article
+      aria-label={metric.label}
+      className="grid min-w-0 content-start gap-1 bg-surface px-4 py-3"
+    >
+      <p className="m-0 text-xs font-medium text-fg-subtle">{metric.label}</p>
       <p
-        className={`metric-number ${metric.value === null ? "metric-missing" : ""}`}
+        className={cn(
+          "m-0 text-metric font-semibold tabular-nums",
+          metric.value === null && "text-fg-subtlest",
+        )}
       >
         {metricValue(metric.value, metric.unit)}
       </p>
-      <p className="metric-context small muted">
-        {metric.basis === "CURRENT" ? "Hiện tại" : "Trong kỳ"}
-        {metric.denominator !== null
-          ? ` · Tổng ${number(metric.denominator)}`
-          : ""}
-      </p>
+      <p className="m-0 text-xs text-fg-subtle">{basisText(metric)}</p>
       <AnalysisLink
         value={metric.analysisRef}
         label={`Xem chỉ số ${metric.label}`}
@@ -45,6 +58,8 @@ function MetricCard({ metric }: { metric: MetricDto }) {
     </article>
   );
 }
+
+const chartGrid = "var(--color-line)";
 
 export function DashboardPage() {
   const scope = useAnalyticsScope();
@@ -60,27 +75,26 @@ export function DashboardPage() {
         <PageSkeleton variant="cards" />
       ) : (
         <>
-          <p className="metadata">
+          <p className="mb-2 text-xs text-fg-subtle">
             Cập nhật {dateTime(query.data.metadata.dataAsOf)}
-            · <Badge value={query.data.metadata.quality.status} /> ·{" "}
+            · <StatusLozenge
+              value={query.data.metadata.quality.status}
+            /> ·{" "}
             <AnalysisLink
               value={query.data.overviewRef}
               label="Mở phân tích tổng quan"
             />
           </p>
-          <section
-            className="metric-grid analytics-stats"
-            aria-label="Chỉ số tổng quan"
-          >
+          <MetricStrip aria-label="Chỉ số tổng quan">
             {["K03", "K04", "K06", "K12"].map((code) => {
               const m = data?.metrics.find((m) => m.code === code);
               return m ? <MetricCard key={m.code} metric={m} /> : null;
             })}
-          </section>
-          <div className="two-column analytics-charts">
+          </MetricStrip>
+          <div className="mb-5 grid items-start gap-5 @min-[900px]/page:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
             <Panel title="Công việc theo trạng thái">
               <div
-                className="chart"
+                className="h-60 w-full"
                 role="img"
                 aria-label="Phân bố công việc theo trạng thái"
               >
@@ -93,7 +107,7 @@ export function DashboardPage() {
                     }))}
                     margin={{ top: 4, right: 16, bottom: 4, left: 0 }}
                   >
-                    <CartesianGrid horizontal={false} stroke="#e0e5eb" />
+                    <CartesianGrid horizontal={false} stroke={chartGrid} />
                     <XAxis
                       type="number"
                       fontSize={12}
@@ -114,17 +128,22 @@ export function DashboardPage() {
                     <Bar
                       dataKey="count"
                       name="Số công việc"
-                      fill="#0c66e4"
-                      maxBarSize={22}
+                      fill="var(--color-action)"
+                      maxBarSize={20}
                       radius={[0, 3, 3, 0]}
                     />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <p className="small muted">{query.data.totalTasks} công việc</p>
+              <p className="m-0 text-xs text-fg-subtle">
+                {query.data.totalTasks} công việc
+              </p>
               <details>
-                <summary>Xem số liệu trạng thái</summary>
+                <summary className="cursor-pointer py-1 text-sm font-medium text-selected-fg">
+                  Xem số liệu trạng thái
+                </summary>
                 <DataTable
+                  loading={query.isFetching}
                   widths={[70, 30]}
                   headers={["Trạng thái", "Số việc"]}
                   rows={query.data.byStatus.map((row) => [
@@ -136,37 +155,39 @@ export function DashboardPage() {
             </Panel>
             <Panel title="Hoàn thành và nộp kết quả">
               {!query.data.trend.length ? (
-                <Empty message="Chưa có hoạt động hoàn thành hoặc nộp kết quả trong kỳ." />
+                <EmptyState message="Chưa có hoạt động hoàn thành hoặc nộp kết quả trong kỳ." />
               ) : (
                 <div
-                  className="chart"
+                  className="h-60 w-full"
                   role="img"
                   aria-label="Xu hướng hoàn thành và số lần nộp"
                 >
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={query.data.trend}>
-                      <CartesianGrid vertical={false} stroke="#e0e5eb" />
+                      <CartesianGrid vertical={false} stroke={chartGrid} />
                       <XAxis
                         dataKey="date"
                         tickFormatter={(d) => String(d).slice(5)}
                         fontSize={12}
                       />
-                      <YAxis allowDecimals={false} />
+                      <YAxis allowDecimals={false} fontSize={12} />
                       <Tooltip />
                       <Legend />
                       <Line
                         type="linear"
                         dataKey="completedCount"
                         name="Hoàn thành"
-                        stroke="#365b85"
+                        stroke="var(--color-action)"
+                        strokeWidth={2}
                         connectNulls={false}
                       />
                       <Line
                         type="linear"
                         dataKey="submissionCount"
                         name="Lần nộp"
-                        stroke="#839782"
+                        stroke="var(--color-warning-fg)"
                         strokeDasharray="4 4"
+                        strokeWidth={2}
                         connectNulls={false}
                       />
                     </LineChart>
@@ -176,6 +197,7 @@ export function DashboardPage() {
             </Panel>
           </div>
           <DataTable
+            loading={query.isFetching}
             title="So sánh dự án"
             actions
             widths={[28, 17, 13, 10, 18, 14]}
@@ -189,7 +211,7 @@ export function DashboardPage() {
             ]}
             rows={query.data.projectComparisons.map((p) => [
               <Link
-                className="text-link"
+                className={linkClass}
                 key={p.projectId}
                 href={`/projects/${p.projectId}`}
               >
@@ -202,73 +224,58 @@ export function DashboardPage() {
               <AnalysisLink key="analysis" value={p.analysisRef} />,
             ])}
           />
-          <div className="analytics-summary">
-            <Panel className="analytics-effort" title="Giờ công và ước lượng">
-              <dl>
-                <div>
-                  <dt>Giờ công thực tế</dt>
-                  <dd>{hours(query.data.timeVariance.actualMinutes)}</dd>
-                </div>
-                <div>
-                  <dt>Ước lượng hiện tại</dt>
-                  <dd>
-                    {hours(query.data.timeVariance.currentEstimateMinutes)}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Ước lượng ban đầu</dt>
-                  <dd>
-                    {hours(query.data.timeVariance.originalEstimateMinutes)}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Chênh lệch so với ước lượng hiện tại</dt>
-                  <dd>{hours(query.data.timeVariance.deltaCurrentMinutes)}</dd>
-                </div>
-                <div>
-                  <dt>Chênh lệch so với ước lượng ban đầu</dt>
-                  <dd>{hours(query.data.timeVariance.deltaOriginalMinutes)}</dd>
-                </div>
-                <div className="wide">
-                  <dt>Nộp kết quả trong kỳ</dt>
-                  <dd>
-                    Đúng hạn: {query.data.submissionTimeliness.onTimeCount} ·
-                    Trễ hạn: {query.data.submissionTimeliness.lateCount} (tổng{" "}
-                    {query.data.submissionTimeliness.denominator})
-                  </dd>
-                </div>
-                <div className="wide">
-                  <dt>Báo cáo đã gửi</dt>
-                  <dd>
-                    Ngày: {query.data.reporting.submittedDaily} · Tuần:{" "}
-                    {query.data.reporting.submittedWeekly}
-                  </dd>
-                </div>
-              </dl>
-              <p className="small muted">
+          <div className="grid items-start gap-5 @min-[900px]/page:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+            <Panel title="Giờ công và ước lượng">
+              <KeyValueList>
+                <KeyValue label="Giờ công thực tế">
+                  {hours(query.data.timeVariance.actualMinutes)}
+                </KeyValue>
+                <KeyValue label="Ước lượng hiện tại">
+                  {hours(query.data.timeVariance.currentEstimateMinutes)}
+                </KeyValue>
+                <KeyValue label="Ước lượng ban đầu">
+                  {hours(query.data.timeVariance.originalEstimateMinutes)}
+                </KeyValue>
+                <KeyValue label="Chênh lệch so với ước lượng hiện tại">
+                  {hours(query.data.timeVariance.deltaCurrentMinutes)}
+                </KeyValue>
+                <KeyValue label="Chênh lệch so với ước lượng ban đầu">
+                  {hours(query.data.timeVariance.deltaOriginalMinutes)}
+                </KeyValue>
+                <KeyValue label="Nộp kết quả trong kỳ">
+                  Đúng hạn: {query.data.submissionTimeliness.onTimeCount} · Trễ
+                  hạn: {query.data.submissionTimeliness.lateCount} (tổng{" "}
+                  {query.data.submissionTimeliness.denominator})
+                </KeyValue>
+                <KeyValue label="Báo cáo đã gửi">
+                  Ngày: {query.data.reporting.submittedDaily} · Tuần:{" "}
+                  {query.data.reporting.submittedWeekly}
+                </KeyValue>
+              </KeyValueList>
+              <p className="m-0 text-xs text-fg-subtle">
                 Chênh lệch giờ công chưa đủ để đánh giá năng lực nhân sự. Chưa
                 có lịch yêu cầu nộp báo cáo nên chưa xác định được tỷ lệ nộp đủ.
               </p>
             </Panel>
-            <Panel title="Chỉ số bổ sung" className="analytics-metrics">
-              <dl className="metric-list">
+            <Panel title="Chỉ số bổ sung">
+              <dl className="m-0 grid gap-x-6 @min-[700px]/page:grid-cols-2">
                 {query.data.metrics
                   .filter((m) => !["K03", "K04", "K06", "K12"].includes(m.code))
                   .map((m) => (
-                    <div key={m.code}>
-                      <dt>
+                    <div
+                      key={m.code}
+                      className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 border-b border-line/70 py-2 text-sm"
+                    >
+                      <dt className="min-w-0 text-fg">
                         {m.label}
-                        <span className="small muted">
-                          {m.basis === "CURRENT" ? "Hiện tại" : "Trong kỳ"}
-                          {m.denominator !== null
-                            ? ` · Tổng ${number(m.denominator)}`
-                            : ""}
+                        <span className="block text-xs text-fg-subtle">
+                          {basisText(m)}
                         </span>
                       </dt>
-                      <dd className="metric-value">
+                      <dd className="m-0 text-right font-semibold tabular-nums">
                         {metricValue(m.value, m.unit)}
                       </dd>
-                      <dd>
+                      <dd className="col-span-full m-0 text-left text-xs">
                         <AnalysisLink
                           value={m.analysisRef}
                           label={`Xem chỉ số ${m.label}`}

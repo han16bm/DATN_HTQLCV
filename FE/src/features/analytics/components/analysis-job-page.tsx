@@ -1,8 +1,12 @@
 "use client";
 
 import { ActionButton } from "@/components/ui/action-button";
+import { KeyValue, KeyValueList } from "@/components/patterns/key-value";
+import { Notice } from "@/components/ui/notice";
+import { Button } from "@/components/ui/button";
 import { PageSkeleton, Spinner } from "@/components/ui/loading";
-import { Badge, ButtonLink, PageHeader, Panel } from "@/components/ui/page";
+import { ButtonLink, PageHeader, Panel } from "@/components/ui/page";
+import { StatusLozenge } from "@/components/ui/lozenge";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { dateTime } from "@/lib/format";
 import { useCrumbLabel } from "@/lib/use-crumb-label";
@@ -36,39 +40,34 @@ function JobContent({ jobId }: { jobId: string }) {
         title="Tiến trình AI phân tích"
         description={detail.data?.snapshot.title}
       />
-      <Panel className="record-card">
-        <div className="actions">
+      <Panel className="max-w-[880px]">
+        <div className="actions flex flex-wrap items-center gap-2">
           {["QUEUED", "RUNNING"].includes(job.status) && !tracking.paused && (
             <Spinner label="Đang phân tích" />
           )}
-          <Badge value={job.status} />
+          <StatusLozenge value={job.status} />
         </div>
-        <dl>
-          <div>
-            <dt>Tiếp nhận lúc</dt>
-            <dd>{dateTime(job.createdAt)}</dd>
-          </div>
-          <div>
-            <dt>Kết thúc lúc</dt>
-            <dd>{dateTime(job.completedAt)}</dd>
-          </div>
-          <div>
-            <dt>Kỳ và mốc dữ liệu</dt>
-            <dd>
-              {detail.data?.snapshot.scope.from} –{" "}
-              {detail.data?.snapshot.scope.to} ·{" "}
-              {dateTime(detail.data?.snapshot.dataAsOf)}
-            </dd>
-          </div>
-        </dl>
-        {job.error && <p className="notice error">{job.error.message}</p>}
+        <KeyValueList>
+          <KeyValue label="Tiếp nhận lúc">{dateTime(job.createdAt)}</KeyValue>
+          <KeyValue label="Kết thúc lúc">{dateTime(job.completedAt)}</KeyValue>
+          <KeyValue label="Kỳ và mốc dữ liệu">
+            {detail.data?.snapshot.scope.from} –{" "}
+            {detail.data?.snapshot.scope.to} ·{" "}
+            {dateTime(detail.data?.snapshot.dataAsOf)}
+          </KeyValue>
+        </KeyValueList>
+        {job.error && <Notice tone="danger">{job.error.message}</Notice>}
         {tracking.paused && (
-          <p>
-            Đã tạm dừng theo dõi.{" "}
-            <button onClick={tracking.resume}>Tiếp tục kiểm tra</button>
-          </p>
+          <Notice
+            tone="warning"
+            actions={
+              <Button onClick={tracking.resume}>Tiếp tục kiểm tra</Button>
+            }
+          >
+            Đã tạm dừng theo dõi.
+          </Notice>
         )}
-        <div className="actions section-gap">
+        <div className="actions flex flex-wrap items-center gap-2 mt-4">
           <ButtonLink href={`/analytics/details/${job.analysisId}`}>
             Mở thông số và lời phân tích
           </ButtonLink>

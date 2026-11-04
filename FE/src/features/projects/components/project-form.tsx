@@ -157,6 +157,15 @@ export function ProjectForm({
           {...form.register("name")}
           error={errors.name}
         />
+        <FormTextarea
+          label="Mục tiêu"
+          required
+          {...form.register("objective")}
+          error={errors.objective}
+        />
+        <h3 className="col-span-12 m-0 border-t border-line pt-4 text-sm font-semibold text-fg">
+          Phân công và thời hạn
+        </h3>
         {!project && (
           <FormSelect
             label="Đơn vị"
@@ -196,12 +205,7 @@ export function ProjectForm({
           {...form.register("dueAt")}
           error={errors.dueAt}
         />
-        <FormTextarea
-          label="Mục tiêu"
-          required
-          {...form.register("objective")}
-          error={errors.objective}
-        />
+
         {project && (
           <FormTextarea
             label="Lý do điều chỉnh"

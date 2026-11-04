@@ -1,8 +1,10 @@
 "use client";
 
 import { Form } from "@/components/forms/form";
+import { Button } from "@/components/ui/button";
 import { FormSelect, FormTextarea } from "@/components/forms/form-field";
-import { Badge, Panel } from "@/components/ui/page";
+import { Panel } from "@/components/ui/page";
+import { StatusLozenge } from "@/components/ui/lozenge";
 import { UserBadge } from "@/components/ui/user-badge";
 import { dateTime } from "@/lib/format";
 import { validationMessage } from "@/lib/forms/validation-message";
@@ -26,9 +28,9 @@ export function FeedbackPanel({ value }: { value: AnalysisDto }) {
     <Panel title="Phản hồi nhận định điểm nghẽn">
       {f && (
         <>
-          <Badge value={f.verdict} />
-          <p className="preserve-lines">{f.comment}</p>
-          <p className="small muted person-meta">
+          <StatusLozenge value={f.verdict} />
+          <p className="whitespace-pre-wrap">{f.comment}</p>
+          <p className="text-xs text-fg-subtle flex flex-wrap items-center gap-x-3 gap-y-2">
             <UserBadge name={f.actor.displayName} />
             <time dateTime={f.createdAt}>{dateTime(f.createdAt)}</time>
           </p>
@@ -37,14 +39,14 @@ export function FeedbackPanel({ value }: { value: AnalysisDto }) {
       {value.feedback.canSubmit && (
         <>
           {!open ? (
-            <button
+            <Button
               onClick={() => {
                 form.reset();
                 setOpen(true);
               }}
             >
               {f ? "Bổ sung phản hồi" : "Xác nhận hoặc bác bỏ nhận định"}
-            </button>
+            </Button>
           ) : (
             <Form
               compact

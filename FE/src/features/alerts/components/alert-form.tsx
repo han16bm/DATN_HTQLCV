@@ -1,6 +1,7 @@
 "use client";
 
 import { Form } from "@/components/forms/form";
+import { Button } from "@/components/ui/button";
 import { FormSelect, FormTextarea } from "@/components/forms/form-field";
 import { Panel } from "@/components/ui/page";
 import { options } from "@/lib/format";
@@ -56,9 +57,9 @@ export function AlertForm({
           compact
           form={form}
           cancel={
-            <button type="button" onClick={cancel}>
+            <Button type="button" onClick={cancel}>
               Hủy
-            </button>
+            </Button>
           }
           compareFields={[
             {
@@ -97,7 +98,7 @@ export function AlertForm({
           />
         </Form>
       ) : (
-        <button
+        <Button
           type="button"
           onClick={() => {
             snapshot.saved(value);
@@ -109,9 +110,9 @@ export function AlertForm({
           }}
         >
           Cập nhật xử lý
-        </button>
+        </Button>
       )}
-      <p className="small muted">
+      <p className="text-xs text-fg-subtle">
         Lưu xử lý cảnh báo không tự đổi trạng thái hoặc kế hoạch công việc.
       </p>
     </Panel>

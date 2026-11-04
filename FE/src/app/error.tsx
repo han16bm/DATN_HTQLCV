@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@/components/ui/button";
 import { SystemMessage } from "@/components/ui/system-message";
 
 export default function ErrorPage({
@@ -13,7 +14,7 @@ export default function ErrorPage({
       title="Đã xảy ra lỗi khi tải màn hình"
       description="Bạn có thể thử tải lại hoặc quay về không gian làm việc."
     >
-      <button onClick={retry}>Thử tải lại</button>
+      <Button onClick={retry}>Thử tải lại</Button>
     </SystemMessage>
   );
 }

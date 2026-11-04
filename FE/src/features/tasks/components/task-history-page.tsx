@@ -15,6 +15,7 @@ export function TaskHistoryPage({ taskId }: { taskId: string }) {
     <PageSkeleton variant="table" />
   ) : (
     <HistoryTable
+      loading={query.isFetching}
       title="Lịch sử công việc"
       pagination={{
         ...query.data.pagination,

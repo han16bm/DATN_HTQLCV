@@ -1,6 +1,8 @@
 "use client";
 
 import { Spinner } from "@/components/ui/loading";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { fileSize } from "@/lib/format";
 import { useUI } from "@/stores/ui-store";
@@ -37,10 +39,12 @@ export function EvidenceUploader({
     return () => markDirty(id, false);
   }, [id, items.length, markDirty]);
   return (
-    <div className="wide section-gap">
-      <label htmlFor={id}>Tệp minh chứng</label>
+    <div className="col-span-full mt-4">
+      <label htmlFor={id} className="mb-1 block text-sm font-medium text-fg">
+        Tệp minh chứng
+      </label>
       {policy.data && (
-        <p className="small muted">
+        <p className="text-xs text-fg-subtle">
           Tối đa {policy.data.maxAttachments} tệp, mỗi tệp{" "}
           {fileSize(policy.data.maxBytes)}.{" "}
           {policy.data.allowedMimeTypes
@@ -49,7 +53,8 @@ export function EvidenceUploader({
           .
         </p>
       )}
-      <input
+      <Input
+        size="form"
         id={id}
         type="file"
         disabled={
@@ -87,15 +92,18 @@ export function EvidenceUploader({
         }}
       />
       {upload.isPending && (
-        <p role="status" className="loading-inline">
+        <p role="status" className="inline-flex items-center gap-2">
           <Spinner />
           Đang tải tệp, vui lòng chờ trước khi nộp…
         </p>
       )}
       {items.map((item) => (
-        <div className="list-row" key={item.id}>
+        <div
+          className="mt-2 flex items-center justify-between gap-4 rounded-md border border-line bg-sunken/50 px-3 py-1.5 text-sm max-sm:flex-wrap"
+          key={item.id}
+        >
           <span>{item.filename} · Sẵn sàng</span>
-          <button
+          <Button
             type="button"
             onClick={() => {
               const next = items.filter((i) => i.id !== item.id);
@@ -104,7 +112,7 @@ export function EvidenceUploader({
             }}
           >
             Bỏ chọn
-          </button>
+          </Button>
         </div>
       ))}
       {(error || policy.error) && (

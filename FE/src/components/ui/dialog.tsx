@@ -3,7 +3,10 @@ import { useHashDialog } from "@/lib/forms/use-hash-dialog";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useId, type ReactNode } from "react";
+import { ModalHeader, modalClass, overlayClass } from "./overlay";
 
+// Hộp thoại mở bằng hash trên URL hiện tại nên giữ ngữ cảnh trang; đóng lúc còn
+// dữ liệu chưa lưu thì hỏi lại.
 export function HashDialog({
   name,
   title,
@@ -27,23 +30,21 @@ export function HashDialog({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className="dialog-overlay" />
+        <Dialog.Overlay className={overlayClass()} />
         <Dialog.Content
-          className="dialog-content"
+          className={modalClass("md")}
           aria-describedby={description ? descriptionId : undefined}
         >
-          <div className="dialog-heading">
-            <Dialog.Title>{title}</Dialog.Title>
-            <Dialog.Close className="icon-button" aria-label="Đóng biểu mẫu">
-              ×
-            </Dialog.Close>
-          </div>
+          <ModalHeader title={title} closeLabel="Đóng biểu mẫu" />
           {description && (
-            <Dialog.Description id={descriptionId} className="muted">
+            <Dialog.Description
+              id={descriptionId}
+              className="mt-1 mb-0 text-sm text-fg-subtle"
+            >
               {description}
             </Dialog.Description>
           )}
-          <div className="section-gap">{children}</div>
+          <div className="mt-5">{children}</div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

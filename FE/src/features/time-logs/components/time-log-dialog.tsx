@@ -1,6 +1,8 @@
 "use client";
 
 import { Form } from "@/components/forms/form";
+import { Field } from "@/components/forms/form-field";
+import { Select } from "@/components/ui/select";
 import { FormInput, FormTextarea } from "@/components/forms/form-field";
 import { ReasonForm } from "@/components/forms/reason-form";
 import { HashDialog } from "@/components/ui/dialog";
@@ -118,21 +120,24 @@ function LogForm({
   return (
     <>
       {log && (
-        <label>
-          Thao tác
-          <select
-            value={action}
-            onChange={async (event) => {
-              const value = event.target.value;
-              if (await confirmDiscard()) setAction(value);
-            }}
-          >
-            <option value="EDIT">Sửa nhật ký</option>
-            <option value="VOID">Loại khỏi tổng</option>
-          </select>
-        </label>
+        <Field label="Thao tác" className="max-w-80">
+          {(a11y) => (
+            <Select
+              size="form"
+              {...a11y}
+              value={action}
+              onChange={async (event) => {
+                const value = event.target.value;
+                if (await confirmDiscard()) setAction(value);
+              }}
+            >
+              <option value="EDIT">Sửa nhật ký</option>
+              <option value="VOID">Loại khỏi tổng</option>
+            </Select>
+          )}
+        </Field>
       )}
-      <div className="section-gap">
+      <div className="mt-4">
         {action === "VOID" && log ? (
           <ReasonForm
             label="Lý do loại khỏi tổng"

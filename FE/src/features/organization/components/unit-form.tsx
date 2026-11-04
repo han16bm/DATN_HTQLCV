@@ -1,6 +1,7 @@
 "use client";
 
 import { Form } from "@/components/forms/form";
+import { Button } from "@/components/ui/button";
 import {
   FormInput,
   FormSelect,
@@ -72,15 +73,15 @@ export function UnitForm({
     .filter((value) => value.id !== unit?.id && value.status === "ACTIVE")
     .map((value) => ({ value: value.id, label: value.name }));
   const cancelButton = unit ? (
-    <button type="button" onClick={cancel}>
+    <Button type="button" onClick={cancel}>
       Hủy
-    </button>
+    </Button>
   ) : (
     <ButtonLink href="/admin/organization">Hủy</ButtonLink>
   );
   const commands = unit?.status === "ACTIVE" && mode === null && (
     <>
-      <button
+      <Button
         type="button"
         onClick={() => {
           snapshot.saved(unit);
@@ -89,26 +90,26 @@ export function UnitForm({
         }}
       >
         Chỉnh sửa
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="danger"
         type="button"
-        className="danger"
         onClick={() => {
           snapshot.saved(unit);
           setMode("close");
         }}
       >
         Ngừng sử dụng đơn vị
-      </button>
+      </Button>
     </>
   );
   return (
     <Panel
-      className="record-card"
+      className="max-w-[880px]"
       title={unit ? unit.name : "Thông tin đơn vị"}
       actions={
         unit && (
-          <div className="actions">
+          <div className="actions flex flex-wrap items-center gap-2">
             <StatusField value={unit.status} />
             {commands}
           </div>
@@ -209,7 +210,7 @@ export function UnitForm({
         />
       ) : (
         <>
-          <dl className="record-details">
+          <dl className="m-0 grid gap-y-2 text-sm [&>div]:grid [&>div]:grid-cols-[7rem_minmax(0,1fr)] [&>div]:items-baseline [&>div]:gap-x-3 [&_dt]:text-fg-subtle [&_dd]:m-0 [&_dd]:min-w-0 [&_dd]:text-left [&_dd]:break-words">
             <div>
               <dt>Đơn vị cấp trên</dt>
               <dd>

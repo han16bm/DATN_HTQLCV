@@ -1,13 +1,12 @@
 "use client";
 
+import { FilterBar, FilterField } from "@/components/patterns/filter-bar";
+import { SearchInput } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { PageSkeleton } from "@/components/ui/loading";
-import {
-  Badge,
-  ButtonLink,
-  DataTable,
-  DetailLink,
-  PageHeader,
-} from "@/components/ui/page";
+import { ButtonLink, DetailLink, PageHeader } from "@/components/ui/page";
+import { StatusLozenge } from "@/components/ui/lozenge";
+import { DataTable } from "@/components/patterns/data-table";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { useListUnitsQuery } from "@/features/organization/hooks/use-organization-queries";
@@ -38,19 +37,17 @@ export function UsersPage() {
           </ButtonLink>
         }
       />
-      <section className="panel filters">
-        <label>
-          Tìm kiếm
-          <input
-            type="search"
+      <FilterBar label="Bộ lọc tài khoản">
+        <FilterField label="Tìm kiếm" search>
+          <SearchInput
             placeholder="Tên, email hoặc tên đăng nhập"
             value={filter.get("q")}
             onChange={(e) => filter.set("q", e.target.value)}
           />
-        </label>
-        <label>
-          Trạng thái
-          <select
+        </FilterField>
+        <FilterField label="Trạng thái">
+          <Select
+            fit
             value={filter.get("status")}
             onChange={(e) => filter.set("status", e.target.value)}
           >
@@ -60,11 +57,11 @@ export function UsersPage() {
                 {label(v)}
               </option>
             ))}
-          </select>
-        </label>
-        <label>
-          Đơn vị
-          <select
+          </Select>
+        </FilterField>
+        <FilterField label="Đơn vị">
+          <Select
+            fit
             value={filter.get("unitId")}
             onChange={(e) => filter.set("unitId", e.target.value)}
           >
@@ -74,11 +71,11 @@ export function UsersPage() {
                 {u.name}
               </option>
             ))}
-          </select>
-        </label>
-        <label>
-          Vai trò
-          <select
+          </Select>
+        </FilterField>
+        <FilterField label="Vai trò">
+          <Select
+            fit
             value={filter.get("systemRole")}
             onChange={(e) => filter.set("systemRole", e.target.value)}
           >
@@ -88,9 +85,9 @@ export function UsersPage() {
                 {label(v)}
               </option>
             ))}
-          </select>
-        </label>
-      </section>
+          </Select>
+        </FilterField>
+      </FilterBar>
       {units.isError && (
         <QueryErrorState error={units.error} retry={units.refetch} />
       )}
@@ -100,6 +97,7 @@ export function UsersPage() {
       )}{" "}
       {query.data && (
         <DataTable
+          loading={query.isFetching}
           pagination={{
             ...query.data.pagination,
             onPage: (p) => filter.set("page", String(p)),
@@ -123,7 +121,7 @@ export function UsersPage() {
             />,
             label(u.systemRole),
             u.unit.name,
-            <Badge key="status" value={u.status} />,
+            <StatusLozenge key="status" value={u.status} />,
             <DetailLink
               key="detail"
               href={`/admin/users/${u.id}`}

@@ -1,3 +1,4 @@
+import { cn } from "@/lib/cn";
 import {
   Blocks,
   BriefcaseBusiness,
@@ -19,6 +20,16 @@ const icons = [
   BriefcaseBusiness,
   SquareChartGantt,
 ];
+const fills = [
+  "bg-[#3a58c8]",
+  "bg-[#6b4fc7]",
+  "bg-[#1f7a52]",
+  "bg-[#c25100]",
+  "bg-[#b3322a]",
+  "bg-[#1f6f86]",
+  "bg-[#8a6700]",
+  "bg-[#5e4db2]",
+];
 export function toneOf(text: string) {
   let hash = 0;
   for (const char of text) hash = (hash * 31 + char.charCodeAt(0)) % 997;
@@ -36,10 +47,14 @@ export function ProjectTile({
   const Icon = icons[tone];
   return (
     <span
-      className={`project-tile tone-${tone}${small ? " small-tile" : ""}`}
+      className={cn(
+        "inline-grid shrink-0 place-items-center text-white",
+        small ? "size-7 rounded" : "size-9 rounded-md",
+        fills[tone],
+      )}
       aria-hidden="true"
     >
-      <Icon size={small ? 16 : 22} strokeWidth={1.8} />
+      <Icon size={small ? 15 : 20} strokeWidth={1.8} />
     </span>
   );
 }

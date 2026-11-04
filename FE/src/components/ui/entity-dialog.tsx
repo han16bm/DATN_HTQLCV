@@ -91,7 +91,7 @@ export function DialogTabs<T extends string>({
 }) {
   return (
     <div
-      className="flex gap-1 overflow-x-auto border-b border-line"
+      className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line"
       role="tablist"
       aria-label={label}
     >

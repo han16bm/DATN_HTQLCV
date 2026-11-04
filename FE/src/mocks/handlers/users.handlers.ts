@@ -14,6 +14,7 @@ import {
   updateUserPermissionsSchema,
   userPermissionsSchema,
 } from "@/features/users/schemas/user-permissions.schema";
+import { userProjectListSchema } from "@/features/users/schemas/user-projects.schema";
 import { page, reasonSchema } from "@/lib/validation/common.schema";
 import { emptySchema, idSchema } from "@/lib/validation/request.schema";
 import { http } from "msw";
@@ -213,6 +214,44 @@ export const userHandlers = [
             200,
           );
         },
+      );
+    }),
+  ),
+  http.post(
+    "*/api/users/:userId/revoke-sessions",
+    mockHandler(async ({ request, params }) => {
+      const viewer = authenticatedUser(request);
+      const userId = idSchema.parse(params.userId);
+      const payload = reasonSchema.parse(await request.json());
+      return mockCommand(
+        request,
+        {
+          operation: "revokeUserSessions",
+          feature: "users",
+          viewer,
+          action: "USERS_MANAGE",
+          params: { userId },
+          payload,
+        },
+        () =>
+          mockJson(
+            request,
+            usersDb.revokeUserSessions(viewer, userId, payload),
+            resetUserPasswordResultSchema,
+            200,
+          ),
+      );
+    }),
+  ),
+  http.get(
+    "*/api/users/:userId/projects",
+    mockHandler(({ request, params }) => {
+      const viewer = authenticatedUser(request);
+      const userId = idSchema.parse(params.userId);
+      return mockJson(
+        request,
+        usersDb.listUserProjects(viewer, userId),
+        userProjectListSchema,
       );
     }),
   ),

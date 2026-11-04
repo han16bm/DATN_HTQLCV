@@ -363,6 +363,36 @@ it("links the member's own profile to settings and shows unavailable profiles as
   ).toBeTruthy();
   expect(screen.queryByRole("table")).toBeNull();
 });
+it("shows a leader's roles across projects in the Dự án tab and hides session revocation for oneself", async () => {
+  const session = await login("admin");
+  at("/admin/users?dialog=view&id=u-pm");
+  show(<UsersPage />, session);
+  const dialog = await screen.findByRole("dialog", {
+    name: "Chi tiết tài khoản",
+  });
+  expect(
+    await within(dialog).findByRole("button", {
+      name: "Thu hồi phiên đăng nhập",
+    }),
+  ).toBeTruthy();
+  await userEvent
+    .setup()
+    .click(within(dialog).getByRole("tab", { name: "Dự án" }));
+  const table = await within(dialog).findByRole("table", {
+    name: "Dự án tham gia",
+  });
+  const rows = within(table).getAllByRole("row").slice(1);
+  expect(rows.length).toBeGreaterThan(1);
+  expect(within(table).getAllByText("Phụ trách").length).toBeGreaterThan(0);
+  cleanup();
+  at("/admin/users?dialog=view&id=u-admin");
+  show(<UsersPage />, session);
+  const own = await screen.findByRole("dialog", { name: "Chi tiết tài khoản" });
+  await within(own).findByRole("button", { name: "Khóa tài khoản" });
+  expect(
+    within(own).queryByRole("button", { name: "Thu hồi phiên đăng nhập" }),
+  ).toBeNull();
+});
 it("keeps admin account information and access actions together without exposing internal IDs", async () => {
   const session = await login("admin");
   at("/admin/users?dialog=view&id=u-admin");

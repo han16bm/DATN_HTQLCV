@@ -544,3 +544,50 @@ describe("created/updated stamps on administration records", () => {
     expect(db.alerts.every((a) => a.createdBy === "SYSTEM")).toBe(true);
   });
 });
+
+describe("project roles of a person and session revocation (ADMIN_MODULES §11)", () => {
+  it("lists every project a leader holds with the role and effective permissions there", async () => {
+    const projects = await usersService.listUserProjects("u-pm");
+    const active = projects.filter((p) => !p.endedAt);
+    // Một Leader giữ vai trò ở nhiều dự án; quyền tính theo từng dự án.
+    expect(active.length).toBeGreaterThan(1);
+    expect(active.every((p) => p.projectRole !== "MEMBER")).toBe(true);
+    expect(active[0].permissions).toContain("TASKS_MANAGE");
+    const member = await usersService.listUserProjects("u-lan");
+    expect(member.every((p) => p.permissions.length === 0)).toBe(true);
+    // Mất PROJECT_CREATE thì vai trò quản lý không còn quyền (fail-closed).
+    await setPermissions("u-pm", { groupIds: [] });
+    const demoted = await usersService.listUserProjects("u-pm");
+    expect(demoted.every((p) => p.permissions.length === 0)).toBe(true);
+    await login("lan");
+    await expect(usersService.listUserProjects("u-pm")).rejects.toMatchObject({
+      status: 403,
+    });
+  });
+  it("revokes another account's sessions without locking it and refuses self", async () => {
+    await login("minh");
+    const minhToken = token.get();
+    await login("admin");
+    await usersService.revokeUserSessions(
+      "u-pm",
+      { reason: "Máy bị mất" },
+      { key: key() },
+    );
+    token.set(minhToken);
+    await expect(authService.getSession()).rejects.toMatchObject({
+      status: 401,
+    });
+    // Tài khoản vẫn hoạt động: đăng nhập lại được.
+    await expect(login("minh")).resolves.toMatchObject({
+      user: expect.objectContaining({ id: "u-pm" }),
+    });
+    await login("admin");
+    await expect(
+      usersService.revokeUserSessions(
+        "u-admin",
+        { reason: "Tự thu hồi" },
+        { key: key() },
+      ),
+    ).rejects.toMatchObject({ status: 422, code: "BUSINESS_RULE" });
+  });
+});

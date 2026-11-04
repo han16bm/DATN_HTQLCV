@@ -60,3 +60,18 @@ export function useGetUserPermissionsQuery(userId: string) {
   });
   return useQueryAccess(result, "users");
 }
+
+// Tư cách của một người ở các dự án (tab Dự án của dialog người dùng).
+export function useListUserProjectsQuery(
+  userId: string,
+  options: QueryOptions = {},
+) {
+  const viewerId = useSession().session?.user.id;
+  const result = useQuery({
+    queryKey: usersKeys.listUserProjects(viewerId, userId),
+    queryFn: ({ signal }) => usersService.listUserProjects(userId, { signal }),
+    enabled: options.enabled !== false && Boolean(viewerId && userId),
+    staleTime: 0,
+  });
+  return useQueryAccess(result, "users");
+}

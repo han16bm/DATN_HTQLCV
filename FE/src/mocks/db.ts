@@ -1687,6 +1687,53 @@ export const usersDb = {
     );
     return { ok: true };
   },
+  revokeUserSessions(viewer: User, userId: string, body: { reason: string }) {
+    requireAdmin(viewer, "USERS_MANAGE");
+    const user = requireUser(userId);
+    if (user.id === viewer.id)
+      throw new ApiError(
+        422,
+        "BUSINESS_RULE",
+        "Không thu hồi phiên của chính mình, hãy dùng Đăng xuất.",
+      );
+    revokeUserSessions(user.id);
+    audit(
+      viewer.id,
+      "USER",
+      user.id,
+      "Thu hồi phiên đăng nhập",
+      null,
+      { sessionsRevoked: true },
+      body.reason,
+    );
+    return { ok: true as const };
+  },
+  // Đang tham gia trước (theo tên dự án), đã kết thúc sau (mới kết thúc trước).
+  listUserProjects(viewer: User, userId: string) {
+    requireAdmin(viewer, "USERS_MANAGE", "PERMISSIONS_MANAGE");
+    const user = requireUser(userId);
+    return db.members
+      .filter((m) => m.userId === user.id)
+      .map((m) => {
+        const project = db.projects.find((p) => p.id === m.projectId)!;
+        return {
+          membershipId: m.id,
+          project: { id: project.id, name: project.name },
+          projectStatus: project.status,
+          projectRole: m.projectRole,
+          isOwner: project.ownerId === user.id,
+          permissions: m.endedAt ? [] : projectPermissions(user, project.id),
+          startedAt: m.createdAt,
+          endedAt: m.endedAt,
+        };
+      })
+      .sort((a, b) =>
+        a.endedAt || b.endedAt
+          ? (a.endedAt ? 1 : 0) - (b.endedAt ? 1 : 0) ||
+            (b.endedAt ?? "").localeCompare(a.endedAt ?? "")
+          : a.project.name.localeCompare(b.project.name),
+      );
+  },
   getUserPermissions(viewer: User, userId: string): UserPermissionsDto {
     requireAdmin(viewer, "PERMISSIONS_MANAGE");
     const user = requireUser(userId);

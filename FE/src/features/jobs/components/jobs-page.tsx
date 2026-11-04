@@ -1,6 +1,5 @@
 "use client";
 import { DataTable } from "@/components/patterns/data-table";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 import { RecordStamp, stampText } from "@/components/ui/record-stamp";

@@ -9,6 +9,7 @@ import {
 } from "@/components/forms/form-field";
 import { ReasonForm } from "@/components/forms/reason-form";
 import { Panel } from "@/components/ui/page";
+import { useSession } from "@/lib/auth/session-context";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
 import { validationMessage } from "@/lib/forms/validation-message";
@@ -19,6 +20,7 @@ import { toast } from "sonner";
 import {
   useLockUserMutation,
   useResetUserPasswordMutation,
+  useRevokeUserSessionsMutation,
   useUnlockUserMutation,
 } from "../hooks/use-users-mutations";
 import {
@@ -38,7 +40,11 @@ export function UserCommands({
   user: UserDto;
   reload: () => Promise<{ data?: UserDto }>;
 }) {
-  const [mode, setMode] = useState<"lock" | "password" | null>(null);
+  const [mode, setMode] = useState<"lock" | "password" | "sessions" | null>(
+    null,
+  );
+  const self = useSession().session?.user.id === user.id;
+  const revoke = useRevokeUserSessionsMutation();
   const lock = useLockUserMutation();
   const unlock = useUnlockUserMutation();
   const reset = useResetUserPasswordMutation();
@@ -79,15 +85,48 @@ export function UserCommands({
       >
         Cấp lại mật khẩu
       </Button>
+      {/* Chính mình thì dùng Đăng xuất; BE cũng chặn (422). */}
+      {!self && (
+        <Button
+          onClick={async () => {
+            if (await confirmDiscard())
+              setMode(mode === "sessions" ? null : "sessions");
+          }}
+        >
+          Thu hồi phiên đăng nhập
+        </Button>
+      )}
     </div>
   );
   return (
     <Panel title="Truy cập và mật khẩu" actions={actions}>
+      {mode === null && (
+        <p className="m-0 text-xs text-fg-subtle">
+          Khóa hoặc mở khóa, cấp lại mật khẩu (đăng xuất mọi phiên cũ) hoặc thu
+          hồi phiên đăng nhập của tài khoản này.
+        </p>
+      )}
       {mode === "lock" && !isLocked && (
         <p className="mt-4 text-xs text-fg-subtle">
           Khóa thông thường yêu cầu bàn giao việc mở. Khóa khẩn cấp thu hồi truy
           cập ngay.
         </p>
+      )}
+      {mode === "sessions" && (
+        <>
+          <p className="mt-4 text-xs text-fg-subtle">
+            Đăng xuất tài khoản khỏi mọi thiết bị ngay (máy mất, nghi lộ mật
+            khẩu); tài khoản vẫn hoạt động và đăng nhập lại được.
+          </p>
+          <ReasonForm
+            submitLabel="Thu hồi phiên"
+            onSubmit={async (payload) => {
+              await revoke.mutateAsync({ userId: user.id, payload });
+              toast.success("Đã thu hồi mọi phiên đăng nhập.");
+              setMode(null);
+            }}
+          />
+        </>
       )}
       {mode === "password" ? (
         <PasswordResetForm

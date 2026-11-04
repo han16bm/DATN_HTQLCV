@@ -13,6 +13,7 @@ import type {
   updateUserPermissionsSchema,
   userPermissionsSchema,
 } from "../schemas/user-permissions.schema";
+import type { userProjectSchema } from "../schemas/user-projects.schema";
 import type {
   userQuerySchema,
   userRowSchema,
@@ -59,4 +60,10 @@ export type UpdateUserPermissionsArgs = {
   userId: string;
   payload: UpdateUserPermissionsInput;
   version: number;
+};
+export type UserProjectDto = z.output<typeof userProjectSchema>;
+export type RevokeUserSessionsInput = z.input<typeof reasonSchema>;
+export type RevokeUserSessionsArgs = {
+  userId: string;
+  payload: RevokeUserSessionsInput;
 };

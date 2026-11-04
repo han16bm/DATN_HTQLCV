@@ -16,6 +16,7 @@ import {
   type CreateUserInput,
   type LockUserArgs,
   type ResetUserPasswordArgs,
+  type RevokeUserSessionsArgs,
   type UnlockUserArgs,
   type UpdateUserArgs,
   type UpdateUserPermissionsArgs,
@@ -191,6 +192,25 @@ export function useUpdateUserPermissionsMutation() {
           queryKey: permissionsKeys.viewer(viewerId),
         }),
       ]);
+    },
+  });
+}
+
+// Thu hồi mọi phiên đăng nhập của tài khoản (không khóa tài khoản).
+export function useRevokeUserSessionsMutation() {
+  const client = useQueryClient();
+  const viewerId = useSession().session?.user.id;
+  const handleError = useAccessErrorHandler();
+  const run = useIdempotentRequest();
+  return useMutation({
+    mutationKey: [...usersKeys.viewer(viewerId), "revokeUserSessions"],
+    mutationFn: (input: RevokeUserSessionsArgs) =>
+      run(input, (key) =>
+        usersService.revokeUserSessions(input.userId, input.payload, { key }),
+      ),
+    onError: handleError,
+    onSuccess: async () => {
+      await client.invalidateQueries({ queryKey: usersKeys.viewer(viewerId) });
     },
   });
 }

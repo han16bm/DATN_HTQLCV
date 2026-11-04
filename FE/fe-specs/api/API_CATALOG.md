@@ -114,6 +114,8 @@ Hợp đồng chi tiết (DTO, quyền, lỗi `BUSINESS_RULE`/`IP_NOT_ALLOWED`) 
 | replacePermissionGroupMembers | `PUT /api/permission-groups/:groupId/members` | useMutation | Nhóm quyền |
 | deactivatePermissionGroup | `POST /api/permission-groups/:groupId/deactivate` | useMutation | Nhóm quyền |
 | activatePermissionGroup | `POST /api/permission-groups/:groupId/activate` | useMutation | Nhóm quyền |
+| listUserProjects | `GET /api/users/:userId/projects` | useQuery | Người dùng / Dự án (vai trò ở từng dự án, ADMIN_MODULES §11) |
+| revokeUserSessions | `POST /api/users/:userId/revoke-sessions` | useMutation, idempotency, `{reason}`, không If-Match; chính mình → 422 | Người dùng / Truy cập |
 | getUserPermissions | `GET /api/users/:userId/permissions` | useQuery | Người dùng / Phân quyền |
 | updateUserPermissions | `PUT /api/users/:userId/permissions` | useMutation | Người dùng / Phân quyền |
 | listAuditLogs | `GET /api/audit-logs` | useQuery | Nhật ký hệ thống, Tổng quan |

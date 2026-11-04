@@ -664,6 +664,32 @@ UserProjectDto { membershipId, project: {id, name}, unitId, projectStatus: "PLAN
 
 Có. Admin cấp tư cách Leader/PM bằng nhóm "Quản lý dự án (Leader/PM)" (một lần). Sau đó mỗi dự án tự thêm thành viên và chọn vai trò (OWNER do kế hoạch dự án quyết định, MANAGER/MEMBER do người có `MEMBERS_MANAGE`). Admin xem một người đang giữ vai trò gì ở những dự án nào ở tab "Dự án" của dialog người dùng, và chỉnh "mỗi vai trò được làm gì" ở màn "Vai trò dự án".
 
-### 11.10 Bảng quy tắc từng endpoint
+### 11.10 Bảng quy tắc từng endpoint (đã cài ở BE, khớp mock)
 
-(Điền sau khi trích từ mock — xem 11.11.)
+| Endpoint | Điều kiện | Sai → |
+|---|---|---|
+| `GET /projects` | thành viên đang hoạt động, hoặc `ANALYTICS_VIEW` hệ thống (xem tất cả) | lọc bớt |
+| `GET /projects/:id`, `/closure-checks`, `/history`, `GET /projects/:id/members` | đọc được dự án (như trên) | 404 không có / 403 |
+| `POST /projects` | `PROJECT_CREATE` hệ thống, `unitId` = đơn vị người tạo; chủ dự án là Leader/PM đang hoạt động cùng đơn vị | 403 / 422 `INVALID_OWNER` |
+| `PATCH /projects/:id`, `/activate`, `/complete`, `/cancel` | `PROJECT_MANAGE` trong dự án; **đổi `ownerId` chỉ do chủ dự án hiện tại**, chủ mới là Leader/PM cùng đơn vị, chủ cũ ở lại với vai trò MANAGER | 403 / 422 `INVALID_OWNER` |
+| `POST/PATCH /projects/:id/members…`, `/end` | `MEMBERS_MANAGE` trong dự án | 403 |
+| `GET /tasks`, `GET /tasks/:id` (+ `/history`, `/submissions`, `/time-logs`) | `ANALYTICS_VIEW` hệ thống, hoặc thành viên và (có quyền nào đó trong dự án, hoặc đang/từng được giao việc) | lọc bớt / 403 |
+| `POST /projects/:id/tasks`, `PATCH /tasks/:id`, `/cancel`, `/assignments` | `TASKS_MANAGE` trong dự án | 403 |
+| `/start`, `/pause`, `/remaining-estimate`, ghi giờ, nộp kết quả, tải minh chứng | thấy được việc + là người được giao (quy tắc nghiệp vụ cũ) | 403 / 409 |
+| `POST …/approve`, `…/request-revision` | `TASKS_REVIEW` trong dự án, không tự xét | 403 |
+| `GET /review-queue` | chỉ dự án có `TASKS_REVIEW`, bỏ lần nộp của chính mình | lọc bớt |
+| `GET /reports`, `GET /reports/:id` | tác giả; hoặc bản đã gửi trong dự án người xem có `PROJECT_MANAGE`/`TASKS_MANAGE`/`ANALYTICS_VIEW` | lọc bớt / 403 |
+| `GET /report-previews`, `POST /reports` | thành viên đang hoạt động của dự án | 403 |
+| `GET /attachments/:id(/content)` | người tải lên, hoặc thấy được công việc chứa tệp | 403 |
+| `/dashboard`, `/analytics/*` | `ANALYTICS_VIEW` hệ thống (mọi dự án) hoặc ở ít nhất một dự án (dữ liệu giới hạn trong các dự án đó; lọc dự án/đơn vị ngoài phạm vi → 403); danh mục lọc khi chưa có dự án nào trả rỗng | 403 |
+| `/alerts` | xem: người nhận hoặc `ANALYTICS_VIEW` hệ thống; xử lý: người nhận (người được giao hoặc `ALERTS_MANAGE` trong dự án) hoặc sysadmin | 404 / 403 |
+| `/notifications` | chỉ của người nhận trong phiên, đối tượng vẫn thấy được | 404 |
+
+Sysadmin không có quyền ghi nghiệp vụ dự án chỉ vì cờ sysadmin (giống mock); muốn ghi phải là thành viên với vai trò tương ứng.
+
+### 11.11 Trạng thái triển khai (04/11/2026)
+
+- **Đã cài**: `Shared.Entities/Authorization/ProjectAccess.cs` (tính quyền theo từng dự án mỗi request), thực thi ở Projects/Tasks/Analytics theo bảng 11.10, session `projectAccess[].permissions`, người nhận cảnh báo theo `ALERTS_MANAGE`, `GET /users/:id/projects` + tab **Dự án** trong dialog người dùng, `POST /users/:id/revoke-sessions` + nút **Thu hồi phiên đăng nhập** (ẩn với chính mình, BE trả 422), cấp lại mật khẩu cũng thu hồi phiên cũ, API thông báo thật (`FE/fe-specs/api/NOTIFICATIONS.md`).
+- **Khác 11.3 (chọn bản gọn hơn)**: ma trận vai trò cố định trong code (`ProjectAccess.ByRole`, trùng `permissionPolicy.project` của mock), **chưa** có bảng `ProjectRolePolicies`/màn "Vai trò dự án". OWNER và MANAGER cùng 6 mã quyền; thứ bậc OWNER > MANAGER thể hiện ở chỗ chỉ OWNER bàn giao dự án và OWNER không bị kết thúc/đổi vai trò. Muốn Leader không sửa kế hoạch: bỏ `PROJECT_MANAGE` khỏi `ByRole[Manager]` (và mock `data.json`).
+- **Chưa làm**: `/project-roles`, `/projects/:id/owner-transfer` cho admin khi chủ dự án nghỉ (hiện chủ dự án tự bàn giao qua sửa kế hoạch), cảnh báo trong dialog khoá khi người đó đang là chủ dự án.
+- **Bảo mật** đã sửa cùng đợt: không sửa/khoá/mở khoá/cấp lại mật khẩu/đổi phân quyền tài khoản có quyền cao hơn mình (`EnsureCanManageAsync`); đăng nhập tài khoản bị khoá chỉ báo "đang khoá" (kèm lý do) khi đúng mật khẩu.

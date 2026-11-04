@@ -8,6 +8,7 @@ import {
 import { profileSchema } from "../schemas/profile.schema";
 import { resetUserPasswordResultSchema } from "../schemas/user-form.schema";
 import { userPermissionsSchema } from "../schemas/user-permissions.schema";
+import { userProjectListSchema } from "../schemas/user-projects.schema";
 import { userRowSchema, userSchema } from "../schemas/user.schema";
 import type {
   CreateUserInput,
@@ -15,12 +16,14 @@ import type {
   ProfileDto,
   ResetUserPasswordInput,
   ResetUserPasswordResult,
+  RevokeUserSessionsInput,
   UnlockUserInput,
   UpdateUserInput,
   UpdateUserPermissionsInput,
   UserDto,
   UserList,
   UserPermissionsDto,
+  UserProjectDto,
   UserQuery,
 } from "../types/users.types";
 
@@ -106,6 +109,27 @@ export const usersService = {
       `/users/${encodeURIComponent(userId)}/reset-password`,
       payload,
       { ...options, schema: resetUserPasswordResultSchema },
+    );
+    return response.data;
+  },
+
+  async revokeUserSessions(
+    userId: string,
+    payload: RevokeUserSessionsInput,
+    options: MutationOptions,
+  ) {
+    const response = await apiClient.post<ResetUserPasswordResult>(
+      `/users/${encodeURIComponent(userId)}/revoke-sessions`,
+      payload,
+      { ...options, schema: resetUserPasswordResultSchema },
+    );
+    return response.data;
+  },
+
+  async listUserProjects(userId: string, options: RequestOptions = {}) {
+    const response = await apiClient.get<UserProjectDto[]>(
+      `/users/${encodeURIComponent(userId)}/projects`,
+      { ...options, schema: userProjectListSchema },
     );
     return response.data;
   },

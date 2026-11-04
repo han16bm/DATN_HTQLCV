@@ -19,9 +19,10 @@ import { useState } from "react";
 import { useGetUserQuery } from "../hooks/use-users-queries";
 import { UserCommands } from "./user-commands";
 import { UserPermissionsPanel } from "./user-permissions-panel";
+import { UserProjectsPanel } from "./user-projects-panel";
 import { UserProfileForm } from "./user-profile-form";
 
-// Dialog Thêm/Xem/Sửa tài khoản, tab Thông tin / Phân quyền (ADMIN_MODULES 9).
+// Dialog Thêm/Xem/Sửa tài khoản, tab Thông tin / Phân quyền / Dự án (ADMIN_MODULES 9, 11).
 export function UserDialog() {
   const dialog = useEntityDialog();
   if (!dialog.mode) return null;
@@ -32,10 +33,18 @@ function UserDialogBody() {
   const dialog = useEntityDialog();
   const mode = dialog.mode!;
   const { session } = useSession();
-  const [tab, setTab] = useState<"info" | "permissions">("info");
+  const [tab, setTab] = useState<"info" | "permissions" | "projects">("info");
   const query = useGetUserQuery(dialog.id);
   const units = useListUnitsQuery({ pageSize: 100, status: "ACTIVE" });
   const permissions = hasPermission(session, "PERMISSIONS_MANAGE");
+  const tabs = [
+    { value: "info" as const, label: "Thông tin" },
+    ...(permissions
+      ? [{ value: "permissions" as const, label: "Phân quyền" }]
+      : []),
+    // GET /users/:id/projects mở cho USERS_MANAGE hoặc PERMISSIONS_MANAGE.
+    { value: "projects" as const, label: "Dự án" },
+  ];
   // Chọn nhóm khi cấp tài khoản: GET /permission-groups mở cho USERS_MANAGE.
   const groups = useListPermissionGroupsQuery(
     { pageSize: 100, status: "ACTIVE" },
@@ -76,19 +85,18 @@ function UserDialogBody() {
         <PageSkeleton variant="form" />
       ) : (
         <>
-          {user && permissions && (
+          {user && (
             <DialogTabs
               label="Mục tài khoản"
               value={tab}
               onChange={setTab}
-              items={[
-                { value: "info", label: "Thông tin" },
-                { value: "permissions", label: "Phân quyền" },
-              ]}
+              items={tabs}
             />
           )}
           {user && tab === "permissions" ? (
             <UserPermissionsPanel userId={user.id} readOnly={mode === "view"} />
+          ) : user && tab === "projects" ? (
+            <UserProjectsPanel userId={user.id} />
           ) : (
             <>
               <UserProfileForm

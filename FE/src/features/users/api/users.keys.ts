@@ -9,6 +9,8 @@ export const usersKeys = {
     [...usersKeys.viewer(viewerId), "getUser", userId] as const,
   getProfile: (viewerId: ViewerId, userId: string) =>
     [...usersKeys.viewer(viewerId), "getProfile", userId] as const,
+  listUserProjects: (viewerId: ViewerId, userId: string) =>
+    [...usersKeys.viewer(viewerId), "listUserProjects", userId] as const,
   getUserPermissions: (viewerId: ViewerId, userId: string) =>
     [...usersKeys.viewer(viewerId), "getUserPermissions", userId] as const,
 };

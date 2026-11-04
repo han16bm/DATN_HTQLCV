@@ -58,6 +58,19 @@ public class BaseService<T>(ApplicationDbContext context, IHttpContextAccessor h
             throw new ForbiddenException($"Không thể trao quyền mà bạn không có: {string.Join(", ", missing)}.");
     }
 
+    /// <summary>
+    /// Không thao tác (sửa, khóa, mở khóa, cấp lại mật khẩu) lên tài khoản có quyền cao hơn mình:
+    /// sysadmin chỉ do sysadmin quản lý; quyền hiệu lực của người bị tác động phải nằm trong quyền của người làm.
+    /// </summary>
+    protected async Task EnsureCanManageAsync(User target)
+    {
+        var actor = await GetActorAsync();
+        if (actor.IsSysAdmin) return;
+        if (target.IsSysAdmin)
+            throw new ForbiddenException("Chỉ sysadmin được thao tác trên tài khoản sysadmin.");
+        await EnsureCanGrantAsync(await PermissionEvaluator.GetEffectivePermissionsAsync(context, target));
+    }
+
     /// <summary>Mã quyền phải là node quyền (không phải node nhóm) có trong danh mục Features.</summary>
     protected async Task ValidateFeatureCodesAsync(IEnumerable<string> features, string field)
     {

@@ -20,7 +20,7 @@ public class ProjectMemberService(ApplicationDbContext context, IHttpContextAcce
 {
     public async Task<PagedResult<MembershipDto>> ListAsync(string projectId, MembershipQuery query)
     {
-        await EnsureProjectExistsAsync(projectId);
+        await RequireProjectAsync(projectId);
 
         var members = Context.ProjectMemberships.AsNoTracking().Where(m => m.ProjectId == projectId);
         var paged = await members.OrderBy(m => m.CreatedAt).ToPagedResultAsync(query);
@@ -30,7 +30,7 @@ public class ProjectMemberService(ApplicationDbContext context, IHttpContextAcce
 
     public async Task<MembershipDto> AddAsync(string projectId, MemberCreateRequest request)
     {
-        await EnsureProjectExistsAsync(projectId);
+        await RequireProjectAsync(projectId, PermissionFeatures.MembersManage);
 
         if (request.ProjectRole == ProjectRole.Owner)
             throw new ValidationException("OWNER chỉ được gán khi tạo hoặc đổi người phụ trách dự án.");
@@ -68,6 +68,7 @@ public class ProjectMemberService(ApplicationDbContext context, IHttpContextAcce
 
     public async Task<MembershipDto> EndAsync(string projectId, string membershipId, EndMembershipRequest request)
     {
+        await RequireProjectAsync(projectId, PermissionFeatures.MembersManage);
         var membership = await FindAsync(projectId, membershipId);
         CheckIfMatch(membership.Version);
 
@@ -92,6 +93,7 @@ public class ProjectMemberService(ApplicationDbContext context, IHttpContextAcce
 
     public async Task<MembershipDto> UpdateRoleAsync(string projectId, string membershipId, MemberRoleRequest request)
     {
+        await RequireProjectAsync(projectId, PermissionFeatures.MembersManage);
         var membership = await FindAsync(projectId, membershipId);
         if (membership.ProjectRole == ProjectRole.Owner)
             throw new BusinessRuleException("Không sửa OWNER bằng API này.");
@@ -115,12 +117,6 @@ public class ProjectMemberService(ApplicationDbContext context, IHttpContextAcce
         await WriteAuditLogAsync(membership.Id, "UPDATE_ROLE", before, Snapshot(membership), request.Reason);
         await Context.SaveChangesAsync();
         return (await MapManyAsync([membership]))[0];
-    }
-
-    private async Task EnsureProjectExistsAsync(string projectId)
-    {
-        if (!await Context.Projects.AnyAsync(p => p.Id == projectId))
-            throw new NotFoundException("Không tìm thấy dự án.");
     }
 
     private async Task<ProjectMembership> FindAsync(string projectId, string membershipId)

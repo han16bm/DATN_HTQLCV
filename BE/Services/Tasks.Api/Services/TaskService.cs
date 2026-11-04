@@ -14,11 +14,11 @@ using Tasks.Api.Models.Requests;
 
 namespace Tasks.Api.Services;
 
-public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskService
+public class TaskService(ApplicationDbContext db, IHttpContextAccessor http) : BaseService(db, http), ITaskService
 {
     public async Task<PagedResult<TaskDto>> ListAsync(TaskQuery query)
     {
-        var q = Db.Tasks.AsNoTracking().AsQueryable();
+        var q = VisibleTasks(await AccessAsync()).AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(query.Q))
             q = q.Where(t => t.Title.Contains(query.Q));
@@ -59,13 +59,13 @@ public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskServic
 
     public async Task<TaskDto> GetAsync(string taskId)
     {
-        var entity = await Db.Tasks.AsNoTracking().FirstOrDefaultAsync(t => t.Id == taskId) ?? throw new NotFoundException("Không tìm thấy công việc.");
+        var entity = await RequireTaskAsync(taskId);
         return await entity.ToDtoAsync(Db);
     }
 
     public async Task<TaskDto> CreateAsync(string projectId, CreateTaskRequest request, string actorId)
     {
-        var project = await Db.Projects.FindAsync(projectId) ?? throw new NotFoundException("Không tìm thấy dự án.");
+        var project = await (await AccessAsync()).EnsureAsync(Db, projectId, PermissionFeatures.TasksManage);
         if (project.Status != ProjectStatus.Active)
             throw new BusinessRuleException("Dự án chưa ở trạng thái Đang thực hiện.");
         if (request.DueAt <= DateTime.UtcNow)
@@ -101,7 +101,7 @@ public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskServic
 
     public async Task<TaskDto> UpdateAsync(string taskId, UpdateTaskRequest request, int ifMatchVersion, string actorId)
     {
-        var task = await RequireEntityAsync(taskId);
+        var task = await RequireTaskAsync(taskId, PermissionFeatures.TasksManage);
         CheckVersion(task.Version, ifMatchVersion);
         EnsureNotPendingReview(task);
         if (task.Status is not (WorkTaskStatus.New or WorkTaskStatus.Todo or WorkTaskStatus.InProgress))
@@ -129,7 +129,7 @@ public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskServic
 
     public async Task<TaskDto> CancelAsync(string taskId, CancelTaskRequest request, int ifMatchVersion, string actorId)
     {
-        var task = await RequireEntityAsync(taskId);
+        var task = await RequireTaskAsync(taskId, PermissionFeatures.TasksManage);
         CheckVersion(task.Version, ifMatchVersion);
         if (task.Status is not (WorkTaskStatus.New or WorkTaskStatus.Todo or WorkTaskStatus.InProgress))
             throw new BusinessRuleException("Chỉ hủy được công việc chưa Chờ nghiệm thu hoặc đã kết thúc.");
@@ -151,7 +151,7 @@ public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskServic
 
     public async Task<TaskDto> AssignAsync(string taskId, AssignTaskRequest request, int ifMatchVersion, string actorId)
     {
-        var task = await RequireEntityAsync(taskId);
+        var task = await RequireTaskAsync(taskId, PermissionFeatures.TasksManage);
         CheckVersion(task.Version, ifMatchVersion);
         EnsureNotPendingReview(task);
         if (task.Status is WorkTaskStatus.Completed or WorkTaskStatus.Cancelled)
@@ -196,7 +196,7 @@ public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskServic
 
     public async Task<TaskDto> StartAsync(string taskId, int ifMatchVersion, string actorId)
     {
-        var task = await RequireEntityAsync(taskId);
+        var task = await RequireTaskAsync(taskId);
         CheckVersion(task.Version, ifMatchVersion);
         if (task.AssigneeId != actorId)
             throw new ForbiddenException("Chỉ người nhận hiện tại được bắt đầu công việc.");
@@ -217,7 +217,7 @@ public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskServic
 
     public async Task<TaskDto> PauseAsync(string taskId, PauseTaskRequest request, int ifMatchVersion, string actorId)
     {
-        var task = await RequireEntityAsync(taskId);
+        var task = await RequireTaskAsync(taskId);
         CheckVersion(task.Version, ifMatchVersion);
         if (task.AssigneeId != actorId)
             throw new ForbiddenException("Chỉ người nhận hiện tại được tạm dừng công việc.");
@@ -237,7 +237,7 @@ public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskServic
 
     public async Task<TaskDto> UpdateRemainingEstimateAsync(string taskId, UpdateRemainingEstimateRequest request, int ifMatchVersion, string actorId)
     {
-        var task = await RequireEntityAsync(taskId);
+        var task = await RequireTaskAsync(taskId);
         CheckVersion(task.Version, ifMatchVersion);
         if (task.AssigneeId != actorId || task.Status != WorkTaskStatus.InProgress)
             throw new ForbiddenException("Chỉ người nhận hiện tại ở Đang thực hiện được cập nhật giờ còn lại.");
@@ -254,6 +254,7 @@ public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskServic
 
     public async Task<PagedResult<AuditDto>> ListHistoryAsync(string taskId, SimplePagingQuery query)
     {
+        await RequireTaskAsync(taskId);
         var q = Db.AuditLogs.AsNoTracking().Where(a => a.EntityType == nameof(WorkTask) && a.EntityId == taskId).OrderByDescending(a => a.At);
         var paged = await q.ToPagedResultAsync(query);
         var actorIds = paged.Items.Select(a => a.ActorId).Distinct().ToList();
@@ -265,11 +266,6 @@ public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskServic
             a.AfterJson is null ? null : System.Text.Json.JsonDocument.Parse(a.AfterJson).RootElement,
             a.Reason)).ToList();
         return new PagedResult<AuditDto> { Items = items, Page = paged.Page, PageSize = paged.PageSize, Total = paged.Total };
-    }
-
-    internal async Task<WorkTask> RequireEntityAsync(string taskId)
-    {
-        return await Db.Tasks.FirstOrDefaultAsync(t => t.Id == taskId) ?? throw new NotFoundException("Không tìm thấy công việc.");
     }
 
     internal static void EnsureNotPendingReview(WorkTask task)

@@ -4,6 +4,7 @@ using Shared.Commons.Extensions;
 using Shared.Commons.Models;
 using Shared.Commons.Utils;
 using Shared.Entities;
+using Shared.Entities.Authorization;
 using Shared.Entities.Entities;
 using Shared.Entities.Enums;
 using Tasks.Api.Interfaces;
@@ -13,16 +14,17 @@ using Tasks.Api.Models.Requests;
 
 namespace Tasks.Api.Services;
 
-public class ReportService(ApplicationDbContext db) : BaseService(db), IReportService
+public class ReportService(ApplicationDbContext db, IHttpContextAccessor http) : BaseService(db, http), IReportService
 {
     public async Task<ReportPreviewDto> GetPreviewAsync(ReportPreviewQuery query, string actorId)
     {
+        await RequireOwnProjectAsync(query.ProjectId);
         return await BuildPreviewAsync(query.ProjectId, query.PeriodType, query.PeriodStart, actorId);
     }
 
     public async Task<PagedResult<ReportDto>> ListAsync(ReportQuery query)
     {
-        var q = Db.Reports.AsNoTracking().AsQueryable();
+        var q = ReadableReports(await AccessAsync()).AsNoTracking();
         if (!string.IsNullOrWhiteSpace(query.ProjectId)) q = q.Where(r => r.ProjectId == query.ProjectId);
         if (!string.IsNullOrWhiteSpace(query.AuthorId)) q = q.Where(r => r.AuthorId == query.AuthorId);
         if (query.PeriodType.HasValue) q = q.Where(r => r.PeriodType == query.PeriodType);
@@ -40,11 +42,14 @@ public class ReportService(ApplicationDbContext db) : BaseService(db), IReportSe
     public async Task<ReportDto> GetAsync(string reportId)
     {
         var r = await Db.Reports.AsNoTracking().FirstOrDefaultAsync(x => x.Id == reportId) ?? throw new NotFoundException("Không tìm thấy báo cáo.");
+        if (!await ReadableReports(await AccessAsync()).AnyAsync(x => x.Id == reportId))
+            throw new ForbiddenException("Bản nháp chỉ dành cho tác giả; bản gửi cần quyền xem trong dự án.");
         return await r.ToDtoAsync(Db);
     }
 
     public async Task<ReportDto> CreateDraftAsync(CreateReportDraftRequest request, string actorId)
     {
+        await RequireOwnProjectAsync(request.ProjectId);
         if (request.PeriodStart > DateOnly.FromDateTime(DateTime.UtcNow))
             throw new ValidationException("Kỳ báo cáo không được ở tương lai.");
 
@@ -178,5 +183,27 @@ public class ReportService(ApplicationDbContext db) : BaseService(db), IReportSe
             Items = reportItems,
             PartialPeriod = partial
         };
+    }
+
+    // Đọc được: tác giả, hoặc bản đã gửi trong dự án người xem quản lý/xem phân tích (canRead của mock).
+    private IQueryable<Report> ReadableReports(ProjectAccess access)
+    {
+        var uid = access.UserId;
+        if (access.ReadsEveryProject)
+            return Db.Reports.Where(r => r.AuthorId == uid || r.Status == ReportStatus.Submitted);
+        var member = access.ProjectIds.ToList();
+        var oversee = member.Where(p => access.Has(p, PermissionFeatures.ProjectManage)
+            || access.Has(p, PermissionFeatures.TasksManage) || access.Has(p, PermissionFeatures.AnalyticsView)).ToList();
+        return Db.Reports.Where(r => member.Contains(r.ProjectId)
+            && (r.AuthorId == uid || (r.Status == ReportStatus.Submitted && oversee.Contains(r.ProjectId))));
+    }
+
+    // Báo cáo cá nhân chỉ lập trong dự án mình đang là thành viên (activeProject của mock).
+    private async Task RequireOwnProjectAsync(string projectId)
+    {
+        var access = await AccessAsync();
+        await access.EnsureAsync(Db, projectId);
+        if (!access.IsMember(projectId))
+            throw new ForbiddenException("Chỉ thành viên dự án được lập báo cáo cá nhân.");
     }
 }

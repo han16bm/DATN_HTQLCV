@@ -1,3 +1,5 @@
+using Shared.Entities.Authorization;
+using Shared.Commons.Exceptions;
 using Analytics.Api.Constants;
 using Analytics.Api.Interfaces;
 using Analytics.Api.Models.Dtos;
@@ -12,11 +14,32 @@ using Shared.Entities.Enums;
 
 namespace Analytics.Api.Services;
 
-public class AnalyticsService(ApplicationDbContext context) : IAnalyticsService
+public class AnalyticsService(ApplicationDbContext context, IHttpContextAccessor http) : IAnalyticsService
 {
+    // Dự án được xem (analyticsScope của mock); null = ANALYTICS_VIEW hệ thống, xem mọi dự án.
+    private List<string>? _allowed;
+
+    // requireAny=false (danh mục lọc): chưa có dự án nào thì trả danh sách rỗng thay vì 403, như mock.
+    private async Task AuthorizeAsync(string? projectId, string? unitId, bool requireAny = true)
+    {
+        var userId = http.HttpContext?.GetUserId() ?? throw new UnauthorizedException("Phiên đăng nhập không hợp lệ.");
+        var access = await ProjectAccess.LoadAsync(context, userId);
+        if (access.ReadsEveryProject) { _allowed = null; return; }
+        _allowed = access.ProjectIdsWith(PermissionFeatures.AnalyticsView).ToList();
+        if (_allowed.Count == 0 && requireAny)
+            throw new ForbiddenException("Bạn chưa được cấp quyền phân tích trong dự án nào.");
+        if (!requireAny && string.IsNullOrWhiteSpace(projectId) && string.IsNullOrWhiteSpace(unitId)) return;
+        var inScope = await context.Projects.AnyAsync(p => _allowed.Contains(p.Id)
+            && (string.IsNullOrWhiteSpace(projectId) || p.Id == projectId)
+            && (string.IsNullOrWhiteSpace(unitId) || p.UnitId == unitId));
+        if (!inScope)
+            throw new ForbiddenException("Bạn không có quyền xem phạm vi này.");
+    }
+
     private IQueryable<WorkTask> FilterTasks(AnalyticsQuery q)
     {
         var query = context.Tasks.AsNoTracking().Include(t => t.Project).AsQueryable();
+        if (_allowed is not null) query = query.Where(t => _allowed.Contains(t.ProjectId));
         if (!string.IsNullOrWhiteSpace(q.ProjectId)) query = query.Where(t => t.ProjectId == q.ProjectId);
         if (!string.IsNullOrWhiteSpace(q.UnitId)) query = query.Where(t => t.Project!.UnitId == q.UnitId);
         if (!string.IsNullOrWhiteSpace(q.OwnerId)) query = query.Where(t => t.Project!.OwnerId == q.OwnerId);
@@ -28,6 +51,7 @@ public class AnalyticsService(ApplicationDbContext context) : IAnalyticsService
 
     public async Task<DashboardDto> GetDashboardAsync(AnalyticsQuery q)
     {
+        await AuthorizeAsync(q.ProjectId, q.UnitId);
         var now = DateTime.UtcNow;
         var periodStartUtc = q.From.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
         var periodEndExclusiveUtc = q.To.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
@@ -125,6 +149,7 @@ public class AnalyticsService(ApplicationDbContext context) : IAnalyticsService
         var reportsQuery = context.Reports.AsNoTracking()
             .Where(r => r.Status == ReportStatus.Submitted && r.SubmittedAt.HasValue
                 && r.SubmittedAt.Value >= periodStartUtc && r.SubmittedAt.Value < periodEndExclusiveUtc);
+        if (_allowed is not null) reportsQuery = reportsQuery.Where(r => _allowed.Contains(r.ProjectId));
         if (!string.IsNullOrWhiteSpace(q.ProjectId))
         {
             reportsQuery = reportsQuery.Where(r => r.ProjectId == q.ProjectId);
@@ -207,6 +232,7 @@ public class AnalyticsService(ApplicationDbContext context) : IAnalyticsService
 
     public async Task<RisksDto> GetRisksAsync(AnalyticsQuery q)
     {
+        await AuthorizeAsync(q.ProjectId, q.UnitId);
         var now = DateTime.UtcNow;
         var atRiskCutoff = now.AddDays(Thresholds.AtRiskDays);
 
@@ -273,6 +299,7 @@ public class AnalyticsService(ApplicationDbContext context) : IAnalyticsService
 
     public async Task<WorkloadDto> GetWorkloadAsync(AnalyticsQuery q)
     {
+        await AuthorizeAsync(q.ProjectId, q.UnitId);
         var now = DateTime.UtcNow;
         var tasksQuery = FilterTasks(q);
 
@@ -311,6 +338,7 @@ public class AnalyticsService(ApplicationDbContext context) : IAnalyticsService
 
     public async Task<BottlenecksDto> GetBottlenecksAsync(AnalyticsQuery q)
     {
+        await AuthorizeAsync(q.ProjectId, q.UnitId);
         var now = DateTime.UtcNow;
         var tasks = await FilterTasks(q)
             .Where(t => t.Status == WorkTaskStatus.Todo || t.Status == WorkTaskStatus.InProgress || t.Status == WorkTaskStatus.PendingReview)
@@ -353,20 +381,25 @@ public class AnalyticsService(ApplicationDbContext context) : IAnalyticsService
 
     public async Task<PagedResult<EntityLabelDto>> ListFilterOptionsAsync(FilterOptionsQuery query)
     {
+        await AuthorizeAsync(query.ProjectId, query.UnitId, requireAny: false);
+        var projects = context.Projects.AsNoTracking().Where(p => _allowed == null || _allowed.Contains(p.Id));
+        var units = projects.Select(p => p.UnitId);
         IQueryable<EntityLabelDto> source = query.Kind switch
         {
             "UNIT" => context.Units.AsNoTracking()
+                .Where(u => _allowed == null || units.Contains(u.Id))
                 .Where(u => string.IsNullOrWhiteSpace(query.Q) || u.Name.Contains(query.Q))
                 .OrderBy(u => u.Name)
                 .Select(u => new EntityLabelDto(u.Id, u.Name)),
 
-            "PROJECT" => context.Projects.AsNoTracking()
+            "PROJECT" => projects
                 .Where(p => string.IsNullOrWhiteSpace(query.UnitId) || p.UnitId == query.UnitId)
                 .Where(p => string.IsNullOrWhiteSpace(query.Q) || p.Name.Contains(query.Q) || p.Code.Contains(query.Q))
                 .OrderBy(p => p.Name)
                 .Select(p => new EntityLabelDto(p.Id, p.Name)),
 
             "TEAM" => context.Teams.AsNoTracking()
+                .Where(t => _allowed == null || units.Contains(t.UnitId))
                 .Where(t => string.IsNullOrWhiteSpace(query.UnitId) || t.UnitId == query.UnitId)
                 .Where(t => string.IsNullOrWhiteSpace(query.Q) || t.Name.Contains(query.Q))
                 .OrderBy(t => t.Name)
@@ -383,6 +416,12 @@ public class AnalyticsService(ApplicationDbContext context) : IAnalyticsService
     private IQueryable<EntityLabelDto> BuildPersonFilterOptions(FilterOptionsQuery query)
     {
         var users = context.Users.AsNoTracking().Where(u => u.Status == UserStatus.Active);
+        if (_allowed is not null)
+        {
+            var visible = context.ProjectMemberships
+                .Where(m => _allowed.Contains(m.ProjectId) && m.EndedAt == null).Select(m => m.UserId);
+            users = users.Where(u => visible.Contains(u.Id));
+        }
 
         if (!string.IsNullOrWhiteSpace(query.ProjectId))
         {

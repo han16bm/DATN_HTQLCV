@@ -10,7 +10,7 @@ namespace Analytics.Api.Controllers;
 
 [Authorize]
 [Audit]
-[RequiresPermission(PermissionFeatures.AnalyticsView)]
+// ANALYTICS_VIEW hệ thống hoặc ở ít nhất một dự án: AnalyticsService giới hạn phạm vi dữ liệu.
 [ApiController]
 [Route("api/analytics/workload")]
 public class WorkloadController(ILogger<BaseApiController> logger, IAnalyticsService service) : BaseApiController(logger)

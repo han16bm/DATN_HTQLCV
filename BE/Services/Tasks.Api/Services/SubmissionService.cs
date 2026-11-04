@@ -13,10 +13,11 @@ using Tasks.Api.Models.Requests;
 
 namespace Tasks.Api.Services;
 
-public class SubmissionService(ApplicationDbContext db) : BaseService(db), ISubmissionService
+public class SubmissionService(ApplicationDbContext db, IHttpContextAccessor http) : BaseService(db, http), ISubmissionService
 {
     public async Task<PagedResult<SubmissionDto>> ListAsync(string taskId, SimplePagingQuery query)
     {
+        await RequireTaskAsync(taskId);
         var q = Db.Submissions.AsNoTracking().Where(s => s.TaskId == taskId).OrderByDescending(s => s.Sequence);
         var paged = await q.ToPagedResultAsync(query);
         var items = new List<SubmissionDto>();
@@ -26,6 +27,7 @@ public class SubmissionService(ApplicationDbContext db) : BaseService(db), ISubm
 
     public async Task<SubmissionDto> GetAsync(string taskId, string submissionId)
     {
+        await RequireTaskAsync(taskId);
         var s = await Db.Submissions.AsNoTracking().FirstOrDefaultAsync(x => x.Id == submissionId && x.TaskId == taskId)
             ?? throw new NotFoundException("Không tìm thấy lần nộp.");
         return await s.ToDtoAsync(Db);
@@ -33,7 +35,7 @@ public class SubmissionService(ApplicationDbContext db) : BaseService(db), ISubm
 
     public async Task<SubmissionMutationResult> CreateAsync(string taskId, CreateSubmissionRequest request, int ifMatchVersion, string actorId)
     {
-        var task = await Db.Tasks.FirstOrDefaultAsync(t => t.Id == taskId) ?? throw new NotFoundException("Không tìm thấy công việc.");
+        var task = await RequireTaskAsync(taskId);
         TaskService.CheckVersion(task.Version, ifMatchVersion);
         if (task.AssigneeId != actorId || task.Status != WorkTaskStatus.InProgress)
             throw new BusinessRuleException("Chỉ người nhận hiện tại ở Đang thực hiện được nộp kết quả.");
@@ -146,7 +148,12 @@ public class SubmissionService(ApplicationDbContext db) : BaseService(db), ISubm
 
     public async Task<PagedResult<ReviewQueueItemDto>> ListReviewQueueAsync(ReviewQueueQuery query)
     {
-        var q = Db.Submissions.AsNoTracking().Where(s => s.Status == SubmissionStatus.Pending);
+        // Chỉ dự án người xét có TASKS_REVIEW; bỏ lần nộp của chính mình và lần nộp không còn mới nhất.
+        var access = await AccessAsync();
+        var reviewable = access.ProjectIdsWith(PermissionFeatures.TasksReview).ToList();
+        var uid = access.UserId;
+        var q = Db.Submissions.AsNoTracking().Where(s => s.Status == SubmissionStatus.Pending && s.SubmittedBy != uid
+            && Db.Tasks.Any(t => t.Id == s.TaskId && t.LatestSubmissionId == s.Id && reviewable.Contains(t.ProjectId)));
         if (!string.IsNullOrWhiteSpace(query.ProjectId))
         {
             var taskIds = Db.Tasks.Where(t => t.ProjectId == query.ProjectId).Select(t => t.Id);
@@ -170,7 +177,7 @@ public class SubmissionService(ApplicationDbContext db) : BaseService(db), ISubm
 
     private async Task<(Submission Submission, WorkTask Task)> RequireLatestPendingAsync(string taskId, string submissionId, string actorId)
     {
-        var task = await Db.Tasks.FirstOrDefaultAsync(t => t.Id == taskId) ?? throw new NotFoundException("Không tìm thấy công việc.");
+        var task = await RequireTaskAsync(taskId, PermissionFeatures.TasksReview);
         var submission = await Db.Submissions.FirstOrDefaultAsync(s => s.Id == submissionId && s.TaskId == taskId)
             ?? throw new NotFoundException("Không tìm thấy lần nộp.");
 

@@ -98,6 +98,7 @@ public class UserService(ApplicationDbContext context, IHttpContextAccessor http
     public async Task<UserDto> UpdateAsync(string userId, UserPatchRequest request, int ifMatchVersion)
     {
         var user = await FindAsync(userId);
+        await EnsureCanManageAsync(user);
         CheckVersion(user.Version, ifMatchVersion);
 
         var before = new { user.DisplayName, user.Email, user.UnitId };
@@ -116,6 +117,7 @@ public class UserService(ApplicationDbContext context, IHttpContextAccessor http
     public async Task<UserDto> LockAsync(string userId, UserLockRequest request, int ifMatchVersion)
     {
         var user = await FindAsync(userId);
+        await EnsureCanManageAsync(user);
         CheckVersion(user.Version, ifMatchVersion);
 
         await EnsureNotLastSysAdminAsync(user);
@@ -139,6 +141,7 @@ public class UserService(ApplicationDbContext context, IHttpContextAccessor http
     public async Task<UserDto> UnlockAsync(string userId, ReasonRequest request, int ifMatchVersion)
     {
         var user = await FindAsync(userId);
+        await EnsureCanManageAsync(user);
         CheckVersion(user.Version, ifMatchVersion);
 
         user.Status = UserStatus.Active;
@@ -156,6 +159,7 @@ public class UserService(ApplicationDbContext context, IHttpContextAccessor http
     public async Task ResetPasswordAsync(string userId, ResetPasswordRequest request)
     {
         var user = await FindAsync(userId);
+        await EnsureCanManageAsync(user);
         user.PasswordHash = Hasher.HashPassword(user, request.TemporaryPassword);
         user.UpdatedAt = DateTime.UtcNow;
         user.Version++;

@@ -6,6 +6,7 @@ using Shared.Commons.Utils;
 using Projects.Api.Models.Dtos;
 using Shared.Entities;
 using Shared.Entities.Auditing;
+using Shared.Entities.Authorization;
 using Shared.Entities.Entities;
 
 namespace Projects.Api.Services;
@@ -16,6 +17,13 @@ public abstract class BaseService<T>(ApplicationDbContext context, IHttpContextA
     protected readonly IHttpContextAccessor HttpContextAccessor = httpContextAccessor;
 
     protected string CurrentUserId => HttpContextAccessor.HttpContext?.GetUserId() ?? "UNKNOWN";
+
+    /// <summary>Quyền của người gọi trong từng dự án (ADMIN_MODULES §11).</summary>
+    protected Task<ProjectAccess> AccessAsync() => ProjectAccess.LoadAsync(Context, CurrentUserId);
+
+    /// <summary>Dự án không có → 404; không đọc được hoặc thiếu mã quyền → 403.</summary>
+    protected async Task<Project> RequireProjectAsync(string projectId, string? permission = null) =>
+        await (await AccessAsync()).EnsureAsync(Context, projectId, permission);
 
     protected async Task WriteAuditLogAsync(string entityId, string action, object? before, object? after, string? reason = null)
     {

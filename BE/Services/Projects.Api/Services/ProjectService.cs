@@ -21,6 +21,12 @@ public class ProjectService(ApplicationDbContext context, IHttpContextAccessor h
     public async Task<PagedResult<ProjectDto>> ListAsync(ProjectQuery query)
     {
         var projects = Context.Projects.AsNoTracking().AsQueryable();
+        var access = await AccessAsync();
+        if (!access.ReadsEveryProject)
+        {
+            var mine = access.ProjectIds.ToList();
+            projects = projects.Where(p => mine.Contains(p.Id));
+        }
 
         if (!string.IsNullOrWhiteSpace(query.Q))
             projects = projects.Where(p => p.Name.Contains(query.Q) || p.Code.Contains(query.Q));
@@ -36,12 +42,15 @@ public class ProjectService(ApplicationDbContext context, IHttpContextAccessor h
 
     public async Task<ProjectDto> GetAsync(string projectId)
     {
-        var project = await FindAsync(projectId);
+        var project = await RequireProjectAsync(projectId);
         return await MapAsync(project);
     }
 
     public async Task<ProjectDto> CreateAsync(ProjectCreateRequest request)
     {
+        var creator = await Context.Users.AsNoTracking().FirstAsync(u => u.Id == CurrentUserId);
+        if (request.UnitId != creator.UnitId)
+            throw new ForbiddenException("Không được tạo dự án ngoài đơn vị được cấp quyền.");
         if (await Context.Projects.AnyAsync(p => p.Code == request.Code))
             throw new BusinessRuleException("Mã dự án đã tồn tại.");
 
@@ -90,7 +99,7 @@ public class ProjectService(ApplicationDbContext context, IHttpContextAccessor h
 
     public async Task<ProjectDto> UpdateAsync(string projectId, ProjectPatchRequest request)
     {
-        var project = await FindAsync(projectId);
+        var project = await RequireProjectAsync(projectId, PermissionFeatures.ProjectManage);
         CheckIfMatch(project.Version);
         var before = Snapshot(project);
 
@@ -149,7 +158,7 @@ public class ProjectService(ApplicationDbContext context, IHttpContextAccessor h
 
     public async Task<ProjectDto> ActivateAsync(string projectId)
     {
-        var project = await FindAsync(projectId);
+        var project = await RequireProjectAsync(projectId, PermissionFeatures.ProjectManage);
         CheckIfMatch(project.Version);
         if (project.Status != ProjectStatus.Planned)
             throw new BusinessRuleException("Chỉ dự án Dự kiến mới chuyển sang Đang thực hiện.");
@@ -166,14 +175,14 @@ public class ProjectService(ApplicationDbContext context, IHttpContextAccessor h
 
     public async Task<ClosureChecksDto> GetClosureChecksAsync(string projectId)
     {
-        await FindAsync(projectId);
+        await RequireProjectAsync(projectId);
         var (open, pendingReview, pendingReports) = await LoadClosureCountsAsync(projectId);
         return new ClosureChecksDto(open, pendingReview, pendingReports, open == 0 && pendingReview == 0 && pendingReports == 0);
     }
 
     public async Task<ProjectDto> CompleteAsync(string projectId)
     {
-        var project = await FindAsync(projectId);
+        var project = await RequireProjectAsync(projectId, PermissionFeatures.ProjectManage);
         CheckIfMatch(project.Version);
         if (project.Status != ProjectStatus.Active)
             throw new BusinessRuleException("Chỉ dự án Đang thực hiện mới được hoàn thành.");
@@ -195,7 +204,7 @@ public class ProjectService(ApplicationDbContext context, IHttpContextAccessor h
 
     public async Task<ProjectDto> CancelAsync(string projectId, CancelProjectRequest request)
     {
-        var project = await FindAsync(projectId);
+        var project = await RequireProjectAsync(projectId, PermissionFeatures.ProjectManage);
         CheckIfMatch(project.Version);
         if (project.Status is not (ProjectStatus.Planned or ProjectStatus.Active))
             throw new BusinessRuleException("Chỉ dự án Dự kiến hoặc Đang thực hiện mới được hủy.");
@@ -217,7 +226,7 @@ public class ProjectService(ApplicationDbContext context, IHttpContextAccessor h
 
     public async Task<PagedResult<AuditDto>> ListHistoryAsync(string projectId, PagingQuery query)
     {
-        await FindAsync(projectId);
+        await RequireProjectAsync(projectId);
         var logs = Context.AuditLogs.AsNoTracking()
             .Where(a => a.EntityType == nameof(Project) && a.EntityId == projectId)
             .OrderByDescending(a => a.At);
@@ -236,12 +245,6 @@ public class ProjectService(ApplicationDbContext context, IHttpContextAccessor h
     {
         if (json is null) return null;
         return System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(json);
-    }
-
-    private async Task<Project> FindAsync(string projectId)
-    {
-        return await Context.Projects.FirstOrDefaultAsync(p => p.Id == projectId)
-            ?? throw new NotFoundException("Không tìm thấy dự án.");
     }
 
     private async Task<(int Open, int PendingReview, int PendingReports)> LoadClosureCountsAsync(string projectId)

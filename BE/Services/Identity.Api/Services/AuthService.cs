@@ -32,10 +32,12 @@ public class AuthService(
         var user = await context.Users.Include(u => u.Unit).FirstOrDefaultAsync(u => u.Username == request.Username)
             ?? throw new UnauthorizedException("Sai tên đăng nhập hoặc mật khẩu.");
 
-        if (user.Status == UserStatus.Locked)
-            throw AccountLocked(user);
-
         var verify = Hasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
+        // Tài khoản đã khoá: sai mật khẩu chỉ nhận lỗi chung (không lộ trạng thái/lý do khoá, không đếm thêm).
+        if (user.Status == UserStatus.Locked)
+            throw verify == PasswordVerificationResult.Failed
+                ? new UnauthorizedException("Sai tên đăng nhập hoặc mật khẩu.")
+                : AccountLocked(user);
         if (verify == PasswordVerificationResult.Failed)
         {
             user.FailedLoginCount++;
@@ -104,14 +106,13 @@ public class AuthService(
 
     private async Task<SessionDto> BuildSessionAsync(User user)
     {
-        var access = await context.ProjectMemberships
-            .Where(m => m.UserId == user.Id && m.EndedAt == null)
-            .Select(m => new ProjectAccessDto(m.ProjectId, m.ProjectRole.ToString().ToUpperInvariant()))
-            .ToListAsync();
+        var projects = await ProjectAccess.LoadAsync(context, user.Id);
+        var access = projects.ProjectIds
+            .Select(id => new ProjectAccessDto(id, projects.RoleIn(id)!.Value.ToString().ToUpperInvariant(), projects.PermissionsIn(id)))
+            .ToList();
 
         var userDto = UserService.ToDto(user, await UserService.LoadActiveGroupsAsync(context, [user.Id]), null);
 
-        var permissions = await PermissionEvaluator.GetEffectivePermissionsAsync(context, user);
-        return new SessionDto(userDto, access, permissions);
+        return new SessionDto(userDto, access, projects.SystemPermissions.ToList());
     }
 }

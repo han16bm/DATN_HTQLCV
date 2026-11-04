@@ -12,9 +12,10 @@ public static class PermissionFeatures
     public const string ProjectCreate = "PROJECT_CREATE";
     public const string AnalyticsView = "ANALYTICS_VIEW";
 
-    // Quyền theo dự án — suy ra từ ProjectRole, không nằm trong Features
+    // Quyền theo dự án — suy ra từ ProjectRole qua Authorization/ProjectAccess, không nằm trong Features
     public const string ProjectManage = "PROJECT_MANAGE";
     public const string MembersManage = "MEMBERS_MANAGE";
     public const string TasksManage = "TASKS_MANAGE";
+    public const string TasksReview = "TASKS_REVIEW";
     public const string AlertsManage = "ALERTS_MANAGE";
 }

@@ -5065,14 +5065,10 @@ function scheduleAlertRules() {
 // Giống AlertService (BE): người nhận = người được giao task + Owner/Manager dự án;
 // ANALYTICS_VIEW hệ thống xem tất cả, chỉ sysadmin xử lý thay người nhận.
 function alertRecipient(u: User, a: (typeof db.alerts)[number]) {
+  // Người nhận: người được giao việc hoặc người có ALERTS_MANAGE trong dự án (ADMIN_MODULES §11.6).
   return (
-    db.members.some(
-      (m) =>
-        m.projectId === a.projectId &&
-        m.userId === u.id &&
-        !m.endedAt &&
-        m.projectRole !== "MEMBER",
-    ) || db.tasks.some((t) => t.id === a.taskId && t.assigneeId === u.id)
+    projectPermissions(u, a.projectId).includes("ALERTS_MANAGE") ||
+    db.tasks.some((t) => t.id === a.taskId && t.assigneeId === u.id)
   );
 }
 const alertVisible = (u: User, a: (typeof db.alerts)[number]) =>

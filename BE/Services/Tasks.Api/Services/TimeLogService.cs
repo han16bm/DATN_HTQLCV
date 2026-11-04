@@ -13,12 +13,13 @@ using Tasks.Api.Models.Requests;
 
 namespace Tasks.Api.Services;
 
-public class TimeLogService(ApplicationDbContext db) : BaseService(db), ITimeLogService
+public class TimeLogService(ApplicationDbContext db, IHttpContextAccessor http) : BaseService(db, http), ITimeLogService
 {
     private const int MinutesPerDayLimit = 1440;
 
     public async Task<PagedResult<TimeLogDto>> ListAsync(string taskId, SimplePagingQuery query)
     {
+        await RequireTaskAsync(taskId);
         var q = Db.TimeLogs.AsNoTracking().Where(l => l.TaskId == taskId).OrderByDescending(l => l.WorkDate);
         var paged = await q.ToPagedResultAsync(query);
         var items = new List<TimeLogDto>();
@@ -28,7 +29,7 @@ public class TimeLogService(ApplicationDbContext db) : BaseService(db), ITimeLog
 
     public async Task<TimeLogMutationResult> CreateAsync(string taskId, CreateTimeLogRequest request, int ifMatchVersion, string actorId)
     {
-        var task = await Db.Tasks.FirstOrDefaultAsync(t => t.Id == taskId) ?? throw new NotFoundException("Không tìm thấy công việc.");
+        var task = await RequireTaskAsync(taskId);
         TaskService.CheckVersion(task.Version, ifMatchVersion);
         if (task.AssigneeId != actorId || task.Status != WorkTaskStatus.InProgress)
             throw new ForbiddenException("Chỉ người nhận hiện tại ở Đang thực hiện được ghi thời gian.");
@@ -68,7 +69,7 @@ public class TimeLogService(ApplicationDbContext db) : BaseService(db), ITimeLog
         if (log.Status != TimeLogStatus.Active || log.UserId != actorId)
             throw new ForbiddenException("Chỉ sửa được nhật ký còn hiệu lực của chính mình.");
 
-        var task = await Db.Tasks.FirstOrDefaultAsync(t => t.Id == log.TaskId) ?? throw new NotFoundException("Không tìm thấy công việc.");
+        var task = await RequireTaskAsync(log.TaskId);
         if (task.AssigneeId != actorId || task.Status != WorkTaskStatus.InProgress)
             throw new BusinessRuleException("Công việc không còn Đang thực hiện với người nhận này.");
 
@@ -102,7 +103,7 @@ public class TimeLogService(ApplicationDbContext db) : BaseService(db), ITimeLog
         if (log.UserId != actorId)
             throw new ForbiddenException("Chỉ chủ nhật ký được loại khỏi tổng.");
 
-        var task = await Db.Tasks.FirstOrDefaultAsync(t => t.Id == log.TaskId) ?? throw new NotFoundException("Không tìm thấy công việc.");
+        var task = await RequireTaskAsync(log.TaskId);
         if (task.AssigneeId != actorId || task.Status != WorkTaskStatus.InProgress)
             throw new BusinessRuleException("Công việc không còn Đang thực hiện với người nhận này.");
 

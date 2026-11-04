@@ -10,7 +10,7 @@ using Tasks.Api.Models.Dtos;
 
 namespace Tasks.Api.Services;
 
-public class AttachmentService(ApplicationDbContext db, IWebHostEnvironment env) : BaseService(db), IAttachmentService
+public class AttachmentService(ApplicationDbContext db, IWebHostEnvironment env, IHttpContextAccessor http) : BaseService(db, http), IAttachmentService
 {
     private static readonly string[] AllowedMimeTypes = ["application/pdf", "image/png", "image/jpeg", "text/plain",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
@@ -23,7 +23,7 @@ public class AttachmentService(ApplicationDbContext db, IWebHostEnvironment env)
 
     public async Task<AttachmentDto> UploadAsync(string taskId, IFormFile file, string actorId)
     {
-        var task = await Db.Tasks.FirstOrDefaultAsync(t => t.Id == taskId) ?? throw new NotFoundException("Không tìm thấy công việc.");
+        var task = await RequireTaskAsync(taskId);
         if (task.AssigneeId != actorId || task.Status != WorkTaskStatus.InProgress)
             throw new BusinessRuleException("Chỉ người nhận hiện tại ở Đang thực hiện được tải minh chứng.");
         if (file.Length == 0 || file.Length > MaxBytes)
@@ -77,16 +77,9 @@ public class AttachmentService(ApplicationDbContext db, IWebHostEnvironment env)
         return (File.OpenRead(a.StoragePath), a.MimeType, a.Filename);
     }
 
-    // Chỉ người tải lên hoặc thành viên đang hoạt động của dự án chứa công việc mới được xem/tải minh chứng.
+    // Chỉ người tải lên hoặc người thấy được công việc chứa tệp mới được xem/tải minh chứng.
     private async Task EnsureAccessAsync(Attachment a, string actorId)
     {
-        if (a.UploadedBy == actorId) return;
-
-        var task = await Db.Tasks.AsNoTracking().FirstOrDefaultAsync(t => t.Id == a.TaskId)
-            ?? throw new NotFoundException("Không tìm thấy công việc.");
-        var isMember = await Db.ProjectMemberships.AsNoTracking()
-            .AnyAsync(m => m.ProjectId == task.ProjectId && m.UserId == actorId && m.EndedAt == null);
-        if (!isMember)
-            throw new ForbiddenException("Không có quyền truy cập tệp này.");
+        if (a.UploadedBy != actorId) await RequireTaskAsync(a.TaskId);
     }
 }

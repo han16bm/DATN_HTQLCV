@@ -1,3 +1,4 @@
+using Shared.Entities.Authorization;
 using Analytics.Api.Interfaces;
 using Analytics.Api.Models.Dtos;
 using Analytics.Api.Models.Queries;
@@ -85,7 +86,7 @@ public class AlertService(ApplicationDbContext context, IHttpContextAccessor htt
         return ToDto(alert, ResolveTaskTitle(alert.TaskId, titles), names) with { CanHandle = true };
     }
 
-    // Cảnh báo là thông báo cá nhân: người nhận = người được giao task + Owner/Manager dự án.
+    // Cảnh báo là thông báo cá nhân: người nhận = người được giao task + người có ALERTS_MANAGE trong dự án.
     // Sysadmin và người có ANALYTICS_VIEW được xem tất cả (chỉ sysadmin được xử lý thay).
     private async Task<IQueryable<Alert>> VisibleAlertsAsync()
     {
@@ -93,20 +94,17 @@ public class AlertService(ApplicationDbContext context, IHttpContextAccessor htt
         var q = context.Alerts.AsNoTracking();
         if (await PermissionEvaluator.HasPermissionAsync(context, actor, PermissionFeatures.AnalyticsView))
             return q;
-        var managed = ManagedProjectIds(actor.Id);
+        var managed = await ManagedProjectIdsAsync(actor.Id);
         return q.Where(a => managed.Contains(a.ProjectId)
             || context.Tasks.Any(t => t.Id == a.TaskId && t.AssigneeId == actor.Id));
     }
 
     private async Task<bool> IsRecipientAsync(Alert alert, string userId) =>
-        await ManagedProjectIds(userId).ContainsAsync(alert.ProjectId)
+        (await ManagedProjectIdsAsync(userId)).Contains(alert.ProjectId)
         || (alert.TaskId != null && await context.Tasks.AnyAsync(t => t.Id == alert.TaskId && t.AssigneeId == userId));
 
-    private IQueryable<string> ManagedProjectIds(string userId) =>
-        context.ProjectMemberships
-            .Where(m => m.UserId == userId && m.EndedAt == null
-                && (m.ProjectRole == ProjectRole.Owner || m.ProjectRole == ProjectRole.Manager))
-            .Select(m => m.ProjectId);
+    private async Task<List<string>> ManagedProjectIdsAsync(string userId) =>
+        (await ProjectAccess.LoadAsync(context, userId)).ProjectIdsWith(PermissionFeatures.AlertsManage).ToList();
 
     private async Task<User> GetActorAsync()
     {

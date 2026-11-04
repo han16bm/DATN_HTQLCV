@@ -77,8 +77,9 @@ export function parseQuery<S extends z.ZodType>(
   for (const name of ["page", "pageSize"])
     if (typeof query[name] === "string" && /^\d+$/.test(query[name]))
       query[name] = Number(query[name]);
-  if (query.overdue === "true") query.overdue = true;
-  else if (query.overdue === "false") query.overdue = false;
+  for (const name of ["overdue", "isSysAdmin"])
+    if (query[name] === "true") query[name] = true;
+    else if (query[name] === "false") query[name] = false;
   return schema.parse(query);
 }
 export function mockHandler(
@@ -204,6 +205,7 @@ export async function mockCommand(
     {
       feature: command.feature,
       scenario: request.headers.get("X-Mock-Scenario"),
+      actor: command.viewer.id,
     },
   );
 }

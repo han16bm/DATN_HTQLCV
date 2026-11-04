@@ -8,4 +8,9 @@ public record TeamDto(
     string Name,
     string UnitId,
     List<string> MemberIds,
-    string Status);
+    string Status,
+    RefDto? CreatedBy,
+    RefDto? UpdatedBy,
+    // Trường cho bảng danh sách nhóm (teamRowSchema của FE)
+    EntityLabelDto Unit,
+    int MemberCount);

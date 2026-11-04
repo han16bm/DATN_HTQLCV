@@ -67,6 +67,41 @@ const labels: Record<string, string> = {
   ORGANIZATION_MANAGE: "Quản lý tổ chức",
 };
 export const label = (value: string) => labels[value] ?? value;
+// Nhãn quyền của tài khoản: Sysadmin và tên các nhóm quyền đang hoạt động.
+export const accessText = (user: {
+  isSysAdmin: boolean;
+  groups: { label: string }[];
+}) =>
+  [
+    ...(user.isSysAdmin ? ["Sysadmin"] : []),
+    ...user.groups.map((g) => g.label),
+  ].join(", ") || "Chưa thuộc nhóm quyền";
+// Loại đối tượng của nhật ký hệ thống (EntityType BE và mã mock); lạ thì giữ nguyên.
+const entityTypes: Record<string, string> = {
+  WorkTask: "Công việc",
+  TASK: "Công việc",
+  Project: "Dự án",
+  PROJECT: "Dự án",
+  ProjectMembership: "Thành viên dự án",
+  User: "Tài khoản",
+  USER: "Tài khoản",
+  Unit: "Đơn vị",
+  UNIT: "Đơn vị",
+  Team: "Team",
+  TEAM: "Team",
+  PermissionGroup: "Nhóm quyền",
+  Feature: "Mã quyền",
+  SystemConfig: "Cấu hình",
+  IpWhitelistEntry: "IP whitelist",
+  BackgroundJob: "Job nền",
+  Alert: "Cảnh báo",
+  ALERT: "Cảnh báo",
+  TimeLog: "Giờ công",
+  Submission: "Lần nộp",
+  Report: "Báo cáo",
+  Attachment: "Tệp đính kèm",
+};
+export const entityTypeLabel = (value: string) => entityTypes[value] ?? value;
 export const eventLabel = (value: string) =>
   value.split(" → ").map(label).join(" → ");
 export const dateTime = (value: string | null | undefined) =>
@@ -77,6 +112,22 @@ export const dateTime = (value: string | null | undefined) =>
         timeZone: "Asia/Ho_Chi_Minh",
       }).format(new Date(value))
     : "—";
+// dd/MM/yyyy HH:mm theo giờ Việt Nam, dùng cho dấu vết tạo/sửa (ADMIN_MODULES 8.4).
+const stampFormat = new Intl.DateTimeFormat("vi-VN", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: "Asia/Ho_Chi_Minh",
+});
+export function stampDateTime(value: string) {
+  const p = Object.fromEntries(
+    stampFormat.formatToParts(new Date(value)).map((x) => [x.type, x.value]),
+  );
+  return `${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute}`;
+}
 export const number = (value: number | null | undefined, suffix = "") =>
   value === null || value === undefined
     ? "Chưa đủ dữ liệu"

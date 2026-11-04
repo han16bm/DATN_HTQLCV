@@ -3,6 +3,7 @@ using Identity.Api.Models.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Commons.Extensions;
+using Shared.Entities.Authorization;
 
 namespace Identity.Api.Controllers;
 
@@ -12,6 +13,7 @@ public class AuthController(ILogger<BaseApiController> logger, IAuthService auth
 {
     [HttpPost("login")]
     [AllowAnonymous]
+    [IpCheckedInAction]
     public async Task<object> Login([FromBody] LoginRequest request)
     {
         return await authService.LoginAsync(request);

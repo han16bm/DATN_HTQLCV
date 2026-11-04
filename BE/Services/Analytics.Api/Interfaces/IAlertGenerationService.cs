@@ -1,6 +1,8 @@
 namespace Analytics.Api.Interfaces;
 
+public record AlertGenerationSummary(int Created, int Updated, int Deactivated);
+
 public interface IAlertGenerationService
 {
-    Task GenerateAsync(CancellationToken cancellationToken);
+    Task<AlertGenerationSummary> GenerateAsync(CancellationToken cancellationToken);
 }

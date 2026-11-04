@@ -24,6 +24,8 @@ export type FormProps<
   compareFields?: CompareField[];
   onConflictReload?: () => Promise<Record<string, unknown>>;
   onConflictAccept?: () => void;
+  // Chế độ Xem của dialog: mọi trường disable, không có nút gửi.
+  readOnly?: boolean;
 };
 
 export function Form<Input extends FieldValues, Output extends FieldValues>({
@@ -38,6 +40,7 @@ export function Form<Input extends FieldValues, Output extends FieldValues>({
   compareFields = [],
   onConflictReload,
   onConflictAccept,
+  readOnly = false,
 }: FormProps<Input, Output>) {
   const id = useId();
   const markDirty = useUI((s) => s.markDirty);
@@ -50,7 +53,7 @@ export function Form<Input extends FieldValues, Output extends FieldValues>({
   }, [id, isDirty, markDirty]);
 
   async function submit(values: Output) {
-    if (submitDisabled) return;
+    if (submitDisabled || readOnly) return;
     setError(null);
     try {
       await onSubmit(values);
@@ -59,17 +62,18 @@ export function Form<Input extends FieldValues, Output extends FieldValues>({
     } catch (cause) {
       const failure =
         cause instanceof Error ? cause : new Error("Không lưu được dữ liệu.");
-      setError(failure);
-      if (failure instanceof ApiError) {
-        const values = form.getValues();
-        for (const field of failure.fields) {
-          if (field.path[0] in values)
-            form.setError(field.path.join(".") as Path<Input>, {
-              type: "server",
-              message: field.message,
-            });
-        }
-      }
+      const values = form.getValues();
+      const fields = failure instanceof ApiError ? failure.fields : [];
+      for (const field of fields)
+        if (field.path[0] in values)
+          form.setError(field.path.join(".") as Path<Input>, {
+            type: "server",
+            message: field.message,
+          });
+      // Lỗi đã hiện đủ dưới từng trường thì không lặp lại ở cuối form.
+      const shown =
+        fields.length > 0 && fields.every((field) => field.path[0] in values);
+      setError(shown ? null : failure);
     }
   }
 
@@ -79,7 +83,7 @@ export function Form<Input extends FieldValues, Output extends FieldValues>({
       noValidate
       onSubmit={form.handleSubmit(submit)}
     >
-      <fieldset className="form-fields" disabled={isSubmitting}>
+      <fieldset className="form-fields" disabled={readOnly || isSubmitting}>
         {submitActions && (
           <div className="form-actions wide">
             {cancel}
@@ -96,7 +100,7 @@ export function Form<Input extends FieldValues, Output extends FieldValues>({
             onConflictAccept={onConflictAccept}
           />
         )}
-        {!submitActions && (
+        {!submitActions && !readOnly && (
           <div className="form-actions wide">
             {cancel}
             <button

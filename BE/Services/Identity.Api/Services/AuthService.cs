@@ -5,34 +5,53 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Shared.Commons.Exceptions;
+using Shared.Configuration;
 using Shared.Entities;
+using Shared.Entities.Authorization;
 using Shared.Entities.Entities;
 using Shared.Entities.Enums;
 
 namespace Identity.Api.Services;
 
-public class AuthService(ApplicationDbContext context, ITokenService tokenService, IOptions<AuthOptions> authOptions) : IAuthService
+public class AuthService(
+    ApplicationDbContext context,
+    ITokenService tokenService,
+    IOptionsMonitor<AuthOptions> authOptions,
+    IpAccessGuard ipAccessGuard,
+    IHttpContextAccessor httpContextAccessor) : IAuthService
 {
     private static readonly PasswordHasher<User> Hasher = new();
-    private readonly AuthOptions _authOptions = authOptions.Value;
 
     public async Task<LoginResponseDto> LoginAsync(LoginRequest request)
     {
+        // Kiểm tra IP (Scope SYSTEM) trước khi xác thực mật khẩu: IP bị chặn không dò được mật khẩu, vẫn ghi username đã thử
+        var http = httpContextAccessor.HttpContext;
+        if (http is not null && await ipAccessGuard.CheckAsync(http, ConfigCatalog.IpScopeSystem, request.Username) is { } denied)
+            throw denied;
+
         var user = await context.Users.Include(u => u.Unit).FirstOrDefaultAsync(u => u.Username == request.Username)
             ?? throw new UnauthorizedException("Sai tên đăng nhập hoặc mật khẩu.");
 
         if (user.Status == UserStatus.Locked)
-            throw new ForbiddenException("Tài khoản đã bị khóa.");
+            throw AccountLocked(user);
 
         var verify = Hasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
         if (verify == PasswordVerificationResult.Failed)
         {
             user.FailedLoginCount++;
-            if (user.FailedLoginCount >= _authOptions.MaxFailedAttempts)
+            // Auth:MaxFailedAttempts đến từ cấu hình tập trung, đọc giá trị mới nhất mỗi lần
+            var maxAttempts = Math.Max(authOptions.CurrentValue.MaxFailedAttempts, 1);
+            if (user.FailedLoginCount >= maxAttempts)
             {
                 user.Status = UserStatus.Locked;
                 user.LockedAt = DateTime.UtcNow;
                 user.LockReason = "Vượt quá số lần đăng nhập sai cho phép.";
+                await context.SaveChangesAsync();
+                throw new ForbiddenException(
+                    $"Bạn đã nhập sai mật khẩu quá {maxAttempts} lần nên tài khoản đã bị khoá. Vui lòng liên hệ quản trị viên để được mở khoá.")
+                {
+                    Code = "ACCOUNT_LOCKED"
+                };
             }
             await context.SaveChangesAsync();
             throw new UnauthorizedException("Sai tên đăng nhập hoặc mật khẩu.");
@@ -51,7 +70,7 @@ public class AuthService(ApplicationDbContext context, ITokenService tokenServic
         var user = await context.Users.Include(u => u.Unit).FirstOrDefaultAsync(u => u.Id == userId)
             ?? throw new NotFoundException("Không tìm thấy tài khoản.");
         if (user.Status == UserStatus.Locked)
-            throw new ForbiddenException("Tài khoản đã bị khóa.");
+            throw AccountLocked(user);
 
         var (token, expiresAt) = tokenService.CreateAccessToken(user);
         var session = await BuildSessionAsync(user);
@@ -70,8 +89,17 @@ public class AuthService(ApplicationDbContext context, ITokenService tokenServic
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId)
             ?? throw new NotFoundException("Không tìm thấy tài khoản.");
         user.TokenVersion++;
-        user.UpdatedAt = DateTime.UtcNow;
         await context.SaveChangesAsync();
+    }
+
+    private static ForbiddenException AccountLocked(User user)
+    {
+        var reason = user.LockReason?.Trim().TrimEnd('.');
+        var detail = string.IsNullOrEmpty(reason) ? string.Empty : $" ({reason})";
+        return new ForbiddenException($"Tài khoản của bạn đang bị khoá{detail}. Vui lòng liên hệ quản trị viên để được mở khoá.")
+        {
+            Code = "ACCOUNT_LOCKED"
+        };
     }
 
     private async Task<SessionDto> BuildSessionAsync(User user)
@@ -81,10 +109,7 @@ public class AuthService(ApplicationDbContext context, ITokenService tokenServic
             .Select(m => new ProjectAccessDto(m.ProjectId, m.ProjectRole.ToString().ToUpperInvariant()))
             .ToListAsync();
 
-        var userDto = new UserDto(
-            user.Id, user.Version, user.CreatedAt, user.UpdatedAt, user.Username, user.DisplayName, user.Email, null,
-            user.UnitId, user.SystemRole.ToString().ToUpperInvariant(), user.Status.ToString().ToUpperInvariant(),
-            new Models.Dtos.EntityLabelDto(user.UnitId, user.Unit?.Name ?? string.Empty));
+        var userDto = UserService.ToDto(user, await UserService.LoadActiveGroupsAsync(context, [user.Id]), null);
 
         var permissions = await PermissionEvaluator.GetEffectivePermissionsAsync(context, user);
         return new SessionDto(userDto, access, permissions);

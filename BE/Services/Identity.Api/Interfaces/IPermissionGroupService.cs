@@ -13,4 +13,5 @@ public interface IPermissionGroupService
     Task<PermissionGroupDto> UpdateAsync(string groupId, PermissionGroupPatchRequest request, int ifMatchVersion);
     Task<PermissionGroupDto> ReplaceMembersAsync(string groupId, PermissionGroupMembersRequest request, int ifMatchVersion);
     Task<PermissionGroupDto> DeactivateAsync(string groupId, ReasonRequest request, int ifMatchVersion);
+    Task<PermissionGroupDto> ActivateAsync(string groupId, ReasonRequest request, int ifMatchVersion);
 }

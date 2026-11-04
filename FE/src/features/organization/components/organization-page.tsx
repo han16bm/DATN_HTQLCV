@@ -1,20 +1,18 @@
 "use client";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import {
-  Badge,
-  ButtonLink,
-  DataTable,
-  DetailLink,
-  PageHeader,
-} from "@/components/ui/page";
+import { RowDialogLinks } from "@/components/ui/entity-dialog";
+import { Badge, ButtonLink, DataTable, PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { useEntityDialog } from "@/lib/forms/use-entity-dialog";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { useListUnitsQuery } from "../hooks/use-organization-queries";
+import { UnitDialog } from "./unit-dialog";
 
 export function OrganizationPage() {
   const filters = useUrlFilters();
   const query = useListUnitsQuery({ page: filters.page });
+  const dialog = useEntityDialog();
   return (
     <>
       <PageHeader
@@ -22,7 +20,7 @@ export function OrganizationPage() {
         actions={
           <>
             <ButtonLink href="/admin/teams">Quản lý nhóm</ButtonLink>
-            <ButtonLink href="/admin/organization/new" primary>
+            <ButtonLink href={dialog.href("create")} primary>
               Thêm đơn vị
             </ButtonLink>
           </>
@@ -41,10 +39,15 @@ export function OrganizationPage() {
           rows={query.data.items.map((unit) => [
             unit.name,
             <Badge key="status" value={unit.status} />,
-            <DetailLink
+            <RowDialogLinks
               key="detail"
-              href={`/admin/organization/${encodeURIComponent(unit.id)}`}
-              label={`Xem đơn vị ${unit.name}`}
+              name={`đơn vị ${unit.name}`}
+              view={dialog.href("view", unit.id)}
+              edit={
+                unit.status === "ACTIVE"
+                  ? dialog.href("edit", unit.id)
+                  : undefined
+              }
             />,
           ])}
           pagination={{
@@ -53,6 +56,7 @@ export function OrganizationPage() {
           }}
         />
       )}
+      <UnitDialog />
     </>
   );
 }

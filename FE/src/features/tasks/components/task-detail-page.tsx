@@ -1,5 +1,6 @@
 "use client";
 
+import { RecordStamp } from "@/components/ui/record-stamp";
 import { Form } from "@/components/forms/form";
 import { FormInput } from "@/components/forms/form-field";
 import { HistoryTable } from "@/components/ui/history-table";
@@ -112,6 +113,12 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
               <dd>{dateTime(task.originalDueAt)}</dd>
             </div>
           </dl>
+          <RecordStamp
+            createdBy={task.createdBy}
+            createdAt={task.createdAt}
+            updatedBy={task.updatedBy}
+            updatedAt={task.updatedAt}
+          />
         </Panel>
         <Panel title="Giờ công" className="task-worklog">
           <dl className="record-details">

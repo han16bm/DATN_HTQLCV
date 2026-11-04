@@ -9,6 +9,7 @@ using Shared.Commons.Extensions;
 using Shared.Commons.Models;
 using Shared.Commons.Utils;
 using Shared.Entities;
+using Shared.Entities.Auditing;
 using Shared.Entities.Entities;
 using Shared.Entities.Enums;
 
@@ -262,12 +263,14 @@ public class ProjectService(ApplicationDbContext context, IHttpContextAccessor h
         var unitIds = projects.Select(p => p.UnitId).Distinct().ToList();
         var owners = await Context.Users.AsNoTracking().Where(u => ownerIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id);
         var units = await Context.Units.AsNoTracking().Where(u => unitIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id);
+        var names = await AuditActorNames.LoadAsync(Context, projects.SelectMany(p => new[] { p.CreatedBy, p.UpdatedBy }));
 
         return projects.Select(p => new ProjectDto(
             p.Id, p.Version, p.CreatedAt, p.UpdatedAt, p.Code, p.Name, p.Objective, p.UnitId, p.OwnerId,
             p.StartDate, p.DueAt, p.Status.ToString().ToUpperInvariant(), p.CompletedAt, p.CancelledAt,
             owners.TryGetValue(p.OwnerId, out var owner) ? new PersonRefDto(owner.Id, owner.DisplayName) : new PersonRefDto(p.OwnerId, p.OwnerId),
-            units.TryGetValue(p.UnitId, out var unit) ? new EntityLabelDto(unit.Id, unit.Name) : new EntityLabelDto(p.UnitId, p.UnitId)
+            units.TryGetValue(p.UnitId, out var unit) ? new EntityLabelDto(unit.Id, unit.Name) : new EntityLabelDto(p.UnitId, p.UnitId),
+            StampRef(p.CreatedBy, names), StampRef(p.UpdatedBy, names)
         )).ToList();
     }
 

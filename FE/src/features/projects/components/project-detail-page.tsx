@@ -1,5 +1,6 @@
 "use client";
 
+import { RecordStamp } from "@/components/ui/record-stamp";
 import { HistoryTable } from "@/components/ui/history-table";
 import { PageSkeleton } from "@/components/ui/loading";
 import { Badge, DataTable, DetailLink, Panel } from "@/components/ui/page";
@@ -128,6 +129,12 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
               <dd>{dateTime(p.dueAt)}</dd>
             </div>
           </dl>
+          <RecordStamp
+            createdBy={p.createdBy}
+            createdAt={p.createdAt}
+            updatedBy={p.updatedBy}
+            updatedAt={p.updatedAt}
+          />
         </Panel>
       </aside>
     </div>

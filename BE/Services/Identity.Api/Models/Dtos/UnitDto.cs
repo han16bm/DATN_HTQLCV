@@ -8,4 +8,6 @@ public record UnitDto(
     string Name,
     string? ParentId,
     string? ManagerId,
-    string Status);
+    string Status,
+    RefDto? CreatedBy,
+    RefDto? UpdatedBy);

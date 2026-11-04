@@ -16,6 +16,8 @@ public record ProjectDto(
     DateTime? CompletedAt,
     DateTime? CancelledAt,
     PersonRefDto Owner,
-    EntityLabelDto Unit);
+    EntityLabelDto Unit,
+    RefDto? CreatedBy,
+    RefDto? UpdatedBy);
 
 public record ClosureChecksDto(int OpenTaskCount, int PendingReviewCount, int PendingReportCount, bool CanClose);

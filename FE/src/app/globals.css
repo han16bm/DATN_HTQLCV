@@ -2632,7 +2632,8 @@ h3 {
   background: var(--primary-soft);
   font-weight: 600;
 }
-.nav-recent-title {
+.nav-recent-title,
+.nav-group-title {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -3533,4 +3534,137 @@ select:not([multiple]):not([size]):open {
   :is(input, select, button):focus-visible {
   outline: 1px solid #98a2b3;
   outline-offset: 1px;
+}
+
+/* Khu quản trị: cây chức năng, nhóm nhãn, tổng quan */
+.feature-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.feature-tree .badge,
+.data-table .feature-name .badge {
+  margin-left: 8px;
+}
+.field-label {
+  font-weight: 500;
+}
+.tag-list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.audit-changes dl > div.changed {
+  background: #fff7e0;
+  border-radius: 4px;
+}
+.audit-changes dl > div.changed dt {
+  font-weight: 600;
+}
+.admin-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.admin-shortcuts {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+.record-stamp {
+  display: block;
+  gap: 2px;
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+.record-stamp > span {
+  display: block;
+}
+.record-stamp strong {
+  font-weight: 600;
+  color: var(--foreground);
+}
+/* Dialog Thêm/Xem/Sửa của khu quản trị (ADMIN_MODULES 9) */
+.entity-dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: 85dvh;
+  overflow: hidden;
+  padding: 0;
+}
+.entity-dialog-md {
+  width: min(640px, calc(100vw - 32px));
+}
+.entity-dialog-lg {
+  width: min(960px, calc(100vw - 32px));
+}
+.entity-dialog-header {
+  flex: none;
+  padding: 18px 24px 12px;
+  border-bottom: 1px solid var(--border);
+  background: white;
+}
+.entity-dialog-header .dialog-heading {
+  margin-bottom: 4px;
+}
+.entity-dialog-header .page-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.entity-dialog-header .status-field {
+  margin-bottom: 0;
+}
+.entity-dialog-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 24px 0;
+}
+.entity-dialog-body .form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin: 16px -24px 0;
+  padding: 12px 24px;
+  background: white;
+}
+.entity-dialog-body .data-table + .form-actions,
+.entity-dialog-body .section-gap + .form-actions {
+  margin-top: 16px;
+}
+.entity-dialog-body .panel-body {
+  border: 0;
+  padding: 0;
+}
+.entity-dialog-body fieldset:disabled input,
+.entity-dialog-body fieldset:disabled select,
+.entity-dialog-body fieldset:disabled textarea,
+.entity-dialog-body fieldset:disabled .multi-select-trigger {
+  background: var(--surface-muted, #f7f8fa);
+  color: var(--foreground);
+}
+.dialog-tabs {
+  margin-bottom: 16px;
+}
+.dialog-tabs button {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  min-height: 34px;
+  padding: 0 2px;
+}
+.dialog-tabs button[aria-selected="true"] {
+  border-bottom-color: var(--primary);
+  color: var(--primary-dark, var(--primary));
+  font-weight: 600;
+}
+.row-actions {
+  display: inline-flex;
+  gap: 12px;
+  justify-content: center;
 }

@@ -6,7 +6,6 @@ import { DataTable } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { ReportsPage } from "@/features/reports/components/reports-page";
 import { UsersPage } from "@/features/users/components/users-page";
-import { UserEditorPage } from "@/features/users/components/user-editor-page";
 import { usersService } from "@/features/users/api/users.service";
 import { usersKeys } from "@/features/users/api/users.keys";
 import { organizationService } from "@/features/organization/api/organization.service";
@@ -14,8 +13,6 @@ import { ProjectsPage } from "@/features/projects/components/projects-page";
 import { MemberProfilePage } from "@/features/users/components/member-profile-page";
 import { ReviewsPage } from "@/features/submissions/components/reviews-page";
 import { OrganizationPage } from "@/features/organization/components/organization-page";
-import { UnitEditorPage } from "@/features/organization/components/unit-editor-page";
-import { TeamEditorPage } from "@/features/organization/components/team-editor-page";
 import { TeamsPage } from "@/features/organization/components/teams-page";
 import { ProfilePage } from "@/features/auth/components/profile-page";
 import { analyticsService } from "@/features/analytics/api/analytics.service";
@@ -129,9 +126,24 @@ afterEach(() => {
 });
 const login = (username: string) =>
   authService.login({ username, password: "Mock@12345" });
+// Dialog Thêm/Xem/Sửa của khu quản trị đọc trạng thái từ URL (ADMIN_MODULES 9).
+const at = (url: string) => history.replaceState(null, "", url);
+const lastNav = (fn: typeof nav.replace) =>
+  new URL(fn.mock.calls.at(-1)![0] as string, location.origin);
 // ANALYTICS_VIEW cấp ở phạm vi hệ thống qua nhóm quyền của backend, không theo role.
 const grantSystemAnalytics = (userId: string) =>
-  db.permissionGroups[0].memberIds.push(userId);
+  db.permissionGroups
+    .find((group) => group.id === "pg-analytics")!
+    .memberIds.push(userId);
+// Tài khoản chỉ quản trị: bỏ cờ sysadmin và thu hồi ANALYTICS_VIEW của nhóm ADMINISTRATORS.
+const accountAdminOnly = () =>
+  Object.assign(
+    db.users.find((user) => user.id === "u-admin")!,
+    {
+      isSysAdmin: false,
+      revokedFeatures: ["ANALYTICS_VIEW"],
+    },
+  );
 // JSDOM has no image decoder, layout or canvas; keep the cropper and HTTP real.
 function avatarBrowser() {
   const create = vi.fn(() => `blob:http://localhost/${crypto.randomUUID()}`);
@@ -326,19 +338,36 @@ it("links the member's own profile to settings and shows unavailable profiles as
 });
 it("keeps admin account information and access actions together without exposing internal IDs", async () => {
   const session = await login("admin");
-  show(<UserEditorPage userId="u-admin" />, session);
-  await screen.findByRole("heading", { name: "Thông tin tài khoản" });
-  expect(screen.getByText("admin@example.test")).toBeTruthy();
+  at("/admin/users?dialog=view&id=u-admin");
+  show(<UsersPage />, session);
+  const dialog = await screen.findByRole("dialog", {
+    name: "Chi tiết tài khoản",
+  });
+  const email = await within(dialog).findByRole("textbox", { name: "Email *" });
+  expect(email).toHaveProperty("value", "admin@example.test");
+  // Chế độ Xem: mọi trường disable trong fieldset.
+  expect(email.closest("fieldset")).toHaveProperty("disabled", true);
   expect(screen.queryByText(/Mã tài khoản/)).toBeNull();
-  expect(screen.queryByRole("textbox")).toBeNull();
-  expect(screen.getByRole("button", { name: "Khóa tài khoản" })).toBeTruthy();
+  expect(within(dialog).getByText(/Tạo bởi/)).toBeTruthy();
+  expect(
+    within(dialog).getByRole("button", { name: "Khóa tài khoản" }),
+  ).toBeTruthy();
   await userEvent
     .setup()
-    .click(screen.getByRole("button", { name: "Chỉnh sửa thông tin" }));
-  expect(screen.getByRole("textbox", { name: "Họ tên *" })).toHaveProperty(
-    "value",
-    session.user.displayName,
-  );
+    .click(within(dialog).getByRole("button", { name: "Chỉnh sửa" }));
+  expect(Object.fromEntries(lastNav(nav.replace).searchParams)).toEqual({
+    dialog: "edit",
+    id: "u-admin",
+  });
+  cleanup();
+  at("/admin/users?dialog=edit&id=u-admin");
+  show(<UsersPage />, session);
+  expect(
+    await screen.findByRole("textbox", { name: "Họ tên *" }),
+  ).toHaveProperty("value", session.user.displayName);
+  expect(
+    screen.getByRole("textbox", { name: "Họ tên *" }).closest("fieldset"),
+  ).toHaveProperty("disabled", false);
 });
 it("edits the signed-in profile through HTTP and immediately updates the avatar menu", async () => {
   const session = await login("lan");
@@ -721,7 +750,8 @@ it.each([
 it("prompts for the unit by name and blocks account creation when it is unselected", async () => {
   const session = await login("admin");
   const count = db.users.length;
-  show(<UserEditorPage />, session);
+  at("/admin/users?dialog=create");
+  show(<UsersPage />, session);
   const user = userEvent.setup();
   const unit = await screen.findByRole("combobox", { name: "Đơn vị *" });
   await user.selectOptions(unit, "");
@@ -862,6 +892,7 @@ it("shows report projects in their own column and puts the detail link in the la
 });
 it("links user names to member profiles and keeps the admin action at the end of the row", async () => {
   const session = await login("admin");
+  at("/admin/users?q=");
   show(<UsersPage />, session);
   const row = (await screen.findByText("Trần Lan")).closest("tr")!;
   expect(within(row).getByText("lan@example.test · lan")).toBeTruthy();
@@ -870,7 +901,14 @@ it("links user names to member profiles and keeps the admin action at the end of
   const link = within(cells.at(-1)!).getByRole("link", {
     name: "Xem hồ sơ Trần Lan",
   });
-  expect(link.getAttribute("href")).toBe("/admin/users/u-lan");
+  expect(link.getAttribute("href")).toBe(
+    "/admin/users?q=&dialog=view&id=u-lan",
+  );
+  expect(
+    within(cells.at(-1)!)
+      .getByRole("link", { name: "Sửa hồ sơ Trần Lan" })
+      .getAttribute("href"),
+  ).toBe("/admin/users?q=&dialog=edit&id=u-lan");
   expect(
     within(cells[0])
       .getByRole("link", { name: "Xem hồ sơ công khai của Trần Lan" })
@@ -939,6 +977,7 @@ it("keeps the work menu flat, marks nested routes active and preserves links whe
     "Nghiệm thu",
     "Báo cáo",
     "Phân tích",
+    "Cảnh báo",
   ]);
   // Mục Công việc có lối tắt bộ lọc như mục Filters của Jira.
   await user.click(
@@ -993,7 +1032,7 @@ it("opens an accessible mobile menu, filters roles and restores focus after Esca
   const dialog = await screen.findByRole("dialog", { name: "Menu điều hướng" });
   expect(within(dialog).getByRole("link", { name: "Công việc" })).toBeTruthy();
   expect(within(dialog).queryByRole("link", { name: "Phân tích" })).toBeNull();
-  expect(within(dialog).queryByRole("link", { name: "Tài khoản" })).toBeNull();
+  expect(within(dialog).queryByRole("link", { name: "Người dùng" })).toBeNull();
   await user.keyboard("{Escape}");
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   expect(document.activeElement).toBe(trigger);
@@ -1006,6 +1045,7 @@ it("opens an accessible mobile menu, filters roles and restores focus after Esca
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
 });
 it("keeps account actions in the avatar menu and shows the signed-in profile", async () => {
+  accountAdminOnly();
   const session = await login("admin");
   show(
     <WorkspaceShell>
@@ -1020,7 +1060,9 @@ it("keeps account actions in the avatar menu and shows the signed-in profile", a
   expect(within(sidebar).queryByText("Đăng xuất")).toBeNull();
   // Quản trị không nằm trong menu làm việc; Admin chưa được cấp quyền phân tích.
   expect(within(sidebar).queryByRole("link", { name: "Phân tích" })).toBeNull();
-  expect(within(sidebar).queryByRole("link", { name: "Tài khoản" })).toBeNull();
+  expect(
+    within(sidebar).queryByRole("link", { name: "Người dùng" }),
+  ).toBeNull();
   const email = screen.getByRole("textbox", { name: "Email" });
   expect(email).toHaveProperty("value", "admin@example.test");
   expect(email).toHaveProperty("readOnly", true);
@@ -1040,7 +1082,7 @@ it("keeps account actions in the avatar menu and shows the signed-in profile", a
     within(menu)
       .getByRole("menuitem", { name: "Quản trị hệ thống" })
       .getAttribute("href"),
-  ).toBe("/admin/users");
+  ).toBe("/admin");
   expect(
     within(menu).getByRole("menuitem", { name: "Đăng xuất" }),
   ).toBeTruthy();
@@ -1207,7 +1249,7 @@ it("places the member action in the project header while retaining its add form"
   ).toBeTruthy();
 });
 it("changes a project role from the member list and preserves the draft through a version conflict", async () => {
-  db.users.find((user) => user.id === "u-lan")!.systemRole = "MANAGER";
+  db.permissionGroups.find((g) => g.id === "pg-pm")!.memberIds.push("u-lan");
   const session = await login("minh");
   history.replaceState(null, "", "/projects/p-main/members");
   show(<ProjectMembersPage projectId="p-main" />, session);
@@ -1530,14 +1572,14 @@ it.each([
     "/admin/organization",
     "Danh sách đơn vị",
     "Phòng sản phẩm",
-    "/admin/organization/unit-product",
+    "/admin/organization?dialog=view&id=unit-product",
   ],
   [
     "teams",
     "/admin/teams",
     "Danh sách nhóm",
     "Nhóm phát triển",
-    "/admin/teams/team-main",
+    "/admin/teams?dialog=view&id=team-main",
   ],
 ] as const)(
   "shows a %s list with detail actions without loading editors or people",
@@ -1581,88 +1623,80 @@ it.each([
             name: resource === "units" ? "Thêm đơn vị" : "Tạo nhóm",
           })
           .getAttribute("href"),
-      ).toBe(`${path}/new`);
+      ).toBe(`${path}?dialog=create`);
     } finally {
       server.events.removeListener("request:start", observe);
     }
   },
 );
-it("shows unit details on their own route and opens editing on demand", async () => {
+it("shows unit details in a view dialog and edits them in the same form", async () => {
   const session = await login("admin");
-  history.replaceState(null, "", "/admin/organization/unit-product");
-  show(
-    <AdminShell>
-      <UnitEditorPage unitId="unit-product" />
-    </AdminShell>,
-    session,
-  );
+  at("/admin/organization?dialog=view&id=unit-product");
+  show(<OrganizationPage />, session);
   const user = userEvent.setup();
-  const edit = await screen.findByRole("button", { name: "Chỉnh sửa" });
-  expect(screen.queryByRole("textbox")).toBeNull();
-  const crumbs = screen.getByRole("navigation", { name: "Vị trí hiện tại" });
-  expect(
-    within(crumbs).getByRole("link", { name: "Quay lại" }).getAttribute("href"),
-  ).toBe("/admin/organization");
-  expect(
-    within(crumbs).getByRole("link", { name: "Đơn vị" }).getAttribute("href"),
-  ).toBe("/admin/organization");
-  expect(await within(crumbs).findByText("Phòng sản phẩm")).toBeTruthy();
-  const close = screen.getByRole("button", { name: "Ngừng sử dụng đơn vị" });
+  const dialog = await screen.findByRole("dialog", { name: "Phòng sản phẩm" });
+  const edit = await within(dialog).findByRole("button", { name: "Chỉnh sửa" });
+  const name = within(dialog).getByRole("textbox", { name: "Tên đơn vị *" });
+  expect(name.closest("fieldset")).toHaveProperty("disabled", true);
+  const close = within(dialog).getByRole("button", {
+    name: "Ngừng sử dụng đơn vị",
+  });
   expect(edit.parentElement).toBe(close.parentElement);
   await user.click(edit);
+  expect(lastNav(nav.replace).search).toBe("?dialog=edit&id=unit-product");
+  cleanup();
+  at("/admin/organization?dialog=edit&id=unit-product");
+  show(<OrganizationPage />, session);
+  const field = await screen.findByRole("textbox", { name: "Tên đơn vị *" });
   expect(
     screen.queryByRole("button", { name: "Ngừng sử dụng đơn vị" }),
   ).toBeNull();
-  const name = screen.getByRole("textbox", { name: "Tên đơn vị *" });
-  await user.clear(name);
-  await user.type(name, "Phòng sản phẩm mới");
+  await user.clear(field);
+  await user.type(field, "Phòng sản phẩm mới");
   await user.click(screen.getByRole("button", { name: "Hủy" }));
   await user.click(
     within(await screen.findByRole("alertdialog")).getByRole("button", {
       name: "Ở lại",
     }),
   );
-  expect(name).toHaveProperty("value", "Phòng sản phẩm mới");
+  expect(field).toHaveProperty("value", "Phòng sản phẩm mới");
   await user.type(
     screen.getByRole("textbox", { name: "Lý do thay đổi *" }),
     "Điều chỉnh cơ cấu",
   );
   await user.click(screen.getByRole("button", { name: "Lưu thông tin" }));
-  await screen.findByRole("button", { name: "Chỉnh sửa" });
-  expect(screen.queryByRole("textbox")).toBeNull();
+  await waitFor(() =>
+    expect(lastNav(nav.replace).search).toBe("?dialog=view&id=unit-product"),
+  );
   expect(db.units.find((unit) => unit.id === "unit-product")).toMatchObject({
     name: "Phòng sản phẩm mới",
     version: 2,
   });
   expect(useUI.getState().dirtyForms).toEqual([]);
 });
-it("creates a unit from its own page through HTTP", async () => {
+it("creates a unit from the create dialog through HTTP", async () => {
   const session = await login("admin");
-  show(<UnitEditorPage />, session);
+  at("/admin/organization?dialog=create");
+  show(<OrganizationPage />, session);
   const user = userEvent.setup();
   await user.type(
     await screen.findByRole("textbox", { name: "Tên đơn vị *" }),
     "Phòng vận hành",
   );
   await user.click(screen.getByRole("button", { name: "Thêm đơn vị" }));
-  await waitFor(() => expect(nav.push).toHaveBeenCalled());
+  await waitFor(() => expect(nav.replace).toHaveBeenCalled());
   const unit = db.units.find((unit) => unit.name === "Phòng vận hành")!;
   expect(unit.status).toBe("ACTIVE");
-  expect(nav.push).toHaveBeenCalledWith(
-    `/admin/organization/${encodeURIComponent(unit.id)}`,
+  expect(lastNav(nav.replace).search).toBe(
+    `?dialog=view&id=${encodeURIComponent(unit.id)}`,
   );
 });
-it("edits team members inside one card with a searchable selection box", async () => {
+it("edits team members in the edit dialog with a searchable selection box", async () => {
   const session = await login("admin");
-  history.replaceState(null, "", "/admin/teams/team-main");
-  show(<TeamEditorPage teamId="team-main" />, session);
+  at("/admin/teams?dialog=edit&id=team-main");
+  show(<TeamsPage />, session);
   const user = userEvent.setup();
-  const edit = await screen.findByRole("button", { name: "Chọn thành viên" });
-  expect(document.querySelectorAll(".panel")).toHaveLength(1);
-  expect(screen.queryByRole("textbox")).toBeNull();
-  expect(screen.queryByRole("checkbox")).toBeNull();
-  await user.click(edit);
-  expect(screen.queryByRole("checkbox")).toBeNull();
+  await user.click(await screen.findByRole("tab", { name: "Thành viên" }));
   await user.click(screen.getByRole("button", { name: "Thành viên" }));
   const box = await screen.findByRole("dialog", { name: "Chọn thành viên" });
   const search = within(box).getByRole("textbox", { name: "Tìm thành viên" });
@@ -1675,40 +1709,46 @@ it("edits team members inside one card with a searchable selection box", async (
     "Điều chuyển công việc",
   );
   await user.click(screen.getByRole("button", { name: "Lưu thành viên" }));
-  await screen.findByRole("button", { name: "Chọn thành viên" });
+  await waitFor(() =>
+    expect(lastNav(nav.replace).search).toBe("?dialog=view&id=team-main"),
+  );
   expect(db.teams.find((team) => team.id === "team-main")).toMatchObject({
     memberIds: ["u-lan"],
     version: 2,
   });
-  expect(screen.queryByRole("textbox")).toBeNull();
-  expect(document.querySelectorAll(".panel")).toHaveLength(1);
-  await user.click(screen.getByRole("button", { name: "Chỉnh sửa thông tin" }));
-  await user.type(screen.getByRole("textbox", { name: "Tên nhóm *" }), " mới");
+  cleanup();
+  show(<TeamsPage />, session);
+  await user.type(
+    await screen.findByRole("textbox", { name: "Tên nhóm *" }),
+    " mới",
+  );
   await user.type(
     screen.getByRole("textbox", { name: "Lý do thay đổi *" }),
     "Đổi tên nhóm",
   );
   await user.click(screen.getByRole("button", { name: "Lưu thông tin" }));
-  await screen.findByRole("button", { name: "Chọn thành viên" });
-  expect(db.teams.find((team) => team.id === "team-main")).toMatchObject({
-    name: "Nhóm phát triển mới",
-    version: 3,
-  });
+  await waitFor(() =>
+    expect(db.teams.find((team) => team.id === "team-main")).toMatchObject({
+      name: "Nhóm phát triển mới",
+      version: 3,
+    }),
+  );
 });
-it("creates a team from its own page and opens the resulting detail route", async () => {
+it("creates a team from the create dialog and opens its view dialog", async () => {
   const session = await login("admin");
-  show(<TeamEditorPage />, session);
+  at("/admin/teams?dialog=create");
+  show(<TeamsPage />, session);
   const user = userEvent.setup();
   await user.type(
     await screen.findByRole("textbox", { name: "Tên nhóm *" }),
     "Nhóm vận hành",
   );
   await user.click(screen.getByRole("button", { name: "Tạo nhóm" }));
-  await waitFor(() => expect(nav.push).toHaveBeenCalled());
+  await waitFor(() => expect(nav.replace).toHaveBeenCalled());
   const team = db.teams.find((team) => team.name === "Nhóm vận hành")!;
   expect(team.status).toBe("ACTIVE");
-  expect(nav.push).toHaveBeenCalledWith(
-    `/admin/teams/${encodeURIComponent(team.id)}`,
+  expect(lastNav(nav.replace).search).toBe(
+    `?dialog=view&id=${encodeURIComponent(team.id)}`,
   );
 });
 it("displays the upload policy from HTTP and rejects oversized files before posting", async () => {
@@ -2388,7 +2428,7 @@ it("opens analytics and review entries from the permissions in the session, not 
   for (const name of ["Phân tích", "Nghiệm thu"])
     expect(within(sidebar).getByRole("link", { name })).toBeTruthy();
   // Quản trị hệ thống không còn nằm trong menu làm việc.
-  for (const name of ["Tài khoản", "Đơn vị", "Nhóm nhân sự"])
+  for (const name of ["Người dùng", "Đơn vị", "Team"])
     expect(within(sidebar).queryByRole("link", { name })).toBeNull();
   cleanup();
   const revoked = structuredClone(session);
@@ -2427,8 +2467,10 @@ it("shows only the administration entry the account is permitted to open", async
   const sidebar = screen.getByRole("complementary", {
     name: "Thanh điều hướng",
   });
-  expect(within(sidebar).queryByRole("link", { name: "Tài khoản" })).toBeNull();
-  for (const name of ["Đơn vị", "Nhóm nhân sự"])
+  expect(
+    within(sidebar).queryByRole("link", { name: "Người dùng" }),
+  ).toBeNull();
+  for (const name of ["Tổng quan", "Đơn vị", "Team"])
     expect(within(sidebar).getByRole("link", { name })).toBeTruthy();
   const back = within(sidebar).getByRole("link", {
     name: "Về không gian làm việc",
@@ -2477,7 +2519,7 @@ it("lets a multi-role account switch between the work area and administration wi
       name: "Quản trị hệ thống",
     },
   );
-  expect(toAdmin.getAttribute("href")).toBe("/admin/users");
+  expect(toAdmin.getAttribute("href")).toBe("/admin");
   cleanup();
   history.replaceState(null, "", "/admin/users");
   show(
@@ -2503,6 +2545,7 @@ it.each([
 ])(
   "blocks direct access to $path for $username before mounting its data queries",
   async ({ username, path, page }) => {
+    if (username === "admin") accountAdminOnly();
     const session = await login(username);
     history.replaceState(null, "", path);
     const requests: string[] = [];
@@ -2560,14 +2603,22 @@ it("shows an API scope denial, clears old data and retains the error without ref
       (member) => member.userId === session.user.id,
     ))
       member.projectRole = "MEMBER";
+    // Cảnh báo không còn là tài nguyên chặn theo quyền (người không nhận được 404), nên giả lập 403 để giữ kiểm tra xử lý từ chối phạm vi
+    const denial = "Bạn không có quyền xem dữ liệu này.";
+    server.use(
+      http.get("*/api/alerts/alert-1", () =>
+        HttpResponse.json(
+          { code: "FORBIDDEN", message: denial },
+          { status: 403 },
+        ),
+      ),
+    );
     await act(async () => {
       await client.invalidateQueries({
         queryKey: alertsKeys.getAlert(session.user.id, "alert-1"),
       });
     });
-    await screen.findByText(
-      "Không có quyền xem hoặc xử lý cảnh báo trong dự án.",
-    );
+    await screen.findByText(denial);
     await waitFor(() => {
       const current = client.getQueryData<SessionDto>(
         authKeys.getSession(session.user.id),
@@ -2678,7 +2729,6 @@ it.each(["lock", "unlock", "password"] as const)(
         displayName: "Người kiểm thử",
         email: "conflict.user@example.test",
         unitId: "unit-product",
-        systemRole: "EMPLOYEE",
         initialPassword: "Start@12345",
       },
       { key: "create-conflict-user" },
@@ -2689,7 +2739,8 @@ it.each(["lock", "unlock", "password"] as const)(
         { mode: "NORMAL", reason: "Khóa trước khi mở lại" },
         { key: "lock-before-test", version: person.version },
       );
-    const client = show(<UserEditorPage userId={person.id} />, session);
+    at(`/admin/users?dialog=view&id=${person.id}`);
+    const client = show(<UsersPage />, session);
     const user = userEvent.setup();
     await user.click(
       await screen.findByRole("button", {
@@ -2754,14 +2805,10 @@ it.each(["unit", "team"] as const)(
             { name: "Nhóm trống", unitId: "unit-product", memberIds: [] },
             { key: "new-empty-team" },
           );
-    show(
-      kind === "unit" ? (
-        <UnitEditorPage unitId={entity.id} />
-      ) : (
-        <TeamEditorPage teamId={entity.id} />
-      ),
-      session,
+    at(
+      `/admin/${kind === "unit" ? "organization" : "teams"}?dialog=view&id=${entity.id}`,
     );
+    show(kind === "unit" ? <OrganizationPage /> : <TeamsPage />, session);
     const user = userEvent.setup();
     await user.click(
       await screen.findByRole("button", {
@@ -2936,14 +2983,12 @@ it.each(["unit", "team"] as const)(
       ["u-pm", "u-lan", "u-huy"].includes(person.id),
     ))
       person.status = "LOCKED";
-    show(
-      kind === "unit" ? (
-        <UnitEditorPage unitId="unit-product" />
-      ) : (
-        <TeamEditorPage teamId="team-main" />
-      ),
-      session,
+    at(
+      kind === "unit"
+        ? "/admin/organization?dialog=view&id=unit-product"
+        : "/admin/teams?dialog=view&id=team-main",
     );
+    show(kind === "unit" ? <OrganizationPage /> : <TeamsPage />, session);
     if (kind === "unit") {
       await screen.findByText("Chưa tải được thông tin người quản lý");
       expect(screen.queryByText("Chưa phân công")).toBeNull();

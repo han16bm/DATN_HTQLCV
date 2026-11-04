@@ -16,8 +16,12 @@ public record AlertDto
     public DateTime DataAsOf { get; init; }
     public string MethodVersion { get; init; } = null!;
     public string? ResolutionNote { get; init; }
-    public string? HandledBy { get; init; }
+    public PersonRefDto? Handler { get; init; }
+    // Người xem hiện tại được xử lý cảnh báo này không (sysadmin hoặc người nhận); chỉ có ở API chi tiết/cập nhật
+    public bool CanHandle { get; init; }
     public DateTime? HandledAt { get; init; }
     public string? TaskTitle { get; init; }
     public AnalysisRefDto? AnalysisRef { get; init; }
+    public RefDto? CreatedBy { get; init; }
+    public RefDto? UpdatedBy { get; init; }
 }

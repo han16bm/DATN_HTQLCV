@@ -5,6 +5,10 @@ import { z } from "zod";
 export const permissionSchema = z.enum([
   "USERS_MANAGE",
   "ORGANIZATION_MANAGE",
+  "PERMISSIONS_MANAGE",
+  "AUDIT_VIEW",
+  "SETTINGS_MANAGE",
+  "JOBS_MANAGE",
   "PROJECT_CREATE",
   "PROJECT_MANAGE",
   "MEMBERS_MANAGE",
@@ -48,6 +52,16 @@ export const entityLabelSchema = z.object({
   id: idSchema,
   name: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
 });
+// Tham chiếu hiển thị dùng chung của các API quản trị ({id, label}).
+export const refSchema = z.object({
+  id: idSchema,
+  label: z.string(),
+});
+// Dấu vết tạo/sửa (ADMIN_MODULES 8.3): SYSTEM trả {id:"SYSTEM", label:"Hệ thống"}.
+export const stampShape = {
+  createdBy: refSchema.nullable(),
+  updatedBy: refSchema.nullable(),
+};
 export const personRefSchema = z.object({
   id: idSchema,
   displayName: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),

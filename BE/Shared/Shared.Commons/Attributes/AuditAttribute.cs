@@ -42,7 +42,8 @@ public class AuditAttribute : ActionFilterAttribute
         if (context.Exception is not null)
         {
             var (status, code, message) = Describe(context.Exception);
-            context.Result = new ObjectResult(new ErrorResponse(code, message)) { StatusCode = status };
+            var appEx = context.Exception as AppException;
+            context.Result = new ObjectResult(new ErrorResponse(code, message, appEx?.FieldErrors, appEx?.Details)) { StatusCode = status };
             context.ExceptionHandled = true;
         }
 
@@ -65,7 +66,7 @@ public class AuditAttribute : ActionFilterAttribute
         if (ex is AppException appEx)
         {
             var status = appEx.ErrorCode % 1000;
-            return (status, CodeFor(status), appEx.Message);
+            return (status, appEx.Code ?? CodeFor(status), appEx.Message);
         }
         return (StatusCodes.Status500InternalServerError, "SYSTEM_ERROR", "Có lỗi hệ thống, vui lòng thử lại.");
     }

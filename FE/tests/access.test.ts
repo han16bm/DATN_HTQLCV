@@ -1,6 +1,5 @@
 import type { SessionDto } from "@/features/auth/types/auth.types";
 import {
-  adminHome,
   canAdminister,
   canVisit,
   hasAnyPermission,
@@ -11,7 +10,7 @@ import { describe, expect, it } from "vitest";
 function session(
   permissions: SessionDto["permissions"],
   projectAccess: SessionDto["projectAccess"] = [],
-  systemRole: SessionDto["user"]["systemRole"] = "EMPLOYEE",
+  isSysAdmin = false,
 ): SessionDto {
   return {
     user: {
@@ -23,7 +22,8 @@ function session(
       email: "test@example.test",
       unitId: "unit-product",
       unit: { id: "unit-product", name: "Phòng sản phẩm" },
-      systemRole,
+      isSysAdmin,
+      groups: [],
     },
     permissions,
     projectAccess,
@@ -48,7 +48,7 @@ describe("effective permissions by scope", () => {
   });
 
   it("keeps project permissions inside their own project", () => {
-    const manager = session(["PROJECT_CREATE"], [leader("p-1")], "MANAGER");
+    const manager = session(["PROJECT_CREATE"], [leader("p-1")]);
     expect(hasPermission(manager, "TASKS_REVIEW", "p-1")).toBe(true);
     expect(hasPermission(manager, "TASKS_REVIEW", "p-2")).toBe(false);
     // Không có projectId nghĩa là phạm vi hệ thống, không nhìn vào dự án.
@@ -58,7 +58,7 @@ describe("effective permissions by scope", () => {
   });
 
   it("does not let account administration read, edit or review a project", () => {
-    const admin = session(["USERS_MANAGE", "ORGANIZATION_MANAGE"], [], "ADMIN");
+    const admin = session(["USERS_MANAGE", "ORGANIZATION_MANAGE"]);
     expect(canAdminister(admin)).toBe(true);
     for (const permission of [
       "PROJECT_MANAGE",
@@ -80,8 +80,8 @@ describe("effective permissions by scope", () => {
     expect(hasPermission(viewer, "TASKS_REVIEW", "p-9")).toBe(false);
   });
 
-  it("does not trust the role label for permissions", () => {
-    const relabelled = session([], [leader("p-1")], "ADMIN");
+  it("does not trust the sysadmin flag for permissions", () => {
+    const relabelled = session([], [leader("p-1")], true);
     expect(canAdminister(relabelled)).toBe(false);
     expect(canVisit(relabelled, "/admin/users")).toBe(false);
     const employee = session([], [{ projectId: "p-1", permissions: [] }]);
@@ -91,9 +91,9 @@ describe("effective permissions by scope", () => {
 });
 
 describe("route access", () => {
-  const admin = session(["USERS_MANAGE", "ORGANIZATION_MANAGE"], [], "ADMIN");
-  const accounts = session(["USERS_MANAGE"], [], "ADMIN");
-  const leaderSession = session(["PROJECT_CREATE"], [leader("p-1")], "MANAGER");
+  const admin = session(["USERS_MANAGE", "ORGANIZATION_MANAGE"]);
+  const accounts = session(["USERS_MANAGE"]);
+  const leaderSession = session(["PROJECT_CREATE"], [leader("p-1")]);
   const member = session([], [{ projectId: "p-1", permissions: [] }]);
 
   it("opens administration routes by their own permission", () => {
@@ -103,19 +103,46 @@ describe("route access", () => {
     expect(canVisit(accounts, "/admin/teams")).toBe(false);
     expect(canVisit(accounts, "/admin/users")).toBe(true);
     expect(canVisit(leaderSession, "/admin")).toBe(false);
-    expect(adminHome(admin)).toBe("/admin/users");
-    expect(adminHome(session(["ORGANIZATION_MANAGE"]))).toBe(
-      "/admin/organization",
+  });
+
+  it("guards each new administration module by its own permission", () => {
+    const cases = [
+      [
+        "PERMISSIONS_MANAGE",
+        [
+          "/admin/permission-groups",
+          "/admin/permission-groups/pg-1",
+          "/admin/features",
+        ],
+      ],
+      ["AUDIT_VIEW", ["/admin/audit-logs"]],
+      ["JOBS_MANAGE", ["/admin/jobs"]],
+      ["SETTINGS_MANAGE", ["/admin/settings", "/admin/ip-whitelist"]],
+    ] as const;
+    for (const [permission, paths] of cases) {
+      const only = session([permission]);
+      // Mọi mã trong nhóm ADMIN đều mở được khu quản trị và trang tổng quan.
+      expect(canAdminister(only), permission).toBe(true);
+      expect(canVisit(only, "/admin"), permission).toBe(true);
+      expect(canVisit(only, "/admin/users"), permission).toBe(false);
+      for (const path of paths) {
+        expect(canVisit(only, path), path).toBe(true);
+        expect(canVisit(admin, path), path).toBe(false);
+      }
+    }
+    expect(canAdminister(session(["PROJECT_CREATE", "ANALYTICS_VIEW"]))).toBe(
+      false,
     );
-    expect(adminHome(leaderSession)).toBeNull();
   });
 
   it("opens analytics, review and form routes only for matching permissions", () => {
-    for (const path of ["/dashboard", "/analytics/risks", "/alerts/a-1"]) {
+    for (const path of ["/dashboard", "/analytics/risks"]) {
       expect(canVisit(leaderSession, path)).toBe(true);
       expect(canVisit(member, path)).toBe(false);
       expect(canVisit(admin, path)).toBe(false);
     }
+    // Cảnh báo là thông báo cá nhân: ai đăng nhập cũng mở được, BE lọc theo người nhận
+    expect(canVisit(member, "/alerts/a-1")).toBe(true);
     expect(canVisit(leaderSession, "/reviews")).toBe(true);
     expect(canVisit(member, "/reviews")).toBe(false);
     expect(canVisit(leaderSession, "/projects/new")).toBe(true);

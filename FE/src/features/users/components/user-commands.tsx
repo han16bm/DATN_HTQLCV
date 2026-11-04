@@ -50,7 +50,6 @@ export function UserCommands({
     compareFields: [
       { name: "displayName", label: "Họ tên" },
       { name: "status", label: "Trạng thái" },
-      { name: "systemRole", label: "Vai trò hệ thống" },
     ],
   };
   const onSaved = () => {

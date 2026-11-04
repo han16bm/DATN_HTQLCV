@@ -7,7 +7,7 @@ import { useUI } from "@/stores/ui-store";
 import { ArrowLeft, ChevronDown, Clock } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useId, useState, type ReactNode } from "react";
+import { Fragment, useId, useState, type ReactNode } from "react";
 
 type Child = { href: string; label: string };
 
@@ -78,23 +78,27 @@ export function SidebarContent({
         }
       >
         {items.map((item, index) => (
-          <NavSection
-            key={`${item.href}:${item.match.test(pathname)}`}
-            item={item}
-            pathname={pathname}
-            collapsed={collapsed}
-            onNavigate={onNavigate}
-            subItems={children(item)}
-            filters={
-              area === "workspace" && item.href === "/tasks" ? (
-                <TaskFilters userId={session.user.id} onChange={onNavigate} />
-              ) : undefined
-            }
-          >
-            {area === "workspace" && index === 0 && !collapsed && (
-              <RecentList entries={recentEntries} onNavigate={onNavigate} />
+          <Fragment key={`${item.href}:${item.match.test(pathname)}`}>
+            {item.group && item.group !== items[index - 1]?.group && (
+              <p className="nav-group-title sidebar-text">{item.group}</p>
             )}
-          </NavSection>
+            <NavSection
+              item={item}
+              pathname={pathname}
+              collapsed={collapsed}
+              onNavigate={onNavigate}
+              subItems={children(item)}
+              filters={
+                area === "workspace" && item.href === "/tasks" ? (
+                  <TaskFilters userId={session.user.id} onChange={onNavigate} />
+                ) : undefined
+              }
+            >
+              {area === "workspace" && index === 0 && !collapsed && (
+                <RecentList entries={recentEntries} onNavigate={onNavigate} />
+              )}
+            </NavSection>
+          </Fragment>
         ))}
       </nav>
       {toggle && <div className="sidebar-bottom">{toggle}</div>}

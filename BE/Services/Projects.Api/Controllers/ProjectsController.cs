@@ -4,6 +4,8 @@ using Projects.Api.Interfaces;
 using Projects.Api.Models.Queries;
 using Projects.Api.Models.Requests;
 using Shared.Commons.Models;
+using Shared.Entities;
+using Shared.Entities.Authorization;
 
 namespace Projects.Api.Controllers;
 
@@ -25,6 +27,7 @@ public class ProjectsController(ILogger<BaseApiController> logger, IProjectServi
     }
 
     [HttpPost]
+    [RequiresPermission(PermissionFeatures.ProjectCreate)]
     public async Task<object> Create([FromBody] ProjectCreateRequest request)
     {
         return await projectService.CreateAsync(request);

@@ -8,6 +8,9 @@ export const profileSchema = z
     displayName: true,
     avatarUrl: true,
     email: true,
-    systemRole: true,
   })
-  .extend({ unit: userSchema.shape.unit.shape.name });
+  .extend({
+    unit: userSchema.shape.unit.shape.name,
+    // Tên các nhóm quyền đang hoạt động.
+    groups: z.array(z.string()),
+  });

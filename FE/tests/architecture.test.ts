@@ -19,7 +19,7 @@ describe("Feature organization and HTTP boundaries", () => {
         "utf8",
       );
       expect(service).toMatch(
-        /apiClient\s*\.(get|post|patch|put)(?:<[^>]+>)?\(/,
+        /apiClient\s*\.(get|post|patch|put|delete)(?:<[^>]+>)?\(/,
       );
       expect(service).not.toMatch(/apiClient\s*\.request|@\/mocks\//);
       expect(service).not.toMatch(/\w+Schema\.(?:parse|safeParse)\(/);
@@ -52,15 +52,15 @@ describe("Feature organization and HTTP boundaries", () => {
     const catalog = readFileSync("fe-specs/api/API_CATALOG.md", "utf8");
     const expected = [
       ...new Set(
-        [...catalog.matchAll(/`(GET|POST|PATCH|PUT) (\/api\/[^`]+)`/g)].map(
-          (m) => `${m[1]} ${m[2]}`,
-        ),
+        [
+          ...catalog.matchAll(/`(GET|POST|PATCH|PUT|DELETE) (\/api\/[^`]+)`/g),
+        ].map((m) => `${m[1]} ${m[2]}`),
       ),
     ].sort();
     const actual = handlers
       .map((h) => `${h.info.method} ${String(h.info.path).replace(/^\*/, "")}`)
       .sort();
-    expect(actual).toHaveLength(83);
+    expect(actual).toHaveLength(108);
     expect(actual).toEqual(expected);
     const services = readdirSync("src/features")
       .flatMap((feature) => {
@@ -70,7 +70,7 @@ describe("Feature organization and HTTP boundaries", () => {
         );
         return [
           ...source.matchAll(
-            /\.(get|post|patch|put)<[^>]+>\(\s*([`"])([\s\S]*?)\2/g,
+            /\.(get|post|patch|put|delete)<[^>]+>\(\s*([`"])([\s\S]*?)\2/g,
           ),
         ].map((match) => {
           const path = match[3].replace(

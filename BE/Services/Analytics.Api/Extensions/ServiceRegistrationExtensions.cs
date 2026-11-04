@@ -13,6 +13,7 @@ public static class ServiceRegistrationExtensions
 
         services.Configure<AlertGenerationOptions>(configuration.GetSection("AlertGeneration"));
         services.AddScoped<IAlertGenerationService, AlertGenerationService>();
+        services.AddScoped<IJobService, JobService>();
         services.AddHostedService<AlertGenerationBackgroundService>();
 
         return services;

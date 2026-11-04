@@ -1,5 +1,5 @@
 "use client";
-import { hasPermission } from "@/lib/auth/access";
+import { RecordStamp } from "@/components/ui/record-stamp";
 
 import { PageSkeleton } from "@/components/ui/loading";
 import {
@@ -11,7 +11,6 @@ import {
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { AnalysisLink } from "@/features/analytics/components/analysis-links";
-import { useSession } from "@/lib/auth/session-context";
 import { dateTime, label } from "@/lib/format";
 import { useCrumbLabel } from "@/lib/use-crumb-label";
 import { useGetAlertQuery } from "../hooks/use-alerts-queries";
@@ -19,7 +18,6 @@ import { AlertForm } from "./alert-form";
 
 export function AlertDetailPage({ alertId }: { alertId: string }) {
   const q = useGetAlertQuery(alertId);
-  const { session } = useSession();
   useCrumbLabel(
     "alert",
     alertId,
@@ -96,8 +94,14 @@ export function AlertDetailPage({ alertId }: { alertId: string }) {
                 </dd>
               </div>
             </dl>
+            <RecordStamp
+              createdBy={a.createdBy}
+              createdAt={a.createdAt}
+              updatedBy={a.updatedBy}
+              updatedAt={a.updatedAt}
+            />
           </Panel>
-          {hasPermission(session, "ALERTS_MANAGE", a.projectId) && (
+          {a.canHandle && (
             <AlertForm key={a.id} value={a} reload={() => q.refetch()} />
           )}
         </aside>

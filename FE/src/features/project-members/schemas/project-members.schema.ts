@@ -1,6 +1,7 @@
 import {
   listQuerySchema,
   personRefSchema,
+  stampShape,
 } from "@/lib/validation/common.schema";
 import { checkProjection } from "@/lib/validation/contract-refinements";
 import { idSchema } from "@/lib/validation/request.schema";
@@ -30,6 +31,9 @@ export const membershipSchema = z
     projectRole: projectRoleSchema,
     endedAt: z.iso.datetime().nullable(),
     user: personRefSchema,
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+    ...stampShape,
   })
   .superRefine(checkProjection);
 export const projectMemberQuerySchema = z

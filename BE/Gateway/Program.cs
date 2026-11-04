@@ -1,3 +1,4 @@
+using Shared.Configuration;
 using System.Text;
 using Gateway.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -5,6 +6,8 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+// Cấu hình tập trung: appsettings.Shared.json (connection string, signing key) + bảng SystemConfigs
+builder.AddCentralConfiguration(ConfigCatalog.Gateway);
 
 builder.Host.UseSerilog((context, config) => config.ReadFrom.Configuration(context.Configuration));
 

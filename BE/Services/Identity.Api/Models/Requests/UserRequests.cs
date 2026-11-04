@@ -12,8 +12,7 @@ public record UserCreateRequest
     public string Email { get; init; } = null!;
     [Required]
     public string UnitId { get; init; } = null!;
-    [Required]
-    public string SystemRole { get; init; } = null!;
+    public List<string> GroupIds { get; init; } = [];
     [Required, MinLength(8), MaxLength(128)]
     public string InitialPassword { get; init; } = null!;
 }
@@ -25,9 +24,22 @@ public record UserPatchRequest
     [EmailAddress]
     public string? Email { get; init; }
     public string? UnitId { get; init; }
-    public string? SystemRole { get; init; }
     [MaxLength(2000)]
     public string? Reason { get; init; }
+}
+
+public record UserPermissionsRequest
+{
+    [Required]
+    public bool? IsSysAdmin { get; init; }
+    [Required]
+    public List<string> GrantedFeatures { get; init; } = [];
+    [Required]
+    public List<string> RevokedFeatures { get; init; } = [];
+    [Required]
+    public List<string> GroupIds { get; init; } = [];
+    [Required, MinLength(1), MaxLength(2000)]
+    public string Reason { get; init; } = null!;
 }
 
 public record UserLockRequest

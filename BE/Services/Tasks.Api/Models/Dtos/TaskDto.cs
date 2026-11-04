@@ -29,4 +29,6 @@ public record TaskDto
     public required bool IsOverdue { get; init; }
     public PersonRefDto? Assignee { get; init; }
     public required EntityLabelDto Project { get; init; }
+    public RefDto? CreatedBy { get; init; }
+    public RefDto? UpdatedBy { get; init; }
 }

@@ -10,6 +10,10 @@ import {
   userRowSchema,
   userSchema,
 } from "@/features/users/schemas/user.schema";
+import {
+  updateUserPermissionsSchema,
+  userPermissionsSchema,
+} from "@/features/users/schemas/user-permissions.schema";
 import { page, reasonSchema } from "@/lib/validation/common.schema";
 import { emptySchema, idSchema } from "@/lib/validation/request.schema";
 import { http } from "msw";
@@ -209,6 +213,48 @@ export const userHandlers = [
             200,
           );
         },
+      );
+    }),
+  ),
+  http.get(
+    "*/api/users/:userId/permissions",
+    mockHandler(({ request, params }) => {
+      const viewer = authenticatedUser(request);
+      const userId = idSchema.parse(params.userId);
+      return mockJson(
+        request,
+        usersDb.getUserPermissions(viewer, userId),
+        userPermissionsSchema,
+      );
+    }),
+  ),
+  http.put(
+    "*/api/users/:userId/permissions",
+    mockHandler(async ({ request, params }) => {
+      const viewer = authenticatedUser(request);
+      const userId = idSchema.parse(params.userId);
+      const payload = updateUserPermissionsSchema.parse(await request.json());
+      return mockCommand(
+        request,
+        {
+          operation: "updateUserPermissions",
+          feature: "users",
+          viewer,
+          action: "PERMISSIONS_MANAGE",
+          params: { userId },
+          payload,
+        },
+        () =>
+          mockJson(
+            request,
+            usersDb.updateUserPermissions(
+              viewer,
+              userId,
+              payload,
+              request.headers.get("If-Match"),
+            ),
+            userPermissionsSchema,
+          ),
       );
     }),
   ),

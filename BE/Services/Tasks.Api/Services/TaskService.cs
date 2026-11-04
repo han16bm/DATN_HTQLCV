@@ -4,6 +4,7 @@ using Shared.Commons.Extensions;
 using Shared.Commons.Models;
 using Shared.Commons.Utils;
 using Shared.Entities;
+using Shared.Entities.Auditing;
 using Shared.Entities.Entities;
 using Shared.Entities.Enums;
 using Tasks.Api.Interfaces;
@@ -48,9 +49,10 @@ public class TaskService(ApplicationDbContext db) : BaseService(db), ITaskServic
         };
 
         var paged = await q.ToPagedResultAsync(query);
+        var names = await AuditActorNames.LoadAsync(Db, paged.Items.SelectMany(t => new[] { t.CreatedBy, t.UpdatedBy }));
         var items = new List<TaskDto>();
         foreach (var t in paged.Items)
-            items.Add(await t.ToDtoAsync(Db));
+            items.Add(await t.ToDtoAsync(Db, names));
 
         return new PagedResult<TaskDto> { Items = items, Page = paged.Page, PageSize = paged.PageSize, Total = paged.Total };
     }

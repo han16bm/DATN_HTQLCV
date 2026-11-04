@@ -1,4 +1,5 @@
 import {
+  Bell,
   Building2,
   ChartNoAxesCombined,
   CircleCheckBig,
@@ -6,6 +7,13 @@ import {
   FileChartColumn,
   FolderKanban,
   House,
+  LayoutDashboard,
+  ListTree,
+  ScrollText,
+  ShieldCheck,
+  ShieldEllipsis,
+  SlidersHorizontal,
+  Timer,
   Users,
   UsersRound,
   type LucideIcon,
@@ -17,6 +25,8 @@ export type NavItem = {
   label: string;
   icon: LucideIcon;
   match: RegExp;
+  // Tiêu đề nhóm trong sidebar khu quản trị; mục đầu nhóm mang tiêu đề.
+  group?: string;
 };
 
 // Hai khu vực có menu riêng; quyền mở từng mục do canVisit (lib/auth/access).
@@ -56,27 +66,84 @@ export const navigation: Record<Area, NavItem[]> = {
       href: "/dashboard",
       label: "Phân tích",
       icon: ChartNoAxesCombined,
-      match: /^\/(?:dashboard|analytics|alerts)(?:\/|$)/,
+      match: /^\/(?:dashboard|analytics)(?:\/|$)/,
+    },
+    {
+      href: "/alerts",
+      label: "Cảnh báo",
+      icon: Bell,
+      match: /^\/alerts(?:\/|$)/,
     },
   ],
   admin: [
     {
+      href: "/admin",
+      label: "Tổng quan",
+      icon: LayoutDashboard,
+      match: /^\/admin\/?$/,
+    },
+    {
       href: "/admin/users",
-      label: "Tài khoản",
+      label: "Người dùng",
       icon: Users,
       match: /^\/admin\/users(?:\/|$)/,
+      group: "Người dùng & tổ chức",
     },
     {
       href: "/admin/organization",
       label: "Đơn vị",
       icon: Building2,
       match: /^\/admin\/organization(?:\/|$)/,
+      group: "Người dùng & tổ chức",
     },
     {
       href: "/admin/teams",
-      label: "Nhóm nhân sự",
+      label: "Team",
       icon: UsersRound,
       match: /^\/admin\/teams(?:\/|$)/,
+      group: "Người dùng & tổ chức",
+    },
+    {
+      href: "/admin/permission-groups",
+      label: "Nhóm quyền",
+      icon: ShieldCheck,
+      match: /^\/admin\/permission-groups(?:\/|$)/,
+      group: "Phân quyền",
+    },
+    {
+      href: "/admin/features",
+      label: "Danh mục chức năng",
+      icon: ListTree,
+      match: /^\/admin\/features(?:\/|$)/,
+      group: "Phân quyền",
+    },
+    {
+      href: "/admin/audit-logs",
+      label: "Nhật ký hệ thống",
+      icon: ScrollText,
+      match: /^\/admin\/audit-logs(?:\/|$)/,
+      group: "Giám sát",
+    },
+    {
+      href: "/admin/jobs",
+      label: "Job nền",
+      icon: Timer,
+      match: /^\/admin\/jobs(?:\/|$)/,
+      group: "Giám sát",
+    },
+    {
+      href: "/admin/settings",
+      label: "Cấu hình tập trung",
+      icon: SlidersHorizontal,
+      match: /^\/admin\/settings(?:\/|$)/,
+      group: "Cấu hình",
+    },
+    {
+      href: "/admin/ip-whitelist",
+      label: "IP whitelist",
+      icon: ShieldEllipsis,
+      match: /^\/admin\/ip-whitelist(?:\/|$)/,
+      group: "Cấu hình",
     },
   ],
 };
@@ -101,6 +168,8 @@ const lists = new Set([
   "/admin/users",
   "/admin/organization",
   "/admin/teams",
+  "/admin/permission-groups",
+  "/admin/audit-logs",
 ]);
 export const listRoute = (path: string) =>
   lists.has(path) || /^\/projects\/[^/]+\/tasks$/.test(path);
@@ -285,12 +354,18 @@ function buildTrail(ctx: TrailContext): Trail | null {
       ],
       back: contextual("/workspace"),
     };
-  if ((m = /^\/admin\/(users|organization|teams)\/([^/]+)$/.exec(pathname))) {
+  if (
+    (m =
+      /^\/admin\/(users|organization|teams|permission-groups)\/([^/]+)$/.exec(
+        pathname,
+      ))
+  ) {
     const section = {
-      users: ["Tài khoản", "user", "Tạo tài khoản"],
+      users: ["Người dùng", "user", "Tạo tài khoản"],
       organization: ["Đơn vị", "unit", "Tạo đơn vị"],
-      teams: ["Nhóm nhân sự", "team", "Tạo nhóm"],
-    }[m[1] as "users" | "organization" | "teams"];
+      teams: ["Team", "team", "Tạo nhóm"],
+      "permission-groups": ["Nhóm quyền", "permission-group", "Tạo nhóm quyền"],
+    }[m[1] as "users" | "organization" | "teams" | "permission-groups"];
     return crumbsOf(
       { label: section[0], href: list(`/admin/${m[1]}`) },
       {

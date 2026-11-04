@@ -2,9 +2,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Shared.Commons\Shared.Commons.csproj" />
+    <ProjectReference Include="..\Shared.Configuration\Shared.Configuration.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.20">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

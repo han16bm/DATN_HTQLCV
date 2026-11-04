@@ -1,3 +1,4 @@
+using Shared.Configuration;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,8 @@ using Serilog;
 using Shared.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
+// Cấu hình tập trung: appsettings.Shared.json (connection string, signing key) + bảng SystemConfigs
+builder.AddCentralConfiguration(ConfigCatalog.ProjectsApi);
 
 builder.Host.UseSerilog((context, config) => config.ReadFrom.Configuration(context.Configuration));
 
@@ -95,6 +98,8 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Projects.Api"));
 
+// IP client thật cho bộ lọc IP phạm vi SYSTEM; cấu hình proxy tin cậy (loopback) ở Shared.Entities.AddEntityServices
+app.UseForwardedHeaders();
 app.UseCors(CorsConfigurationExtensions.PolicyName);
 app.UseAuthentication();
 app.UseAuthorization();

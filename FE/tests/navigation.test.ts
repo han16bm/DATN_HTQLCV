@@ -132,7 +132,7 @@ describe("breadcrumb trail", () => {
 
   it("covers administration child routes", () => {
     expect(trailFor(context("/admin/teams/new"))!.crumbs).toEqual([
-      { label: "Nhóm nhân sự", href: "/admin/teams" },
+      { label: "Team", href: "/admin/teams" },
       { label: "Tạo nhóm" },
     ]);
     expect(trailFor(context("/admin/users"))).toBeNull();

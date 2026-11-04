@@ -5,6 +5,9 @@ import { Badge, DataTable, DetailLink, PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { AnalyticsTabs } from "@/features/analytics/components/analytics-tabs";
 import { useListAnalyticsFilterOptionsQuery } from "@/features/analytics/hooks/use-analytics-queries";
+import { useListProjectsQuery } from "@/features/projects/hooks/use-projects-queries";
+import { hasAnyPermission } from "@/lib/auth/access";
+import { useSession } from "@/lib/auth/session-context";
 import { label, options } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { useListAlertsQuery } from "../hooks/use-alerts-queries";
@@ -17,10 +20,14 @@ export function AlertsPage() {
   const f = useUrlFilters();
   const status = alertStatusSchema.safeParse(f.get("status"));
   const level = alertSeveritySchema.safeParse(f.get("severity"));
-  const projects = useListAnalyticsFilterOptionsQuery({
-    kind: "PROJECT",
-    pageSize: 100,
-  });
+  // Cảnh báo mở cho mọi nhân viên: chỉ người có quyền phân tích mới dùng tab và danh mục dự án của Phân tích
+  const analyst = hasAnyPermission(useSession().session, "ANALYTICS_VIEW");
+  const analyticsProjects = useListAnalyticsFilterOptionsQuery(
+    { kind: "PROJECT", pageSize: 100 },
+    analyst,
+  );
+  const ownProjects = useListProjectsQuery({ pageSize: 100 });
+  const projects = analyst ? analyticsProjects : ownProjects;
   const q = useListAlertsQuery({
     projectId: f.get("projectId") || undefined,
     status: status.success ? status.data : undefined,
@@ -29,7 +36,10 @@ export function AlertsPage() {
   });
   return (
     <>
-      <PageHeader title="Cảnh báo" navigation={<AnalyticsTabs />} />
+      <PageHeader
+        title="Cảnh báo"
+        navigation={analyst ? <AnalyticsTabs /> : undefined}
+      />
       <section className="panel filters">
         <label>
           Dự án

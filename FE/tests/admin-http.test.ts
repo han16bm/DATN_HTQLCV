@@ -32,8 +32,8 @@ describe("Member profiles via HTTP/MSW", () => {
       "avatarUrl",
       "displayName",
       "email",
+      "groups",
       "id",
-      "systemRole",
       "unit",
     ]);
     expect(profile).toMatchObject({
@@ -102,7 +102,8 @@ describe("Personal profile via HTTP/MSW", () => {
       displayName: "Lan Nguyễn",
       email: session.user.email,
       unitId: session.user.unitId,
-      systemRole: session.user.systemRole,
+      isSysAdmin: session.user.isSysAdmin,
+      groups: session.user.groups,
       version: session.user.version + 1,
       avatarUrl: null,
     });
@@ -128,7 +129,7 @@ describe("Personal profile via HTTP/MSW", () => {
     const payload = { username: session.user.username, displayName: "Tên mới" };
     for (const [field, value] of [
       ["email", "new@example.test"],
-      ["systemRole", "EMPLOYEE"],
+      ["isSysAdmin", "true"],
       ["unitId", "unit-other"],
       ["userId", "u-lan"],
     ]) {
@@ -318,7 +319,6 @@ describe("S03–S07 administration via HTTP/MSW", () => {
         username: "new.member",
         displayName: "Nhân viên mới",
         email: " NEW@example.test ",
-        systemRole: "EMPLOYEE",
         unitId: "unit-product",
         initialPassword: "Start@12345",
       },
@@ -369,7 +369,6 @@ describe("S03–S07 administration via HTTP/MSW", () => {
           displayName: "Trùng",
           email: "unique@example.test",
           unitId: "unit-product",
-          systemRole: "EMPLOYEE",
           initialPassword: "Start@12345",
         },
         {
@@ -387,7 +386,7 @@ describe("S03–S07 administration via HTTP/MSW", () => {
           key: key(),
         },
       ),
-    ).rejects.toMatchObject({ status: 409, code: "LAST_ADMIN" });
+    ).rejects.toMatchObject({ status: 422, code: "BUSINESS_RULE" });
     const lan = await usersService.getUser("u-lan");
     await usersService.updateUser(
       lan.id,

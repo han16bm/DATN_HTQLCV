@@ -6,19 +6,31 @@ namespace Shared.Entities;
 
 public static class PermissionEvaluator
 {
+    /// <summary>
+    /// Quyền hiệu lực (ADMIN_MODULES.md §1.2): sysadmin = mọi Feature đang bật;
+    /// còn lại = (quyền nhóm Active ∪ Granted) − Revoked ∩ Feature đang bật. Tính theo DB mỗi lần gọi.
+    /// </summary>
     public static async Task<List<string>> GetEffectivePermissionsAsync(ApplicationDbContext context, User user)
     {
-        var implicitPermissions = new List<string>();
-        if (user.SystemRole == SystemRole.Admin)
-            implicitPermissions.AddRange([PermissionFeatures.UsersManage, PermissionFeatures.OrganizationManage, PermissionFeatures.AnalyticsView]);
-        if (user.SystemRole == SystemRole.Manager)
-            implicitPermissions.Add(PermissionFeatures.ProjectCreate);
+        var activeFeatures = await context.Features.AsNoTracking()
+            .Where(f => f.IsActive && !f.IsGroup)
+            .OrderBy(f => f.SortOrder)
+            .Select(f => f.Code)
+            .ToListAsync();
+        if (user.IsSysAdmin)
+            return activeFeatures;
 
-        var groupFeatureLists = await context.PermissionGroupMembers
+        var groupFeatureLists = await context.PermissionGroupMembers.AsNoTracking()
             .Where(m => m.UserId == user.Id && m.PermissionGroup!.Status == OrgStatus.Active)
             .Select(m => m.PermissionGroup!.Features)
             .ToListAsync();
 
-        return implicitPermissions.Concat(groupFeatureLists.SelectMany(f => f)).Distinct().ToList();
+        var granted = groupFeatureLists.SelectMany(f => f).Concat(user.GrantedFeatures).Except(user.RevokedFeatures).ToHashSet();
+        return activeFeatures.Where(granted.Contains).ToList();
+    }
+
+    public static async Task<bool> HasPermissionAsync(ApplicationDbContext context, User user, string feature)
+    {
+        return (await GetEffectivePermissionsAsync(context, user)).Contains(feature);
     }
 }

@@ -4,7 +4,7 @@ import { Form } from "@/components/forms/form";
 import { FormInput } from "@/components/forms/form-field";
 import { ButtonLink, PageHeader } from "@/components/ui/page";
 import { useSession } from "@/lib/auth/session-context";
-import { label } from "@/lib/format";
+import { accessText } from "@/lib/format";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
 import { validationMessage } from "@/lib/forms/validation-message";
@@ -149,7 +149,7 @@ function ProfileDetails({ user }: { user: SessionDto["user"] }) {
                 {...conflict}
               />
               <p className="small muted">
-                {user.unit.name} · {label(user.systemRole)}
+                {user.unit.name} · {accessText(user)}
               </p>
             </div>
           ) : section === "avatar" ? (

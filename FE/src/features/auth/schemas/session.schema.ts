@@ -12,7 +12,8 @@ export const sessionSchema = z.object({
     email: true,
     unitId: true,
     unit: true,
-    systemRole: true,
+    isSysAdmin: true,
+    groups: true,
   }),
   projectAccess: z.array(
     z.object({

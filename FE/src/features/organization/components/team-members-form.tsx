@@ -18,6 +18,7 @@ export function TeamMembersForm({
   reload,
   cancel,
   onDone,
+  readOnly = false,
 }: {
   team: TeamDto;
   people: FormOption[];
@@ -26,6 +27,7 @@ export function TeamMembersForm({
   }>;
   cancel?: ReactNode;
   onDone: () => void;
+  readOnly?: boolean;
 }) {
   const snapshot = useEditSnapshot(team);
   const mutation = useReplaceTeamMembersMutation();
@@ -37,6 +39,7 @@ export function TeamMembersForm({
   return (
     <Form
       compact
+      readOnly={readOnly}
       form={form}
       compareFields={[
         {
@@ -76,12 +79,14 @@ export function TeamMembersForm({
           />
         )}
       />
-      <FormTextarea
-        label="Lý do thay đổi thành viên"
-        required
-        {...form.register("reason")}
-        error={errors.reason}
-      />
+      {!readOnly && (
+        <FormTextarea
+          label="Lý do thay đổi thành viên"
+          required
+          {...form.register("reason")}
+          error={errors.reason}
+        />
+      )}
     </Form>
   );
 }

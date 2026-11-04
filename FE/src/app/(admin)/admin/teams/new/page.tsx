@@ -1,4 +1,5 @@
-import { TeamEditorPage } from "@/features/organization/components/team-editor-page";
+import { redirect } from "next/navigation";
+// Thêm mới mở bằng dialog trên trang danh sách (ADMIN_MODULES 9).
 export default function Page() {
-  return <TeamEditorPage />;
+  redirect("/admin/teams?dialog=create");
 }

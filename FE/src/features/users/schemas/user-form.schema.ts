@@ -1,7 +1,6 @@
 import { reasonSchema } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
-import { systemRoleSchema } from "./user.schema";
 export const resetPasswordSchema = z
   .object({
     temporaryPassword: z.string().min(8).max(128),
@@ -27,7 +26,7 @@ export const createUserSchema = z
       .max(255),
     email: z.string().trim().toLowerCase().email(),
     unitId: idSchema,
-    systemRole: systemRoleSchema,
+    groupIds: z.array(idSchema).default([]),
     initialPassword: z.string().min(8).max(128),
   })
   .strict();
@@ -42,7 +41,7 @@ export const userLockSchema = z
   })
   .strict();
 export const updateUserSchema = createUserSchema
-  .omit({ username: true, initialPassword: true })
+  .omit({ username: true, initialPassword: true, groupIds: true })
   .partial()
   .extend({ reason: reasonSchema.shape.reason.optional() });
 export const resetUserPasswordResultSchema = z.object({

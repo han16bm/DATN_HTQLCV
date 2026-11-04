@@ -127,7 +127,10 @@ export function useGetAnalysisDetailQuery(analysisId: string) {
   return useQueryAccess(result, "analytics");
 }
 
-export function useListAnalyticsFilterOptionsQuery(query: FilterOptionsQuery) {
+export function useListAnalyticsFilterOptionsQuery(
+  query: FilterOptionsQuery,
+  enabled = true,
+) {
   const viewerId = useSession().session?.user.id;
 
   const filters = filterOptionsQuerySchema.safeParse(query).data ?? query;
@@ -135,7 +138,7 @@ export function useListAnalyticsFilterOptionsQuery(query: FilterOptionsQuery) {
     queryKey: analyticsKeys.listAnalyticsFilterOptions(viewerId, filters),
     queryFn: ({ signal }) =>
       analyticsService.listAnalyticsFilterOptions(filters, { signal }),
-    enabled: Boolean(viewerId),
+    enabled: Boolean(viewerId) && enabled,
     staleTime: 30000,
   });
   return useQueryAccess(result, "analytics");

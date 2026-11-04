@@ -6,4 +6,8 @@ public record MembershipDto(
     string UserId,
     string ProjectRole,
     DateTime? EndedAt,
-    PersonRefDto User);
+    PersonRefDto User,
+    DateTime CreatedAt,
+    RefDto? CreatedBy,
+    DateTime UpdatedAt,
+    RefDto? UpdatedBy);

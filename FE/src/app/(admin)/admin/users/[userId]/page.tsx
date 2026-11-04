@@ -1,9 +1,10 @@
-import { UserEditorPage } from "@/features/users/components/user-editor-page";
+import { redirect } from "next/navigation";
+// Chi tiết mở bằng dialog Xem trên trang danh sách (ADMIN_MODULES 9).
 export default async function Page({
   params,
 }: {
   params: Promise<{ userId: string }>;
 }) {
   const { userId } = await params;
-  return <UserEditorPage userId={userId} />;
+  redirect(`/admin/users?dialog=view&id=${encodeURIComponent(userId)}`);
 }

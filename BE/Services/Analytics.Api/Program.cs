@@ -1,3 +1,4 @@
+using Shared.Configuration;
 using System.Text;
 using Analytics.Api.Extensions;
 using Analytics.Api.Filters;
@@ -8,6 +9,8 @@ using Serilog;
 using Shared.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
+// Cấu hình tập trung: appsettings.Shared.json (connection string, signing key) + bảng SystemConfigs
+builder.AddCentralConfiguration(ConfigCatalog.AnalyticsApi);
 
 builder.Host.UseSerilog((context, config) => config.ReadFrom.Configuration(context.Configuration));
 
@@ -93,6 +96,8 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Analytics.Api V1"));
 
+// IP client thật cho [AdminArea]; cấu hình proxy tin cậy (loopback) ở Shared.Entities.AddEntityServices
+app.UseForwardedHeaders();
 app.UseCors(CorsConfigurationExtensions.PolicyName);
 app.UseAuthentication();
 app.UseAuthorization();

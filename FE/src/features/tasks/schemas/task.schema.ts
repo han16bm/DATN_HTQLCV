@@ -2,6 +2,7 @@ import {
   entityLabelSchema,
   listQuerySchema,
   personRefSchema,
+  stampShape,
 } from "@/lib/validation/common.schema";
 import { checkProjection } from "@/lib/validation/contract-refinements";
 import { idSchema } from "@/lib/validation/request.schema";
@@ -44,6 +45,7 @@ export const taskSchema = z
       .max(2000),
     priority: prioritySchema,
     createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
     firstStartedAt: z.iso.datetime().nullable(),
     dueAt: z.iso.datetime(),
     originalDueAt: z.iso.datetime(),
@@ -57,6 +59,7 @@ export const taskSchema = z
     isOverdue: z.boolean(),
     assignee: personRefSchema.nullable(),
     project: entityLabelSchema,
+    ...stampShape,
   })
   .superRefine(checkProjection);
 export const taskHistoryQuerySchema = z

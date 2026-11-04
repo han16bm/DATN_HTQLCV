@@ -50,3 +50,11 @@ Thumbs.db
 Desktop.ini
 *.tmp
 *.swp
+
+# Cấu hình bootstrap dùng chung của BE (connection string, JWT signing key) — chỉ commit file .example
+BE/appsettings.Shared.json
+# Tệp upload lúc chạy (kể cả tệp mẫu do Tools/DataSeeder ghi ra) — dữ liệu runtime, không commit
+BE/Services/Tasks.Api/wwwroot/uploads/
+
+# Playwright MCP snapshots/screenshots
+.playwright-mcp/

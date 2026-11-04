@@ -7,6 +7,7 @@ using Shared.Commons.Exceptions;
 using Shared.Commons.Extensions;
 using Shared.Commons.Models;
 using Shared.Entities;
+using Shared.Entities.Auditing;
 using Shared.Entities.Entities;
 using Shared.Entities.Enums;
 
@@ -16,7 +17,7 @@ public class AlertService(ApplicationDbContext context, IHttpContextAccessor htt
 {
     public async Task<PagedResult<AlertDto>> ListAsync(AlertQuery query)
     {
-        var q = context.Alerts.AsNoTracking().AsQueryable();
+        var q = await VisibleAlertsAsync();
         if (!string.IsNullOrWhiteSpace(query.ProjectId)) q = q.Where(a => a.ProjectId == query.ProjectId);
         if (query.Status.HasValue) q = q.Where(a => a.Status == query.Status);
         if (query.Severity.HasValue) q = q.Where(a => a.Severity == query.Severity);
@@ -25,9 +26,10 @@ public class AlertService(ApplicationDbContext context, IHttpContextAccessor htt
 
         var paged = await q.ToPagedResultAsync(query);
         var titles = await LoadTaskTitlesAsync(paged.Items.Select(a => a.TaskId));
+        var names = await AuditActorNames.LoadAsync(context, paged.Items.SelectMany(a => new[] { a.CreatedBy, a.UpdatedBy, a.HandledBy }));
         return new PagedResult<AlertDto>
         {
-            Items = paged.Items.Select(a => ToDto(a, ResolveTaskTitle(a.TaskId, titles))).ToList(),
+            Items = paged.Items.Select(a => ToDto(a, ResolveTaskTitle(a.TaskId, titles), names)).ToList(),
             Page = paged.Page,
             PageSize = paged.PageSize,
             Total = paged.Total
@@ -36,10 +38,15 @@ public class AlertService(ApplicationDbContext context, IHttpContextAccessor htt
 
     public async Task<AlertDto> GetAsync(string alertId)
     {
-        var alert = await context.Alerts.AsNoTracking().FirstOrDefaultAsync(a => a.Id == alertId)
+        var alert = await (await VisibleAlertsAsync()).FirstOrDefaultAsync(a => a.Id == alertId)
             ?? throw new NotFoundException("Không tìm thấy cảnh báo.");
         var titles = await LoadTaskTitlesAsync([alert.TaskId]);
-        return ToDto(alert, ResolveTaskTitle(alert.TaskId, titles));
+        var names = await AuditActorNames.LoadAsync(context, [alert.CreatedBy, alert.UpdatedBy, alert.HandledBy]);
+        var actor = await GetActorAsync();
+        return ToDto(alert, ResolveTaskTitle(alert.TaskId, titles), names) with
+        {
+            CanHandle = actor.IsSysAdmin || await IsRecipientAsync(alert, actor.Id)
+        };
     }
 
     public async Task<AlertDto> UpdateAsync(string alertId, UpdateAlertRequest request, string? ifMatch)
@@ -56,8 +63,14 @@ public class AlertService(ApplicationDbContext context, IHttpContextAccessor htt
         if (!int.TryParse(ifMatch.Trim('"'), out var version) || version != alert.Version)
             throw new PreconditionFailedException("Cảnh báo vừa được cập nhật, hãy tải lại.");
 
-        var actorId = httpContextAccessor.HttpContext?.GetUserId()
-            ?? throw new ValidationException("Thiếu định danh người xử lý trong phiên.");
+        var actor = await GetActorAsync();
+        if (!actor.IsSysAdmin && !await IsRecipientAsync(alert, actor.Id))
+        {
+            if (await (await VisibleAlertsAsync()).AnyAsync(a => a.Id == alertId))
+                throw new ForbiddenException("Chỉ người được giao công việc hoặc quản lý dự án mới được xử lý cảnh báo này.");
+            throw new NotFoundException("Không tìm thấy cảnh báo.");
+        }
+        var actorId = actor.Id;
 
         alert.Status = request.Status;
         alert.ResolutionNote = request.ResolutionNote;
@@ -68,7 +81,39 @@ public class AlertService(ApplicationDbContext context, IHttpContextAccessor htt
 
         await context.SaveChangesAsync();
         var titles = await LoadTaskTitlesAsync([alert.TaskId]);
-        return ToDto(alert, ResolveTaskTitle(alert.TaskId, titles));
+        var names = await AuditActorNames.LoadAsync(context, [alert.CreatedBy, alert.UpdatedBy, alert.HandledBy]);
+        return ToDto(alert, ResolveTaskTitle(alert.TaskId, titles), names) with { CanHandle = true };
+    }
+
+    // Cảnh báo là thông báo cá nhân: người nhận = người được giao task + Owner/Manager dự án.
+    // Sysadmin và người có ANALYTICS_VIEW được xem tất cả (chỉ sysadmin được xử lý thay).
+    private async Task<IQueryable<Alert>> VisibleAlertsAsync()
+    {
+        var actor = await GetActorAsync();
+        var q = context.Alerts.AsNoTracking();
+        if (await PermissionEvaluator.HasPermissionAsync(context, actor, PermissionFeatures.AnalyticsView))
+            return q;
+        var managed = ManagedProjectIds(actor.Id);
+        return q.Where(a => managed.Contains(a.ProjectId)
+            || context.Tasks.Any(t => t.Id == a.TaskId && t.AssigneeId == actor.Id));
+    }
+
+    private async Task<bool> IsRecipientAsync(Alert alert, string userId) =>
+        await ManagedProjectIds(userId).ContainsAsync(alert.ProjectId)
+        || (alert.TaskId != null && await context.Tasks.AnyAsync(t => t.Id == alert.TaskId && t.AssigneeId == userId));
+
+    private IQueryable<string> ManagedProjectIds(string userId) =>
+        context.ProjectMemberships
+            .Where(m => m.UserId == userId && m.EndedAt == null
+                && (m.ProjectRole == ProjectRole.Owner || m.ProjectRole == ProjectRole.Manager))
+            .Select(m => m.ProjectId);
+
+    private async Task<User> GetActorAsync()
+    {
+        var actorId = httpContextAccessor.HttpContext?.GetUserId()
+            ?? throw new ValidationException("Thiếu định danh người xử lý trong phiên.");
+        return await context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == actorId)
+            ?? throw new ForbiddenException("Tài khoản không còn tồn tại.");
     }
 
     private async Task<Dictionary<string, string>> LoadTaskTitlesAsync(IEnumerable<string?> taskIds)
@@ -83,7 +128,7 @@ public class AlertService(ApplicationDbContext context, IHttpContextAccessor htt
         return titles.TryGetValue(taskId, out var title) ? title : null;
     }
 
-    private static AlertDto ToDto(Alert a, string? taskTitle)
+    private static AlertDto ToDto(Alert a, string? taskTitle, Dictionary<string, string> names)
     {
         return new()
         {
@@ -101,10 +146,12 @@ public class AlertService(ApplicationDbContext context, IHttpContextAccessor htt
             DataAsOf = a.DataAsOf,
             MethodVersion = a.MethodVersion,
             ResolutionNote = a.ResolutionNote,
-            HandledBy = a.HandledBy,
+            Handler = a.HandledBy is null ? null : new PersonRefDto(a.HandledBy, AuditActorNames.Label(a.HandledBy, names)!),
             HandledAt = a.HandledAt,
             TaskTitle = taskTitle,
-            AnalysisRef = null
+            AnalysisRef = null,
+            CreatedBy = a.CreatedBy is null ? null : new RefDto(a.CreatedBy, AuditActorNames.Label(a.CreatedBy, names)!),
+            UpdatedBy = a.UpdatedBy is null ? null : new RefDto(a.UpdatedBy, AuditActorNames.Label(a.UpdatedBy, names)!)
         };
     }
 }

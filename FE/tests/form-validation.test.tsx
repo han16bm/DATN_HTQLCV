@@ -32,7 +32,6 @@ const user: CreateUserInput = {
   displayName: "Thành viên mới",
   email: "member@example.test",
   unitId: "unit-product",
-  systemRole: "EMPLOYEE",
   initialPassword: "Start@12345",
 };
 

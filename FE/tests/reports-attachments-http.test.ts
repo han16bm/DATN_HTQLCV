@@ -320,7 +320,7 @@ describe("reports and evidence through HTTP", () => {
     expect(db.timeLogs.length).toBe(count);
   });
   it("blocks self-review even when the submitter manages the project", async () => {
-    db.users.find((user) => user.id === "u-huy")!.systemRole = "MANAGER";
+    db.permissionGroups.find((g) => g.id === "pg-pm")!.memberIds.push("u-huy");
     db.members.find(
       (m) => m.userId === "u-huy" && m.projectId === "p-main",
     )!.projectRole = "MANAGER";

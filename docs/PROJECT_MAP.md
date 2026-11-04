@@ -4,7 +4,7 @@
 > Đọc file này trước khi tự khám phá lại codebase — mục đích là tránh tốn công/tốn token dò lại những gì đã biết.
 > Cập nhật file này mỗi khi fix thêm lỗi, phát hiện vấn đề mới, hoặc đổi trạng thái một hạng mục.
 
-Cập nhật lần cuối: 2026-10-28.
+Cập nhật lần cuối: 2026-11-03.
 
 ## 1. Dự án là gì
 
@@ -27,8 +27,10 @@ Nói ngắn: FE coi như xong phần giao diện/luồng dựa trên một "hợ
 | `FE/docs/IMPLEMENTATION_STATUS.md` | **Quan trọng nhất** — log theo ngày những gì đã làm ở FE, bảng "Phạm vi chức năng" S01–S43, bảng endpoint theo feature, và mục cuối **"Phần cần nghiệm thu hoặc BE xác nhận"** — đây chính là backlog tích hợp BE/production còn thiếu (Gateway thật, auth/cookie/CSRF/CORS production, rate limit, quét tệp, lưu trữ bền vững, scheduler, notification thật) |
 | `FE/docs/SPEC_REVIEW.md`, `REFACTOR_REVIEW.md`, `UI_REVIEW.md` | Lịch sử rà soát/refactor FE, quy tắc tránh lặp code đã rút ra |
 | `BE/docs/CODING_STYLE.md` | Quy ước code BE |
-| `docs/DATABASE.md` | Cấu trúc DB (PostgreSQL), cách dựng bằng Docker, cách áp migration, lỗi thường gặp |
+| `docs/DATABASE.md` | Cấu trúc DB (PostgreSQL — hiện dùng **Neon**), cấu hình tập trung, cách áp migration, nạp dữ liệu mẫu (`Tools/DataSeeder`), lỗi thường gặp |
+| [`docs/ADMIN_MODULES.md`](ADMIN_MODULES.md) | **Đặc tả + ghi chú triển khai khu quản trị (03/11/2026)**: phân quyền động thay `SystemRole`, nhật ký, job nền, cấu hình tập trung (`SystemConfigs` một cột giá trị), IP whitelist — ý tưởng lấy từ schema DB của DVCLT. Mục 7 ghi những gì đã verify chạy thật |
 | `docs/PROJECT_MAP.md` (file này) | Trạng thái tổng hợp 2 phía + backlog lỗi + kế hoạch |
+| [`docs/CHANGE_REQUESTS.md`](CHANGE_REQUESTS.md) | **Việc ưu tiên kế tiếp**: tổ chức lại điều hướng theo dự án (project switcher + "Gần đây") — đọc mục đầu file trước khi đụng vào `sidebar-content.tsx`/`ui-store.ts`. Kèm bảng yêu cầu thay đổi UI + phân quyền từ góp ý của Việt |
 
 ## 3. Cấu trúc thư mục chính
 
@@ -42,7 +44,10 @@ BE/
     Analytics.Api/          dashboard, risks, workload, bottlenecks, alerts    (port 5104)
   Shared/
     Shared.Commons/         exceptions, attributes (Audit), extensions, PagedResult
-    Shared.Entities/        EF Core entities + ApplicationDbContext + Migrations
+    Shared.Entities/        EF Core entities + ApplicationDbContext + Migrations + Authorization ([RequiresPermission], [AdminArea])
+    Shared.Configuration/   cấu hình tập trung: đọc bảng SystemConfigs vào IConfiguration (reload 30s), ConfigCatalog
+  Tools/DataSeeder/         nạp dữ liệu mẫu (nguồn FE/src/mocks/data.json) vào DB
+  appsettings.Shared.json   bootstrap chung, GITIGNORE: connection string + JWT signing key (mẫu: appsettings.Shared.example.json)
   docs/CODING_STYLE.md
 
 FE/
@@ -58,14 +63,16 @@ Mỗi service BE theo cùng pattern: `Controllers/` (mỏng, chỉ gọi service
 ## 4. Trạng thái hiện tại
 
 **BE**
-- `dotnet build BE/DATN.slnx` → **PASS**, 0 error, 0 warning.
-- Mỗi service + Gateway đều throw `InvalidOperationException` lúc start nếu `Jwt:SigningKey` chưa được set — **phải chạy `dotnet user-secrets set "Jwt:SigningKey" "<chuỗi ngẫu nhiên ≥32 ký tự>"` cho cả 5 project** (Gateway + 4 service) trước khi `dotnet run`, nếu không service không khởi động được.
-- DB: **PostgreSQL** (đổi từ SQL Server LocalDB — xem [`docs/DATABASE.md`](DATABASE.md)), dựng qua `docker compose up -d db`, đã verify thật: build pass + migration `InitialCreate` áp thành công, tạo đủ 14 bảng.
-- Chưa có test project nào cho BE (không có file nào match `*Tests*`).
-- Toàn bộ `BE/` hiện **chưa được add vào git** (`git status` báo `?? BE/`) — nhớ commit, tránh mất việc.
+- `dotnet build BE/DATN.slnx` → **PASS**, 0 error, **10 warning** (03/11/2026; trước đó 5) (CS9107 — tham số constructor chính bị capture vào state đồng thời truyền cho base constructor; lặp ở `UserService`, `UnitService`, `TeamService` và nay thêm `PermissionGroupService`, cùng một pattern cũ, không phải lỗi mới phát sinh riêng). Trước đây ghi nhận 0 warning — đã lệch, cần sửa hoặc chấp nhận và cập nhật ghi chú.
+- Mỗi service + Gateway đều throw `InvalidOperationException` lúc start nếu thiếu `Jwt:SigningKey` hoặc `ConnectionStrings:DefaultConnection`. Từ 03/11/2026 cả hai nằm **một chỗ** trong `BE/appsettings.Shared.json` (gitignore) — máy mới copy từ `appsettings.Shared.example.json`. user-secrets cũ vẫn được đọc và thắng file chung.
+- Cấu hình nghiệp vụ không bí mật (`Jwt:Issuer/Audience/AccessTokenHours`, `Auth:MaxFailedAttempts`, `Security:AdminIpWhitelistEnabled`, `Serilog:MinimumLevel`) nằm trong bảng `SystemConfigs`, sửa ở `/admin/settings`, các service nhận giá trị mới sau ≤30s không cần restart.
+- DB: **Neon PostgreSQL** (cloud) — đã áp **đủ 5 migration** (`InitialCreate`, `AddUserTokenVersion`, `AddPermissionGroups`, `AdminModulesAndDynamicRbac`, `CentralSystemConfigs`) và nạp dữ liệu mẫu ngày 03/11/2026, verify bằng truy vấn thật. Docker cục bộ vẫn dùng được (xem [`docs/DATABASE.md`](DATABASE.md)).
+- Chưa có test project nào cho BE (không có file nào match `*Tests*`) — vẫn như cũ.
+- `BE/` đã được add vào git đầy đủ (195 file tracked) — ghi chú cũ về `?? BE/` chưa commit đã lỗi thời, không còn đúng.
 
 **FE**
-- Đã triển khai tuần tự S01–S43, 83 route HTTP (theo MSW), 167/167 test pass, typecheck/lint/build sạch.
+- 03/11/2026: thêm khu quản trị mới (nhóm quyền, danh mục chức năng, phân quyền riêng từng user, nhật ký, job nền, cấu hình tập trung, IP whitelist, trang tổng quan `/admin`), bỏ `systemRole`; **108 route MSW, 240/240 test ở 14 file đạt**, tsc/lint sạch. Zod schema FE đã parse được response thật của BE ở 17 endpoint quản trị (xem `docs/ADMIN_MODULES.md` §7.2).
+- Trước đó: đã triển khai tuần tự S01–S43, 83 route HTTP (theo MSW). Re-run lần trước: **228/228 test ở 13 file đạt**, typecheck sạch (sau khi xóa cache `.next/` cũ còn trỏ tới route `(workspace)/admin/...` đã dời sang `(admin)/admin/...` — nếu gặp lỗi `.next/dev/types/validator.ts` báo thiếu module, đó là cache cũ, không phải lỗi nguồn), lint sạch, build chưa re-run trong phiên này.
 - Chạy hoàn toàn trên MSW; `.env.example` có cờ `NEXT_PUBLIC_API_MODE=mock|http` để chuyển sang gọi backend thật nhưng **chưa từng thử ở mode `http` với BE thật** theo IMPLEMENTATION_STATUS.md.
 
 ## 5. Lỗi/gap đã phát hiện
@@ -76,7 +83,7 @@ Mỗi service BE theo cùng pattern: `Controllers/` (mỏng, chỉ gọi service
 | 2 | FE lưu access token chỉ trong biến JS (`api-client.ts`), mất ngay khi F5/reload cứng → gọi `/auth/refresh` lúc mount luôn 401 vì không còn token để gửi → người dùng bị đăng xuất mỗi lần reload | Cao — UX đăng nhập hỏng | ✅ Đã fix (token giờ đọc/ghi qua `sessionStorage`, khôi phục khi load lại trang trong cùng tab) |
 | 3 | BE chưa có tính năng avatar thật (không có cột `AvatarId`, không có controller upload/serve ảnh) trong khi FE đã có UI đổi avatar hoàn chỉnh (`PATCH /auth/me` multipart, `GET /avatars/:id`) | Trung bình — là việc tính năng, không phải bug | ⏳ Chưa làm — thuộc giai đoạn "tính năng chính" (hồ sơ cá nhân), không phải "login cơ bản" |
 | 4 | `Gateway` có `AddAuthentication/AddJwtBearer` nhưng route reverse-proxy không gắn `RequireAuthorization()` nào → lớp xác thực ở Gateway không thực sự chặn gì, toàn bộ authorize dồn cho service downstream (`[Authorize]` ở từng controller) | Thấp — không sai, chỉ dư thừa/dễ hiểu nhầm | ⏳ Chưa xử lý |
-| 5 | `Tasks.Api` và `Projects.Api` không cấu hình CORS (trong khi `Identity.Api`/`Analytics.Api` có) | Thấp — chỉ lộ nếu gọi trực tiếp service, không qua Gateway | ⏳ Chưa xử lý |
+| 5 | `Tasks.Api` và `Projects.Api` không cấu hình CORS (trong khi `Identity.Api`/`Analytics.Api` có) | Thấp — chỉ lộ nếu gọi trực tiếp service, không qua Gateway | ✅ Đã fix — cả 4 service nay đều có `Extensions/CorsConfigurationExtensions.cs` (`AddCorsConfiguration`/`PolicyName`), `Program.cs` của `Tasks.Api`/`Projects.Api` gọi `builder.Services.AddCorsConfiguration(...)` + `app.UseCors(CorsConfigurationExtensions.PolicyName)`. Verify bằng đọc code, chưa gọi thử request chéo origin thật. |
 | 6 | Chưa có test project nào cho BE | Trung bình — khó phát hiện regression khi sửa nghiệp vụ | ⏳ Chưa xử lý, chưa được yêu cầu làm |
 | 7 | `[Audit]` (mọi `BaseApiController`) bọc **mọi** response thành `{succeeded, errors, data, traceId, statusCode}` và luôn trả HTTP 200 kể cả lỗi nghiệp vụ — vỡ thẳng contract FE (FE cần DTO trần + mã HTTP thật `{code, message, fieldErrors?, details?}`). Verify thật bằng Playwright: login trả 200 nhưng FE báo "Chưa thể xử lý dữ liệu lúc này" vì Zod từ chối parse response bị bọc | Cao — chặn **mọi** endpoint, không riêng login | ✅ Đã fix (`AuditAttribute` viết lại: trả DTO trần khi thành công, map exception → mã HTTP thật qua `ErrorCode % 1000`, lỗi 401/403 từ `[Authorize]` cũng trả JSON đúng hình dạng qua `JwtBearerEvents.OnChallenge/OnForbidden`). `BE/docs/CODING_STYLE.md` mục 4 + mục 13 đã được cập nhật khớp theo thiết kế mới này — không còn mô tả kiểu bọc cũ. |
 | 8 | DB trống hoàn toàn sau migration — không có cách tạo tài khoản nào khác vì `UsersController.Create` yêu cầu `[Authorize]` (con gà quả trứng) | Cao — không login được lần đầu nếu DB rỗng | ✅ Có `BE/scripts/seed-admin.sql` (chạy 1 lần sau migration) tạo 1 Unit + 1 User ADMIN (`admin` / `Admin@123456`) |
@@ -92,7 +99,12 @@ Mỗi service BE theo cùng pattern: `Controllers/` (mỏng, chỉ gọi service
 | 18 | **`ErrorResponse.FieldErrors`/`Details` serialize thành `null` tường minh thay vì bị lược bỏ**, trong khi FE `errorResponseSchema` khai `fieldErrors`/`details` bằng `.optional()` (chỉ chấp nhận field vắng mặt/`undefined`, **không** chấp nhận `null` tường minh — khác `.nullable()`). Hậu quả: **hầu như mọi response lỗi không có field-level error** (401 sai mật khẩu, 403, 404, 409, 500...) có body `{"code":...,"message":...,"fieldErrors":null,"details":null}` → Zod `safeParse` fail → FE rơi vào nhánh `ContractError` mặc định, hiển thị "Chưa thể xử lý dữ liệu lúc này. Vui lòng thử lại." thay vì thông điệp lỗi thật. Phát hiện qua Playwright: đăng nhập sai mật khẩu hiện thông báo chung chung thay vì "Sai tên đăng nhập hoặc mật khẩu." dù BE đã trả đúng message | Cao — che giấu **gần như mọi** thông điệp lỗi nghiệp vụ trên toàn hệ thống, không riêng login; là bug âm thầm nhất vì vẫn "có vẻ hoạt động" (hiện đúng alert, sai nội dung) | ✅ Đã fix: `ErrorResponse` (Shared.Commons) gắn `[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]` lên `FieldErrors`/`Details` — hai field này giờ bị lược bỏ hoàn toàn khỏi JSON khi `null`, khớp đúng kỳ vọng `.optional()` phía FE. Chỉ sửa tại `ErrorResponse`, không đổi `JsonSerializerOptions` toàn cục (tránh ảnh hưởng các DTO khác có field `nullable()`-bắt-buộc-có-mặt như `UserDto.AvatarUrl`). Verify qua Playwright: đăng nhập sai mật khẩu hiện đúng "Sai tên đăng nhập hoặc mật khẩu." |
 | 20 | **Alert tự sinh chưa có job nào tạo ra** (ghi nhận từ đầu session là gap đã biết, không phải lỗi) — Alerts list luôn trống vì không có cơ chế quét điều kiện Overdue/DeadlineRisk/Bottleneck/DataQuality rồi tạo `Alert` row | Trung bình — tính năng cảnh báo hiện diện trên UI nhưng không có dữ liệu thật | ✅ Đã làm: `AlertGenerationBackgroundService` + `AlertGenerationService` (Analytics.Api) chạy theo interval cấu hình (`AlertGeneration:IntervalMinutes`/`Enabled`), tái dùng đúng công thức đã có trong `AnalyticsService` (không viết lại), đồng bộ 2 chiều tạo/cập nhật/tắt `conditionActive`. **Trong lúc verify phát hiện thêm 2 bug thật, vì đây là lần đầu Alerts list có dữ liệu để test**: (a) `AlertDto` thiếu `taskTitle`/`analysisRef` mà FE schema bắt buộc — đã thêm; (b) `Analytics.Api` thiếu hoàn toàn `JsonStringEnumConverter` trong `AddJsonOptions` → `PATCH /alerts/:id` luôn 422 khi gửi `status` dạng chuỗi — đã thêm (dời `UpperSnakeCaseNamingPolicy` từ `Tasks.Api` riêng sang `Shared.Commons.Models` dùng chung, tránh tạo bản sao). Verify thật qua Playwright: tạo task chưa phân công → alert DataQuality xuất hiện đúng ở list+detail → gán người → alert chuyển "Điều kiện phát sinh đã hết" (Status giữ "Chưa đọc") → cập nhật xử lý "Đã xử lý" thành công. Cố ý bỏ qua `AlertType.Workload` vì chưa có ngưỡng "quá tải" được định nghĩa sẵn trong codebase (chi tiết: `docs/REFERENCE_PATTERNS.md` mục A6). |
 | 19 | **`AuthService.LoginAsync` trả HTTP 409 Conflict cho sai tên đăng nhập/mật khẩu** (dùng `BusinessRuleException` → `ErrorCodes.Conflict`), đúng ra phải là 401 Unauthorized — hằng số `ErrorCodes.Unauthorized = 100401` đã tồn tại sẵn nhưng chưa từng có exception class nào dùng tới | Trung bình — sai mã HTTP theo chuẩn REST, dễ gây nhầm lẫn khi debug hoặc khi FE sau này cần phân biệt 401 (sai creds, không retry) với 409 (xung đột dữ liệu, có thể cho phép giải quyết) | ✅ Đã fix: thêm `UnauthorizedException` (Shared.Commons.Exceptions, dùng `ErrorCodes.Unauthorized`), `AuthService.LoginAsync` dùng exception này cho cả 2 nhánh sai creds (không tìm thấy username, verify password fail). Tài khoản bị khóa (`UserStatus.Locked`) vẫn giữ nguyên `ForbiddenException` (403) — đúng ngữ nghĩa "tài khoản tồn tại nhưng bị chặn truy cập". Verify qua curl + Playwright: sai mật khẩu → 401 `UNAUTHORIZED`. |
-| 21 | **Contract quyền FE ↔ BE chưa khớp** — FE đọc quyền hiệu lực từ session: `permissions` (hệ thống) và `projectAccess[].permissions` (theo dự án, gồm PROJECT_MANAGE, MEMBERS_MANAGE, TASKS_MANAGE, TASKS_REVIEW, ANALYTICS_VIEW, ALERTS_MANAGE). `Identity.Api` `ProjectAccessDto` chỉ có `projectId`/`projectRole`, `PermissionFeatures` không có `TASKS_REVIEW`, và `PermissionEvaluator` cấp ANALYTICS_VIEW toàn hệ thống cho ADMIN. Thiếu trường thì FE xem như chưa cấp quyền (không tự suy từ role) | Cao khi nối BE thật — thao tác theo dự án (sửa dự án, thành viên, giao việc, nghiệm thu, cảnh báo) bị khóa | ⏳ Cần BE thêm quyền theo dự án vào session, thêm `TASKS_REVIEW`, và quyết định quyền ANALYTICS_VIEW của ADMIN |
+| 21 | **Contract quyền FE ↔ BE chưa khớp** (🟡 03/11/2026: phần quyền **hệ thống** đã xong — bỏ `SystemRole`, Permission Groups có UI đầy đủ, `session.permissions` = quyền hiệu lực từ nhóm/cộng/trừ/sysadmin, xem `docs/ADMIN_MODULES.md`. Phần **theo dự án** — `projectAccess[].permissions`, `TASKS_REVIEW` — vẫn là việc T6, chưa đụng) — FE đọc quyền hiệu lực từ session: `permissions` (hệ thống) và `projectAccess[].permissions` (theo dự án, gồm PROJECT_MANAGE, MEMBERS_MANAGE, TASKS_MANAGE, TASKS_REVIEW, ANALYTICS_VIEW, ALERTS_MANAGE). `Identity.Api` `ProjectAccessDto` chỉ có `projectId`/`projectRole`, `PermissionFeatures` không có `TASKS_REVIEW`, và `PermissionEvaluator` cấp ANALYTICS_VIEW toàn hệ thống cho ADMIN. Thiếu trường thì FE xem như chưa cấp quyền (không tự suy từ role) | Cao khi nối BE thật — thao tác theo dự án (sửa dự án, thành viên, giao việc, nghiệm thu, cảnh báo) bị khóa | ⏳ Vẫn chưa xử lý phần cốt lõi — **cập nhật 02/11/2026 sau khi rà lại bằng codegraph**: nhánh `HAN_DEV` (merge qua PR #1, commit `30e7357`) đã thêm một hệ thống quyền mới **"Permission Groups"** (`PermissionGroup`/`PermissionGroupMember` entity + migration `AddPermissionGroups`, `PermissionEvaluator.GetEffectivePermissionsAsync`, `Identity.Api.PermissionGroupService`/`PermissionGroupsController`) nhưng đây là nhóm quyền **toàn hệ thống** (user → group → danh sách feature cố định, không có cột `ProjectId` nào trong migration), chỉ cộng thêm vào `session.permissions` (hệ thống) — **không đụng tới `ProjectAccessDto`/`projectAccess[].permissions` theo dự án**, và `PermissionFeatures.All` vẫn chỉ có 8 mã, vẫn thiếu `TASKS_REVIEW`. Vì FE `sessionSchema` khai `projectAccess[].permissions` bằng `.default([])`, thiếu field này **không vỡ Zod** (parse vẫn qua) mà âm thầm làm `hasPermission(session, ..., projectId)` luôn trả `false` cho mọi quyền theo dự án — lỗi im lặng, không hiện thông báo, dễ bị tưởng là "chưa cấp quyền" thay vì "thiếu field". Thêm nữa: FE từng dựng cả 1 feature `permission-groups` (service/schema/types) để gọi API nhóm quyền này, nhưng đã **bị xóa** trong lượt dọn FE 31/10/2026 ("Rà dọn toàn bộ FE...") vì *"chưa có caller/màn/handler"* — nghĩa là tính năng Permission Groups hiện **có đủ ở BE (entity, migration, service, controller) nhưng không có bất kỳ consumer nào ở FE**, coi như treo (orphaned). Việc cần làm vẫn như cũ: BE phải thêm `Permissions` vào `ProjectAccessDto`, suy từ `ProjectRole` (hoặc một bảng gán quyền theo dự án riêng), thêm `TASKS_REVIEW`, và quyết định dùng/bỏ hẳn Permission Groups toàn hệ thống trước khi FE xây lại UI cho nó. |
+| 22 | **Vệ sinh repo Git** — phát hiện khi `git pull` về commit `8692b69` ("codegraph"): `.codegraph/.gitignore` (từng loại trừ DB) bị xóa rồi `.codegraph/codegraph.db` + `-shm`/`-wal` (~20MB, đổi mỗi lần `codegraph sync`) cùng `daemon.pid`/`writer.pid` (giá trị riêng từng máy, vô nghĩa khi người khác pull về — đã verify: `daemon.pid` commit sẵn trỏ tới pid của máy khác, không hợp lệ trên máy này) bị commit thẳng vào git. Ngoài ra repo đang có **213 file `.playwright-mcp/*.yml`** (trace debug, không phải tài liệu) và 1 file đính kèm test thật bị lọt: `BE/Services/Tasks.Api/wwwroot/uploads/5dc223b141294913b2202e22ef8c656b` (dữ liệu upload runtime, không phải asset cần giữ) | Thấp — không ảnh hưởng chức năng, nhưng mỗi `codegraph sync`/mỗi phiên Playwright MCP sẽ tạo diff mới, repo phình to dần và gây merge-conflict không cần thiết trên các file nhị phân | 🟡 Đã xử lý một phần (02/11/2026) — **quyết định giữ nguyên chủ đích**: người dùng muốn tiếp tục commit `codegraph.db` để thành viên mới pull về có sẵn index, không cần `codegraph init` lại. Đã thêm lại `.codegraph/.gitignore` (chỉ loại `codegraph.db-shm`, `codegraph.db-wal`, `daemon.pid`, `writer.pid` — các file theo-máy/đổi liên tục, không loại `codegraph.db`) và `git rm --cached` 4 file đó (vẫn còn trên đĩa, chỉ bỏ tracking). **Ghi chú cho việc dùng CodeGraph live/daemon**: CodeGraph không có daemon "bật tay" qua cờ CLI — daemon chỉ tự khởi động khi một MCP client (Claude Code, Cursor...) mở **đúng thư mục chứa `.codegraph/`** (`BE/../DATN/DATN`, không phải thư mục cha `DATN/`) làm project root; client đó giữ daemon sống và tự `sync` theo file thay đổi. Trên máy đã chạy `codegraph install` cho Claude Code (global, `~/.claude.json`, không gắn theo project) thì chỉ cần mở Claude Code thẳng vào `DATN/DATN` là daemon tự chạy — không cần cấu hình thêm. `.playwright-mcp/*.yml` và file upload lạc vẫn **chưa xử lý**, để nguyên chờ quyết định tiếp theo. |
+
+| 23 | **API quản trị không kiểm tra quyền ở BE**: trước 03/11/2026 chỉ Analytics.Api có `[RequiresPermission]`; Identity.Api (users, units, teams, permission-groups), Projects.Api (tạo dự án) chỉ yêu cầu đăng nhập — tài khoản nhân viên gọi thẳng API vẫn quản lý được người dùng | Cao — lỗ hổng phân quyền | ✅ Đã fix: `RequiresPermissionAttribute` dời sang `Shared.Entities/Authorization`, gắn cho mọi controller quản trị + `POST /projects`. Verify thật: tài khoản `lan` nhận 403 ở `/users`, `/settings`, `/jobs`, `/audit-logs`, vẫn 200 ở `/projects` và profile |
+| 25 | **Không biết ai tạo/sửa bản ghi**: hầu hết bảng chỉ có `CreatedAt`/`UpdatedAt`, không có người thao tác (riêng `Tasks` không có cả người tạo; `Projects.OwnerId` là người phụ trách chứ không phải người tạo) | Trung bình — truy vết thay đổi chỉ qua `AuditLogs` | ✅ 03/11/2026: `CreatedBy`/`UpdatedBy` cho 12 bảng + `AuditStampInterceptor` tự điền + 12 DTO trả `{id,label}` + `RecordStamp` ở FE. Phân tích chọn bảng: `docs/ADMIN_MODULES.md` §8.1 |
+| 24 | `StoragePath` của `Attachments` lưu **đường dẫn tuyệt đối theo máy** (`.../Tasks.Api/wwwroot/uploads/<id>`) — DB dùng chung (Neon) nhưng tệp nằm trên đĩa từng máy, máy khác tải tệp sẽ 404 | Trung bình — chỉ ảnh hưởng tải tệp đính kèm khi nhiều máy dùng chung DB | ⏳ Chưa xử lý. Tạm thời: mỗi máy chạy `dotnet run --project Tools/DataSeeder -- --reset` sẽ ghi lại tệp mẫu (nhưng cũng nạp lại toàn bộ dữ liệu). Hướng sửa: lưu đường dẫn tương đối hoặc object storage |
 
 Đã verify **end-to-end thật** bằng Playwright (browser thật, không phải test giả định, dùng tài khoản seed + 2 tài khoản Manager + 1 Employee-role chưa cần, tự tạo qua UI):
 - **Login**: `http://localhost:3000/login` → vào `/workspace`, đúng tên/vai trò.
@@ -125,27 +137,23 @@ Theo đúng thứ tự người yêu cầu: **login cơ bản xong trước, r�
 
 ## 7. Cách chạy để kiểm tra tay
 
-**DB** (xem chi tiết đầy đủ ở [`docs/DATABASE.md`](DATABASE.md) — PostgreSQL qua Docker, không phải SQL Server):
+**DB + cấu hình** (chi tiết: [`docs/DATABASE.md`](DATABASE.md)):
 ```
-docker compose up -d db
 cd BE
-Jwt__SigningKey="tam-thoi-du-dai" dotnet ef database update --project Shared/Shared.Entities --startup-project Services/Identity.Api --context ApplicationDbContext
+cp appsettings.Shared.example.json appsettings.Shared.json   # máy mới: điền connection string Neon + Jwt:SigningKey (≥32 ký tự)
+dotnet ef database update --project Shared/Shared.Entities --startup-project Services/Identity.Api --context ApplicationDbContext
+dotnet run --project Tools/DataSeeder            # DB trống; thêm "-- --reset" để nạp lại từ đầu
 ```
 
-**BE** (từ `BE/`):
+**BE** (từ `BE/`, mỗi lệnh một terminal):
 ```
-dotnet user-secrets set "Jwt:SigningKey" "<chuỗi ngẫu nhiên>" --project Gateway
-dotnet user-secrets set "Jwt:SigningKey" "<chuỗi ngẫu nhiên>" --project Services/Identity.Api
-dotnet user-secrets set "Jwt:SigningKey" "<chuỗi ngẫu nhiên>" --project Services/Projects.Api
-dotnet user-secrets set "Jwt:SigningKey" "<chuỗi ngẫu nhiên>" --project Services/Tasks.Api
-dotnet user-secrets set "Jwt:SigningKey" "<chuỗi ngẫu nhiên>" --project Services/Analytics.Api
-# dùng CÙNG MỘT chuỗi cho cả 5 project — cùng Issuer/Audience, JWT ký bởi Identity.Api phải được Gateway/các service khác verify được
 dotnet run --project Gateway
 dotnet run --project Services/Identity.Api
 dotnet run --project Services/Projects.Api
 dotnet run --project Services/Tasks.Api
 dotnet run --project Services/Analytics.Api
 ```
+Tài khoản mẫu: `admin` (sysadmin), `minh`/`other` (Leader/PM), `lan`/`huy` (nhân viên), `locked` (bị khoá) — mật khẩu là `password` trong `FE/src/mocks/data.json`.
 
 **FE** (từ `FE/`): đổi `.env` cục bộ (không commit) `NEXT_PUBLIC_API_MODE=http`, `NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api`, rồi `npm run dev`.
 

@@ -10,6 +10,20 @@ public record UserDto(
     string Email,
     string? AvatarUrl,
     string UnitId,
-    string SystemRole,
+    bool IsSysAdmin,
+    List<RefDto> Groups,
     string Status,
-    EntityLabelDto Unit);
+    EntityLabelDto Unit,
+    RefDto? CreatedBy,
+    RefDto? UpdatedBy);
+
+public record ProfileDto(string Id, string DisplayName, string? AvatarUrl, string Email, string Unit, List<string> Groups);
+
+public record UserPermissionsDto(
+    string UserId,
+    int Version,
+    bool IsSysAdmin,
+    List<RefDto> Groups,
+    List<string> GrantedFeatures,
+    List<string> RevokedFeatures,
+    List<string> Effective);

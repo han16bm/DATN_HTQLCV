@@ -1,8 +1,8 @@
 "use client";
 import { Avatar } from "@/components/ui/avatar";
 import type { SessionDto } from "@/features/auth/types/auth.types";
-import { adminHome, canAdminister } from "@/lib/auth/access";
-import { label } from "@/lib/format";
+import { canAdminister } from "@/lib/auth/access";
+import { accessText } from "@/lib/format";
 import type { Area } from "@/lib/navigation";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
@@ -23,7 +23,6 @@ export function AvatarMenu({
   session: SessionDto;
   onSignOut: () => Promise<void>;
 }) {
-  const admin = canAdminister(session) ? adminHome(session) : null;
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -38,9 +37,7 @@ export function AvatarMenu({
           />
           <span className="profile-name">
             {session.user.displayName}
-            <span className="small muted">
-              {label(session.user.systemRole)}
-            </span>
+            <span className="small muted">{accessText(session.user)}</span>
           </span>
           <ChevronDown
             className="dropdown-chevron"
@@ -84,9 +81,9 @@ export function AvatarMenu({
               </Link>
             </DropdownMenu.Item>
           ) : (
-            admin && (
+            canAdminister(session) && (
               <DropdownMenu.Item asChild>
-                <Link href={admin} className="account-menu-item">
+                <Link href="/admin" className="account-menu-item">
                   <Settings size={17} aria-hidden="true" />
                   Quản trị hệ thống
                 </Link>

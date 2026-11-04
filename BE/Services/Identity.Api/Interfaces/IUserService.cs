@@ -14,4 +14,7 @@ public interface IUserService
     Task<UserDto> LockAsync(string userId, UserLockRequest request, int ifMatchVersion);
     Task<UserDto> UnlockAsync(string userId, ReasonRequest request, int ifMatchVersion);
     Task ResetPasswordAsync(string userId, ResetPasswordRequest request);
+    Task<ProfileDto> GetProfileAsync(string userId);
+    Task<UserPermissionsDto> GetPermissionsAsync(string userId);
+    Task<UserPermissionsDto> UpdatePermissionsAsync(string userId, UserPermissionsRequest request, int ifMatchVersion);
 }

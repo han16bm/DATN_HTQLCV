@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Http;
 using Shared.Commons.Exceptions;
 using Shared.Commons.Extensions;
 using Shared.Commons.Utils;
+using Projects.Api.Models.Dtos;
 using Shared.Entities;
+using Shared.Entities.Auditing;
 using Shared.Entities.Entities;
 
 namespace Projects.Api.Services;
@@ -30,6 +32,13 @@ public abstract class BaseService<T>(ApplicationDbContext context, IHttpContextA
             Reason = reason
         });
         await Task.CompletedTask;
+    }
+
+    /// <summary>Dấu vết CreatedBy/UpdatedBy dạng { id, label } | null (ADMIN_MODULES §8.3).</summary>
+    protected static RefDto? StampRef(string? actorId, IReadOnlyDictionary<string, string> names)
+    {
+        var label = AuditActorNames.Label(actorId, names);
+        return label is null ? null : new RefDto(actorId!, label);
     }
 
     /// <summary>If-Match bắt buộc với API có version; thiếu header -> 428, khác version hiện tại -> 412.</summary>

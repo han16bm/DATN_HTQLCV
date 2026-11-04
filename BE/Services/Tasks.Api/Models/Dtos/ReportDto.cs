@@ -35,6 +35,9 @@ public record ReportDto
     public DateTime? SubmittedAt { get; init; }
     public ReportPreviewDto? Snapshot { get; init; }
     public required PersonRefDto Author { get; init; }
+    // Trường cho bảng danh sách báo cáo (reportRowSchema của FE)
+    public required EntityLabelDto Project { get; init; }
+    public int? TotalMinutes => Snapshot?.TotalMinutes;
 }
 
 public record AuditDto(string Id, PersonRefDto Actor, string Action, DateTime At, object? Before, object? After, string? Reason);

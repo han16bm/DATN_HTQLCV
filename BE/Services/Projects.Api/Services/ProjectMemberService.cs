@@ -9,6 +9,7 @@ using Shared.Commons.Extensions;
 using Shared.Commons.Models;
 using Shared.Commons.Utils;
 using Shared.Entities;
+using Shared.Entities.Auditing;
 using Shared.Entities.Entities;
 using Shared.Entities.Enums;
 
@@ -38,8 +39,8 @@ public class ProjectMemberService(ApplicationDbContext context, IHttpContextAcce
             ?? throw new ValidationException("Tài khoản không tồn tại.");
         if (user.Status != UserStatus.Active)
             throw new BusinessRuleException("Tài khoản không ở trạng thái hoạt động.");
-        if (request.ProjectRole == ProjectRole.Manager && user.SystemRole == SystemRole.Employee)
-            throw new BusinessRuleException("Vai trò MANAGER chỉ dành cho tài khoản Leader/PM.");
+        if (request.ProjectRole == ProjectRole.Manager && !await PermissionEvaluator.HasPermissionAsync(Context, user, PermissionFeatures.ProjectCreate))
+            throw new BusinessRuleException("Vai trò MANAGER chỉ dành cho tài khoản có quyền PROJECT_CREATE (Leader/PM).");
 
         var existing = await Context.ProjectMemberships
             .AnyAsync(m => m.ProjectId == projectId && m.UserId == request.UserId && m.EndedAt == null);
@@ -102,8 +103,8 @@ public class ProjectMemberService(ApplicationDbContext context, IHttpContextAcce
         if (request.ProjectRole == ProjectRole.Manager)
         {
             var user = await Context.Users.FirstOrDefaultAsync(u => u.Id == membership.UserId);
-            if (user is null || user.SystemRole == SystemRole.Employee)
-                throw new BusinessRuleException("Vai trò MANAGER chỉ dành cho tài khoản Leader/PM.");
+            if (user is null || !await PermissionEvaluator.HasPermissionAsync(Context, user, PermissionFeatures.ProjectCreate))
+                throw new BusinessRuleException("Vai trò MANAGER chỉ dành cho tài khoản có quyền PROJECT_CREATE (Leader/PM).");
         }
 
         var before = Snapshot(membership);
@@ -132,10 +133,12 @@ public class ProjectMemberService(ApplicationDbContext context, IHttpContextAcce
     {
         var userIds = memberships.Select(m => m.UserId).Distinct().ToList();
         var users = await Context.Users.AsNoTracking().Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id);
+        var names = await AuditActorNames.LoadAsync(Context, memberships.SelectMany(m => new[] { m.CreatedBy, m.UpdatedBy }));
 
         return memberships.Select(m => new MembershipDto(
             m.Id, m.Version, m.UserId, m.ProjectRole.ToString().ToUpperInvariant(), m.EndedAt,
-            users.TryGetValue(m.UserId, out var user) ? new PersonRefDto(user.Id, user.DisplayName) : new PersonRefDto(m.UserId, m.UserId)
+            users.TryGetValue(m.UserId, out var user) ? new PersonRefDto(user.Id, user.DisplayName) : new PersonRefDto(m.UserId, m.UserId),
+            m.CreatedAt, StampRef(m.CreatedBy, names), m.UpdatedAt, StampRef(m.UpdatedBy, names)
         )).ToList();
     }
 

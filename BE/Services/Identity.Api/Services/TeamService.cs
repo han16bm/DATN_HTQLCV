@@ -23,12 +23,15 @@ public class TeamService(ApplicationDbContext context, IHttpContextAccessor http
         if (!string.IsNullOrWhiteSpace(query.UnitId)) q = q.Where(t => t.UnitId == query.UnitId);
 
         var paged = await q.OrderBy(t => t.Name).ToPagedResultAsync(query);
-        return new PagedResult<TeamDto> { Items = paged.Items.Select(ToDto).ToList(), Page = paged.Page, PageSize = paged.PageSize, Total = paged.Total };
+        var names = await LoadDisplayNamesAsync(paged.Items.SelectMany(x => new[] { x.CreatedBy, x.UpdatedBy }));
+        var unitIds = paged.Items.Select(x => x.UnitId).Distinct().ToList();
+        var units = await context.Units.AsNoTracking().Where(u => unitIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.Name);
+        return new PagedResult<TeamDto> { Items = paged.Items.Select(x => ToDto(x, names, units)).ToList(), Page = paged.Page, PageSize = paged.PageSize, Total = paged.Total };
     }
 
     public async Task<TeamDto> GetAsync(string teamId)
     {
-        return ToDto(await FindAsync(teamId));
+        return await ToDtoAsync(await FindAsync(teamId));
     }
 
     public async Task<TeamDto> CreateAsync(TeamCreateRequest request)
@@ -51,7 +54,7 @@ public class TeamService(ApplicationDbContext context, IHttpContextAccessor http
         await context.Teams.AddAsync(team);
         await WriteAuditLog(team.Id, "CREATE", null, new { team.Name, request.MemberIds });
         await context.SaveChangesAsync();
-        return ToDto(team);
+        return await ToDtoAsync(team);
     }
 
     public async Task<TeamDto> UpdateAsync(string teamId, TeamPatchRequest request, int ifMatchVersion)
@@ -68,7 +71,7 @@ public class TeamService(ApplicationDbContext context, IHttpContextAccessor http
 
         await WriteAuditLog(team.Id, "UPDATE", before, new { team.Name, team.UnitId }, request.Reason);
         await context.SaveChangesAsync();
-        return ToDto(team);
+        return await ToDtoAsync(team);
     }
 
     public async Task<TeamDto> ReplaceMembersAsync(string teamId, TeamMembersRequest request, int ifMatchVersion)
@@ -85,7 +88,7 @@ public class TeamService(ApplicationDbContext context, IHttpContextAccessor http
 
         await WriteAuditLog(team.Id, "REPLACE_MEMBERS", before, request.MemberIds, request.Reason);
         await context.SaveChangesAsync();
-        return ToDto(team);
+        return await ToDtoAsync(team);
     }
 
     public async Task<TeamDto> DeactivateAsync(string teamId, ReasonRequest request, int ifMatchVersion)
@@ -99,7 +102,7 @@ public class TeamService(ApplicationDbContext context, IHttpContextAccessor http
 
         await WriteAuditLog(team.Id, "DEACTIVATE", null, null, request.Reason);
         await context.SaveChangesAsync();
-        return ToDto(team);
+        return await ToDtoAsync(team);
     }
 
     private async Task<Team> FindAsync(string teamId)
@@ -108,16 +111,18 @@ public class TeamService(ApplicationDbContext context, IHttpContextAccessor http
             ?? throw new NotFoundException("Không tìm thấy nhóm.");
     }
 
-    private static void CheckVersion(int current, int ifMatch)
+    private async Task<TeamDto> ToDtoAsync(Team t)
     {
-        if (ifMatch <= 0) throw new PreconditionRequiredException("Thiếu If-Match.");
-        if (current != ifMatch) throw new PreconditionFailedException("Dữ liệu đã bị thay đổi bởi người khác.");
+        var units = await context.Units.AsNoTracking().Where(u => u.Id == t.UnitId).ToDictionaryAsync(u => u.Id, u => u.Name);
+        return ToDto(t, await LoadDisplayNamesAsync([t.CreatedBy, t.UpdatedBy]), units);
     }
 
-    private static TeamDto ToDto(Team t)
+    private static TeamDto ToDto(Team t, Dictionary<string, string> names, Dictionary<string, string> units)
     {
         return new(
             t.Id, t.Version, t.CreatedAt, t.UpdatedAt, t.Name, t.UnitId,
-            t.Members.Select(m => m.UserId).ToList(), t.Status.ToString().ToUpperInvariant());
+            t.Members.Select(m => m.UserId).ToList(), t.Status.ToString().ToUpperInvariant(),
+            PersonRef(t.CreatedBy, names), PersonRef(t.UpdatedBy, names),
+            new EntityLabelDto(t.UnitId, units.GetValueOrDefault(t.UnitId, t.UnitId)), t.Members.Count);
     }
 }

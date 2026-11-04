@@ -94,6 +94,38 @@ LLM có sẵn chạy qua adapter BE. Số liệu do BE tính. GET tổng quan/da
 | [updateAlert](#updatealert) | `PATCH /api/alerts/:alertId` | 200 | useMutation | S38 |
 | [getAnalysisDetail](#getanalysisdetail) | `GET /api/analytics/details/:analysisId` | 200 | useQuery | S43 |
 
+## Quản trị hệ thống (03/11/2026)
+
+Hợp đồng chi tiết (DTO, quyền, lỗi `BUSINESS_RULE`/`IP_NOT_ALLOWED`) ở `docs/ADMIN_MODULES.md` của repo; bảng dưới chỉ liệt kê route để đối chiếu handler MSW và service. Tổng cộng 108 route.
+
+| Operation | Method và path | Cách gọi | Màn |
+|---|---|---|---|
+| listFeatures | `GET /api/features` | useQuery | Danh mục chức năng |
+| updateFeature | `PATCH /api/features/:code` | useMutation | Danh mục chức năng |
+| listPermissionGroups | `GET /api/permission-groups` | useQuery | Nhóm quyền, Người dùng |
+| getPermissionGroup | `GET /api/permission-groups/:groupId` | useQuery | Nhóm quyền |
+| createPermissionGroup | `POST /api/permission-groups` | useMutation | Nhóm quyền |
+| updatePermissionGroup | `PATCH /api/permission-groups/:groupId` | useMutation | Nhóm quyền |
+| replacePermissionGroupMembers | `PUT /api/permission-groups/:groupId/members` | useMutation | Nhóm quyền |
+| deactivatePermissionGroup | `POST /api/permission-groups/:groupId/deactivate` | useMutation | Nhóm quyền |
+| activatePermissionGroup | `POST /api/permission-groups/:groupId/activate` | useMutation | Nhóm quyền |
+| getUserPermissions | `GET /api/users/:userId/permissions` | useQuery | Người dùng / Phân quyền |
+| updateUserPermissions | `PUT /api/users/:userId/permissions` | useMutation | Người dùng / Phân quyền |
+| listAuditLogs | `GET /api/audit-logs` | useQuery | Nhật ký hệ thống, Tổng quan |
+| listAuditEntityTypes | `GET /api/audit-logs/entity-types` | useQuery | Nhật ký hệ thống |
+| getAuditLog | `GET /api/audit-logs/:auditLogId` | useQuery | Nhật ký hệ thống |
+| listJobs | `GET /api/jobs` | useQuery | Job nền, Tổng quan |
+| updateJob | `PATCH /api/jobs/:code` | useMutation | Job nền |
+| runJob | `POST /api/jobs/:code/run` | useMutation | Job nền |
+| listJobRuns | `GET /api/jobs/:code/runs` | useQuery | Job nền |
+| listSettings | `GET /api/settings` | useQuery | Cấu hình tập trung |
+| createSetting | `POST /api/settings` | useMutation | Cấu hình tập trung |
+| updateSetting | `PATCH /api/settings/:settingId` | useMutation | Cấu hình tập trung, IP whitelist |
+| getIpWhitelist | `GET /api/ip-whitelist` | useQuery | IP whitelist, Tổng quan |
+| createIpWhitelistEntry | `POST /api/ip-whitelist` | useMutation | IP whitelist |
+| updateIpWhitelistEntry | `PATCH /api/ip-whitelist/:entryId` | useMutation | IP whitelist |
+| deleteIpWhitelistEntry | `DELETE /api/ip-whitelist/:entryId` | useMutation | IP whitelist |
+
 ## login
 
 `POST /api/auth/login` → HTTP 200

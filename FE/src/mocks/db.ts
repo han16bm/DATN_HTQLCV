@@ -58,8 +58,10 @@ import type {
   DeactivateTeamInput,
   DeactivateUnitInput,
   ReplaceTeamMembersInput,
+  TeamDto,
   TeamQuery,
   TeamRow,
+  UnitDto,
   UnitQuery,
   UnitRow,
   UpdateTeamInput,
@@ -132,21 +134,66 @@ import type {
   UpdateTimeLogInput,
   VoidTimeLogInput,
 } from "@/features/time-logs/types/time-logs.types";
-import {
-  systemRoleSchema,
-  userSchema,
-} from "@/features/users/schemas/user.schema";
+import { userSchema } from "@/features/users/schemas/user.schema";
 import type {
   CreateUserInput,
   LockUserInput,
   ResetUserPasswordInput,
   UnlockUserInput,
   UpdateUserInput,
+  UpdateUserPermissionsInput,
   UserDto,
+  UserPermissionsDto,
   UserQuery,
   ProfileDto,
   UserRow,
 } from "@/features/users/types/users.types";
+import {
+  featureCodeSchema,
+  featureSchema,
+} from "@/features/permissions/schemas/feature.schema";
+import { permissionGroupSchema } from "@/features/permissions/schemas/permission-group.schema";
+import type {
+  CreatePermissionGroupInput,
+  FeatureDto,
+  PermissionGroupDto,
+  PermissionGroupQuery,
+  ReplacePermissionGroupMembersInput,
+  UpdateFeatureInput,
+  UpdatePermissionGroupInput,
+} from "@/features/permissions/types/permissions.types";
+import type {
+  AuditLogDto,
+  AuditLogQuery,
+  AuditLogRow,
+} from "@/features/audit-logs/types/audit-logs.types";
+import {
+  backgroundJobSchema,
+  jobRunSchema,
+} from "@/features/jobs/schemas/job.schema";
+import type {
+  BackgroundJobDto,
+  JobRunDto,
+  JobRunQuery,
+  UpdateJobInput,
+} from "@/features/jobs/types/jobs.types";
+import {
+  configDataTypeSchema,
+  settingSchema,
+} from "@/features/settings/schemas/setting.schema";
+import type {
+  CreateSettingInput,
+  SettingDto,
+  SettingQuery,
+  UpdateSettingInput,
+} from "@/features/settings/types/settings.types";
+import { ipWhitelistEntrySchema } from "@/features/ip-whitelist/schemas/ip-whitelist.schema";
+import type {
+  CreateIpWhitelistEntryInput,
+  IpWhitelistDto,
+  IpWhitelistEntryDto,
+  UpdateIpWhitelistEntryInput,
+} from "@/features/ip-whitelist/types/ip-whitelist.types";
 import {
   analysisSubjectSchema,
   auditSchema,
@@ -167,18 +214,67 @@ import { z } from "zod";
 import seed from "./data.json";
 
 // Dữ liệu và kiểu lưu trữ.
+// Dấu vết tạo/sửa lưu ID người thao tác hoặc "SYSTEM"; DTO đổi thành {id,label}.
+const stampModel = {
+  createdBy: z.string().nullable(),
+  updatedBy: z.string().nullable(),
+};
 const userModel = z
   .object(userSchema.shape)
-  .omit({ unit: true, avatarUrl: true })
-  .extend({ avatarId: idSchema.nullable().default(null) });
+  .omit({
+    unit: true,
+    avatarUrl: true,
+    groups: true,
+    createdBy: true,
+    updatedBy: true,
+  })
+  .extend({
+    ...stampModel,
+    avatarId: idSchema.nullable().default(null),
+    // Cộng/trừ quyền riêng cho một người (MOREPOWER/DOWPOWER của DVCLT).
+    grantedFeatures: z.array(featureCodeSchema).default([]),
+    revokedFeatures: z.array(featureCodeSchema).default([]),
+  });
+const groupModel = permissionGroupSchema
+  .omit({ members: true, createdBy: true, updatedBy: true })
+  .extend(stampModel);
+const unitModel = unitSchema
+  .omit({ createdBy: true, updatedBy: true })
+  .extend(stampModel);
+const teamModel = teamSchema
+  .omit({ createdBy: true, updatedBy: true })
+  .extend(stampModel);
+const featureModel = featureSchema
+  .omit({ updatedBy: true })
+  .extend({ updatedBy: stampModel.updatedBy });
+const jobModel = backgroundJobSchema
+  .omit({ updatedBy: true })
+  .extend({ updatedBy: stampModel.updatedBy });
+const settingModel = settingSchema
+  .omit({
+    createdBy: true,
+    updatedBy: true,
+    known: true,
+    requiresRestart: true,
+    minValue: true,
+    maxValue: true,
+    allowedValues: true,
+  })
+  .extend(stampModel);
+const ipEntryModel = ipWhitelistEntrySchema
+  .omit({ createdBy: true, updatedBy: true })
+  .extend(stampModel);
+const jobRunModel = jobRunSchema
+  .omit({ durationMs: true, triggeredBy: true })
+  .extend({ triggeredBy: idSchema.nullable() });
 const projectModel = z
   .object(projectSchema.shape)
-  .omit({ owner: true, unit: true })
-  .extend({ unitId: idSchema });
+  .omit({ owner: true, unit: true, createdBy: true, updatedBy: true })
+  .extend({ unitId: idSchema, ...stampModel });
 const memberModel = z
   .object(membershipSchema.shape)
-  .omit({ user: true })
-  .extend({ projectId: idSchema });
+  .omit({ user: true, createdBy: true, updatedBy: true })
+  .extend({ projectId: idSchema, ...stampModel });
 const taskModel = z
   .object(taskSchema.shape)
   .omit({
@@ -186,8 +282,11 @@ const taskModel = z
     project: true,
     actualMinutes: true,
     isOverdue: true,
+    createdBy: true,
+    updatedBy: true,
   })
   .extend({
+    ...stampModel,
     updatedAt: z.iso.datetime(),
     statusChangedAt: z.iso.datetime(),
     completedAt: z.iso.datetime().nullable(),
@@ -206,8 +305,15 @@ const reportModel = z
   .extend({ submittedAt: z.iso.datetime().nullable() });
 const alertModel = z
   .object(alertSchema.shape)
-  .omit({ taskTitle: true, analysisRef: true, handler: true })
-  .extend({ handledBy: idSchema.nullable() });
+  .omit({
+    taskTitle: true,
+    analysisRef: true,
+    handler: true,
+    canHandle: true,
+    createdBy: true,
+    updatedBy: true,
+  })
+  .extend({ handledBy: idSchema.nullable(), ...stampModel });
 const attachmentModel = z.object(attachmentSchema.shape).extend({
   taskId: idSchema,
   uploadedBy: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(100),
@@ -295,14 +401,7 @@ const entity = (id = crypto.randomUUID()) => ({
 });
 const accessPolicy = z
   .object({
-    system: z.record(systemRoleSchema, z.array(permissionSchema)),
     project: z.record(projectRoleSchema, z.array(permissionSchema)),
-    groups: z.array(
-      z.object({
-        features: z.array(permissionSchema),
-        memberIds: z.array(idSchema),
-      }),
-    ),
   })
   .parse(seed.permissionPolicy);
 function createDatabase() {
@@ -310,9 +409,14 @@ function createDatabase() {
   const attachments = z.array(attachmentModel).parse(seed.attachments);
   return {
     users,
-    permissionGroups: structuredClone(accessPolicy.groups),
-    units: z.array(unitSchema).parse(seed.units),
-    teams: z.array(teamSchema).parse(seed.teams),
+    features: z.array(featureModel).parse(seed.features),
+    permissionGroups: z.array(groupModel).parse(seed.permissionGroups),
+    settings: z.array(settingModel).parse(seed.settings),
+    ipWhitelist: z.array(ipEntryModel).parse(seed.ipWhitelist),
+    backgroundJobs: z.array(jobModel).parse(seed.backgroundJobs),
+    jobRuns: z.array(jobRunModel).parse(seed.jobRuns),
+    units: z.array(unitModel).parse(seed.units),
+    teams: z.array(teamModel).parse(seed.teams),
     projects: z.array(projectModel).parse(seed.projects),
     members: z.array(memberModel).parse(seed.members),
     tasks: z.array(taskModel).parse(seed.tasks),
@@ -396,32 +500,61 @@ export function setClock(value: string) {
   if (next !== clock) db.revision++;
   clock = next;
 }
-function touch(v: { version: number; updatedAt?: string }) {
+// Người thao tác của lệnh đang chạy (đặt trong withMockTransaction); ngoài lệnh
+// (timer, job) là SYSTEM, giống AuditStampInterceptor của BE (ADMIN_MODULES 8.2).
+let stampActor = "SYSTEM";
+const stamp = () => ({ createdBy: stampActor, updatedBy: stampActor });
+const created = () => ({ createdAt: now(), updatedAt: now(), ...stamp() });
+function asSystem<T>(run: () => T): T {
+  const actor = stampActor;
+  stampActor = "SYSTEM";
+  try {
+    return run();
+  } finally {
+    stampActor = actor;
+  }
+}
+function touch(v: {
+  version: number;
+  updatedAt?: string;
+  updatedBy?: string | null;
+}) {
   v.version++;
   if ("updatedAt" in v) v.updatedAt = now();
+  if ("updatedBy" in v) v.updatedBy = stampActor;
   db.revision++;
 }
-// Quyền hiệu lực (backend thật trả trong session): hệ thống tính từ role và nhóm
-// quyền, dự án tính từ vai trò đang hoạt động. Mọi kiểm tra bên dưới dùng chung
-// hai hàm này; role không tự cấp quyền trên dự án.
+// Quyền hiệu lực (ADMIN_MODULES 1.2, backend thật trả trong session): sysadmin
+// có mọi mã đang bật; người khác = (nhóm Active + cộng riêng) - thu hồi, chỉ giữ
+// mã đang bật. Dự án tính từ vai trò đang hoạt động. Mọi kiểm tra bên dưới dùng
+// chung hai hàm này.
+function effectiveFeatures(user: User): string[] {
+  const active = db.features.filter((f) => !f.isGroup && f.isActive);
+  if (user.isSysAdmin) return active.map((f) => f.code);
+  const own = new Set([
+    ...db.permissionGroups
+      .filter((g) => g.status === "ACTIVE" && g.memberIds.includes(user.id))
+      .flatMap((g) => g.features),
+    ...user.grantedFeatures,
+  ]);
+  for (const code of user.revokedFeatures) own.delete(code);
+  return active.filter((f) => own.has(f.code)).map((f) => f.code);
+}
 function systemPermissions(user: User): Permission[] {
-  return [
-    ...new Set([
-      ...accessPolicy.system[user.systemRole],
-      ...db.permissionGroups
-        .filter((group) => group.memberIds.includes(user.id))
-        .flatMap((group) => group.features),
-    ]),
-  ];
+  return effectiveFeatures(user).flatMap((code) => {
+    const permission = permissionSchema.safeParse(code);
+    return permission.success ? [permission.data] : [];
+  });
 }
 function projectPermissions(user: User, projectId: string): Permission[] {
   const member = db.members.find(
     (m) => m.projectId === projectId && m.userId === user.id && !m.endedAt,
   );
-  // Vai trò quản lý trong dự án chỉ có hiệu lực với tài khoản Leader/PM.
+  // Vai trò quản lý trong dự án chỉ có hiệu lực khi có PROJECT_CREATE hiệu lực.
   if (
     !member ||
-    (member.projectRole !== "MEMBER" && user.systemRole !== "MANAGER")
+    (member.projectRole !== "MEMBER" &&
+      !systemPermissions(user).includes("PROJECT_CREATE"))
   )
     return [];
   return accessPolicy.project[member.projectRole];
@@ -481,6 +614,22 @@ function notify(recipientId: string) {
 }
 
 // Dữ liệu trả về cho giao diện.
+const stampRef = (id: string | null) => (id ? actorRef(id) : null);
+const stampRefs = (v: {
+  createdBy: string | null;
+  updatedBy: string | null;
+}) => ({
+  createdBy: stampRef(v.createdBy),
+  updatedBy: stampRef(v.updatedBy),
+});
+const unitDTO = (unit: (typeof db.units)[number]): UnitDto => ({
+  ...unit,
+  ...stampRefs(unit),
+});
+const teamDTO = (team: (typeof db.teams)[number]): TeamDto => ({
+  ...team,
+  ...stampRefs(team),
+});
 const person = (id: string) => {
   const user = db.users.find((user) => user.id === id);
   if (!user) throw new Error("Missing person " + id);
@@ -490,6 +639,11 @@ const unitRef = (id: string) => ({
   id,
   name: db.units.find((unit) => unit.id === id)?.name ?? "",
 });
+// Nhóm quyền đang hoạt động mà người dùng thuộc về.
+const userGroups = (user: User) =>
+  db.permissionGroups
+    .filter((g) => g.status === "ACTIVE" && g.memberIds.includes(user.id))
+    .map((g) => ({ id: g.id, label: g.name }));
 const userRow = (user: User): UserRow => ({
   id: user.id,
   username: user.username,
@@ -497,14 +651,17 @@ const userRow = (user: User): UserRow => ({
   email: user.email,
   avatarUrl: user.avatarId ? `/api/avatars/${user.avatarId}` : null,
   unitId: user.unitId,
-  systemRole: user.systemRole,
+  isSysAdmin: user.isSysAdmin,
+  groups: userGroups(user),
   status: user.status,
   unit: unitRef(user.unitId),
 });
 const userDTO = (user: User): UserDto => ({
   ...userRow(user),
   version: user.version,
+  createdAt: user.createdAt,
   updatedAt: user.updatedAt,
+  ...stampRefs(user),
 });
 const projectRow = (project: (typeof db.projects)[number]): ProjectRow => ({
   id: project.id,
@@ -521,6 +678,9 @@ const projectDTO = (project: (typeof db.projects)[number]): ProjectDto => ({
   objective: project.objective,
   version: project.version,
   ownerId: project.ownerId,
+  createdAt: project.createdAt,
+  updatedAt: project.updatedAt,
+  ...stampRefs(project),
 });
 const taskRow = (task: Task): TaskRow => ({
   id: task.id,
@@ -551,6 +711,8 @@ const taskDTO = (task: Task): TaskDto => ({
   assigneeId: task.assigneeId,
   actualMinutes: taskMinutes(task.id),
   latestSubmissionId: task.latestSubmissionId,
+  updatedAt: task.updatedAt,
+  ...stampRefs(task),
 });
 const memberDTO = (member: (typeof db.members)[number]): MembershipDto => ({
   id: member.id,
@@ -559,6 +721,9 @@ const memberDTO = (member: (typeof db.members)[number]): MembershipDto => ({
   projectRole: member.projectRole,
   endedAt: member.endedAt,
   user: person(member.userId),
+  createdAt: member.createdAt,
+  updatedAt: member.updatedAt,
+  ...stampRefs(member),
 });
 const logDTO = (log: (typeof db.timeLogs)[number]): TimeLogDto => ({
   id: log.id,
@@ -660,7 +825,8 @@ function sessionDTO(user: User): SessionDto {
       email: user.email,
       unitId: user.unitId,
       unit: unitRef(user.unitId),
-      systemRole: user.systemRole,
+      isSysAdmin: user.isSysAdmin,
+      groups: userGroups(user),
     },
     projectAccess: db.members
       .filter((member) => member.userId === user.id && !member.endedAt)
@@ -871,18 +1037,66 @@ export const authDb = {
   },
 };
 
-// Đơn vị và nhóm.
-function requireAdmin(
-  user: User,
-  action: "USERS_MANAGE" | "ORGANIZATION_MANAGE",
-) {
-  if (!can(user, action))
+// Khu quản trị: quyền theo mã và IP whitelist (ADMIN_MODULES 1.5, 5.3).
+const currentIp = () => seed.currentIp;
+function ipv4(value: string) {
+  const parts = value.split(".").map(Number);
+  return parts.reduce((sum, part) => sum * 256 + part, 0);
+}
+// shortcut: IPv6 chỉ so khớp đúng địa chỉ (bỏ /128), đủ cho mock; BE dùng thư viện CIDR.
+function ipMatches(ip: string, cidr: string) {
+  const [network, bits] = cidr.split("/");
+  if (ip.includes(":") || network.includes(":"))
+    return ip === network && (!bits || bits === "128");
+  const size = 32 - Number(bits ?? 32);
+  const block = 2 ** size;
+  return Math.floor(ipv4(ip) / block) === Math.floor(ipv4(network) / block);
+}
+const whitelistKey = "Security:AdminIpWhitelistEnabled";
+// Dòng theo service (Identity.Api) ghi đè dòng Global.
+const whitelistSetting = () =>
+  ["Identity.Api", "Global"]
+    .map((service) =>
+      db.settings.find(
+        (s) =>
+          s.key === whitelistKey && s.serviceType === service && s.isActive,
+      ),
+    )
+    .find(Boolean);
+const whitelistEnabled = () => whitelistSetting()?.value === "true";
+const ipAllowed = (entries: { cidr: string; isActive: boolean }[]) =>
+  entries.some((entry) => entry.isActive && ipMatches(currentIp(), entry.cidr));
+// Có ít nhất một trong các quyền (lookup chéo giữa màn admin, ADMIN_MODULES 7.1).
+function requireAdmin(user: User, ...actions: Permission[]) {
+  if (!actions.some((action) => can(user, action)))
     throw new ApiError(
       403,
       "FORBIDDEN",
       "Bạn chưa được cấp quyền quản trị này.",
     );
+  if (whitelistEnabled() && !ipAllowed(db.ipWhitelist))
+    throw new ApiError(
+      403,
+      "IP_NOT_ALLOWED",
+      "Địa chỉ IP của bạn không được phép truy cập khu quản trị.",
+      [],
+      { ip: currentIp() },
+    );
 }
+// Chống tự khóa: thay đổi không được làm IP hiện tại mất quyền vào khu quản trị.
+function protectCurrentIp(
+  enabled: boolean,
+  entries: { cidr: string; isActive: boolean }[],
+) {
+  if (enabled && !ipAllowed(entries))
+    throw new ApiError(
+      422,
+      "BUSINESS_RULE",
+      `Thao tác này sẽ chặn chính IP hiện tại của bạn (${currentIp()}).`,
+    );
+}
+
+// Đơn vị và nhóm.
 function requireUnit(id: string) {
   const unit = db.units.find((u) => u.id === id);
   if (!unit)
@@ -945,16 +1159,54 @@ function validateTeamMembers(unitId: string, memberIds: string[]) {
 }
 function protectLastAdmin(user: User) {
   if (
-    user.systemRole === "ADMIN" &&
+    user.isSysAdmin &&
     user.status === "ACTIVE" &&
-    db.users.filter((u) => u.systemRole === "ADMIN" && u.status === "ACTIVE")
-      .length <= 1
+    db.users.filter((u) => u.isSysAdmin && u.status === "ACTIVE").length <= 1
   )
     throw new ApiError(
-      409,
-      "LAST_ADMIN",
-      "Cần duy trì ít nhất một quản trị viên hoạt động.",
+      422,
+      "BUSINESS_RULE",
+      "Cần duy trì ít nhất một tài khoản quản trị tối cao đang hoạt động.",
     );
+}
+// Chống leo thang quyền: người không phải sysadmin chỉ cấp được mã mình đang có.
+function requireGrantable(actor: User, codes: string[]) {
+  if (actor.isSysAdmin) return;
+  const own = effectiveFeatures(actor);
+  if (codes.some((code) => !own.includes(code)))
+    throw new ApiError(
+      403,
+      "FORBIDDEN",
+      "Bạn chỉ được cấp những quyền mà chính bạn đang có.",
+    );
+}
+function requireFeatureCodes(codes: string[], path: string) {
+  const known = db.features.filter((f) => !f.isGroup).map((f) => f.code);
+  const unknown = codes.filter((code) => !known.includes(code));
+  if (unknown.length)
+    throw new ApiError(422, "VALIDATION_ERROR", "Mã quyền không tồn tại.", [
+      {
+        path: [path],
+        message: `Mã quyền không tồn tại: ${unknown.join(", ")}.`,
+      },
+    ]);
+}
+function requireGroup(id: string) {
+  const group = db.permissionGroups.find((g) => g.id === id);
+  if (!group)
+    throw new ApiError(404, "NOT_FOUND", "Không tìm thấy nhóm quyền.");
+  return group;
+}
+// Gán lại tư cách thành viên của một người trong các nhóm quyền.
+function setUserGroups(user: User, groupIds: string[]) {
+  for (const group of db.permissionGroups) {
+    const member = group.memberIds.includes(user.id);
+    if (member === groupIds.includes(group.id)) continue;
+    group.memberIds = member
+      ? group.memberIds.filter((id) => id !== user.id)
+      : [...group.memberIds, user.id];
+    touch(group);
+  }
 }
 function revokeUserSessions(id: string) {
   for (const [accessToken, userId] of db.sessions)
@@ -972,7 +1224,7 @@ function team(id: string) {
 }
 export const organizationDb = {
   listUnits(viewer: User, query: UnitQuery) {
-    requireAdmin(viewer, "ORGANIZATION_MANAGE");
+    requireAdmin(viewer, "ORGANIZATION_MANAGE", "USERS_MANAGE");
     return paginate(
       db.units
         .filter(
@@ -987,15 +1239,20 @@ export const organizationDb = {
   },
   getUnit(viewer: User, unitId: string) {
     requireAdmin(viewer, "ORGANIZATION_MANAGE");
-    return requireUnit(unitId);
+    return unitDTO(requireUnit(unitId));
   },
   createUnit(viewer: User, body: CreateUnitInput) {
     requireAdmin(viewer, "ORGANIZATION_MANAGE");
     validateUnitLinks(null, body.parentId, body.managerId);
-    const unit = { ...entity(), ...body, status: "ACTIVE" as const };
+    const unit = {
+      ...entity(),
+      ...body,
+      status: "ACTIVE" as const,
+      ...created(),
+    };
     db.units.push(unit);
     audit(viewer.id, "UNIT", unit.id, "Tạo đơn vị", null, body);
-    return unit;
+    return unitDTO(unit);
   },
   updateUnit(
     viewer: User,
@@ -1024,7 +1281,7 @@ export const organizationDb = {
     Object.assign(unit, patch);
     touch(unit);
     audit(viewer.id, "UNIT", unit.id, "Cập nhật đơn vị", before, patch, reason);
-    return unit;
+    return unitDTO(unit);
   },
   deactivateUnit(
     viewer: User,
@@ -1061,7 +1318,7 @@ export const organizationDb = {
       { status: "INACTIVE" },
       body.reason,
     );
-    return unit;
+    return unitDTO(unit);
   },
   listTeams(viewer: User, query: TeamQuery) {
     requireAdmin(viewer, "ORGANIZATION_MANAGE");
@@ -1078,15 +1335,20 @@ export const organizationDb = {
   },
   getTeam(viewer: User, teamId: string) {
     requireAdmin(viewer, "ORGANIZATION_MANAGE");
-    return team(teamId);
+    return teamDTO(team(teamId));
   },
   createTeam(viewer: User, body: CreateTeamInput) {
     requireAdmin(viewer, "ORGANIZATION_MANAGE");
     validateTeamMembers(body.unitId, body.memberIds);
-    const value = { ...entity(), ...body, status: "ACTIVE" as const };
+    const value = {
+      ...entity(),
+      ...body,
+      status: "ACTIVE" as const,
+      ...created(),
+    };
     db.teams.push(value);
     audit(viewer.id, "TEAM", value.id, "Tạo nhóm", null, body);
-    return value;
+    return teamDTO(value);
   },
   updateTeam(
     viewer: User,
@@ -1107,7 +1369,7 @@ export const organizationDb = {
     Object.assign(value, patch);
     touch(value);
     audit(viewer.id, "TEAM", value.id, "Cập nhật nhóm", before, patch, reason);
-    return value;
+    return teamDTO(value);
   },
   replaceTeamMembers(
     viewer: User,
@@ -1133,7 +1395,7 @@ export const organizationDb = {
       { memberIds: value.memberIds },
       body.reason,
     );
-    return value;
+    return teamDTO(value);
   },
   deactivateTeam(
     viewer: User,
@@ -1158,7 +1420,7 @@ export const organizationDb = {
       { status: "INACTIVE" },
       body.reason,
     );
-    return value;
+    return teamDTO(value);
   },
 };
 
@@ -1194,12 +1456,17 @@ export const usersDb = {
       displayName: user.displayName,
       avatarUrl: user.avatarId ? `/api/avatars/${user.avatarId}` : null,
       unit: unitRef(user.unitId).name,
-      systemRole: user.systemRole,
+      groups: userGroups(user).map((group) => group.label),
       email: user.email,
     };
   },
   listUsers(viewer: User, query: UserQuery) {
-    requireAdmin(viewer, "USERS_MANAGE");
+    requireAdmin(
+      viewer,
+      "USERS_MANAGE",
+      "ORGANIZATION_MANAGE",
+      "PERMISSIONS_MANAGE",
+    );
     return paginate(
       db.users
         .filter(
@@ -1210,7 +1477,12 @@ export const usersDb = {
                 .includes(query.q.toLowerCase())) &&
             (!query.unitId || u.unitId === query.unitId) &&
             (!query.status || u.status === query.status) &&
-            (!query.systemRole || u.systemRole === query.systemRole),
+            (query.isSysAdmin === undefined ||
+              u.isSysAdmin === query.isSysAdmin) &&
+            (!query.groupId ||
+              db.permissionGroups.some(
+                (g) => g.id === query.groupId && g.memberIds.includes(u.id),
+              )),
         )
         .map(userRow),
       query,
@@ -1224,19 +1496,34 @@ export const usersDb = {
     requireAdmin(viewer, "USERS_MANAGE");
     activeUnit(body.unitId);
     unique(body.username, body.email);
-    const { initialPassword, ...data } = body;
-    const user = {
+    const { initialPassword, groupIds = [], ...data } = body;
+    const groups = groupIds.map(requireGroup);
+    if (groups.some((g) => g.status !== "ACTIVE"))
+      throw new ApiError(
+        422,
+        "BUSINESS_RULE",
+        "Chỉ được chọn nhóm quyền đang hoạt động.",
+      );
+    requireGrantable(
+      viewer,
+      groups.flatMap((g) => g.features),
+    );
+    const user: User = {
       ...entity(),
-      updatedAt: now(),
       ...data,
       avatarId: null,
+      isSysAdmin: false,
+      grantedFeatures: [],
+      revokedFeatures: [],
       status: "ACTIVE" as const,
+      ...created(),
     };
     db.users.push(user);
     db.passwords.set(user.id, initialPassword);
+    setUserGroups(user, groupIds);
     audit(viewer.id, "USER", user.id, "Cấp tài khoản", null, {
       username: user.username,
-      systemRole: user.systemRole,
+      groupIds,
       unitId: user.unitId,
     });
     return userDTO(user);
@@ -1253,41 +1540,6 @@ export const usersDb = {
     const { reason, ...patch } = body;
     if (!Object.keys(patch).length)
       throw new ApiError(422, "EMPTY_PATCH", "Chưa có thông tin thay đổi.");
-    if (patch.systemRole && patch.systemRole !== user.systemRole) {
-      if (!reason)
-        throw new ApiError(
-          422,
-          "REASON_REQUIRED",
-          "Đổi vai trò cần có lý do.",
-          [{ path: ["reason"], message: "Nhập lý do thay đổi vai trò." }],
-        );
-      if (viewer.id === user.id)
-        throw new ApiError(
-          403,
-          "SELF_ROLE_CHANGE",
-          "Không được tự thay đổi vai trò của mình.",
-        );
-      protectLastAdmin(user);
-      if (
-        user.systemRole === "MANAGER" &&
-        db.members.some(
-          (member) =>
-            member.userId === user.id &&
-            !member.endedAt &&
-            member.projectRole !== "MEMBER" &&
-            db.projects.some(
-              (project) =>
-                project.id === member.projectId &&
-                ["PLANNED", "ACTIVE"].includes(project.status),
-            ),
-        )
-      )
-        throw new ApiError(
-          409,
-          "HANDOVER_REQUIRED",
-          "Cần bàn giao vai trò quản lý dự án trước khi đổi vai trò hệ thống.",
-        );
-    }
     if (patch.unitId && patch.unitId !== user.unitId) {
       activeUnit(patch.unitId);
       if (
@@ -1310,7 +1562,6 @@ export const usersDb = {
     const before = {
       displayName: user.displayName,
       email: user.email,
-      systemRole: user.systemRole,
       unitId: user.unitId,
     };
     Object.assign(user, patch);
@@ -1415,6 +1666,736 @@ export const usersDb = {
     );
     return { ok: true };
   },
+  getUserPermissions(viewer: User, userId: string): UserPermissionsDto {
+    requireAdmin(viewer, "PERMISSIONS_MANAGE");
+    const user = requireUser(userId);
+    return {
+      userId: user.id,
+      version: user.version,
+      isSysAdmin: user.isSysAdmin,
+      groups: db.permissionGroups
+        .filter((g) => g.memberIds.includes(user.id))
+        .map((g) => ({ id: g.id, label: g.name })),
+      grantedFeatures: user.grantedFeatures,
+      revokedFeatures: user.revokedFeatures,
+      effective: effectiveFeatures(user),
+    };
+  },
+  updateUserPermissions(
+    viewer: User,
+    userId: string,
+    body: UpdateUserPermissionsInput,
+    expectedVersion: string | null,
+  ) {
+    requireAdmin(viewer, "PERMISSIONS_MANAGE");
+    const user = requireUser(userId);
+    requireVersion(expectedVersion, user);
+    requireFeatureCodes(body.grantedFeatures, "grantedFeatures");
+    requireFeatureCodes(body.revokedFeatures, "revokedFeatures");
+    const groups = body.groupIds.map(requireGroup);
+    if (body.isSysAdmin !== user.isSysAdmin) {
+      if (!viewer.isSysAdmin)
+        throw new ApiError(
+          403,
+          "FORBIDDEN",
+          "Chỉ quản trị tối cao mới được đổi cờ quản trị tối cao.",
+        );
+      if (!body.isSysAdmin) protectLastAdmin(user);
+    }
+    requireGrantable(viewer, [
+      ...groups
+        .filter((g) => !g.memberIds.includes(user.id))
+        .flatMap((g) => g.features),
+      ...body.grantedFeatures.filter(
+        (code) => !user.grantedFeatures.includes(code),
+      ),
+    ]);
+    const before = usersDb.getUserPermissions(viewer, userId);
+    user.isSysAdmin = body.isSysAdmin;
+    user.grantedFeatures = body.grantedFeatures;
+    user.revokedFeatures = body.revokedFeatures;
+    setUserGroups(user, body.groupIds);
+    touch(user);
+    audit(
+      viewer.id,
+      "USER",
+      user.id,
+      "Cập nhật phân quyền",
+      {
+        isSysAdmin: before.isSysAdmin,
+        groupIds: before.groups.map((g) => g.id),
+        grantedFeatures: before.grantedFeatures,
+        revokedFeatures: before.revokedFeatures,
+      },
+      {
+        isSysAdmin: body.isSysAdmin,
+        groupIds: body.groupIds,
+        grantedFeatures: body.grantedFeatures,
+        revokedFeatures: body.revokedFeatures,
+      },
+      body.reason,
+    );
+    return usersDb.getUserPermissions(viewer, userId);
+  },
+};
+
+// Phân quyền: danh mục chức năng và nhóm quyền (ADMIN_MODULES 1).
+const groupDTO = (
+  group: (typeof db.permissionGroups)[number],
+): PermissionGroupDto => ({
+  ...group,
+  ...stampRefs(group),
+  members: group.memberIds.map((id) => ({
+    id,
+    label: person(id).displayName,
+  })),
+});
+function requireFeature(code: string) {
+  const feature = db.features.find((f) => f.code === code);
+  if (!feature)
+    throw new ApiError(404, "NOT_FOUND", "Không tìm thấy mã chức năng.");
+  return feature;
+}
+function validateMembers(memberIds: string[]) {
+  if (new Set(memberIds).size !== memberIds.length)
+    throw new ApiError(422, "VALIDATION_ERROR", "Thành viên bị trùng.", [
+      {
+        path: ["memberIds"],
+        message: "Thành viên trong nhóm không được trùng.",
+      },
+    ]);
+  memberIds.forEach(requireUser);
+}
+const featureDTO = (feature: (typeof db.features)[number]): FeatureDto => ({
+  ...feature,
+  updatedBy: stampRef(feature.updatedBy),
+});
+export const permissionsDb = {
+  listFeatures(viewer: User): FeatureDto[] {
+    requireAdmin(viewer, "PERMISSIONS_MANAGE");
+    return db.features
+      .toSorted((a, b) => a.sortOrder - b.sortOrder)
+      .map(featureDTO);
+  },
+  updateFeature(
+    viewer: User,
+    code: string,
+    body: UpdateFeatureInput,
+    expectedVersion: string | null,
+  ): FeatureDto {
+    requireAdmin(viewer, "PERMISSIONS_MANAGE");
+    const feature = requireFeature(code);
+    requireVersion(expectedVersion, feature);
+    if (feature.isGroup)
+      throw new ApiError(
+        422,
+        "BUSINESS_RULE",
+        "Chỉ bật/tắt được mã quyền, không phải node nhóm.",
+      );
+    // Tắt mã này rút quyền cả sysadmin, không ai bật lại được qua giao diện.
+    if (feature.code === "PERMISSIONS_MANAGE" && !body.isActive)
+      throw new ApiError(
+        422,
+        "BUSINESS_RULE",
+        "Không được tắt mã quản lý phân quyền.",
+      );
+    const before = { isActive: feature.isActive };
+    feature.isActive = body.isActive;
+    touch(feature);
+    audit(
+      viewer.id,
+      "Feature",
+      feature.code,
+      body.isActive ? "Bật mã chức năng" : "Tắt mã chức năng",
+      before,
+      { isActive: feature.isActive },
+      body.reason,
+    );
+    return featureDTO(feature);
+  },
+  listPermissionGroups(viewer: User, query: PermissionGroupQuery) {
+    requireAdmin(viewer, "PERMISSIONS_MANAGE", "USERS_MANAGE");
+    const q = query.q?.toLowerCase();
+    return paginate(
+      db.permissionGroups
+        .filter(
+          (g) =>
+            (!q || `${g.code} ${g.name}`.toLowerCase().includes(q)) &&
+            (!query.status || g.status === query.status),
+        )
+        .map(groupDTO),
+      query,
+    );
+  },
+  getPermissionGroup(viewer: User, groupId: string) {
+    requireAdmin(viewer, "PERMISSIONS_MANAGE");
+    return groupDTO(requireGroup(groupId));
+  },
+  createPermissionGroup(viewer: User, body: CreatePermissionGroupInput) {
+    requireAdmin(viewer, "PERMISSIONS_MANAGE");
+    if (db.permissionGroups.some((g) => g.code === body.code))
+      throw new ApiError(409, "CONFLICT", "Mã nhóm quyền đã tồn tại.", [
+        { path: ["code"], message: "Mã nhóm quyền đã tồn tại." },
+      ]);
+    requireFeatureCodes(body.features, "features");
+    validateMembers(body.memberIds);
+    requireGrantable(viewer, body.features);
+    const group = {
+      ...entity(),
+      createdAt: now(),
+      updatedAt: now(),
+      code: body.code,
+      name: body.name,
+      description: body.description ?? null,
+      features: body.features,
+      memberIds: body.memberIds,
+      status: "ACTIVE" as const,
+      isSystem: false,
+      ...stamp(),
+    };
+    db.permissionGroups.push(group);
+    audit(viewer.id, "PermissionGroup", group.id, "Tạo nhóm quyền", null, body);
+    return groupDTO(group);
+  },
+  updatePermissionGroup(
+    viewer: User,
+    groupId: string,
+    body: UpdatePermissionGroupInput,
+    expectedVersion: string | null,
+  ) {
+    requireAdmin(viewer, "PERMISSIONS_MANAGE");
+    const group = requireGroup(groupId);
+    requireVersion(expectedVersion, group);
+    const { reason, ...patch } = body;
+    if (!Object.keys(patch).length)
+      throw new ApiError(422, "EMPTY_PATCH", "Chưa có thông tin thay đổi.");
+    if (patch.features) {
+      requireFeatureCodes(patch.features, "features");
+      requireGrantable(
+        viewer,
+        patch.features.filter((code) => !group.features.includes(code)),
+      );
+    }
+    const before = {
+      name: group.name,
+      description: group.description,
+      features: group.features,
+    };
+    Object.assign(group, patch);
+    touch(group);
+    audit(
+      viewer.id,
+      "PermissionGroup",
+      group.id,
+      "Cập nhật nhóm quyền",
+      before,
+      patch,
+      reason ?? null,
+    );
+    return groupDTO(group);
+  },
+  replacePermissionGroupMembers(
+    viewer: User,
+    groupId: string,
+    body: ReplacePermissionGroupMembersInput,
+    expectedVersion: string | null,
+  ) {
+    requireAdmin(viewer, "PERMISSIONS_MANAGE");
+    const group = requireGroup(groupId);
+    requireVersion(expectedVersion, group);
+    validateMembers(body.memberIds);
+    if (body.memberIds.some((id) => !group.memberIds.includes(id)))
+      requireGrantable(viewer, group.features);
+    const before = { memberIds: group.memberIds };
+    group.memberIds = body.memberIds;
+    touch(group);
+    audit(
+      viewer.id,
+      "PermissionGroup",
+      group.id,
+      "Thay thành viên nhóm quyền",
+      before,
+      { memberIds: group.memberIds },
+      body.reason ?? null,
+    );
+    return groupDTO(group);
+  },
+  setPermissionGroupStatus(
+    viewer: User,
+    groupId: string,
+    active: boolean,
+    reason: string,
+    expectedVersion: string | null,
+  ) {
+    requireAdmin(viewer, "PERMISSIONS_MANAGE");
+    const group = requireGroup(groupId);
+    requireVersion(expectedVersion, group);
+    const status = active ? "ACTIVE" : "INACTIVE";
+    if (group.status === status)
+      throw new ApiError(
+        422,
+        "BUSINESS_RULE",
+        active ? "Nhóm quyền đang hoạt động." : "Nhóm quyền đã ngừng sử dụng.",
+      );
+    if (!active && group.isSystem)
+      throw new ApiError(
+        422,
+        "BUSINESS_RULE",
+        "Không được ngừng sử dụng nhóm quyền hệ thống.",
+      );
+    if (active) requireGrantable(viewer, group.features);
+    const before = { status: group.status };
+    group.status = status;
+    touch(group);
+    audit(
+      viewer.id,
+      "PermissionGroup",
+      group.id,
+      active ? "Kích hoạt nhóm quyền" : "Ngừng sử dụng nhóm quyền",
+      before,
+      { status },
+      reason,
+    );
+    return groupDTO(group);
+  },
+};
+
+// Nhật ký hệ thống (ADMIN_MODULES 2).
+const actorRef = (id: string) => ({
+  id,
+  label:
+    id === "SYSTEM"
+      ? "Hệ thống"
+      : (db.users.find((u) => u.id === id)?.displayName ?? id),
+});
+const auditRow = (item: Audit): AuditLogRow => ({
+  id: item.id,
+  at: item.at,
+  entityType: item.entityType,
+  entityId: item.entityId,
+  action: item.action,
+  actor: actorRef(item.actorId),
+  reason: item.reason,
+});
+export const auditLogsDb = {
+  listAuditLogs(viewer: User, query: AuditLogQuery) {
+    requireAdmin(viewer, "AUDIT_VIEW");
+    const q = query.q?.toLowerCase();
+    return paginate(
+      db.audits
+        .filter(
+          (a) =>
+            (!q ||
+              `${a.entityId} ${a.action} ${a.reason ?? ""}`
+                .toLowerCase()
+                .includes(q)) &&
+            (!query.entityType || a.entityType === query.entityType) &&
+            (!query.actorId || a.actorId === query.actorId) &&
+            (!query.action || a.action === query.action) &&
+            (!query.from || a.at >= query.from) &&
+            (!query.to || a.at <= query.to),
+        )
+        .toSorted((a, b) => b.at.localeCompare(a.at))
+        .map(auditRow),
+      query,
+    );
+  },
+  getAuditLog(viewer: User, auditLogId: string): AuditLogDto {
+    requireAdmin(viewer, "AUDIT_VIEW");
+    const item = db.audits.find((a) => a.id === auditLogId);
+    if (!item) throw new ApiError(404, "NOT_FOUND", "Không tìm thấy nhật ký.");
+    return { ...auditRow(item), before: item.before, after: item.after };
+  },
+  listEntityTypes(viewer: User) {
+    requireAdmin(viewer, "AUDIT_VIEW");
+    return [...new Set(db.audits.map((a) => a.entityType))].sort();
+  },
+};
+
+// Job nền (ADMIN_MODULES 3); mock chạy đồng bộ, không có vòng lặp tick.
+function requireJob(code: string) {
+  const job = db.backgroundJobs.find((j) => j.code === code);
+  if (!job) throw new ApiError(404, "NOT_FOUND", "Không tìm thấy job nền.");
+  return job;
+}
+const runDTO = (run: (typeof db.jobRuns)[number]): JobRunDto => ({
+  ...run,
+  durationMs: run.finishedAt
+    ? Date.parse(run.finishedAt) - Date.parse(run.startedAt)
+    : null,
+  triggeredBy: run.triggeredBy ? actorRef(run.triggeredBy) : null,
+});
+const jobDTO = (job: (typeof db.backgroundJobs)[number]): BackgroundJobDto => ({
+  ...job,
+  updatedBy: stampRef(job.updatedBy),
+});
+export const jobsDb = {
+  listJobs(viewer: User): BackgroundJobDto[] {
+    requireAdmin(viewer, "JOBS_MANAGE");
+    return db.backgroundJobs.map(jobDTO);
+  },
+  updateJob(
+    viewer: User,
+    code: string,
+    body: UpdateJobInput,
+    expectedVersion: string | null,
+  ): BackgroundJobDto {
+    requireAdmin(viewer, "JOBS_MANAGE");
+    const job = requireJob(code);
+    requireVersion(expectedVersion, job);
+    const { reason, ...patch } = body;
+    if (!Object.keys(patch).length)
+      throw new ApiError(422, "EMPTY_PATCH", "Chưa có thông tin thay đổi.");
+    const before = {
+      isEnabled: job.isEnabled,
+      intervalMinutes: job.intervalMinutes,
+    };
+    Object.assign(job, patch);
+    job.nextRunAt =
+      job.isEnabled && job.lastRunAt
+        ? new Date(
+            Date.parse(job.lastRunAt) + job.intervalMinutes * 60000,
+          ).toISOString()
+        : job.isEnabled
+          ? now()
+          : null;
+    touch(job);
+    audit(
+      viewer.id,
+      "BackgroundJob",
+      job.code,
+      "Cập nhật job nền",
+      before,
+      patch,
+      reason ?? null,
+    );
+    return jobDTO(job);
+  },
+  runJob(viewer: User, code: string): JobRunDto {
+    requireAdmin(viewer, "JOBS_MANAGE");
+    const job = requireJob(code);
+    if (job.lastStatus === "RUNNING")
+      throw new ApiError(409, "CONFLICT", "Job đang chạy.");
+    // Job ghi dấu vết là SYSTEM kể cả khi chạy thủ công.
+    const summary = asSystem(evaluateAlertRules);
+    const run = {
+      id: crypto.randomUUID(),
+      jobCode: job.code,
+      startedAt: now(),
+      finishedAt: now(),
+      status: "SUCCEEDED" as const,
+      trigger: "MANUAL" as const,
+      triggeredBy: viewer.id,
+      summary,
+      error: null,
+    };
+    db.jobRuns.push(run);
+    // Giữ tối đa 200 lần chạy gần nhất cho mỗi job.
+    const runs = db.jobRuns.filter((r) => r.jobCode === job.code);
+    if (runs.length > 200)
+      db.jobRuns = db.jobRuns.filter((r) => !runs.slice(0, -200).includes(r));
+    job.lastRunAt = run.startedAt;
+    job.lastStatus = run.status;
+    job.nextRunAt = new Date(
+      Date.parse(now()) + job.intervalMinutes * 60000,
+    ).toISOString();
+    db.revision++;
+    return runDTO(run);
+  },
+  listJobRuns(viewer: User, code: string, query: JobRunQuery) {
+    requireAdmin(viewer, "JOBS_MANAGE");
+    requireJob(code);
+    return paginate(
+      db.jobRuns
+        .filter(
+          (r) =>
+            r.jobCode === code && (!query.status || r.status === query.status),
+        )
+        .toSorted((a, b) => b.startedAt.localeCompare(a.startedAt))
+        .map(runDTO),
+      query,
+    );
+  },
+};
+
+// Cấu hình tập trung (ADMIN_MODULES 4): known/min/max/allowedValues tính từ catalog.
+const configCatalog = z
+  .record(
+    z.string(),
+    z.object({
+      dataType: configDataTypeSchema,
+      requiresRestart: z.boolean().optional(),
+      minValue: z.number().optional(),
+      maxValue: z.number().optional(),
+      allowedValues: z.array(z.string()).optional(),
+    }),
+  )
+  .parse(seed.configPolicy.catalog);
+type ConfigRule = (typeof configCatalog)[string];
+const settingDTO = (item: (typeof db.settings)[number]): SettingDto => {
+  const rule = configCatalog[item.key];
+  return {
+    ...item,
+    known: Boolean(rule),
+    requiresRestart: rule?.requiresRestart ?? false,
+    minValue: rule?.minValue ?? null,
+    maxValue: rule?.maxValue ?? null,
+    allowedValues: rule?.allowedValues ?? null,
+    ...stampRefs(item),
+  };
+};
+function settingError(path: "key" | "value", message: string) {
+  return new ApiError(422, "VALIDATION_ERROR", message, [
+    { path: [path], message },
+  ]);
+}
+function validateSettingValue(
+  key: string,
+  dataType: ConfigRule["dataType"],
+  value: string,
+) {
+  const rule = configCatalog[key];
+  if (dataType === "BOOL" && !["true", "false"].includes(value))
+    throw settingError("value", "Giá trị phải là true hoặc false.");
+  if (dataType === "INT") {
+    if (!/^-?\d+$/.test(value))
+      throw settingError("value", "Giá trị phải là số nguyên.");
+    const number = Number(value);
+    if (
+      (rule?.minValue !== undefined && number < rule.minValue) ||
+      (rule?.maxValue !== undefined && number > rule.maxValue)
+    )
+      throw settingError(
+        "value",
+        `Giá trị phải từ ${rule.minValue ?? "—"} đến ${rule.maxValue ?? "—"}.`,
+      );
+  }
+  if (rule?.allowedValues && !rule.allowedValues.includes(value))
+    throw settingError(
+      "value",
+      `Giá trị phải là một trong: ${rule.allowedValues.join(", ")}.`,
+    );
+}
+export const settingsDb = {
+  listSettings(viewer: User, query: SettingQuery) {
+    requireAdmin(viewer, "SETTINGS_MANAGE");
+    const q = query.q?.toLowerCase();
+    return db.settings
+      .filter(
+        (s) =>
+          (!query.serviceType || s.serviceType === query.serviceType) &&
+          (!query.group || s.group === query.group) &&
+          (!q || s.key.toLowerCase().includes(q)),
+      )
+      .toSorted((a, b) =>
+        `${a.serviceType}|${a.group}|${a.key}`.localeCompare(
+          `${b.serviceType}|${b.group}|${b.key}`,
+        ),
+      )
+      .map(settingDTO);
+  },
+  createSetting(viewer: User, body: CreateSettingInput) {
+    requireAdmin(viewer, "SETTINGS_MANAGE");
+    const policy = seed.configPolicy;
+    if (
+      new RegExp(policy.forbiddenKey, "i").test(body.key) ||
+      policy.forbiddenPrefixes.some((prefix) => body.key.startsWith(prefix))
+    )
+      throw settingError("key", "Không được lưu secret hoặc cấu hình hạ tầng.");
+    if (
+      db.settings.some(
+        (s) => s.key === body.key && s.serviceType === body.serviceType,
+      )
+    )
+      throw new ApiError(409, "CONFLICT", "Cấu hình đã tồn tại.", [
+        { path: ["key"], message: "Key đã tồn tại cho service này." },
+      ]);
+    const rule = configCatalog[body.key];
+    if (rule && rule.dataType !== body.dataType)
+      throw new ApiError(422, "VALIDATION_ERROR", "Sai kiểu dữ liệu.", [
+        { path: ["dataType"], message: `Key này có kiểu ${rule.dataType}.` },
+      ]);
+    const value = body.value.trim();
+    validateSettingValue(body.key, body.dataType, value);
+    const item = {
+      ...entity(),
+      key: body.key,
+      serviceType: body.serviceType,
+      group: body.group,
+      name: body.name,
+      description: body.description ?? null,
+      dataType: body.dataType,
+      value,
+      isActive: true,
+      createdAt: now(),
+      updatedAt: now(),
+      ...stamp(),
+    };
+    if (item.key === whitelistKey && item.isActive)
+      protectCurrentIp(value === "true", db.ipWhitelist);
+    db.settings.push(item);
+    audit(viewer.id, "SystemConfig", item.id, "Thêm cấu hình", null, body);
+    return settingDTO(item);
+  },
+  updateSetting(
+    viewer: User,
+    settingId: string,
+    body: UpdateSettingInput,
+    expectedVersion: string | null,
+  ) {
+    requireAdmin(viewer, "SETTINGS_MANAGE");
+    const item = db.settings.find((s) => s.id === settingId);
+    if (!item) throw new ApiError(404, "NOT_FOUND", "Không tìm thấy cấu hình.");
+    requireVersion(expectedVersion, item);
+    const { reason, ...patch } = body;
+    if (!Object.keys(patch).length)
+      throw new ApiError(422, "EMPTY_PATCH", "Chưa có thông tin thay đổi.");
+    if (patch.value !== undefined) {
+      patch.value = patch.value.trim();
+      validateSettingValue(item.key, item.dataType, patch.value);
+    }
+    const rule = configCatalog[item.key];
+    if (
+      patch.isActive === false &&
+      rule?.requiresRestart &&
+      item.group === "JWT"
+    )
+      throw new ApiError(
+        422,
+        "BUSINESS_RULE",
+        "Không được tắt cấu hình JWT cần khởi động lại.",
+      );
+    if (item.key === whitelistKey) {
+      const next = { ...item, ...patch };
+      protectCurrentIp(next.isActive && next.value === "true", db.ipWhitelist);
+    }
+    const before = {
+      value: item.value,
+      name: item.name,
+      description: item.description,
+      isActive: item.isActive,
+    };
+    Object.assign(item, patch);
+    touch(item);
+    audit(
+      viewer.id,
+      "SystemConfig",
+      item.id,
+      "Cập nhật cấu hình",
+      before,
+      patch,
+      reason,
+    );
+    return settingDTO(item);
+  },
+};
+
+// IP whitelist khu quản trị (ADMIN_MODULES 5).
+const ipEntryDTO = (
+  item: (typeof db.ipWhitelist)[number],
+): IpWhitelistEntryDto => ({
+  ...item,
+  ...stampRefs(item),
+});
+function requireIpEntry(id: string) {
+  const item = db.ipWhitelist.find((e) => e.id === id);
+  if (!item) throw new ApiError(404, "NOT_FOUND", "Không tìm thấy địa chỉ IP.");
+  return item;
+}
+export const ipWhitelistDb = {
+  getIpWhitelist(viewer: User): IpWhitelistDto {
+    requireAdmin(viewer, "SETTINGS_MANAGE");
+    const setting = whitelistSetting();
+    if (!setting)
+      throw new ApiError(404, "NOT_FOUND", "Chưa có cấu hình IP whitelist.");
+    return {
+      enabled: setting.value === "true",
+      settingId: setting.id,
+      settingVersion: setting.version,
+      currentIp: currentIp(),
+      entries: db.ipWhitelist.map(ipEntryDTO),
+    };
+  },
+  createIpWhitelistEntry(viewer: User, body: CreateIpWhitelistEntryInput) {
+    requireAdmin(viewer, "SETTINGS_MANAGE");
+    const item = {
+      ...entity(),
+      cidr: body.cidr,
+      description: body.description ?? null,
+      isActive: true,
+      createdAt: now(),
+      updatedAt: now(),
+      ...stamp(),
+    };
+    db.ipWhitelist.push(item);
+    audit(
+      viewer.id,
+      "IpWhitelistEntry",
+      item.id,
+      "Thêm IP whitelist",
+      null,
+      body,
+    );
+    return ipEntryDTO(item);
+  },
+  updateIpWhitelistEntry(
+    viewer: User,
+    entryId: string,
+    body: UpdateIpWhitelistEntryInput,
+    expectedVersion: string | null,
+  ) {
+    requireAdmin(viewer, "SETTINGS_MANAGE");
+    const item = requireIpEntry(entryId);
+    requireVersion(expectedVersion, item);
+    const { reason, ...patch } = body;
+    if (!Object.keys(patch).length)
+      throw new ApiError(422, "EMPTY_PATCH", "Chưa có thông tin thay đổi.");
+    protectCurrentIp(
+      whitelistEnabled(),
+      db.ipWhitelist.map((e) => (e === item ? { ...e, ...patch } : e)),
+    );
+    const before = {
+      cidr: item.cidr,
+      description: item.description,
+      isActive: item.isActive,
+    };
+    Object.assign(item, patch);
+    touch(item);
+    audit(
+      viewer.id,
+      "IpWhitelistEntry",
+      item.id,
+      "Cập nhật IP whitelist",
+      before,
+      patch,
+      reason ?? null,
+    );
+    return ipEntryDTO(item);
+  },
+  deleteIpWhitelistEntry(
+    viewer: User,
+    entryId: string,
+    expectedVersion: string | null,
+  ) {
+    requireAdmin(viewer, "SETTINGS_MANAGE");
+    const item = requireIpEntry(entryId);
+    requireVersion(expectedVersion, item);
+    protectCurrentIp(
+      whitelistEnabled(),
+      db.ipWhitelist.filter((e) => e !== item),
+    );
+    db.ipWhitelist = db.ipWhitelist.filter((e) => e !== item);
+    db.revision++;
+    audit(
+      viewer.id,
+      "IpWhitelistEntry",
+      item.id,
+      "Xóa IP whitelist",
+      { cidr: item.cidr, isActive: item.isActive },
+      null,
+    );
+    return { ok: true as const };
+  },
 };
 
 // Dự án.
@@ -1438,7 +2419,7 @@ function validateProjectPlan(
   if (
     owner.status !== "ACTIVE" ||
     owner.unitId !== unitId ||
-    owner.systemRole !== "MANAGER"
+    !can(owner, "PROJECT_CREATE")
   )
     throw new ApiError(
       422,
@@ -1470,6 +2451,9 @@ function ensureOwner(projectId: string, ownerId: string) {
       userId: ownerId,
       projectRole: "OWNER",
       endedAt: null,
+      createdAt: now(),
+      updatedAt: now(),
+      ...stamp(),
     });
 }
 function closureChecks(projectId: string) {
@@ -1502,7 +2486,7 @@ function requireClosure(projectId: string) {
     );
 }
 function validateMemberRole(user: User, role: "MANAGER" | "MEMBER") {
-  if (role === "MANAGER" && user.systemRole !== "MANAGER")
+  if (role === "MANAGER" && !can(user, "PROJECT_CREATE"))
     throw new ApiError(
       422,
       "INVALID_PROJECT_ROLE",
@@ -1566,6 +2550,7 @@ export const projectsDb = {
       ...entity(),
       ...body,
       status: "PLANNED" as const,
+      ...created(),
     };
     db.projects.push(project);
     ensureOwner(project.id, project.ownerId);
@@ -1807,6 +2792,9 @@ export const projectMembersDb = {
       projectId: project.id,
       ...body,
       endedAt: null,
+      createdAt: now(),
+      updatedAt: now(),
+      ...stamp(),
     };
     db.members.push(value);
     audit(viewer.id, "PROJECT", project.id, "Thêm thành viên", null, {
@@ -2017,6 +3005,7 @@ export const tasksDb = {
       );
     const task: Task = {
       ...entity(),
+      ...stamp(),
       createdAt: now(),
       updatedAt: now(),
       projectId: project.id,
@@ -3964,7 +4953,9 @@ function alertDTO(a: (typeof db.alerts)[number], u: User): AlertDto {
   const today = localDateTime(now()).slice(0, 10);
   return {
     ...a,
+    ...stampRefs(a),
     handler: a.handledBy ? person(a.handledBy) : null,
+    canHandle: u.isSysAdmin || alertRecipient(u, a),
     taskTitle: task?.title ?? null,
     analysisRef: task
       ? taskAnalysis(
@@ -3978,6 +4969,7 @@ function alertDTO(a: (typeof db.alerts)[number], u: User): AlertDto {
 }
 
 export function evaluateAlertRules() {
+  const summary = { created: 0, updated: 0, deactivated: 0 };
   for (const task of db.tasks) {
     const open = !["COMPLETED", "CANCELLED"].includes(task.status);
     const rules = [
@@ -4002,6 +4994,7 @@ export function evaluateAlertRules() {
       );
       if (previous) {
         if (previous.conditionActive !== rule.active) {
+          summary[rule.active ? "updated" : "deactivated"]++;
           previous.conditionActive = rule.active;
           previous.dataAsOf = now();
           touch(previous);
@@ -4014,6 +5007,8 @@ export function evaluateAlertRules() {
         createdAt: now(),
         projectId: task.projectId,
         taskId: task.id,
+        ...stamp(),
+        updatedAt: now(),
         type: rule.type,
         severity: "HIGH",
         status: "UNREAD",
@@ -4026,25 +5021,40 @@ export function evaluateAlertRules() {
         handledAt: null,
       });
       db.revision++;
+      summary.created++;
       const owner = db.projects.find((p) => p.id === task.projectId)?.ownerId;
       if (owner) notify(owner);
     }
   }
+  return summary;
 }
 function scheduleAlertRules() {
-  schedule(evaluateAlertRules, 50);
+  schedule(() => asSystem(evaluateAlertRules), 50);
 }
+// Giống AlertService (BE): người nhận = người được giao task + Owner/Manager dự án;
+// ANALYTICS_VIEW hệ thống xem tất cả, chỉ sysadmin xử lý thay người nhận.
+function alertRecipient(u: User, a: (typeof db.alerts)[number]) {
+  return (
+    db.members.some(
+      (m) =>
+        m.projectId === a.projectId &&
+        m.userId === u.id &&
+        !m.endedAt &&
+        m.projectRole !== "MEMBER",
+    ) || db.tasks.some((t) => t.id === a.taskId && t.assigneeId === u.id)
+  );
+}
+const alertVisible = (u: User, a: (typeof db.alerts)[number]) =>
+  readsEveryProject(u) || alertRecipient(u, a);
 function requireAlert(actor: User, id: string, edit = false) {
   const item = db.alerts.find((a) => a.id === id);
-  if (!item) throw new ApiError(404, "NOT_FOUND", "Không tìm thấy cảnh báo.");
-  if (
-    !can(actor, "ANALYTICS_VIEW", item.projectId) ||
-    (edit && !can(actor, "ALERTS_MANAGE", item.projectId))
-  )
+  if (!item || !alertVisible(actor, item))
+    throw new ApiError(404, "NOT_FOUND", "Không tìm thấy cảnh báo.");
+  if (edit && !actor.isSysAdmin && !alertRecipient(actor, item))
     throw new ApiError(
       403,
       "FORBIDDEN",
-      "Không có quyền xem hoặc xử lý cảnh báo trong dự án.",
+      "Chỉ người được giao công việc hoặc quản lý dự án mới được xử lý cảnh báo này.",
     );
   return item;
 }
@@ -4054,7 +5064,7 @@ export const alertsDb = {
       db.alerts
         .filter(
           (a) =>
-            can(viewer, "ANALYTICS_VIEW", a.projectId) &&
+            alertVisible(viewer, a) &&
             (!query.projectId || a.projectId === query.projectId) &&
             (!query.status || a.status === query.status) &&
             (!query.severity || a.severity === query.severity) &&
@@ -4269,7 +5279,7 @@ export function authorizeReplay(
 let queue = Promise.resolve();
 export async function withMockTransaction<T>(
   execute: (commit: () => void) => Promise<T>,
-  context: { feature: string; scenario: string | null },
+  context: { feature: string; scenario: string | null; actor: string },
 ): Promise<T> {
   const previous = queue;
   let release = () => {};
@@ -4279,6 +5289,7 @@ export async function withMockTransaction<T>(
   await previous;
   const backup = structuredClone(db);
   let committed = false;
+  stampActor = context.actor;
   try {
     const result = await execute(() => {
       committed = true;
@@ -4307,6 +5318,7 @@ export async function withMockTransaction<T>(
     db = backup;
     throw error;
   } finally {
+    stampActor = "SYSTEM";
     release();
   }
 }

@@ -5,7 +5,6 @@ import { ButtonLink, PageHeader, Panel } from "@/components/ui/page";
 import { ProfileHeader } from "@/components/ui/profile-header";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useSession } from "@/lib/auth/session-context";
-import { label } from "@/lib/format";
 import { useCrumbLabel } from "@/lib/use-crumb-label";
 import { useGetProfileQuery } from "../hooks/use-users-queries";
 
@@ -32,7 +31,7 @@ export function MemberProfilePage({ userId }: { userId: string }) {
           name={user.displayName}
           avatarUrl={user.avatarUrl}
           unit={user.unit}
-          role={label(user.systemRole)}
+          role={user.groups.join(", ") || undefined}
         />
         <Panel title="Thông tin liên hệ">
           <dl className="record-details">

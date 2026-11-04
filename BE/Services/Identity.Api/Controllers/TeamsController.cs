@@ -4,10 +4,14 @@ using Identity.Api.Models.Queries;
 using Identity.Api.Models.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Entities;
+using Shared.Entities.Authorization;
 
 namespace Identity.Api.Controllers;
 
 [Authorize]
+[AdminArea]
+[RequiresPermission(PermissionFeatures.OrganizationManage)]
 [ApiController]
 [Route("api/teams")]
 public class TeamsController(ILogger<BaseApiController> logger, ITeamService teamService) : BaseApiController(logger)

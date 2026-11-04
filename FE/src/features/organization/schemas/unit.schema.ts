@@ -1,4 +1,8 @@
-import { listQuerySchema, reasonSchema } from "@/lib/validation/common.schema";
+import {
+  listQuerySchema,
+  reasonSchema,
+  stampShape,
+} from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 export const createUnitSchema = z
@@ -24,6 +28,9 @@ export const unitSchema = z.object({
   parentId: idSchema.nullable(),
   managerId: idSchema.nullable(),
   status: z.enum(["ACTIVE", "INACTIVE"]),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+  ...stampShape,
 });
 
 export const unitRowSchema = unitSchema.pick({

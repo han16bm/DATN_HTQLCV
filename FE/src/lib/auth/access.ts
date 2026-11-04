@@ -44,10 +44,18 @@ export function hasAnyPermission(session: Session, permission: Permission) {
   );
 }
 
+// Các mã thuộc nhóm ADMIN trong danh mục chức năng (ADMIN_MODULES 1.1).
+const adminPermissions: readonly Permission[] = [
+  "USERS_MANAGE",
+  "ORGANIZATION_MANAGE",
+  "PERMISSIONS_MANAGE",
+  "AUDIT_VIEW",
+  "SETTINGS_MANAGE",
+  "JOBS_MANAGE",
+];
 export function canAdminister(session: Session) {
-  return (
-    hasPermission(session, "USERS_MANAGE") ||
-    hasPermission(session, "ORGANIZATION_MANAGE")
+  return adminPermissions.some((permission) =>
+    hasPermission(session, permission),
   );
 }
 
@@ -60,9 +68,26 @@ const routes: { path: RegExp; allow: (session: Session) => boolean }[] = [
     path: /^\/admin\/(?:organization|teams)(?:\/|$)/,
     allow: (session) => hasPermission(session, "ORGANIZATION_MANAGE"),
   },
+  {
+    path: /^\/admin\/(?:permission-groups|features)(?:\/|$)/,
+    allow: (session) => hasPermission(session, "PERMISSIONS_MANAGE"),
+  },
+  {
+    path: /^\/admin\/audit-logs(?:\/|$)/,
+    allow: (session) => hasPermission(session, "AUDIT_VIEW"),
+  },
+  {
+    path: /^\/admin\/jobs(?:\/|$)/,
+    allow: (session) => hasPermission(session, "JOBS_MANAGE"),
+  },
+  {
+    path: /^\/admin\/(?:settings|ip-whitelist)(?:\/|$)/,
+    allow: (session) => hasPermission(session, "SETTINGS_MANAGE"),
+  },
   { path: /^\/admin\/?$/, allow: canAdminister },
   {
-    path: /^\/(?:dashboard|analytics|alerts)(?:\/|$)/,
+    // /alerts không chặn ở đây: cảnh báo là thông báo cá nhân, BE tự lọc theo người nhận
+    path: /^\/(?:dashboard|analytics)(?:\/|$)/,
     allow: (session) => hasAnyPermission(session, "ANALYTICS_VIEW"),
   },
   {
@@ -89,12 +114,4 @@ export function canVisit(session: Session, path: string) {
   if (!session) return false;
   const route = routes.find((route) => route.path.test(path));
   return !route || route.allow(session);
-}
-
-// Trang đầu tiên của khu quản trị mà người dùng được phép mở.
-export function adminHome(session: Session) {
-  if (hasPermission(session, "USERS_MANAGE")) return "/admin/users";
-  if (hasPermission(session, "ORGANIZATION_MANAGE"))
-    return "/admin/organization";
-  return null;
 }

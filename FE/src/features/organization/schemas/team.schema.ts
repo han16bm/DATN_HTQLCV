@@ -2,6 +2,7 @@ import {
   entityLabelSchema,
   listQuerySchema,
   reasonSchema,
+  stampShape,
 } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
@@ -33,6 +34,9 @@ export const teamSchema = z.object({
   unitId: idSchema,
   memberIds: z.array(idSchema),
   status: z.enum(["ACTIVE", "INACTIVE"]),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+  ...stampShape,
 });
 export const teamQuerySchema = z
   .object({ ...listQuerySchema.shape, unitId: idSchema.optional() })

@@ -1,4 +1,4 @@
-import { AdminIndex } from "@/components/layout/admin-index";
+import { AdminOverview } from "@/components/layout/admin-overview";
 export default function Page() {
-  return <AdminIndex />;
+  return <AdminOverview />;
 }

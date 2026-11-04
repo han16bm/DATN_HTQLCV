@@ -1,6 +1,7 @@
 "use client";
 
 import { authKeys } from "@/features/auth/api/auth.keys";
+import { permissionsKeys } from "@/features/permissions/api/permissions.keys";
 import { projectMembersKeys } from "@/features/project-members/api/project-members.keys";
 import { tasksKeys } from "@/features/tasks/api/tasks.keys";
 import { useSession } from "@/lib/auth/session-context";
@@ -17,6 +18,7 @@ import {
   type ResetUserPasswordArgs,
   type UnlockUserArgs,
   type UpdateUserArgs,
+  type UpdateUserPermissionsArgs,
 } from "../types/users.types";
 
 export function useCreateUserMutation() {
@@ -164,4 +166,31 @@ export function useResetUserPasswordMutation() {
       void mutation.mutateAsync(requests.put(payload)).catch(() => {});
     },
   };
+}
+
+export function useUpdateUserPermissionsMutation() {
+  const client = useQueryClient();
+  const viewerId = useSession().session?.user.id;
+  const handleError = useAccessErrorHandler();
+  const run = useIdempotentRequest();
+  return useMutation({
+    mutationKey: [...usersKeys.viewer(viewerId), "updateUserPermissions"],
+    mutationFn: (input: UpdateUserPermissionsArgs) =>
+      run(input, (key) =>
+        usersService.updateUserPermissions(input.userId, input.payload, {
+          version: input.version,
+          key,
+        }),
+      ),
+    onError: handleError,
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: usersKeys.viewer(viewerId) }),
+        client.invalidateQueries({ queryKey: authKeys.viewer(viewerId) }),
+        client.invalidateQueries({
+          queryKey: permissionsKeys.viewer(viewerId),
+        }),
+      ]);
+    },
+  });
 }

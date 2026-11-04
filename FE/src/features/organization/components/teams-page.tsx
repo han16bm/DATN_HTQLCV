@@ -1,20 +1,18 @@
 "use client";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import {
-  Badge,
-  ButtonLink,
-  DataTable,
-  DetailLink,
-  PageHeader,
-} from "@/components/ui/page";
+import { RowDialogLinks } from "@/components/ui/entity-dialog";
+import { Badge, ButtonLink, DataTable, PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { useEntityDialog } from "@/lib/forms/use-entity-dialog";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { useListTeamsQuery } from "../hooks/use-organization-queries";
+import { TeamDialog } from "./team-dialog";
 
 export function TeamsPage() {
   const filters = useUrlFilters();
   const query = useListTeamsQuery({ page: filters.page });
+  const dialog = useEntityDialog();
   return (
     <>
       <PageHeader
@@ -22,7 +20,7 @@ export function TeamsPage() {
         actions={
           <>
             <ButtonLink href="/admin/organization">Cơ cấu đơn vị</ButtonLink>
-            <ButtonLink href="/admin/teams/new" primary>
+            <ButtonLink href={dialog.href("create")} primary>
               Tạo nhóm
             </ButtonLink>
           </>
@@ -49,10 +47,15 @@ export function TeamsPage() {
             team.unit.name,
             String(team.memberCount),
             <Badge key="status" value={team.status} />,
-            <DetailLink
+            <RowDialogLinks
               key="detail"
-              href={`/admin/teams/${encodeURIComponent(team.id)}`}
-              label={`Xem nhóm ${team.name}`}
+              name={`nhóm ${team.name}`}
+              view={dialog.href("view", team.id)}
+              edit={
+                team.status === "ACTIVE"
+                  ? dialog.href("edit", team.id)
+                  : undefined
+              }
             />,
           ])}
           pagination={{
@@ -61,6 +64,7 @@ export function TeamsPage() {
           }}
         />
       )}
+      <TeamDialog />
     </>
   );
 }

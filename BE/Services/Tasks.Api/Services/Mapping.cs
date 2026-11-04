@@ -1,4 +1,5 @@
 using Shared.Entities;
+using Shared.Entities.Auditing;
 using Shared.Entities.Entities;
 using Tasks.Api.Models.Dtos;
 
@@ -19,9 +20,18 @@ public static class Mapping
         return new EntityLabelDto(projectId, project?.Name ?? projectId);
     }
 
-    public static async Task<TaskDto> ToDtoAsync(this WorkTask t, ApplicationDbContext db)
+    /// <summary>Dấu vết CreatedBy/UpdatedBy dạng { id, label } | null (ADMIN_MODULES §8.3).</summary>
+    public static RefDto? StampRef(string? actorId, IReadOnlyDictionary<string, string> names)
+    {
+        var label = AuditActorNames.Label(actorId, names);
+        return label is null ? null : new RefDto(actorId!, label);
+    }
+
+    /// <summary>names: truyền khi map cả lô (nạp một lần bằng AuditActorNames.LoadAsync); null → tự nạp cho riêng task này.</summary>
+    public static async Task<TaskDto> ToDtoAsync(this WorkTask t, ApplicationDbContext db, IReadOnlyDictionary<string, string>? names = null)
     {
         var now = DateTime.UtcNow;
+        names ??= await AuditActorNames.LoadAsync(db, [t.CreatedBy, t.UpdatedBy]);
         return new TaskDto
         {
             Id = t.Id,
@@ -48,7 +58,9 @@ public static class Mapping
             LatestSubmissionId = t.LatestSubmissionId,
             IsOverdue = t.Status is not (Shared.Entities.Enums.WorkTaskStatus.Completed or Shared.Entities.Enums.WorkTaskStatus.Cancelled) && t.DueAt < now,
             Assignee = t.AssigneeId is null ? null : await db.PersonRefAsync(t.AssigneeId),
-            Project = await db.ProjectLabelAsync(t.ProjectId)
+            Project = await db.ProjectLabelAsync(t.ProjectId),
+            CreatedBy = StampRef(t.CreatedBy, names),
+            UpdatedBy = StampRef(t.UpdatedBy, names)
         };
     }
 
@@ -135,7 +147,8 @@ public static class Mapping
             ZeroTimeReason = r.ZeroTimeReason,
             SubmittedAt = r.SubmittedAt,
             Snapshot = r.SnapshotJson is null ? null : System.Text.Json.JsonSerializer.Deserialize<ReportPreviewDto>(r.SnapshotJson),
-            Author = await db.PersonRefAsync(r.AuthorId)
+            Author = await db.PersonRefAsync(r.AuthorId),
+            Project = await db.ProjectLabelAsync(r.ProjectId)
         };
     }
 }

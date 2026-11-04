@@ -13,7 +13,7 @@ public class AlertGenerationService(ApplicationDbContext context) : IAlertGenera
 {
     private const string MethodVersion = "alert-job-v1";
 
-    public async Task GenerateAsync(CancellationToken cancellationToken)
+    public async Task<AlertGenerationSummary> GenerateAsync(CancellationToken cancellationToken)
     {
         var now = DateTime.UtcNow;
         var atRiskCutoff = now.AddDays(Thresholds.AtRiskDays);
@@ -80,10 +80,10 @@ public class AlertGenerationService(ApplicationDbContext context) : IAlertGenera
             active[(task.Id, AlertType.Bottleneck)] = new ActiveCondition(AlertSeverity.Medium, evidence);
         }
 
-        await SyncAlertsAsync(active, now, cancellationToken);
+        return await SyncAlertsAsync(active, now, cancellationToken);
     }
 
-    private async Task SyncAlertsAsync(
+    private async Task<AlertGenerationSummary> SyncAlertsAsync(
         Dictionary<(string TaskId, AlertType Type), ActiveCondition> active,
         DateTime now,
         CancellationToken cancellationToken)
@@ -92,6 +92,7 @@ public class AlertGenerationService(ApplicationDbContext context) : IAlertGenera
             .Where(a => a.Status != AlertStatus.Resolved && a.Status != AlertStatus.Dismissed)
             .ToListAsync(cancellationToken);
 
+        int created = 0, updated = 0, deactivated = 0;
         foreach (var alert in openAlerts)
         {
             if (alert.TaskId is null)
@@ -104,6 +105,8 @@ public class AlertGenerationService(ApplicationDbContext context) : IAlertGenera
                 alert.ConditionActive = false;
                 alert.UpdatedAt = now;
                 alert.Version++;
+                deactivated++;
+
             }
         }
 
@@ -131,6 +134,7 @@ public class AlertGenerationService(ApplicationDbContext context) : IAlertGenera
                 existing.DataAsOf = now;
                 existing.UpdatedAt = now;
                 existing.Version++;
+                updated++;
                 continue;
             }
 
@@ -155,9 +159,11 @@ public class AlertGenerationService(ApplicationDbContext context) : IAlertGenera
                 DataAsOf = now,
                 MethodVersion = MethodVersion
             });
+            created++;
         }
 
         await context.SaveChangesAsync(cancellationToken);
+        return new AlertGenerationSummary(created, updated, deactivated);
     }
 
     private record ActiveCondition(AlertSeverity Severity, List<string> Evidence);

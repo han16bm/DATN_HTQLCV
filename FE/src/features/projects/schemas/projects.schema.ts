@@ -3,6 +3,7 @@ import {
   listQuerySchema,
   personRefSchema,
   reasonSchema,
+  stampShape,
 } from "@/lib/validation/common.schema";
 import { checkProjection } from "@/lib/validation/contract-refinements";
 import { idSchema } from "@/lib/validation/request.schema";
@@ -57,6 +58,9 @@ export const projectSchema = z
     status: projectStatusSchema,
     owner: personRefSchema,
     unit: entityLabelSchema,
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+    ...stampShape,
   })
   .superRefine(checkProjection);
 export const getProjectClosureChecksResultSchema = z.object({

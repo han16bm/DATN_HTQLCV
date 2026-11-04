@@ -17,6 +17,11 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<IUnitService, UnitService>();
         services.AddScoped<ITeamService, TeamService>();
         services.AddScoped<IPermissionGroupService, PermissionGroupService>();
+        services.AddScoped<IFeatureService, FeatureService>();
+        services.AddScoped<IAuditLogService, AuditLogService>();
+        services.AddScoped<ISystemConfigService, SystemConfigService>();
+        services.AddScoped<IIpWhitelistService, IpWhitelistService>();
+        services.AddScoped<IIpAccessLogService, IpAccessLogService>();
 
         return services;
     }

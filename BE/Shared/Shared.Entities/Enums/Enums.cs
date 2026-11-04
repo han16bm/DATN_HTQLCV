@@ -1,6 +1,5 @@
 namespace Shared.Entities.Enums;
 
-public enum SystemRole { Employee, Manager, Admin }
 public enum UserStatus { Active, Locked }
 public enum OrgStatus { Active, Inactive }
 

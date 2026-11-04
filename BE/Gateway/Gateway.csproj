@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Shared\Shared.Commons\Shared.Commons.csproj" />
+    <ProjectReference Include="..\Shared\Shared.Configuration\Shared.Configuration.csproj" />
   </ItemGroup>
 
 </Project>

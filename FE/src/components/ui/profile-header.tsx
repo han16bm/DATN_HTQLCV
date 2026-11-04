@@ -9,7 +9,7 @@ export function ProfileHeader({
   name: string;
   avatarUrl?: string | null;
   unit: string;
-  role: string;
+  role?: string;
 }) {
   return (
     <section className="panel profile-header">
@@ -17,7 +17,7 @@ export function ProfileHeader({
       <div className="profile-heading">
         <h2>{name}</h2>
         <p>{unit}</p>
-        <span className="badge">{role}</span>
+        {role && <span className="badge">{role}</span>}
       </div>
     </section>
   );

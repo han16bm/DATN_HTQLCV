@@ -24,8 +24,18 @@ const login = (username = "minh") =>
 // ANALYTICS_VIEW ở phạm vi hệ thống do backend cấp qua nhóm quyền, không theo role.
 const grantSystemAnalytics = (userId: string) =>
   db.permissionGroups
-    .find((group) => group.features.includes("ANALYTICS_VIEW"))!
+    .find((group) => group.id === "pg-analytics")!
     .memberIds.push(userId);
+// Tài khoản chỉ quản trị: bỏ cờ sysadmin và thu hồi ANALYTICS_VIEW của nhóm ADMINISTRATORS.
+const accountAdminOnly = () =>
+  Object.assign(
+    db.users.find((user) => user.id === "u-admin")!,
+    {
+      isSysAdmin: false,
+      revokedFeatures: ["ANALYTICS_VIEW"],
+    },
+  );
+
 const scope = { projectId: "p-main", from: "2026-10-01", to: "2026-10-23" };
 const waitJob = () => new Promise((resolve) => setTimeout(resolve, 1650));
 describe("analytics snapshots, jobs and alerts over HTTP", () => {
@@ -70,11 +80,16 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
     });
   });
   it("denies an account administrator analytics and project data until ANALYTICS_VIEW is granted", async () => {
+    accountAdminOnly();
     const session = await login("admin");
-    expect(session.user.systemRole).toBe("ADMIN");
+    expect(session.user.isSysAdmin).toBe(false);
     expect(session.permissions).toEqual([
       "USERS_MANAGE",
       "ORGANIZATION_MANAGE",
+      "PERMISSIONS_MANAGE",
+      "AUDIT_VIEW",
+      "SETTINGS_MANAGE",
+      "JOBS_MANAGE",
     ]);
     expect(session.projectAccess).toEqual([]);
     await expect(
@@ -124,6 +139,9 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
         { key: "admin-report-denied" },
       ),
     ).rejects.toMatchObject({ status: 403 });
+    // Chỉ có ANALYTICS_VIEW (không sysadmin, không phải người nhận) thì xem được nhưng không xử lý được cảnh báo
+    const adminUser = db.users.find((user) => user.id === "u-admin")!;
+    adminUser.isSysAdmin = false;
     await expect(
       alertsService.updateAlert(
         "alert-1",
@@ -131,6 +149,7 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
         { version: 1, key: "admin-alert-denied" },
       ),
     ).rejects.toMatchObject({ status: 403 });
+    adminUser.isSysAdmin = true;
     await login("minh");
     await expect(
       analyticsService.getDashboard({ ...query, unitId: "unit-tech" }),
@@ -148,6 +167,10 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
       version: 1,
       status: "ACTIVE",
       parentId: null,
+      createdBy: null,
+      updatedBy: null,
+      createdAt: "2026-10-01T02:00:00.000Z",
+      updatedAt: "2026-10-01T02:00:00.000Z",
       managerId: null,
     });
     const query = { from: scope.from, to: scope.to, unitId: "unit-empty" };

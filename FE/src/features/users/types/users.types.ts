@@ -10,6 +10,10 @@ import type {
   userLockSchema,
 } from "../schemas/user-form.schema";
 import type {
+  updateUserPermissionsSchema,
+  userPermissionsSchema,
+} from "../schemas/user-permissions.schema";
+import type {
   userQuerySchema,
   userRowSchema,
   userSchema,
@@ -45,5 +49,14 @@ export type ResetUserPasswordResult = z.output<
 export type ResetUserPasswordArgs = {
   userId: string;
   payload: ResetUserPasswordInput;
+  version: number;
+};
+export type UserPermissionsDto = z.output<typeof userPermissionsSchema>;
+export type UpdateUserPermissionsInput = z.input<
+  typeof updateUserPermissionsSchema
+>;
+export type UpdateUserPermissionsArgs = {
+  userId: string;
+  payload: UpdateUserPermissionsInput;
   version: number;
 };

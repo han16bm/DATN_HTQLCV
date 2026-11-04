@@ -57,10 +57,16 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
   });
   it("projects history with readable people and only compared fields while preserving internal audit facts", async () => {
     await signIn("admin");
-    const user = await usersService.getUser("u-huy");
-    await usersService.updateUser(
-      user.id,
-      { systemRole: "MANAGER", reason: "Bổ nhiệm quản lý dự án" },
+    const user = await usersService.getUserPermissions("u-huy");
+    await usersService.updateUserPermissions(
+      user.userId,
+      {
+        isSysAdmin: false,
+        groupIds: ["pg-pm"],
+        grantedFeatures: [],
+        revokedFeatures: [],
+        reason: "Bổ nhiệm quản lý dự án",
+      },
       { version: user.version, key: "promote-owner" },
     );
     await signIn("minh");
@@ -115,7 +121,8 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
       "email",
       "avatarUrl",
       "unitId",
-      "systemRole",
+      "isSysAdmin",
+      "groups",
       "status",
       "unit",
     ]);
@@ -186,8 +193,9 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
       "avatarUrl",
       "displayName",
       "email",
+      "groups",
       "id",
-      "systemRole",
+      "isSysAdmin",
       "unit",
       "unitId",
       "username",
@@ -486,11 +494,19 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
     }
   });
   it("does not let an account administrator read projects by role, and read-only analytics access never grants mutations", async () => {
+    Object.assign(
+      db.users.find((user) => user.id === "u-admin")!,
+      {
+        isSysAdmin: false,
+        revokedFeatures: ["ANALYTICS_VIEW"],
+      },
+    );
     await signIn("admin");
     await expect(tasksService.getTask("t-3")).rejects.toMatchObject({
       status: 403,
     });
-    db.permissionGroups[0].memberIds.push("u-admin");
+    // Bỏ thu hồi: ANALYTICS_VIEW của nhóm ADMINISTRATORS có hiệu lực trở lại.
+    db.users.find((user) => user.id === "u-admin")!.revokedFeatures = [];
     await signIn("admin");
     const task = await tasksService.getTask("t-3");
     expect(task.id).toBe("t-3");

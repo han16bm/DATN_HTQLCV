@@ -1,4 +1,5 @@
 "use client";
+import { stampText } from "@/components/ui/record-stamp";
 import { hasPermission } from "@/lib/auth/access";
 
 import { Form } from "@/components/forms/form";
@@ -94,8 +95,14 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
             onPage: (p) => filters.set("page", String(p)),
           }}
           actions
-          widths={[35, 22, 27, 16]}
-          headers={["Thành viên", "Vai trò dự án", "Tư cách", "Hành động"]}
+          widths={[28, 16, 22, 20, 14]}
+          headers={[
+            "Thành viên",
+            "Vai trò dự án",
+            "Tư cách",
+            "Thêm bởi",
+            "Hành động",
+          ]}
           rows={query.data.items.map((m) => [
             <UserBadge
               key="person"
@@ -104,6 +111,12 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
             />,
             label(m.projectRole),
             m.endedAt ? `Đã kết thúc ${dateTime(m.endedAt)}` : "Đang tham gia",
+            <span
+              key="stamp"
+              title={`Cập nhật lần cuối bởi ${stampText(m.updatedBy, m.updatedAt)}`}
+            >
+              {stampText(m.createdBy, m.createdAt)}
+            </span>,
             manage && !m.endedAt && m.projectRole !== "OWNER" && (
               <DropdownMenu.Root key="actions">
                 <DropdownMenu.Trigger asChild>

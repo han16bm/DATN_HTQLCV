@@ -1,4 +1,4 @@
-using Analytics.Api.Filters;
+using Shared.Entities.Authorization;
 using Analytics.Api.Interfaces;
 using Analytics.Api.Models.Queries;
 using Microsoft.AspNetCore.Authorization;

@@ -9,9 +9,9 @@ import {
 } from "@/components/forms/form-field";
 import type { FormOption } from "@/components/forms/form.types";
 import { ReasonForm } from "@/components/forms/reason-form";
-import { StatusField, ButtonLink, Panel } from "@/components/ui/page";
+import { DialogFooter, DialogTabs } from "@/components/ui/entity-dialog";
 import { changedFields } from "@/lib/format";
-import { confirmDiscard } from "@/lib/forms/confirm-discard";
+import type { DialogMode } from "@/lib/forms/use-entity-dialog";
 import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
 import { validationMessage } from "@/lib/forms/validation-message";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,139 +28,163 @@ import { createTeamSchema, updateTeamSchema } from "../schemas/team.schema";
 import type { TeamDto, UnitRow } from "../types/organization.types";
 import { TeamMembersForm } from "./team-members-form";
 
+// Một form cho Thêm/Xem/Sửa nhóm; Xem/Sửa có tab Thông tin và Thành viên.
 export function TeamForm({
+  mode,
   team,
   units,
   people,
   reload,
-  onCreated,
+  onSaved,
+  onCancel,
+  onEdit,
+  onClose,
 }: {
+  mode: DialogMode;
   team?: TeamDto;
   units: UnitRow[];
   people: FormOption[];
   reload?: () => Promise<{ data?: TeamDto }>;
-  onCreated?: (id: string) => void;
+  onSaved: (id: string) => void;
+  onCancel: () => void;
+  onEdit: () => void;
+  onClose: () => void;
 }) {
   const create = useCreateTeamMutation();
   const update = useUpdateTeamMutation();
   const deactivate = useDeactivateTeamMutation();
   const snapshot = useEditSnapshot(team);
-
-  const [mode, setMode] = useState<"info" | "members" | "close" | null>(null);
-  const cancel = async () => {
-    if (!(await confirmDiscard("Bỏ các thay đổi chưa lưu trong nhóm?"))) return;
-    form.reset(defaults);
-    setMode(null);
-  };
+  const [tab, setTab] = useState<"info" | "members">("info");
+  const [closing, setClosing] = useState(false);
   const activeUnits = units.filter((unit) => unit.status === "ACTIVE");
-  const schema = team ? updateTeamSchema.required() : createTeamSchema;
+  const unitOptions = (team ? units : activeUnits).map((unit) => ({
+    value: unit.id,
+    label: unit.name,
+  }));
+  const editing = mode === "edit" && team;
+  const schema = editing ? updateTeamSchema.required() : createTeamSchema;
   type Values = z.input<typeof schema>;
-  const defaults: Values = team
-    ? { name: team.name, unitId: team.unitId, reason: "" }
-    : { name: "", unitId: activeUnits[0]?.id ?? "", memberIds: [] };
   const form = useForm<Values>({
     resolver: zodResolver<Values, unknown, Values>(schema, {
       error: validationMessage,
     }),
-    defaultValues: defaults,
+    defaultValues: team
+      ? {
+          name: team.name,
+          unitId: team.unitId,
+          ...(editing ? { reason: "" } : {}),
+        }
+      : { name: "", unitId: activeUnits[0]?.id ?? "", memberIds: [] },
   });
   const unitId = useWatch({ control: form.control, name: "unitId" });
   const { errors } = form.formState;
-  const names = team
-    ? people
-        .filter((person) => team.memberIds.includes(person.value))
-        .slice(0, 3)
-        .map((person) => person.label)
-    : [];
-  const cancelButton = (
-    <button type="button" onClick={cancel}>
+  const cancel = (
+    <button type="button" onClick={onCancel}>
       Hủy
     </button>
   );
-  const commands = team?.status === "ACTIVE" && mode === null && (
-    <>
-      <button
-        type="button"
-        onClick={() => {
-          snapshot.saved(team);
-          form.reset(defaults);
-          setMode("info");
+  if (closing && team)
+    return (
+      <ReasonForm
+        label="Lý do ngừng sử dụng"
+        cancel={
+          <button type="button" onClick={() => setClosing(false)}>
+            Hủy
+          </button>
+        }
+        submitLabel="Xác nhận ngừng sử dụng"
+        compareFields={[
+          { name: "name", label: "Tên nhóm" },
+          { name: "status", label: "Trạng thái" },
+        ]}
+        onConflictReload={reload ? () => snapshot.load(reload) : undefined}
+        onConflictAccept={snapshot.accept}
+        onSubmit={async (values) => {
+          await deactivate.mutateAsync({
+            teamId: team.id,
+            payload: values,
+            version: snapshot.base!.version,
+          });
+          setClosing(false);
+          toast.success("Đã ngừng sử dụng nhóm.");
         }}
-      >
-        Chỉnh sửa thông tin
+      />
+    );
+  const footer = mode === "view" && team && (
+    <DialogFooter>
+      <button type="button" onClick={onClose}>
+        Đóng
       </button>
-      <button type="button" onClick={() => setMode("members")}>
-        Chọn thành viên
-      </button>
-      <button
-        type="button"
-        className="danger"
-        onClick={() => {
-          snapshot.saved(team);
-          setMode("close");
-        }}
-      >
-        Ngừng sử dụng nhóm
-      </button>
-    </>
+      {team.status === "ACTIVE" && (
+        <>
+          <button
+            type="button"
+            className="danger"
+            onClick={() => {
+              snapshot.saved(team);
+              setClosing(true);
+            }}
+          >
+            Ngừng sử dụng nhóm
+          </button>
+          <button type="button" className="primary" onClick={onEdit}>
+            Chỉnh sửa
+          </button>
+        </>
+      )}
+    </DialogFooter>
   );
   return (
-    <Panel
-      className="record-card"
-      title={team ? team.name : "Thông tin nhóm"}
-      actions={
-        team && (
-          <div className="actions">
-            <StatusField value={team.status} />
-            {commands}
-          </div>
-        )
-      }
-    >
-      {!team || mode === "info" ? (
+    <>
+      {team && (
+        <DialogTabs
+          label="Mục nhóm"
+          value={tab}
+          onChange={setTab}
+          items={[
+            { value: "info", label: "Thông tin" },
+            { value: "members", label: "Thành viên" },
+          ]}
+        />
+      )}
+      {team && tab === "members" ? (
+        <TeamMembersForm
+          team={team}
+          people={people}
+          reload={reload}
+          readOnly={mode === "view"}
+          cancel={cancel}
+          onDone={() => onSaved(team.id)}
+        />
+      ) : (
         <Form
-          compact
           form={form}
-          cancel={
-            team ? (
-              cancelButton
-            ) : (
-              <ButtonLink href="/admin/teams">Hủy</ButtonLink>
-            )
-          }
-          submitLabel={team ? "Lưu thông tin" : "Tạo nhóm"}
+          readOnly={mode === "view"}
+          cancel={cancel}
+          submitLabel={editing ? "Lưu thông tin" : "Tạo nhóm"}
           compareFields={[
             { name: "name", label: "Tên nhóm" },
-            {
-              name: "unitId",
-              label: "Đơn vị",
-              options: activeUnits.map((unit) => ({
-                value: unit.id,
-                label: unit.name,
-              })),
-            },
+            { name: "unitId", label: "Đơn vị", options: unitOptions },
           ]}
           onConflictReload={reload ? () => snapshot.load(reload) : undefined}
           onConflictAccept={snapshot.accept}
           onSubmit={async (values) => {
             if ("reason" in values) {
               const base = snapshot.base!;
-              snapshot.saved(
-                await update.mutateAsync({
-                  teamId: base.id,
-                  payload: {
-                    ...changedFields(base, values, ["name", "unitId"]),
-                    reason: values.reason,
-                  },
-                  version: base.version,
-                }),
-              );
-              setMode(null);
+              await update.mutateAsync({
+                teamId: base.id,
+                payload: {
+                  ...changedFields(base, values, ["name", "unitId"]),
+                  reason: values.reason,
+                },
+                version: base.version,
+              });
               toast.success("Đã lưu nhóm.");
+              onSaved(base.id);
             } else {
               const result = await create.mutateAsync(values);
               toast.success("Đã tạo nhóm.");
-              onCreated?.(result.id);
+              onSaved(result.id);
             }
           }}
         >
@@ -173,10 +197,14 @@ export function TeamForm({
           <FormSelect
             label="Đơn vị"
             required
-            options={activeUnits.map((unit) => ({
-              value: unit.id,
-              label: unit.name,
-            }))}
+            options={unitOptions}
+            hint={
+              team
+                ? team.memberIds.length
+                  ? `${team.memberIds.length} thành viên`
+                  : "Chưa có thành viên"
+                : undefined
+            }
             {...form.register("unitId", {
               onChange: !team
                 ? () => form.setValue("memberIds", [], { shouldDirty: true })
@@ -184,14 +212,15 @@ export function TeamForm({
             })}
             error={errors.unitId}
           />
-          {team ? (
+          {editing && (
             <FormTextarea
               label="Lý do thay đổi"
               required
               {...form.register("reason")}
               error={form.getFieldState("reason", form.formState).error}
             />
-          ) : (
+          )}
+          {!team && (
             <Controller
               name="memberIds"
               control={form.control}
@@ -208,61 +237,8 @@ export function TeamForm({
             />
           )}
         </Form>
-      ) : mode === "members" ? (
-        <TeamMembersForm
-          team={team}
-          people={people}
-          reload={reload}
-          cancel={cancelButton}
-          onDone={() => setMode(null)}
-        />
-      ) : mode === "close" ? (
-        <ReasonForm
-          label="Lý do ngừng sử dụng"
-          cancel={cancelButton}
-          submitLabel="Xác nhận ngừng sử dụng"
-          compareFields={[
-            { name: "name", label: "Tên nhóm" },
-            { name: "status", label: "Trạng thái" },
-          ]}
-          onConflictReload={reload ? () => snapshot.load(reload) : undefined}
-          onConflictAccept={snapshot.accept}
-          onSubmit={async (values) => {
-            await deactivate.mutateAsync({
-              teamId: team.id,
-              payload: values,
-              version: snapshot.base!.version,
-            });
-            setMode(null);
-            toast.success("Đã ngừng sử dụng nhóm.");
-          }}
-        />
-      ) : (
-        <>
-          <dl className="record-details">
-            <div>
-              <dt>Đơn vị</dt>
-              <dd>
-                {units.find((unit) => unit.id === team.unitId)?.name ??
-                  "Chưa tải được thông tin đơn vị"}
-              </dd>
-            </div>
-            <div>
-              <dt>Số thành viên</dt>
-              <dd>{team.memberIds.length}</dd>
-            </div>
-          </dl>
-          <p className="small muted member-summary">
-            {names.join(", ") ||
-              (team.memberIds.length
-                ? `${team.memberIds.length} thành viên`
-                : "Chưa có thành viên")}
-            {names.length && team.memberIds.length > names.length
-              ? ` và ${team.memberIds.length - names.length} thành viên khác`
-              : ""}
-          </p>
-        </>
       )}
-    </Panel>
+      {footer}
+    </>
   );
 }

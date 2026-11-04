@@ -1,39 +1,39 @@
 "use client";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import {
-  Badge,
-  ButtonLink,
-  DataTable,
-  DetailLink,
-  PageHeader,
-} from "@/components/ui/page";
+import { Badge, ButtonLink, DataTable, PageHeader } from "@/components/ui/page";
+import { RowDialogLinks } from "@/components/ui/entity-dialog";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { useListUnitsQuery } from "@/features/organization/hooks/use-organization-queries";
+import { useListPermissionGroupsQuery } from "@/features/permissions/hooks/use-permissions-queries";
+import { useEntityDialog } from "@/lib/forms/use-entity-dialog";
 import { label } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { useListUsersQuery } from "../hooks/use-users-queries";
-import { systemRoleSchema, userStatusSchema } from "../schemas/user.schema";
+import { UserDialog } from "./user-dialog";
+import { userStatusSchema } from "../schemas/user.schema";
 
 export function UsersPage() {
   const filter = useUrlFilters();
   const status = userStatusSchema.safeParse(filter.get("status"));
-  const role = systemRoleSchema.safeParse(filter.get("systemRole"));
+  const dialog = useEntityDialog();
   const query = useListUsersQuery({
     page: filter.page,
     q: filter.get("q") || undefined,
     status: status.success ? status.data : undefined,
-    systemRole: role.success ? role.data : undefined,
+    groupId: filter.get("groupId") || undefined,
     unitId: filter.get("unitId") || undefined,
   });
   const units = useListUnitsQuery({ pageSize: 100 });
+  // GET /permission-groups mở cho USERS_MANAGE để lọc theo nhóm (ADMIN_MODULES 7.1).
+  const groups = useListPermissionGroupsQuery({ pageSize: 100 });
   return (
     <>
       <PageHeader
         title="Tài khoản người dùng"
         actions={
-          <ButtonLink href="/admin/users/new" primary>
+          <ButtonLink href={dialog.href("create")} primary>
             Cấp tài khoản
           </ButtonLink>
         }
@@ -76,20 +76,22 @@ export function UsersPage() {
             ))}
           </select>
         </label>
-        <label>
-          Vai trò
-          <select
-            value={filter.get("systemRole")}
-            onChange={(e) => filter.set("systemRole", e.target.value)}
-          >
-            <option value="">Tất cả vai trò</option>
-            {systemRoleSchema.options.map((v) => (
-              <option key={v} value={v}>
-                {label(v)}
-              </option>
-            ))}
-          </select>
-        </label>
+        {groups.data && (
+          <label>
+            Nhóm quyền
+            <select
+              value={filter.get("groupId")}
+              onChange={(e) => filter.set("groupId", e.target.value)}
+            >
+              <option value="">Tất cả nhóm</option>
+              {groups.data.items.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </section>
       {units.isError && (
         <QueryErrorState error={units.error} retry={units.refetch} />
@@ -105,10 +107,10 @@ export function UsersPage() {
             onPage: (p) => filter.set("page", String(p)),
           }}
           actions
-          widths={[36, 17, 22, 15, 10]}
+          widths={[32, 24, 19, 15, 10]}
           headers={[
             "Người dùng",
-            "Vai trò hệ thống",
+            "Nhóm quyền",
             "Đơn vị",
             "Trạng thái",
             "Hành động",
@@ -121,17 +123,35 @@ export function UsersPage() {
               href={`/users/${encodeURIComponent(u.id)}`}
               detail={`${u.email} · ${u.username}`}
             />,
-            label(u.systemRole),
+            <span key="groups" className="tag-list">
+              {u.isSysAdmin && <span className="badge active">Sysadmin</span>}
+              {u.groups.slice(0, 2).map((g) => (
+                <span key={g.id} className="badge">
+                  {g.label}
+                </span>
+              ))}
+              {u.groups.length > 2 && (
+                <span
+                  className="small muted"
+                  title={u.groups.map((g) => g.label).join(", ")}
+                >
+                  +{u.groups.length - 2}
+                </span>
+              )}
+              {!u.isSysAdmin && !u.groups.length && "—"}
+            </span>,
             u.unit.name,
             <Badge key="status" value={u.status} />,
-            <DetailLink
+            <RowDialogLinks
               key="detail"
-              href={`/admin/users/${u.id}`}
-              label={`Xem hồ sơ ${u.displayName}`}
+              name={`hồ sơ ${u.displayName}`}
+              view={dialog.href("view", u.id)}
+              edit={dialog.href("edit", u.id)}
             />,
           ])}
         />
       )}
+      <UserDialog />
     </>
   );
 }

@@ -7,6 +7,7 @@ import {
 } from "@/services/api-client";
 import { profileSchema } from "../schemas/profile.schema";
 import { resetUserPasswordResultSchema } from "../schemas/user-form.schema";
+import { userPermissionsSchema } from "../schemas/user-permissions.schema";
 import { userRowSchema, userSchema } from "../schemas/user.schema";
 import type {
   CreateUserInput,
@@ -16,8 +17,10 @@ import type {
   ResetUserPasswordResult,
   UnlockUserInput,
   UpdateUserInput,
+  UpdateUserPermissionsInput,
   UserDto,
   UserList,
+  UserPermissionsDto,
   UserQuery,
 } from "../types/users.types";
 
@@ -103,6 +106,27 @@ export const usersService = {
       `/users/${encodeURIComponent(userId)}/reset-password`,
       payload,
       { ...options, schema: resetUserPasswordResultSchema },
+    );
+    return response.data;
+  },
+
+  async getUserPermissions(userId: string, options: RequestOptions = {}) {
+    const response = await apiClient.get<UserPermissionsDto>(
+      `/users/${encodeURIComponent(userId)}/permissions`,
+      { ...options, schema: userPermissionsSchema },
+    );
+    return response.data;
+  },
+
+  async updateUserPermissions(
+    userId: string,
+    payload: UpdateUserPermissionsInput,
+    options: VersionOptions,
+  ) {
+    const response = await apiClient.put<UserPermissionsDto>(
+      `/users/${encodeURIComponent(userId)}/permissions`,
+      payload,
+      { ...options, schema: userPermissionsSchema },
     );
     return response.data;
   },

@@ -24,12 +24,13 @@ public class UnitService(ApplicationDbContext context, IHttpContextAccessor http
             q = q.Where(u => u.Status == status);
 
         var paged = await q.OrderBy(u => u.Name).ToPagedResultAsync(query);
-        return new PagedResult<UnitDto> { Items = paged.Items.Select(ToDto).ToList(), Page = paged.Page, PageSize = paged.PageSize, Total = paged.Total };
+        var names = await LoadDisplayNamesAsync(paged.Items.SelectMany(x => new[] { x.CreatedBy, x.UpdatedBy }));
+        return new PagedResult<UnitDto> { Items = paged.Items.Select(x => ToDto(x, names)).ToList(), Page = paged.Page, PageSize = paged.PageSize, Total = paged.Total };
     }
 
     public async Task<UnitDto> GetAsync(string unitId)
     {
-        return ToDto(await FindAsync(unitId));
+        return await ToDtoAsync(await FindAsync(unitId));
     }
 
     public async Task<UnitDto> CreateAsync(UnitCreateRequest request)
@@ -52,7 +53,7 @@ public class UnitService(ApplicationDbContext context, IHttpContextAccessor http
         await context.Units.AddAsync(unit);
         await WriteAuditLog(unit.Id, "CREATE", null, new { unit.Name });
         await context.SaveChangesAsync();
-        return ToDto(unit);
+        return await ToDtoAsync(unit);
     }
 
     public async Task<UnitDto> UpdateAsync(string unitId, UnitPatchRequest request, int ifMatchVersion)
@@ -73,7 +74,7 @@ public class UnitService(ApplicationDbContext context, IHttpContextAccessor http
 
         await WriteAuditLog(unit.Id, "UPDATE", before, new { unit.Name, unit.ParentId, unit.ManagerId }, request.Reason);
         await context.SaveChangesAsync();
-        return ToDto(unit);
+        return await ToDtoAsync(unit);
     }
 
     public async Task<UnitDto> DeactivateAsync(string unitId, ReasonRequest request, int ifMatchVersion)
@@ -90,7 +91,7 @@ public class UnitService(ApplicationDbContext context, IHttpContextAccessor http
 
         await WriteAuditLog(unit.Id, "DEACTIVATE", null, null, request.Reason);
         await context.SaveChangesAsync();
-        return ToDto(unit);
+        return await ToDtoAsync(unit);
     }
 
     private async Task<Unit> FindAsync(string unitId)
@@ -99,14 +100,15 @@ public class UnitService(ApplicationDbContext context, IHttpContextAccessor http
             ?? throw new NotFoundException("Không tìm thấy đơn vị.");
     }
 
-    private static void CheckVersion(int current, int ifMatch)
+    private async Task<UnitDto> ToDtoAsync(Unit u)
     {
-        if (ifMatch <= 0) throw new PreconditionRequiredException("Thiếu If-Match.");
-        if (current != ifMatch) throw new PreconditionFailedException("Dữ liệu đã bị thay đổi bởi người khác.");
+        return ToDto(u, await LoadDisplayNamesAsync([u.CreatedBy, u.UpdatedBy]));
     }
 
-    private static UnitDto ToDto(Unit u)
+    private static UnitDto ToDto(Unit u, Dictionary<string, string> names)
     {
-        return new(u.Id, u.Version, u.CreatedAt, u.UpdatedAt, u.Name, u.ParentId, u.ManagerId, u.Status.ToString().ToUpperInvariant());
+        return new(
+            u.Id, u.Version, u.CreatedAt, u.UpdatedAt, u.Name, u.ParentId, u.ManagerId, u.Status.ToString().ToUpperInvariant(),
+            PersonRef(u.CreatedBy, names), PersonRef(u.UpdatedBy, names));
     }
 }

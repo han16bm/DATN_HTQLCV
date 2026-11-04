@@ -1,3 +1,4 @@
+import { alertsService } from "@/features/alerts/api/alerts.service";
 import { authService } from "@/features/auth/api/auth.service";
 import { projectMembersService } from "@/features/project-members/api/project-members.service";
 import { projectsService } from "@/features/projects/api/projects.service";
@@ -148,7 +149,6 @@ describe("S08–S14 projects and memberships", () => {
         displayName: "Thành viên mới",
         email: "project.user@example.test",
         unitId: "unit-product",
-        systemRole: "EMPLOYEE",
         initialPassword: "Start@12345",
       },
       {
@@ -206,16 +206,19 @@ describe("S08–S14 projects and memberships", () => {
       tasksService.createTask("p-main", task, { key: key() }),
     ).rejects.toMatchObject({ status: 403 });
     await login("admin");
-    const manager = await usersService.updateUser(
+    await usersService.updateUserPermissions(
       user.id,
       {
-        systemRole: "MANAGER",
+        isSysAdmin: false,
+        groupIds: ["pg-pm"],
+        grantedFeatures: [],
+        revokedFeatures: [],
         reason: "Bổ nhiệm Leader",
       },
       { version: user.version, key: key() },
     );
     await signInMember();
-    // A system role alone never grants management of every project.
+    // PROJECT_CREATE alone never grants management of every project.
     await expect(
       tasksService.createTask("p-main", task, { key: key() }),
     ).rejects.toMatchObject({ status: 403 });
@@ -252,14 +255,6 @@ describe("S08–S14 projects and memberships", () => {
     await expect(
       tasksService.createTask("p-other", task, { key: key() }),
     ).rejects.toMatchObject({ status: 403 });
-    await login("admin");
-    await expect(
-      usersService.updateUser(
-        user.id,
-        { systemRole: "EMPLOYEE", reason: "Chưa bàn giao" },
-        { version: manager.version, key: key() },
-      ),
-    ).rejects.toMatchObject({ code: "HANDOVER_REQUIRED" });
     await login("minh");
     member = await projectMembersService.updateProjectMemberRole(
       "p-main",
@@ -320,5 +315,69 @@ describe("S08–S14 projects and memberships", () => {
     await expect(projectsService.getProject("p-main")).rejects.toMatchObject({
       status: 403,
     });
+  });
+});
+
+describe("created/updated stamps on project, membership, task and alert", () => {
+  const admin = { id: "u-admin", label: "Quản trị hệ thống" };
+  const minh = { id: "u-pm", label: "Nguyễn Minh" };
+  const lan = { id: "u-lan", label: "Trần Lan" };
+  it("records the creator separately from the owner and moves updatedBy to the editor", async () => {
+    await login("admin");
+    let project = await projectsService.createProject(newPlan(), {
+      key: key(),
+    });
+    expect(project).toMatchObject({
+      ownerId: "u-pm",
+      createdBy: admin,
+      updatedBy: admin,
+    });
+    await login("minh");
+    project = await projectsService.updateProject(
+      project.id,
+      { name: "Dự án đã đổi tên", changeReason: "Đổi tên" },
+      { version: project.version, key: key() },
+    );
+    expect(project).toMatchObject({ createdBy: admin, updatedBy: minh });
+    const seeded = await projectsService.getProject("p-main");
+    expect(seeded).toMatchObject({ createdBy: minh, updatedBy: minh });
+    const owner = (
+      await projectMembersService.listProjectMembers(project.id, {})
+    ).items[0];
+    // Tư cách OWNER sinh khi admin tạo dự án nên người thêm là admin.
+    expect(owner).toMatchObject({ projectRole: "OWNER", createdBy: admin });
+    expect(owner.createdAt).toBeTruthy();
+    const seededMembers = await projectMembersService.listProjectMembers(
+      "p-main",
+      {},
+    );
+    expect(seededMembers.items.every((m) => m.createdBy?.id === "u-pm")).toBe(
+      true,
+    );
+  });
+  it("stamps task creation by the manager and status changes by the assignee", async () => {
+    let task = await tasksService.getTask("t-2");
+    expect(task).toMatchObject({ createdBy: minh, updatedBy: minh });
+    await login("lan");
+    task = await tasksService.startTask(task.id, {
+      version: task.version,
+      key: key(),
+    });
+    expect(task).toMatchObject({ createdBy: minh, updatedBy: lan });
+    // Việc đã bắt đầu trong seed: người sửa cuối là người nhận.
+    expect(await tasksService.getTask("t-3")).toMatchObject({
+      updatedBy: lan,
+    });
+  });
+  it("labels system-created alerts as Hệ thống until a person handles them", async () => {
+    let alert = await alertsService.getAlert("alert-1");
+    const system = { id: "SYSTEM", label: "Hệ thống" };
+    expect(alert).toMatchObject({ createdBy: system, updatedBy: system });
+    alert = await alertsService.updateAlert(
+      alert.id,
+      { status: "READ" },
+      { version: alert.version, key: key() },
+    );
+    expect(alert).toMatchObject({ createdBy: system, updatedBy: minh });
   });
 });

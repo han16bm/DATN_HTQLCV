@@ -9,11 +9,6 @@
   },
   "password": "Mock@12345",
   "permissionPolicy": {
-    "system": {
-      "ADMIN": ["USERS_MANAGE", "ORGANIZATION_MANAGE"],
-      "MANAGER": ["PROJECT_CREATE"],
-      "EMPLOYEE": []
-    },
     "project": {
       "OWNER": [
         "PROJECT_MANAGE",
@@ -32,14 +27,450 @@
         "ALERTS_MANAGE"
       ],
       "MEMBER": []
-    },
-    "groups": [
-      {
-        "features": ["ANALYTICS_VIEW"],
-        "memberIds": []
-      }
-    ]
+    }
   },
+  "currentIp": "127.0.0.1",
+  "features": [
+    {
+      "code": "ADMIN",
+      "version": 1,
+      "name": "Quản trị hệ thống",
+      "description": null,
+      "parentCode": null,
+      "isGroup": true,
+      "scope": null,
+      "path": null,
+      "icon": null,
+      "sortOrder": 10,
+      "isActive": true,
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "updatedBy": null
+    },
+    {
+      "code": "USERS_MANAGE",
+      "version": 1,
+      "name": "Quản lý người dùng",
+      "description": null,
+      "parentCode": "ADMIN",
+      "isGroup": false,
+      "scope": "SYSTEM",
+      "path": "/admin/users",
+      "icon": null,
+      "sortOrder": 11,
+      "isActive": true,
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "updatedBy": null
+    },
+    {
+      "code": "ORGANIZATION_MANAGE",
+      "version": 1,
+      "name": "Quản lý đơn vị và team",
+      "description": null,
+      "parentCode": "ADMIN",
+      "isGroup": false,
+      "scope": "SYSTEM",
+      "path": "/admin/organization",
+      "icon": null,
+      "sortOrder": 12,
+      "isActive": true,
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "updatedBy": null
+    },
+    {
+      "code": "PERMISSIONS_MANAGE",
+      "version": 1,
+      "name": "Quản lý nhóm quyền và phân quyền",
+      "description": null,
+      "parentCode": "ADMIN",
+      "isGroup": false,
+      "scope": "SYSTEM",
+      "path": "/admin/permission-groups",
+      "icon": null,
+      "sortOrder": 13,
+      "isActive": true,
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "updatedBy": null
+    },
+    {
+      "code": "AUDIT_VIEW",
+      "version": 1,
+      "name": "Xem nhật ký hệ thống",
+      "description": null,
+      "parentCode": "ADMIN",
+      "isGroup": false,
+      "scope": "SYSTEM",
+      "path": "/admin/audit-logs",
+      "icon": null,
+      "sortOrder": 14,
+      "isActive": true,
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "updatedBy": null
+    },
+    {
+      "code": "SETTINGS_MANAGE",
+      "version": 1,
+      "name": "Cấu hình hệ thống và IP whitelist",
+      "description": null,
+      "parentCode": "ADMIN",
+      "isGroup": false,
+      "scope": "SYSTEM",
+      "path": "/admin/settings",
+      "icon": null,
+      "sortOrder": 15,
+      "isActive": true,
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "updatedBy": null
+    },
+    {
+      "code": "JOBS_MANAGE",
+      "version": 1,
+      "name": "Giám sát và điều khiển job nền",
+      "description": null,
+      "parentCode": "ADMIN",
+      "isGroup": false,
+      "scope": "SYSTEM",
+      "path": "/admin/jobs",
+      "icon": null,
+      "sortOrder": 16,
+      "isActive": true,
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "updatedBy": null
+    },
+    {
+      "code": "WORK",
+      "version": 1,
+      "name": "Dự án và công việc",
+      "description": null,
+      "parentCode": null,
+      "isGroup": true,
+      "scope": null,
+      "path": null,
+      "icon": null,
+      "sortOrder": 20,
+      "isActive": true,
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "updatedBy": null
+    },
+    {
+      "code": "PROJECT_CREATE",
+      "version": 1,
+      "name": "Tạo dự án và giữ vai trò quản lý dự án",
+      "description": null,
+      "parentCode": "WORK",
+      "isGroup": false,
+      "scope": "SYSTEM",
+      "path": "/projects/new",
+      "icon": null,
+      "sortOrder": 21,
+      "isActive": true,
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "updatedBy": null
+    },
+    {
+      "code": "ANALYTICS",
+      "version": 1,
+      "name": "Phân tích",
+      "description": null,
+      "parentCode": null,
+      "isGroup": true,
+      "scope": null,
+      "path": null,
+      "icon": null,
+      "sortOrder": 30,
+      "isActive": true,
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "updatedBy": null
+    },
+    {
+      "code": "ANALYTICS_VIEW",
+      "version": 1,
+      "name": "Xem phân tích mọi dự án",
+      "description": null,
+      "parentCode": "ANALYTICS",
+      "isGroup": false,
+      "scope": "SYSTEM",
+      "path": "/dashboard",
+      "icon": null,
+      "sortOrder": 31,
+      "isActive": true,
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "updatedBy": null
+    }
+  ],
+  "permissionGroups": [
+    {
+      "id": "pg-admin",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "code": "ADMINISTRATORS",
+      "name": "Quản trị viên",
+      "description": "Nhóm hệ thống cho quản trị viên.",
+      "features": [
+        "USERS_MANAGE",
+        "ORGANIZATION_MANAGE",
+        "PERMISSIONS_MANAGE",
+        "AUDIT_VIEW",
+        "SETTINGS_MANAGE",
+        "JOBS_MANAGE",
+        "ANALYTICS_VIEW"
+      ],
+      "memberIds": ["u-admin"],
+      "status": "ACTIVE",
+      "isSystem": true,
+      "createdBy": "u-admin",
+      "updatedBy": "u-admin"
+    },
+    {
+      "id": "pg-pm",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "code": "PROJECT_MANAGERS",
+      "name": "Quản lý dự án (Leader/PM)",
+      "description": "Nhóm hệ thống cho Leader/PM.",
+      "features": ["PROJECT_CREATE"],
+      "memberIds": ["u-pm", "u-other"],
+      "status": "ACTIVE",
+      "isSystem": true,
+      "createdBy": "u-admin",
+      "updatedBy": "u-admin"
+    },
+    {
+      "id": "pg-analytics",
+      "version": 1,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "code": "ANALYTICS_VIEWERS",
+      "name": "Xem phân tích toàn hệ thống",
+      "description": "Xem phân tích mọi dự án ở chế độ chỉ xem.",
+      "features": ["ANALYTICS_VIEW"],
+      "memberIds": [],
+      "status": "ACTIVE",
+      "isSystem": false,
+      "createdBy": "u-admin",
+      "updatedBy": "u-admin"
+    }
+  ],
+  "settings": [
+    {
+      "id": "cfg-1",
+      "version": 1,
+      "key": "Jwt:Issuer",
+      "serviceType": "Global",
+      "group": "JWT",
+      "name": "Đơn vị phát hành token",
+      "description": "Issuer của access token, mọi service và Gateway kiểm tra.",
+      "dataType": "STRING",
+      "value": "datn-identity",
+      "isActive": true,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "updatedBy": null,
+      "createdBy": null
+    },
+    {
+      "id": "cfg-2",
+      "version": 1,
+      "key": "Jwt:Audience",
+      "serviceType": "Global",
+      "group": "JWT",
+      "name": "Đối tượng nhận token",
+      "description": "Audience của access token.",
+      "dataType": "STRING",
+      "value": "datn-clients",
+      "isActive": true,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "updatedBy": null,
+      "createdBy": null
+    },
+    {
+      "id": "cfg-3",
+      "version": 1,
+      "key": "Jwt:AccessTokenHours",
+      "serviceType": "Identity.Api",
+      "group": "JWT",
+      "name": "Thời hạn phiên đăng nhập (giờ)",
+      "description": "Thời gian hiệu lực của access token.",
+      "dataType": "INT",
+      "value": "8",
+      "isActive": true,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "updatedBy": null,
+      "createdBy": null
+    },
+    {
+      "id": "cfg-4",
+      "version": 1,
+      "key": "Auth:MaxFailedAttempts",
+      "serviceType": "Identity.Api",
+      "group": "AUTH",
+      "name": "Số lần đăng nhập sai tối đa",
+      "description": "Vượt quá số lần này tài khoản bị khóa tạm thời.",
+      "dataType": "INT",
+      "value": "5",
+      "isActive": true,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "updatedBy": null,
+      "createdBy": null
+    },
+    {
+      "id": "cfg-5",
+      "version": 1,
+      "key": "Security:AdminIpWhitelistEnabled",
+      "serviceType": "Global",
+      "group": "SECURITY",
+      "name": "Bật IP whitelist khu quản trị",
+      "description": "Chỉ cho phép truy cập khu quản trị từ các địa chỉ IP trong danh sách.",
+      "dataType": "BOOL",
+      "value": "false",
+      "isActive": true,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "updatedBy": null,
+      "createdBy": null
+    },
+    {
+      "id": "cfg-6",
+      "version": 1,
+      "key": "Serilog:MinimumLevel",
+      "serviceType": "Global",
+      "group": "LOGGING",
+      "name": "Mức ghi log tối thiểu",
+      "description": "Mức log thấp nhất được ghi.",
+      "dataType": "STRING",
+      "value": "Information",
+      "isActive": true,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "updatedBy": null,
+      "createdBy": null
+    }
+  ],
+  "configPolicy": {
+    "forbiddenKey": "(^ConnectionStrings:|password|secret|signingkey|apikey|privatekey)",
+    "forbiddenPrefixes": ["CentralConfig:", "Kestrel:"],
+    "catalog": {
+      "Jwt:Issuer": {
+        "dataType": "STRING",
+        "requiresRestart": true
+      },
+      "Jwt:Audience": {
+        "dataType": "STRING",
+        "requiresRestart": true
+      },
+      "Jwt:AccessTokenHours": {
+        "dataType": "INT",
+        "minValue": 1,
+        "maxValue": 24
+      },
+      "Auth:MaxFailedAttempts": {
+        "dataType": "INT",
+        "minValue": 3,
+        "maxValue": 20
+      },
+      "Security:AdminIpWhitelistEnabled": {
+        "dataType": "BOOL"
+      },
+      "Serilog:MinimumLevel": {
+        "dataType": "STRING",
+        "requiresRestart": true,
+        "allowedValues": [
+          "Verbose",
+          "Debug",
+          "Information",
+          "Warning",
+          "Error",
+          "Fatal"
+        ]
+      }
+    }
+  },
+  "ipWhitelist": [
+    {
+      "id": "ip-local",
+      "version": 1,
+      "cidr": "127.0.0.1",
+      "description": "Máy quản trị nội bộ",
+      "isActive": true,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "createdBy": "u-admin",
+      "updatedBy": "u-admin"
+    },
+    {
+      "id": "ip-office",
+      "version": 1,
+      "cidr": "10.0.0.0/24",
+      "description": "Mạng văn phòng",
+      "isActive": false,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "createdBy": "u-admin",
+      "updatedBy": "u-admin"
+    }
+  ],
+  "backgroundJobs": [
+    {
+      "code": "ALERT_GENERATION",
+      "version": 1,
+      "name": "Sinh cảnh báo tự động",
+      "description": "Quét công việc quá hạn và chờ nghiệm thu lâu để sinh cảnh báo.",
+      "isEnabled": true,
+      "intervalMinutes": 15,
+      "lastRunAt": "2026-10-23T09:45:00.000Z",
+      "nextRunAt": "2026-10-23T10:00:00.000Z",
+      "lastStatus": "SUCCEEDED",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "updatedBy": null
+    }
+  ],
+  "jobRuns": [
+    {
+      "id": "run-1",
+      "jobCode": "ALERT_GENERATION",
+      "startedAt": "2026-10-23T09:15:00.000Z",
+      "finishedAt": "2026-10-23T09:15:02.000Z",
+      "status": "FAILED",
+      "trigger": "SCHEDULE",
+      "triggeredBy": null,
+      "summary": null,
+      "error": "Mất kết nối cơ sở dữ liệu khi đọc công việc."
+    },
+    {
+      "id": "run-2",
+      "jobCode": "ALERT_GENERATION",
+      "startedAt": "2026-10-23T09:30:00.000Z",
+      "finishedAt": "2026-10-23T09:30:01.200Z",
+      "status": "SUCCEEDED",
+      "trigger": "SCHEDULE",
+      "triggeredBy": null,
+      "summary": {
+        "created": 1,
+        "updated": 0,
+        "deactivated": 0
+      },
+      "error": null
+    },
+    {
+      "id": "run-3",
+      "jobCode": "ALERT_GENERATION",
+      "startedAt": "2026-10-23T09:45:00.000Z",
+      "finishedAt": "2026-10-23T09:45:00.800Z",
+      "status": "SUCCEEDED",
+      "trigger": "SCHEDULE",
+      "triggeredBy": null,
+      "summary": {
+        "created": 0,
+        "updated": 0,
+        "deactivated": 0
+      },
+      "error": null
+    }
+  ],
   "metricFormulas": {
     "K01": "Số công việc được theo dõi, không tính công việc đã hủy.",
     "K02": "Số công việc được nghiệm thu hoàn thành trong khoảng thời gian đã chọn.",
@@ -78,8 +509,13 @@
       "displayName": "Quản trị hệ thống",
       "email": "admin@example.test",
       "unitId": "unit-product",
-      "systemRole": "ADMIN",
-      "status": "ACTIVE"
+      "isSysAdmin": true,
+      "grantedFeatures": [],
+      "revokedFeatures": [],
+      "status": "ACTIVE",
+      "createdBy": "u-admin",
+      "updatedBy": "u-admin",
+      "createdAt": "2026-10-01T02:00:00.000Z"
     },
     {
       "id": "u-pm",
@@ -89,8 +525,13 @@
       "displayName": "Nguyễn Minh",
       "email": "minh@example.test",
       "unitId": "unit-product",
-      "systemRole": "MANAGER",
-      "status": "ACTIVE"
+      "isSysAdmin": false,
+      "grantedFeatures": [],
+      "revokedFeatures": [],
+      "status": "ACTIVE",
+      "createdBy": "u-admin",
+      "updatedBy": "u-admin",
+      "createdAt": "2026-10-01T02:00:00.000Z"
     },
     {
       "id": "u-lan",
@@ -100,8 +541,13 @@
       "displayName": "Trần Lan",
       "email": "lan@example.test",
       "unitId": "unit-product",
-      "systemRole": "EMPLOYEE",
-      "status": "ACTIVE"
+      "isSysAdmin": false,
+      "grantedFeatures": [],
+      "revokedFeatures": [],
+      "status": "ACTIVE",
+      "createdBy": "u-admin",
+      "updatedBy": "u-admin",
+      "createdAt": "2026-10-01T02:00:00.000Z"
     },
     {
       "id": "u-huy",
@@ -111,8 +557,13 @@
       "displayName": "Nguyễn Huy",
       "email": "huy@example.test",
       "unitId": "unit-product",
-      "systemRole": "EMPLOYEE",
-      "status": "ACTIVE"
+      "isSysAdmin": false,
+      "grantedFeatures": [],
+      "revokedFeatures": [],
+      "status": "ACTIVE",
+      "createdBy": "u-admin",
+      "updatedBy": "u-admin",
+      "createdAt": "2026-10-01T02:00:00.000Z"
     },
     {
       "id": "u-other",
@@ -122,8 +573,13 @@
       "displayName": "Người dùng dự án khác",
       "email": "other@example.test",
       "unitId": "unit-tech",
-      "systemRole": "MANAGER",
-      "status": "ACTIVE"
+      "isSysAdmin": false,
+      "grantedFeatures": [],
+      "revokedFeatures": [],
+      "status": "ACTIVE",
+      "createdBy": "u-admin",
+      "updatedBy": "u-admin",
+      "createdAt": "2026-10-01T02:00:00.000Z"
     },
     {
       "id": "u-locked",
@@ -133,8 +589,13 @@
       "displayName": "Tài khoản đã khóa",
       "email": "locked@example.test",
       "unitId": "unit-product",
-      "systemRole": "EMPLOYEE",
-      "status": "LOCKED"
+      "isSysAdmin": false,
+      "grantedFeatures": [],
+      "revokedFeatures": [],
+      "status": "LOCKED",
+      "createdBy": "u-admin",
+      "updatedBy": "u-admin",
+      "createdAt": "2026-10-01T02:00:00.000Z"
     }
   ],
   "units": [
@@ -144,7 +605,11 @@
       "name": "Phòng sản phẩm",
       "parentId": null,
       "managerId": "u-pm",
-      "status": "ACTIVE"
+      "status": "ACTIVE",
+      "createdBy": "u-admin",
+      "updatedBy": "u-admin",
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z"
     },
     {
       "id": "unit-tech",
@@ -152,7 +617,11 @@
       "name": "Phòng kỹ thuật",
       "parentId": null,
       "managerId": "u-other",
-      "status": "ACTIVE"
+      "status": "ACTIVE",
+      "createdBy": "u-admin",
+      "updatedBy": "u-admin",
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z"
     }
   ],
   "teams": [
@@ -162,7 +631,11 @@
       "name": "Nhóm phát triển",
       "unitId": "unit-product",
       "memberIds": ["u-lan", "u-huy"],
-      "status": "ACTIVE"
+      "status": "ACTIVE",
+      "createdBy": "u-admin",
+      "updatedBy": "u-admin",
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z"
     }
   ],
   "projects": [
@@ -176,7 +649,11 @@
       "ownerId": "u-pm",
       "startDate": "2026-10-01",
       "dueAt": "2026-11-30T10:00:00.000Z",
-      "status": "ACTIVE"
+      "status": "ACTIVE",
+      "createdBy": "u-pm",
+      "updatedBy": "u-pm",
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z"
     },
     {
       "id": "p-other",
@@ -188,7 +665,11 @@
       "ownerId": "u-other",
       "startDate": "2026-10-01",
       "dueAt": "2026-12-30T10:00:00.000Z",
-      "status": "ACTIVE"
+      "status": "ACTIVE",
+      "createdBy": "u-other",
+      "updatedBy": "u-other",
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z"
     },
     {
       "id": "p-planned",
@@ -200,7 +681,11 @@
       "ownerId": "u-pm",
       "startDate": "2026-11-01",
       "dueAt": "2026-12-31T10:00:00.000Z",
-      "status": "PLANNED"
+      "status": "PLANNED",
+      "createdBy": "u-pm",
+      "updatedBy": "u-pm",
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z"
     }
   ],
   "members": [
@@ -210,7 +695,11 @@
       "projectId": "p-main",
       "userId": "u-pm",
       "projectRole": "OWNER",
-      "endedAt": null
+      "endedAt": null,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "createdBy": "u-pm",
+      "updatedBy": "u-pm"
     },
     {
       "id": "m-lan",
@@ -218,7 +707,11 @@
       "projectId": "p-main",
       "userId": "u-lan",
       "projectRole": "MEMBER",
-      "endedAt": null
+      "endedAt": null,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "createdBy": "u-pm",
+      "updatedBy": "u-pm"
     },
     {
       "id": "m-huy",
@@ -226,7 +719,11 @@
       "projectId": "p-main",
       "userId": "u-huy",
       "projectRole": "MEMBER",
-      "endedAt": null
+      "endedAt": null,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "createdBy": "u-pm",
+      "updatedBy": "u-pm"
     },
     {
       "id": "m-other",
@@ -234,7 +731,11 @@
       "projectId": "p-other",
       "userId": "u-other",
       "projectRole": "OWNER",
-      "endedAt": null
+      "endedAt": null,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "createdBy": "u-other",
+      "updatedBy": "u-other"
     },
     {
       "id": "m-pm-planned",
@@ -242,7 +743,11 @@
       "projectId": "p-planned",
       "userId": "u-pm",
       "projectRole": "OWNER",
-      "endedAt": null
+      "endedAt": null,
+      "createdAt": "2026-10-01T02:00:00.000Z",
+      "updatedAt": "2026-10-01T02:00:00.000Z",
+      "createdBy": "u-pm",
+      "updatedBy": "u-pm"
     }
   ],
   "tasks": [
@@ -266,7 +771,9 @@
       "statusChangedAt": "2026-10-01T02:00:00.000Z",
       "firstStartedAt": null,
       "completedAt": null,
-      "latestSubmissionId": null
+      "latestSubmissionId": null,
+      "createdBy": "u-pm",
+      "updatedBy": "u-pm"
     },
     {
       "id": "t-2",
@@ -288,7 +795,9 @@
       "statusChangedAt": "2026-10-22T02:00:00.000Z",
       "firstStartedAt": null,
       "completedAt": null,
-      "latestSubmissionId": null
+      "latestSubmissionId": null,
+      "createdBy": "u-pm",
+      "updatedBy": "u-pm"
     },
     {
       "id": "t-3",
@@ -310,7 +819,9 @@
       "statusChangedAt": "2026-10-22T02:00:00.000Z",
       "firstStartedAt": "2026-10-22T02:00:00.000Z",
       "completedAt": null,
-      "latestSubmissionId": null
+      "latestSubmissionId": null,
+      "createdBy": "u-pm",
+      "updatedBy": "u-lan"
     },
     {
       "id": "t-4",
@@ -332,7 +843,9 @@
       "statusChangedAt": "2026-10-22T09:00:00.000Z",
       "firstStartedAt": "2026-10-22T02:00:00.000Z",
       "completedAt": null,
-      "latestSubmissionId": "s-pending"
+      "latestSubmissionId": "s-pending",
+      "createdBy": "u-pm",
+      "updatedBy": "u-huy"
     },
     {
       "id": "t-5",
@@ -354,7 +867,9 @@
       "statusChangedAt": "2026-10-22T09:00:00.000Z",
       "firstStartedAt": "2026-10-22T02:00:00.000Z",
       "completedAt": "2026-10-22T09:00:00.000Z",
-      "latestSubmissionId": "s-accepted"
+      "latestSubmissionId": "s-accepted",
+      "createdBy": "u-pm",
+      "updatedBy": "u-lan"
     },
     {
       "id": "t-6",
@@ -376,7 +891,9 @@
       "statusChangedAt": "2026-10-22T09:00:00.000Z",
       "firstStartedAt": null,
       "completedAt": null,
-      "latestSubmissionId": null
+      "latestSubmissionId": null,
+      "createdBy": "u-pm",
+      "updatedBy": "u-pm"
     },
     {
       "id": "t-other",
@@ -398,7 +915,9 @@
       "statusChangedAt": "2026-10-22T02:00:00.000Z",
       "firstStartedAt": null,
       "completedAt": null,
-      "latestSubmissionId": null
+      "latestSubmissionId": null,
+      "createdBy": "u-other",
+      "updatedBy": "u-other"
     }
   ],
   "timeLogs": [
@@ -595,7 +1114,10 @@
       "methodVersion": "rules-v1",
       "resolutionNote": null,
       "handledBy": null,
-      "handledAt": null
+      "handledAt": null,
+      "createdBy": "SYSTEM",
+      "updatedBy": "SYSTEM",
+      "updatedAt": "2026-10-01T02:00:00.000Z"
     }
   ],
   "audits": [

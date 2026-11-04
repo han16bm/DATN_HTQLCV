@@ -2,6 +2,7 @@ import {
   analysisRefSchema,
   listQuerySchema,
   personRefSchema,
+  stampShape,
 } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
@@ -59,9 +60,13 @@ export const alertSchema = z.object({
   methodVersion: z.string(),
   resolutionNote: z.string().nullable(),
   handler: personRefSchema.nullable(),
+  // BE tính: sysadmin hoặc người nhận (người được giao task, Owner/Manager dự án)
+  canHandle: z.boolean(),
   handledAt: z.iso.datetime().nullable(),
   taskTitle: z.string().nullable(),
   analysisRef: analysisRefSchema.nullable(),
+  updatedAt: z.iso.datetime(),
+  ...stampShape,
 });
 
 export const alertRowSchema = z.object(alertSchema.shape).pick({

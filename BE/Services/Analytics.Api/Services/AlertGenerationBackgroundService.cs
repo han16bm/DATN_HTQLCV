@@ -1,51 +1,54 @@
 using Analytics.Api.Interfaces;
-using Microsoft.Extensions.Options;
 
 namespace Analytics.Api.Services;
 
+/// <summary>Tick 30 giây, mỗi tick đọc BackgroundJobs và chạy job nào IsEnabled và đã tới NextRunAt (DB là nguồn sự thật).</summary>
 public class AlertGenerationBackgroundService(
     IServiceScopeFactory scopeFactory,
-    IOptions<AlertGenerationOptions> options,
     ILogger<AlertGenerationBackgroundService> logger) : BackgroundService
 {
-    private readonly AlertGenerationOptions _options = options.Value;
+    private static readonly TimeSpan Tick = TimeSpan.FromSeconds(30);
+    private bool _initialized;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!_options.Enabled)
+        using var timer = new PeriodicTimer(Tick);
+        do
         {
-            logger.LogInformation("Job sinh cảnh báo tự động đang bị tắt qua cấu hình.");
-            return;
+            await RunTickAsync(stoppingToken);
         }
+        while (await WaitNextTickAsync(timer, stoppingToken));
+    }
 
-        var interval = TimeSpan.FromMinutes(Math.Max(1, _options.IntervalMinutes));
-        using var timer = new PeriodicTimer(interval);
-
-        while (!stoppingToken.IsCancellationRequested)
+    private async Task RunTickAsync(CancellationToken stoppingToken)
+    {
+        try
         {
-            await RunOnceAsync(stoppingToken);
-            try
+            using var scope = scopeFactory.CreateScope();
+            var jobs = scope.ServiceProvider.GetRequiredService<IJobService>();
+            // Chỉ khởi tạo một lần (lần đầu thành công) — gọi lại sẽ đánh dấu FAILED cả lần chạy thủ công đang diễn ra
+            if (!_initialized)
             {
-                await timer.WaitForNextTickAsync(stoppingToken);
+                await jobs.EnsureJobsAsync(stoppingToken);
+                _initialized = true;
             }
-            catch (OperationCanceledException)
-            {
-                break;
-            }
+            await jobs.RunDueJobsAsync(stoppingToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogError(ex, "Tick job nền lỗi, bỏ qua lần này.");
         }
     }
 
-    private async Task RunOnceAsync(CancellationToken cancellationToken)
+    private static async Task<bool> WaitNextTickAsync(PeriodicTimer timer, CancellationToken stoppingToken)
     {
-        using var scope = scopeFactory.CreateScope();
-        var generator = scope.ServiceProvider.GetRequiredService<IAlertGenerationService>();
         try
         {
-            await generator.GenerateAsync(cancellationToken);
+            return await timer.WaitForNextTickAsync(stoppingToken);
         }
-        catch (Exception ex)
+        catch (OperationCanceledException)
         {
-            logger.LogError(ex, "Job sinh cảnh báo tự động chạy lỗi, bỏ qua lần này.");
+            return false;
         }
     }
 }

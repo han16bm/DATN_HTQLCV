@@ -13,6 +13,7 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<ISubmissionService, SubmissionService>();
         services.AddScoped<IAttachmentService, AttachmentService>();
         services.AddScoped<IReportService, ReportService>();
+        services.AddScoped<NotificationService>();
         return services;
     }
 }

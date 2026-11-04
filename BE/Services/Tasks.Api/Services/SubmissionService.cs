@@ -88,6 +88,8 @@ public class SubmissionService(ApplicationDbContext db, IHttpContextAccessor htt
         task.UpdatedAt = now;
 
         WriteAuditLog(nameof(Submission), submission.Id, actorId, "CREATE", null, new { submission.Sequence, submission.Summary, submission.Links, submission.AttachmentIds, submission.Status });
+        var ownerId = await Db.Projects.Where(p => p.Id == task.ProjectId).Select(p => p.OwnerId).FirstAsync();
+        Db.Notify(ownerId, "RESULT_SUBMITTED", task.Id, submission.Id);
         await Db.SaveChangesAsync();
 
         return new SubmissionMutationResult(await submission.ToDtoAsync(Db), await task.ToDtoAsync(Db));
@@ -116,6 +118,7 @@ public class SubmissionService(ApplicationDbContext db, IHttpContextAccessor htt
         if (assignment is not null) assignment.EndedAt = now;
 
         WriteAuditLog(nameof(Submission), submission.Id, actorId, "APPROVE", null, new { submission.Status, submission.ReviewedBy, submission.ReviewComment });
+        Db.Notify(submission.SubmittedBy, "RESULT_APPROVED", task.Id, submission.Id);
         await Db.SaveChangesAsync();
 
         return new SubmissionMutationResult(await submission.ToDtoAsync(Db), await task.ToDtoAsync(Db));
@@ -141,6 +144,7 @@ public class SubmissionService(ApplicationDbContext db, IHttpContextAccessor htt
         task.UpdatedAt = now;
 
         WriteAuditLog(nameof(Submission), submission.Id, actorId, "REQUEST_REVISION", null, new { submission.Status, submission.ReviewedBy, submission.ReviewComment, submission.RequestedChanges }, request.Reason);
+        Db.Notify(submission.SubmittedBy, "CHANGES_REQUESTED", task.Id, submission.Id);
         await Db.SaveChangesAsync();
 
         return new SubmissionMutationResult(await submission.ToDtoAsync(Db), await task.ToDtoAsync(Db));

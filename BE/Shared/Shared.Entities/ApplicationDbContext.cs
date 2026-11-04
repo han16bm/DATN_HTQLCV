@@ -31,6 +31,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<SystemConfig> SystemConfigs => Set<SystemConfig>();
     public DbSet<IpWhitelistEntry> IpWhitelistEntries => Set<IpWhitelistEntry>();
     public DbSet<IpAccessLog> IpAccessLogs => Set<IpAccessLog>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -150,6 +151,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.Property(x => x.Status).HasConversion<string>();
             e.Property(x => x.SelectedTaskIds).HasConversion(stringListConverter, stringListComparer);
             e.HasIndex(x => new { x.AuthorId, x.ProjectId, x.PeriodType, x.PeriodStart }).IsUnique();
+        });
+
+        modelBuilder.Entity<Notification>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Type).HasMaxLength(40);
+            e.HasIndex(x => new { x.RecipientId, x.CreatedAt });
         });
 
         modelBuilder.Entity<Alert>(e =>

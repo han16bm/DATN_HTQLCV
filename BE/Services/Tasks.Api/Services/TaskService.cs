@@ -123,6 +123,7 @@ public class TaskService(ApplicationDbContext db, IHttpContextAccessor http) : B
         task.Version++;
         task.UpdatedAt = DateTime.UtcNow;
         WriteAuditLog(nameof(WorkTask), task.Id, actorId, "UPDATE", before, Clone(task), request.ChangeReason);
+        if (task.AssigneeId is not null) Db.Notify(task.AssigneeId, "TASK_UPDATED", task.Id);
         await Db.SaveChangesAsync();
         return await task.ToDtoAsync(Db);
     }
@@ -179,6 +180,7 @@ public class TaskService(ApplicationDbContext db, IHttpContextAccessor http) : B
             });
 
             task.AssigneeId = request.AssigneeId;
+            Db.Notify(request.AssigneeId, "TASK_ASSIGNED", task.Id);
             // Giao lần đầu (từ NEW) chuyển TODO; bàn giao giữ nguyên trạng thái TODO/IN_PROGRESS hiện có.
             if (task.Status == WorkTaskStatus.New)
             {

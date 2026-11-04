@@ -119,6 +119,9 @@ public class AlertGenerationService(ApplicationDbContext context) : IAlertGenera
             .Where(t => taskIdsNeedingProject.Contains(t.Id))
             .ToDictionaryAsync(t => t.Id, t => t.ProjectId, cancellationToken);
 
+        var ownerIdsByProject = await context.Projects.AsNoTracking()
+            .ToDictionaryAsync(p => p.Id, p => p.OwnerId, cancellationToken);
+
         foreach (var entry in active)
         {
             var taskId = entry.Key.TaskId;
@@ -143,9 +146,10 @@ public class AlertGenerationService(ApplicationDbContext context) : IAlertGenera
                 continue;
             }
 
+            var alertId = GuidGenerator.NewId();
             context.Alerts.Add(new Alert
             {
-                Id = GuidGenerator.NewId(),
+                Id = alertId,
                 Version = 1,
                 CreatedAt = now,
                 UpdatedAt = now,
@@ -159,6 +163,9 @@ public class AlertGenerationService(ApplicationDbContext context) : IAlertGenera
                 DataAsOf = now,
                 MethodVersion = MethodVersion
             });
+            // Cảnh báo mới báo cho chủ dự án (như mock); người được giao xem trong mục Cảnh báo.
+            if (ownerIdsByProject.TryGetValue(projectId, out var ownerId))
+                context.Notify(ownerId, "ALERT_CREATED", taskId, alertId: alertId);
             created++;
         }
 

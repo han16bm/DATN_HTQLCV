@@ -2622,6 +2622,13 @@ export const projectsDb = {
       dueAt: project.dueAt,
     };
     if (patch.ownerId && patch.ownerId !== project.ownerId) {
+      // Thứ bậc trong dự án: chỉ chủ dự án hiện tại được bàn giao.
+      if (viewer.id !== project.ownerId)
+        throw new ApiError(
+          403,
+          "FORBIDDEN",
+          "Chỉ chủ dự án hiện tại được bàn giao dự án.",
+        );
       const previous = db.members.find(
         (m) =>
           m.projectId === project.id &&

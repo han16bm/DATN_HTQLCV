@@ -78,6 +78,25 @@ public class UsersController(ILogger<BaseApiController> logger, IUserService use
         return new { ok = true };
     }
 
+    // Thu hồi mọi phiên đăng nhập (máy mất, nghi lộ mật khẩu) mà không khóa tài khoản
+    [HttpPost("{userId}/revoke-sessions")]
+    [AdminArea]
+    [RequiresPermission(PermissionFeatures.UsersManage)]
+    public async Task<object> RevokeSessions(string userId, [FromBody] ReasonRequest request)
+    {
+        await userService.RevokeSessionsAsync(userId, request);
+        return new { ok = true };
+    }
+
+    // Người này đang giữ vai trò gì ở những dự án nào
+    [HttpGet("{userId}/projects")]
+    [AdminArea]
+    [RequiresPermission(PermissionFeatures.UsersManage, PermissionFeatures.PermissionsManage)]
+    public async Task<object> ListProjects(string userId)
+    {
+        return await userService.ListProjectsAsync(userId);
+    }
+
     [HttpGet("{userId}/permissions")]
     [AdminArea]
     [RequiresPermission(PermissionFeatures.PermissionsManage)]

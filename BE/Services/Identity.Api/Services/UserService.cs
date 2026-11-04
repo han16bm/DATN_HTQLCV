@@ -1,3 +1,4 @@
+using Shared.Entities.Authorization;
 using Identity.Api.Interfaces;
 using Identity.Api.Models.Dtos;
 using Identity.Api.Models.Queries;
@@ -161,11 +162,42 @@ public class UserService(ApplicationDbContext context, IHttpContextAccessor http
         var user = await FindAsync(userId);
         await EnsureCanManageAsync(user);
         user.PasswordHash = Hasher.HashPassword(user, request.TemporaryPassword);
+        // Mật khẩu mới: mọi phiên cũ mất hiệu lực ngay (token mang TokenVersion).
+        user.TokenVersion++;
         user.UpdatedAt = DateTime.UtcNow;
         user.Version++;
 
         await WriteAuditLog(user.Id, "RESET_PASSWORD", null, null, request.Reason);
         await context.SaveChangesAsync();
+    }
+
+    public async Task RevokeSessionsAsync(string userId, ReasonRequest request)
+    {
+        var user = await FindAsync(userId);
+        await EnsureCanManageAsync(user);
+        if (user.Id == CurrentUserId())
+            throw new UnprocessableRuleException("Không thu hồi phiên của chính mình, hãy dùng Đăng xuất.");
+        user.TokenVersion++;
+        await WriteAuditLog(user.Id, "REVOKE_SESSIONS", null, null, request.Reason);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task<List<UserProjectDto>> ListProjectsAsync(string userId)
+    {
+        await FindAsync(userId);
+        var access = await ProjectAccess.LoadAsync(context, userId);
+        var rows = await context.ProjectMemberships.AsNoTracking()
+            .Where(m => m.UserId == userId)
+            .Join(context.Projects.AsNoTracking(), m => m.ProjectId, p => p.Id, (m, p) => new { m, p })
+            .ToListAsync();
+        // Đang tham gia trước (theo tên dự án), đã kết thúc sau (mới kết thúc trước).
+        return rows
+            .OrderBy(x => x.m.EndedAt is not null).ThenByDescending(x => x.m.EndedAt).ThenBy(x => x.p.Name)
+            .Select(x => new UserProjectDto(
+                x.m.Id, new EntityLabelDto(x.p.Id, x.p.Name), x.p.Status.ToString().ToUpperInvariant(),
+                x.m.ProjectRole.ToString().ToUpperInvariant(), x.p.OwnerId == userId,
+                x.m.EndedAt is null ? access.PermissionsIn(x.p.Id) : [], x.m.CreatedAt, x.m.EndedAt))
+            .ToList();
     }
 
     public async Task<UserPermissionsDto> GetPermissionsAsync(string userId)
@@ -176,6 +208,7 @@ public class UserService(ApplicationDbContext context, IHttpContextAccessor http
     public async Task<UserPermissionsDto> UpdatePermissionsAsync(string userId, UserPermissionsRequest request, int ifMatchVersion)
     {
         var user = await FindAsync(userId);
+        await EnsureCanManageAsync(user);
         CheckVersion(user.Version, ifMatchVersion);
 
         await ValidateFeatureCodesAsync(request.GrantedFeatures, "grantedFeatures");

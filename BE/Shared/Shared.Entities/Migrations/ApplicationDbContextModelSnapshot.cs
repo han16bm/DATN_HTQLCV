@@ -551,6 +551,43 @@ namespace Shared.Entities.Migrations
                     b.ToTable("JobRuns");
                 });
 
+            modelBuilder.Entity("Shared.Entities.Entities.Notification", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AlertId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RecipientId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SubmissionId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TaskId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecipientId", "CreatedAt");
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("Shared.Entities.Entities.PermissionGroup", b =>
                 {
                     b.Property<string>("Id")

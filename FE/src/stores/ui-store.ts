@@ -75,7 +75,7 @@ export const useUI = create<UIState>((set, get) => ({
   visit: (url) =>
     set((s) => {
       if (url === s.currentUrl) return s;
-      const path = url.split("?")[0];
+      const path = url.split(/[?#]/)[0];
       return {
         previousUrl: s.currentUrl,
         currentUrl: url,

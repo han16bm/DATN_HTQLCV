@@ -10,7 +10,7 @@
   "password": "Mock@12345",
   "permissionPolicy": {
     "system": {
-      "ADMIN": ["USERS_MANAGE", "ORGANIZATION_MANAGE"],
+      "ADMIN": ["USERS_MANAGE", "ORGANIZATION_MANAGE", "ANALYTICS_VIEW"],
       "MANAGER": ["PROJECT_CREATE"],
       "EMPLOYEE": []
     },

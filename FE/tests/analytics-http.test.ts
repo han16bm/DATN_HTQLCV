@@ -69,21 +69,28 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
       latestAnalysisId: next.overviewRef.analysisId,
     });
   });
-  it("denies an account administrator analytics and project data until ANALYTICS_VIEW is granted", async () => {
+  it("lets an account administrator read analytics read-only and denies accounts without ANALYTICS_VIEW", async () => {
     const session = await login("admin");
     expect(session.user.systemRole).toBe("ADMIN");
     expect(session.permissions).toEqual([
       "USERS_MANAGE",
       "ORGANIZATION_MANAGE",
+      "ANALYTICS_VIEW",
     ]);
     expect(session.projectAccess).toEqual([]);
+    const dashboard = await analyticsService.getDashboard({
+      from: scope.from,
+      to: scope.to,
+    });
+    expect(dashboard.totalTasks).toBe(db.tasks.length);
+    expect(
+      (await analyticsService.listAnalyticsFilterOptions({ kind: "PROJECT" }))
+        .items.length,
+    ).toBe(db.projects.length);
+    await login("lan");
     await expect(
       analyticsService.getDashboard({ from: scope.from, to: scope.to }),
     ).rejects.toMatchObject({ status: 403 });
-    expect(
-      (await analyticsService.listAnalyticsFilterOptions({ kind: "PROJECT" }))
-        .items,
-    ).toEqual([]);
   });
   it("gives a system-wide ANALYTICS_VIEW holder a global dashboard with unit filters and read-only drilldowns", async () => {
     grantSystemAnalytics("u-admin");

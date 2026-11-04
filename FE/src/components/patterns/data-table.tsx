@@ -44,6 +44,7 @@ export function DataTable({
   headers,
   rows,
   actions = false,
+  fit = false,
   title,
   headerActions,
   description,
@@ -59,6 +60,8 @@ export function DataTable({
   headers: Column[];
   rows: ReactNode[][];
   actions?: boolean;
+  // Vừa cột nội dung; màn hẹp chuyển từng hàng thành nhóm có nhãn, không ép cuộn ngang.
+  fit?: boolean;
   title?: string;
   headerActions?: ReactNode;
   description?: ReactNode;
@@ -81,7 +84,7 @@ export function DataTable({
     <section
       data-columns={columns}
       className={cn(
-        "mb-4 w-full max-w-full min-w-0 self-start",
+        "@container/table mb-4 w-full max-w-full min-w-0 self-start",
         maxWidth[columns],
       )}
     >
@@ -121,18 +124,22 @@ export function DataTable({
               data-columns={columns}
               className={cn(
                 "w-full table-fixed border-collapse text-left transition-opacity motion-reduce:transition-none",
-                minWidth[columns] ?? "min-w-[760px]",
+                fit
+                  ? "min-w-0 @max-[42rem]/table:block"
+                  : minWidth[columns] ?? "min-w-[760px]",
                 refreshing && "opacity-20",
               )}
             >
               {widths && (
-                <colgroup>
+                <colgroup
+                  className={fit ? "@max-[42rem]/table:hidden" : undefined}
+                >
                   {widths.map((width, index) => (
                     <col key={index} style={{ width: `${width}%` }} />
                   ))}
                 </colgroup>
               )}
-              <thead>
+              <thead className={fit ? "@max-[42rem]/table:sr-only" : undefined}>
                 <tr>
                   {headers.map((header, i) => {
                     const column =
@@ -146,7 +153,8 @@ export function DataTable({
                           column.onSort ? (column.sort ?? "none") : undefined
                         }
                         className={cn(
-                          "h-9 bg-sunken/60 px-3 py-2 text-xs font-medium text-fg-subtle",
+                          "h-9 bg-sunken/60 py-2 text-xs font-medium text-fg-subtle",
+                          fit ? "px-2" : "px-3",
                           actions && i === columns - 1
                             ? "text-center"
                             : "text-left",
@@ -170,14 +178,21 @@ export function DataTable({
                   })}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className={fit ? "@max-[42rem]/table:block" : undefined}>
                 {skeleton
                   ? Array.from({ length: 6 }, (_, row) => (
-                      <tr key={row} aria-hidden="true">
+                      <tr
+                        key={row}
+                        aria-hidden="true"
+                        className={fit ? "@max-[42rem]/table:grid @max-[42rem]/table:grid-cols-2" : undefined}
+                      >
                         {headers.map((_, column) => (
                           <td
                             key={column}
-                            className="h-9 border-t border-line/70 px-3 py-1"
+                            className={cn(
+                              "h-9 border-t border-line/70 py-1",
+                              fit ? "px-2" : "px-3",
+                            )}
                           >
                             <div className="h-3 animate-pulse rounded bg-sunken motion-reduce:animate-none" />
                           </td>
@@ -185,17 +200,33 @@ export function DataTable({
                       </tr>
                     ))
                   : rows.map((row, i) => (
-                      <tr key={i} className="hover:bg-hover">
+                      <tr
+                        key={i}
+                        className={cn(
+                          "hover:bg-hover",
+                          fit && "@max-[42rem]/table:grid @max-[42rem]/table:grid-cols-2 @max-[42rem]/table:border-t @max-[42rem]/table:border-line/70 @max-[42rem]/table:p-2",
+                        )}
+                      >
                         {row.map((cell, j) => (
                           <td
                             key={j}
                             className={cn(
-                              "h-(--row-h) border-t border-line/70 px-3 py-2 align-middle text-sm leading-5 break-words",
+                              "h-(--row-h) border-t border-line/70 py-2 align-middle text-sm leading-5 break-words",
+                              fit ? "px-2 @max-[42rem]/table:block @max-[42rem]/table:h-auto @max-[42rem]/table:border-t-0" : "px-3",
+                              fit && j === 0 && "@max-[42rem]/table:col-span-2",
+                              fit && actions && j === row.length - 1 && "@max-[42rem]/table:col-span-2 @max-[42rem]/table:text-right",
                               actions &&
                                 j === row.length - 1 &&
                                 "text-center whitespace-nowrap [&_.actions]:flex-nowrap [&_.actions]:justify-center [&_.actions]:gap-1.5 [&_button]:min-h-7 [&_button]:px-1.5",
                             )}
                           >
+                            {fit && j > 0 && !(actions && j === row.length - 1) && (
+                              <span aria-hidden="true" className="hidden text-xs text-fg-subtle @max-[42rem]/table:mb-1 @max-[42rem]/table:block">
+                                {typeof headers[j] === "string"
+                                  ? headers[j]
+                                  : headers[j].label}
+                              </span>
+                            )}
                             {cell}
                           </td>
                         ))}

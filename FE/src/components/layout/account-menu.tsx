@@ -8,16 +8,9 @@ import {
 } from "@/components/ui/menu";
 import type { SessionDto } from "@/features/auth/types/auth.types";
 import { adminHome, canAdminister } from "@/lib/auth/access";
-import { label } from "@/lib/format";
 import type { Area } from "@/lib/navigation";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import {
-  ArrowLeftRight,
-  ChevronDown,
-  LogOut,
-  Settings,
-  UserRound,
-} from "lucide-react";
+import { ArrowLeftRight, LogOut, Settings, UserRound } from "lucide-react";
 import Link from "next/link";
 
 export function AccountMenu({
@@ -37,23 +30,12 @@ export function AccountMenu({
           data-ui
           type="button"
           aria-label="Mở menu tài khoản"
-          className="inline-flex h-10 items-center gap-2 rounded-md px-1.5 text-left hover:bg-hover active:bg-pressed aria-expanded:bg-pressed"
+          title={session.user.displayName}
+          className="grid size-10 place-items-center rounded-full hover:bg-hover active:bg-pressed aria-expanded:bg-pressed"
         >
           <Avatar
             name={session.user.displayName}
             src={session.user.avatarUrl}
-          />
-          <span className="hidden max-w-40 min-w-0 leading-tight lg:grid">
-            <span className="truncate text-sm font-medium text-fg">
-              {session.user.displayName}
-            </span>
-            <span className="truncate text-xs text-fg-subtlest">
-              {label(session.user.systemRole)}
-            </span>
-          </span>
-          <ChevronDown
-            className="hidden size-4 shrink-0 text-fg-subtle lg:block"
-            aria-hidden="true"
           />
         </button>
       </DropdownMenu.Trigger>

@@ -6,9 +6,17 @@ import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { useListTaskHistoryQuery } from "../hooks/use-tasks-queries";
 
-export function TaskHistoryPage({ taskId }: { taskId: string }) {
-  const filters = useUrlFilters();
-  const query = useListTaskHistoryQuery(taskId, { page: filters.page });
+// Bảng lịch sử của một việc; trang và ngăn kéo ở trang Chi tiết dùng chung.
+export function TaskHistoryTable({
+  taskId,
+  page,
+  onPage,
+}: {
+  taskId: string;
+  page: number;
+  onPage: (page: number) => void;
+}) {
+  const query = useListTaskHistoryQuery(taskId, { page });
   return query.isError ? (
     <QueryErrorState error={query.error} retry={query.refetch} />
   ) : !query.data ? (
@@ -17,11 +25,19 @@ export function TaskHistoryPage({ taskId }: { taskId: string }) {
     <HistoryTable
       loading={query.isFetching}
       title="Lịch sử công việc"
-      pagination={{
-        ...query.data.pagination,
-        onPage: (p) => filters.set("page", String(p)),
-      }}
+      pagination={{ ...query.data.pagination, onPage }}
       items={query.data.items}
+    />
+  );
+}
+
+export function TaskHistoryPage({ taskId }: { taskId: string }) {
+  const filters = useUrlFilters();
+  return (
+    <TaskHistoryTable
+      taskId={taskId}
+      page={filters.page}
+      onPage={(p) => filters.set("page", String(p))}
     />
   );
 }

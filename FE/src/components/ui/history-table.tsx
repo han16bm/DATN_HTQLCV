@@ -3,7 +3,6 @@
 import type { AuditDto } from "@/types/common";
 import {
   useId,
-  useRef,
   useState,
   type ComponentProps,
   type ReactNode,
@@ -11,9 +10,9 @@ import {
 import { dateTime, eventLabel } from "@/lib/format";
 import { AuditChanges } from "./audit-changes";
 import { DataTable } from "@/components/patterns/data-table";
-import { ModalHeader, drawerClass, overlayClass } from "./overlay";
+import { detailClass } from "./page";
+import { SlidePanel } from "./slide-panel";
 import { UserBadge } from "./user-badge";
-import * as Dialog from "@radix-ui/react-dialog";
 
 export function HistoryTable({
   title,
@@ -30,7 +29,6 @@ export function HistoryTable({
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
-  const trigger = useRef<HTMLButtonElement>(null);
   const selected = items.find((item) => item.id === selectedId);
   const detailId = useId();
   return (
@@ -51,13 +49,12 @@ export function HistoryTable({
             key="detail"
             data-ui
             type="button"
-            className="min-h-7 rounded-sm px-1.5 text-sm font-medium text-selected-fg hover:bg-hover"
+            className={detailClass}
             aria-label={`Xem thay đổi: ${eventLabel(item.action)}`}
             aria-expanded={open && selectedId === item.id}
             aria-controls={detailId}
             aria-haspopup="dialog"
-            onClick={(event) => {
-              trigger.current = event.currentTarget;
+            onClick={() => {
               setSelectedId(item.id);
               setOpen(true);
             }}
@@ -66,48 +63,36 @@ export function HistoryTable({
           </button>,
         ])}
       />
-      <Dialog.Root open={open && Boolean(selected)} onOpenChange={setOpen}>
-        <Dialog.Portal>
-          <Dialog.Overlay className={overlayClass("dialog", true)} />
-          <Dialog.Content
-            id={detailId}
-            className={drawerClass}
-            aria-describedby={undefined}
-            onCloseAutoFocus={(event) => {
-              event.preventDefault();
-              trigger.current?.focus();
-            }}
-          >
-            <ModalHeader
-              compact
-              title="Chi tiết thay đổi"
-              closeLabel="Đóng chi tiết lịch sử"
-            />
-            {selected && (
-              <>
-                <h3 className="mt-2 mb-0 text-sm font-semibold text-fg">
-                  {eventLabel(selected.action)}
-                </h3>
-                <div className="my-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-                  <UserBadge name={selected.actor.displayName} />
-                  <time
-                    className="text-xs text-fg-subtle"
-                    dateTime={selected.at}
-                  >
-                    {dateTime(selected.at)}
-                  </time>
-                </div>
-                {selected.reason && (
-                  <p className="text-xs whitespace-pre-wrap">
-                    {selected.reason}
-                  </p>
-                )}
-                <AuditChanges before={selected.before} after={selected.after} />
-              </>
-            )}
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+      <SlidePanel
+        id={detailId}
+        size="sm"
+        open={open && Boolean(selected)}
+        onOpenChange={setOpen}
+        title="Chi tiết thay đổi"
+        closeLabel="Đóng chi tiết lịch sử"
+      >
+        {selected && (
+          <>
+            <div className="grid gap-2 border-b border-line pb-3">
+              <h3 className="m-0 text-sm font-semibold text-fg">
+                {eventLabel(selected.action)}
+              </h3>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <UserBadge name={selected.actor.displayName} />
+                <time className="text-xs text-fg-subtle" dateTime={selected.at}>
+                  {dateTime(selected.at)}
+                </time>
+              </div>
+              {selected.reason && (
+                <p className="m-0 text-xs break-words whitespace-pre-wrap text-fg-subtle">
+                  {selected.reason}
+                </p>
+              )}
+            </div>
+            <AuditChanges before={selected.before} after={selected.after} />
+          </>
+        )}
+      </SlidePanel>
     </div>
   );
 }

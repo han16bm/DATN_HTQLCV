@@ -217,7 +217,33 @@ const lists = new Set([
   "/admin/teams",
 ]);
 export const listRoute = (path: string) =>
-  lists.has(path) || /^\/projects\/[^/]+\/tasks$/.test(path);
+  lists.has(path) || /^\/projects\/(?!new$)[^/]+(?:\/tasks)?$/.test(path);
+
+export type PageSearch = Record<string, string | string[] | undefined>;
+
+// Liên kết cũ của dự án trở về trang chi tiết, giữ đúng bộ lọc của từng vùng.
+export function projectUrl(
+  projectId: string,
+  search: PageSearch = {},
+  section?: "tasks" | "members" | "history",
+) {
+  const query = new URLSearchParams();
+  for (const [key, values] of Object.entries(search)) {
+    for (const value of Array.isArray(values) ? values : [values])
+      if (value !== undefined) query.append(key, value);
+  }
+  const keys =
+    section === "members" ? ["q", "page"] : section === "history" ? ["page"] : [];
+  for (const key of keys) {
+    const value = query.get(key);
+    if (value !== null) {
+      query.set(`${section}.${key}`, value);
+      query.delete(key);
+    }
+  }
+  query.delete("tab");
+  return `/projects/${encodeURIComponent(projectId)}${query.size ? `?${query}` : ""}${section ? `#${section}` : ""}`;
+}
 
 // Dự án đang xem để bộ chọn dự án hiển thị: ID trong /projects/:id, hoặc dự án
 // cha của công việc đang mở (tên công việc đã đăng ký kèm projectId).
@@ -268,14 +294,20 @@ export function trailFor(ctx: TrailContext): Trail | null {
   // khi khác cha trực tiếp (như công việc cá nhân), cùng bộ lọc và phân trang.
   const { previous, pathname } = ctx;
   if (!isAppPath(previous)) return trail;
-  const from = previous.split("?")[0];
+  const from = previous.split(/[?#]/)[0];
   if (
-    listRoute(trail.back.split("?")[0]) &&
+    listRoute(trail.back.split(/[?#]/)[0]) &&
     listRoute(from) &&
+    (!/^\/projects\/[^/]+$/.test(from) || /^\/tasks\/[^/]+$/.test(pathname)) &&
     from !== pathname &&
     areaOf(from) === areaOf(pathname)
   )
-    return { ...trail, back: previous };
+    return {
+      ...trail,
+      back: /^\/projects\/[^/]+$/.test(from)
+        ? previous.split("#")[0] + "#tasks"
+        : previous,
+    };
   return trail;
 }
 
@@ -290,7 +322,9 @@ function buildTrail(ctx: TrailContext): Trail | null {
     ctx.entity("project", id)?.label ?? pending;
   // Công việc của dự án nằm trong khu dự án; chưa biết dự án thì dùng danh sách chung.
   const tasks = (projectId?: string) =>
-    projectId ? list(`/projects/${e(projectId)}/tasks`) : list("/tasks");
+    projectId
+      ? list(`/projects/${e(projectId)}`).split("#")[0] + "#tasks"
+      : list("/tasks");
   const contextual = (fallback: string) =>
     isAppPath(ctx.previous) && ctx.previous.split("?")[0] !== pathname
       ? ctx.previous

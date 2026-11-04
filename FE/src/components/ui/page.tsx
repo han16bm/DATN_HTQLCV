@@ -62,6 +62,7 @@ export function Panel({
   className = "",
   actions,
   flush = false,
+  compact = false,
 }: {
   title?: string;
   children: ReactNode;
@@ -69,6 +70,8 @@ export function Panel({
   actions?: ReactNode;
   // Thân không đệm, cho nội dung tự có khung (bảng, xem trước PDF).
   flush?: boolean;
+  // Mật độ gọn cho cột phụ và ngăn kéo; giữ cùng thứ bậc và khung dữ liệu.
+  compact?: boolean;
 }) {
   const titleId = useId();
   return (
@@ -78,11 +81,19 @@ export function Panel({
       className={cn("min-w-0", className)}
     >
       {(title || actions) && (
-        <div className="mb-2 flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div
+          className={cn(
+            "mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2",
+            compact ? "min-h-7" : "min-h-8",
+          )}
+        >
           {title && (
             <h2
               id={titleId}
-              className="m-0 text-heading-sm font-semibold text-fg"
+              className={cn(
+                "m-0 font-semibold text-fg",
+                compact ? "text-sm" : "text-heading-sm",
+              )}
             >
               {title}
             </h2>
@@ -94,7 +105,7 @@ export function Panel({
         data-slot="panel-body"
         className={cn(
           "min-w-0 overflow-hidden rounded-lg border border-line bg-surface",
-          !flush && "p-4 [&>*+*]:mt-3",
+          !flush && (compact ? "p-3 [&>*+*]:mt-2" : "p-4 [&>*+*]:mt-3"),
         )}
       >
         {children}
@@ -122,6 +133,10 @@ export function ButtonLink({
   );
 }
 
+// Cùng kiểu chữ cho hành động Chi tiết, dù mở trang hay ngăn kéo.
+export const detailClass =
+  "inline-flex min-h-7 items-center rounded-sm px-1.5 text-sm font-medium whitespace-nowrap text-selected-fg transition-colors hover:bg-hover active:bg-pressed motion-reduce:transition-none pointer-coarse:min-h-11";
+
 // Liên kết "Chi tiết" cuối hàng: chỉ là chữ, không viền, không gạch chân khi rê.
 export function DetailLink({
   href,
@@ -135,7 +150,7 @@ export function DetailLink({
       href={href}
       aria-label={label}
       title={label}
-      className="inline-flex min-h-7 items-center rounded-sm px-1.5 text-sm font-medium whitespace-nowrap text-selected-fg transition-colors hover:bg-hover pointer-coarse:min-h-11"
+      className={detailClass}
     >
       Chi tiết
     </Link>

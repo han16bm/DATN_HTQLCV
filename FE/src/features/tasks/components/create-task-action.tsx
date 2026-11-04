@@ -4,7 +4,10 @@ import { Form } from "@/components/forms/form";
 import { FormSelect } from "@/components/forms/form-field";
 import { Button } from "@/components/ui/button";
 import { HashDialog } from "@/components/ui/dialog";
-import { useListProjectsQuery } from "@/features/projects/hooks/use-projects-queries";
+import {
+  useGetProjectQuery,
+  useListProjectsQuery,
+} from "@/features/projects/hooks/use-projects-queries";
 import { hasPermission } from "@/lib/auth/access";
 import { useSession } from "@/lib/auth/session-context";
 import { useHashDialog } from "@/lib/forms/use-hash-dialog";
@@ -21,12 +24,19 @@ export function CreateTaskAction({ projectId }: { projectId?: string }) {
   const { session } = useSession();
   const router = useRouter();
   const dialog = useHashDialog();
-  const projects = useListProjectsQuery({ pageSize: 100 });
-  const manageable =
-    projects.data?.items.filter(
-      (p) =>
-        p.status === "ACTIVE" && hasPermission(session, "TASKS_MANAGE", p.id),
-    ) ?? [];
+  const project = useGetProjectQuery(projectId ?? "");
+  const projects = useListProjectsQuery(
+    { pageSize: 100 },
+    { enabled: !projectId },
+  );
+  const choices = projectId
+    ? project.data
+      ? [project.data]
+      : []
+    : projects.data?.items ?? [];
+  const manageable = choices.filter(
+    (p) => p.status === "ACTIVE" && hasPermission(session, "TASKS_MANAGE", p.id),
+  );
   const form = useForm({
     resolver: zodResolver(z.object({ projectId: z.string().min(1) }).strict(), {
       error: validationMessage,

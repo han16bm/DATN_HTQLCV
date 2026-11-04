@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ModalHeader, drawerClass, modalClass } from "@/components/ui/overlay";
+import { ModalHeader, modalClass, slideDrawerClass } from "@/components/ui/overlay";
 import { useUI } from "@/stores/ui-store";
 import * as Dialog from "@radix-ui/react-dialog";
 import { act, cleanup, render, screen } from "@testing-library/react";
@@ -77,5 +77,5 @@ it("sizes modals within the viewport and keeps the drawer below the top bar", ()
   expect(modalClass("sm")).toContain("w-[min(440px,calc(100vw-32px))]");
   expect(modalClass("md")).toContain("max-h-[90dvh]");
   expect(modalClass("sm", "confirm")).toContain("z-91");
-  expect(drawerClass).toContain("top-(--topbar-h)");
+  expect(slideDrawerClass("sm")).toContain("top-(--topbar-h)");
 });

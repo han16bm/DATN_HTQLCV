@@ -115,7 +115,7 @@ function LogForm({
   function done(message: string) {
     toast.success(message);
     dialog.close();
-    router.push(`/tasks/${task.id}/time-logs`);
+    router.push(`/tasks/${task.id}`);
   }
   return (
     <>

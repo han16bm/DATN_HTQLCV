@@ -16,24 +16,31 @@ const tones = [
   "bg-[#f6e9fa] text-[#7b2f9e]",
 ];
 
+// sm: thanh trên và danh sách; md: thẻ người dùng ở sidebar; lg: đầu hồ sơ.
+const sizes = {
+  sm: { box: "size-7 text-xs", px: 28 },
+  md: { box: "size-10 text-sm", px: 40 },
+  lg: { box: "size-16 text-xl", px: 64 },
+};
+
 export function Avatar({
   name,
   src,
-  large = false,
+  size = "sm",
   fallback,
 }: {
   name: string;
   src?: string | null;
-  large?: boolean;
+  size?: keyof typeof sizes;
   fallback?: ReactNode;
 }) {
   const [failed, setFailed] = useState<string | null>(null);
-  const size = large ? 64 : 28;
+  const { box, px } = sizes[size];
   return (
     <span
       className={cn(
         "grid shrink-0 place-items-center rounded-full font-medium",
-        large ? "size-16 text-xl" : "size-7 text-xs",
+        box,
         tones[toneOf(name)],
       )}
       aria-hidden="true"
@@ -42,8 +49,8 @@ export function Avatar({
         <Image
           src={src}
           alt=""
-          width={size}
-          height={size}
+          width={px}
+          height={px}
           unoptimized
           className="size-full rounded-full object-cover"
           onError={() => setFailed(src)}

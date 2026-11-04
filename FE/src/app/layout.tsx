@@ -1,17 +1,61 @@
 import { type Metadata } from "next";
-import { Be_Vietnam_Pro } from "next/font/google";
+import {
+  Be_Vietnam_Pro,
+  Inter,
+  Noto_Sans,
+  Open_Sans,
+  Roboto,
+  Source_Sans_3,
+} from "next/font/google";
 import { type ReactNode } from "react";
 import { preferencesBootScript } from "@/stores/preferences-store";
 import "./globals.css";
 import { Providers } from "./providers";
 
-// Font tiếng Việt cho nhãn, bảng và nội dung dài; tự host cùng ứng dụng.
-const font = Be_Vietnam_Pro({
+// Phông chữ có bộ ký tự tiếng Việt đầy đủ, tự host cùng ứng dụng. Người dùng chọn trong
+// Cài đặt giao diện (data-font, xem tokens.css). Mọi font đều khai báo @font-face nhưng
+// trình duyệt chỉ tải font đang dùng, nên các font phụ không preload. Tên biến phải
+// là --font-<giá trị trong preferences-store>.
+const beVietnam = Be_Vietnam_Pro({
   subsets: ["latin", "vietnamese"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-app",
+  variable: "--font-be-vietnam",
   display: "swap",
 });
+const inter = Inter({
+  subsets: ["latin", "vietnamese"],
+  variable: "--font-inter",
+  display: "swap",
+  preload: false,
+});
+const noto = Noto_Sans({
+  subsets: ["latin", "vietnamese"],
+  variable: "--font-noto",
+  display: "swap",
+  preload: false,
+});
+const roboto = Roboto({
+  subsets: ["latin", "vietnamese"],
+  weight: ["400", "500", "700"],
+  variable: "--font-roboto",
+  display: "swap",
+  preload: false,
+});
+const source = Source_Sans_3({
+  subsets: ["latin", "vietnamese"],
+  variable: "--font-source",
+  display: "swap",
+  preload: false,
+});
+const openSans = Open_Sans({
+  subsets: ["latin", "vietnamese"],
+  variable: "--font-open-sans",
+  display: "swap",
+  preload: false,
+});
+const fontVariables = [beVietnam, inter, noto, roboto, source, openSans]
+  .map((font) => font.variable)
+  .join(" ");
 
 export const metadata: Metadata = {
   title: "Cổng công việc",
@@ -19,7 +63,7 @@ export const metadata: Metadata = {
 };
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="vi" className={font.variable} suppressHydrationWarning>
+    <html lang="vi" className={fontVariables} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: preferencesBootScript }} />
       </head>

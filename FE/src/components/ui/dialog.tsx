@@ -11,11 +11,13 @@ export function HashDialog({
   name,
   title,
   description,
+  returnTo,
   children,
 }: {
   name: string;
   title: string;
   description?: string;
+  returnTo?: string;
   children: ReactNode;
 }) {
   const dialog = useHashDialog();
@@ -25,14 +27,16 @@ export function HashDialog({
       open={dialog.name === name}
       onOpenChange={async (open) => {
         if (open) dialog.open(name);
-        else if (await confirmDiscard("Bỏ dữ liệu chưa lưu trong biểu mẫu?"))
-          dialog.close();
+        else if (await confirmDiscard("Bỏ dữ liệu chưa lưu trong biểu mẫu?")) {
+          if (returnTo) dialog.open(returnTo);
+          else dialog.close();
+        }
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className={overlayClass()} />
+        <Dialog.Overlay className={overlayClass(returnTo ? "confirm" : "dialog")} />
         <Dialog.Content
-          className={modalClass("md")}
+          className={modalClass("md", returnTo ? "confirm" : "dialog")}
           aria-describedby={description ? descriptionId : undefined}
         >
           <ModalHeader title={title} closeLabel="Đóng biểu mẫu" />

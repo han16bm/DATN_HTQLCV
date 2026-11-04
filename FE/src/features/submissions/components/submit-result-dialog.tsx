@@ -112,7 +112,7 @@ function SubmissionForm({
           });
           dialog.close();
           toast.success("Đã nộp kết quả.");
-          router.push(`/tasks/${task.id}/submissions`);
+          router.push(`/tasks/${task.id}`);
         }}
       >
         <FormTextarea

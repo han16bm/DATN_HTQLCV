@@ -48,6 +48,7 @@ export function PdfPreview({
   return (
     <Panel
       title="Báo cáo đính kèm"
+      compact
       className="grid"
       actions={
         item && (
@@ -89,9 +90,9 @@ export function PdfPreview({
         {!attachmentId && (
           <div
             data-slot="pdf-empty"
-            className="flex min-h-36 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-line bg-sunken/50 p-6 text-center text-sm text-fg-subtle"
+            className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-md bg-sunken/50 p-4 text-center text-sm text-fg-subtle"
           >
-            <FileText className="size-7" aria-hidden="true" />
+            <FileText className="size-6" aria-hidden="true" />
             <p className="m-0">Chưa có báo cáo đính kèm.</p>
           </div>
         )}

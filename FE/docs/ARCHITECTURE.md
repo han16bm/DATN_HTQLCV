@@ -6,6 +6,8 @@ Tài liệu này giữ kiến trúc, trách nhiệm tầng và ràng buộc dữ
 
 Quyền hiệu lực lấy từ session.permissions và session.projectAccess[].permissions; canVisit chặn trang trước khi mount dữ liệu, quyền ghi và phạm vi được backend kiểm tra độc lập. Role không thay thế điều kiện người nhận/tác giả, trạng thái hay cấm tự nghiệm thu. Khu admin có route group riêng, cùng phiên và điểm vào qua avatar. lib/navigation.ts sở hữu route/menu/breadcrumb; Zustand chỉ giữ lịch sử điều hướng và UI state.
 
+Trang chi tiết dự án chứa các danh sách công việc và thành viên, lịch sử tải trong ngăn kéo. useUrlFilters(prefix) tách q/page của từng vùng trong URL; thay đổi giữ hash và chỉ reset trang cùng namespace. lib/navigation.ts cung cấp projectUrl để các route FE cũ chuyển hướng và breadcrumb về trang chi tiết, giữ bộ lọc. API resource/subresource và query key theo viewer không đổi.
+
 ## Thông báo
 
 NotificationBell dùng service HTTP, React Query, MSW và outbox DB hiện có. API list/summary/mark read kiểm tra người nhận và quyền đọc đối tượng; mutation có idempotency, rollback/replay cùng giao dịch. Poll summary không tạo spinner toàn cục. Không có inbox/route hoặc WebSocket riêng.
@@ -21,7 +23,7 @@ browser.ts gọi resetDatabase(new Date().toISOString()) trước khi khởi đ�
 
 Session.projectAccess chỉ gồm projectId/permissions; projectRole vẫn ở membership/model để quản lý vai trò và tính quyền. LoginResponse chỉ trả session/accessToken; hạn token tiếp tục được kiểm tra từ sessionExpiry trong DB. MeasureDto bỏ basis; model giữ basis để dựng KPI. Snapshot.scope response chỉ giữ from/to, model vẫn giữ scope đầy đủ cho quyền/tạo lại phân tích. ID snapshot/citation, dữ liệu chart và version vẫn giữ vì validation/thao tác có dùng. AlertDto trả handler (PersonRef), không trả handledBy của model hoặc suy tên theo người đang đăng nhập. Severity/trạng thái lựa chọn dùng cùng schema; phiên bản luật lấy từ analysisPolicy.ruleVersion trong data.json. Nhóm quyền nội bộ chỉ cần features/memberIds.
 
-GET /tasks/:taskId/submissions nhận sort=sequence|-sequence, default -sequence; DB sort trước paginate. Khung báo cáo lấy 5 lần/trang, chọn một lần và một tệp. Đổi trang/sort xóa lựa chọn cũ, không giữ PDF của trang trước; đổi latestSubmissionId remount khung. Xem báo cáo cũ không thay đổi đối tượng nghiệm thu của TaskShell. Không thêm endpoint hoặc trang.
+GET /tasks/:taskId/submissions nhận sort=sequence|-sequence, default -sequence; DB sort trước paginate. Bảng lấy 5 lần/trang; chọn Chi tiết mới tải nội dung và tệp của lần đó trong ngăn kéo. Đóng khung/đổi tệp thu hồi URL blob. Xem báo cáo cũ không thay đổi đối tượng nghiệm thu của TaskShell. Không thêm endpoint hoặc trang.
 
 
 

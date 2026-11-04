@@ -28,7 +28,7 @@ export function Select({
           controlClass(size),
           "peer cursor-pointer appearance-none pr-8",
           fit
-            ? "w-auto max-w-60 min-w-28 field-sizing-content max-md:w-full max-md:max-w-none"
+            ? "w-auto max-w-60 min-w-24 field-sizing-content max-md:w-full max-md:max-w-none"
             : "w-full",
           className,
         )}

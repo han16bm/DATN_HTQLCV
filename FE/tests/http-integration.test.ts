@@ -485,24 +485,53 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
       server.events.removeListener("request:start", observe);
     }
   });
-  it("does not let an account administrator read projects by role, and read-only analytics access never grants mutations", async () => {
-    await signIn("admin");
-    await expect(tasksService.getTask("t-3")).rejects.toMatchObject({
-      status: 403,
-    });
-    db.permissionGroups[0].memberIds.push("u-admin");
-    await signIn("admin");
+  it("lets an account administrator read every project and task but never change them", async () => {
+    const session = await signIn("admin");
+    // Quyền xem toàn hệ thống do role Admin cấp; không có vai trò trong dự án nào.
+    expect(session.permissions).toContain("ANALYTICS_VIEW");
+    expect(session.permissions).not.toContain("PROJECT_CREATE");
+    expect(session.projectAccess).toEqual([]);
+    const projects = await projectsService.listProjects({ pageSize: 100 });
+    expect(projects.items.map((project) => project.id).sort()).toEqual(
+      db.projects.map((project) => project.id).sort(),
+    );
+    const tasks = await tasksService.listTasks({ pageSize: 100 });
+    expect(tasks.pagination.total).toBe(db.tasks.length);
     const task = await tasksService.getTask("t-3");
     expect(task.id).toBe("t-3");
+    const project = await projectsService.getProject("p-main");
     await expect(
       tasksService.cancelTask(
         task.id,
         { reason: "Kiểm tra quyền" },
-        { version: task.version, key: "admin-denied-write" },
+        { version: task.version, key: "admin-denied-cancel" },
       ),
-    ).rejects.toMatchObject({
+    ).rejects.toMatchObject({ status: 403, code: "FORBIDDEN" });
+    await expect(
+      tasksService.createTask(
+        "p-main",
+        {
+          title: "Admin không được tạo việc",
+          description: "Kiểm tra quyền",
+          acceptanceCriteria: "Bị từ chối",
+          priority: "NORMAL",
+          dueAt: "2026-10-30T10:00:00.000Z",
+          estimatedMinutes: 60,
+        },
+        { key: "admin-denied-create" },
+      ),
+    ).rejects.toMatchObject({ status: 403, code: "FORBIDDEN" });
+    await expect(
+      projectsService.updateProject(
+        project.id,
+        { ownerId: "u-huy", changeReason: "Admin không được đổi" },
+        { version: project.version, key: "admin-denied-project" },
+      ),
+    ).rejects.toMatchObject({ status: 403, code: "FORBIDDEN" });
+    // Người ngoài dự án và không có quyền xem toàn hệ thống vẫn không đọc được.
+    await signIn("lan");
+    await expect(tasksService.getTask("t-other")).rejects.toMatchObject({
       status: 403,
-      code: "FORBIDDEN",
     });
   });
   it("normalizes 401 and preserves password whitespace", async () => {

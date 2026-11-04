@@ -12,7 +12,7 @@ import { ReasonForm } from "@/components/forms/reason-form";
 import { HashDialog } from "@/components/ui/dialog";
 import { PageSkeleton } from "@/components/ui/loading";
 import { DataTable } from "@/components/patterns/data-table";
-import { HeaderActions } from "@/components/ui/header-actions";
+import { PageHeader } from "@/components/ui/page";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { UserBadge } from "@/components/ui/user-badge";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
@@ -41,11 +41,19 @@ import type {
 } from "../types/project-members.types";
 import { MemberRoleForm, memberRoles } from "./member-role-form";
 
-export function ProjectMembersPage({ projectId }: { projectId: string }) {
-  const filters = useUrlFilters();
+export function ProjectMembersPage({
+  projectId,
+  inDrawer = false,
+}: {
+  projectId: string;
+  inDrawer?: boolean;
+}) {
+  const filters = useUrlFilters("members.");
   const project = useGetProjectQuery(projectId);
   const { session } = useSession();
   const dialog = useHashDialog();
+  const closeForm = () =>
+    inDrawer ? dialog.open("members") : dialog.close();
   const query = useListProjectMembersQuery(projectId, {
     q: filters.get("q") || undefined,
     page: filters.page,
@@ -64,19 +72,23 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
     );
   return (
     <>
-      <HeaderActions>
-        {manage && (
-          <Button
-            variant="primary"
-            onClick={() => {
-              form.reset();
-              dialog.open("add-member");
-            }}
-          >
-            Thêm thành viên
-          </Button>
-        )}
-      </HeaderActions>
+      <PageHeader
+        title={inDrawer ? "Danh sách thành viên" : "Thành viên dự án"}
+        level={2}
+        actions={
+          manage && (
+            <Button
+              variant="primary"
+              onClick={() => {
+                form.reset();
+                dialog.open("add-member");
+              }}
+            >
+              Thêm thành viên
+            </Button>
+          )
+        }
+      />
       <FilterBar label="Tìm thành viên">
         <FilterField label="Tìm thành viên" search>
           <SearchInput
@@ -97,59 +109,70 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
             ...query.data.pagination,
             onPage: (p) => filters.set("page", String(p)),
           }}
-          actions
-          widths={[35, 22, 27, 16]}
-          headers={["Thành viên", "Vai trò dự án", "Tư cách", "Hành động"]}
+          widths={[65, 35]}
+          headers={["Thành viên", "Vai trò"]}
           rows={query.data.items.map((m) => [
-            <UserBadge
+            <div
               key="person"
-              name={m.user.displayName}
-              href={`/users/${encodeURIComponent(m.user.id)}`}
-            />,
-            label(m.projectRole),
-            m.endedAt ? `Đã kết thúc ${dateTime(m.endedAt)}` : "Đang tham gia",
-            manage && !m.endedAt && m.projectRole !== "OWNER" && (
-              <DropdownMenu.Root key="actions">
-                <DropdownMenu.Trigger asChild>
-                  <IconButton label={`Thao tác ${m.user.displayName}`}>
-                    <Ellipsis className="size-[17px]" aria-hidden="true" />
-                  </IconButton>
-                </DropdownMenu.Trigger>
-                <MenuContent sideOffset={6}>
-                  <MenuItem
-                    onSelect={() => {
-                      setEditing(m);
-                      dialog.open("member-role");
-                    }}
-                  >
-                    Đổi vai trò
-                  </MenuItem>
-                  <MenuItem asChild>
-                    <Link
-                      href={`/projects/${projectId}/tasks?assigneeId=${m.userId}`}
+              className="flex min-w-0 items-center justify-between gap-2"
+            >
+              <UserBadge
+                name={m.user.displayName}
+                href={`/users/${encodeURIComponent(m.user.id)}`}
+              />
+              {manage && !m.endedAt && m.projectRole !== "OWNER" && (
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger asChild>
+                    <IconButton label={`Thao tác ${m.user.displayName}`}>
+                      <Ellipsis className="size-[17px]" aria-hidden="true" />
+                    </IconButton>
+                  </DropdownMenu.Trigger>
+                  <MenuContent sideOffset={6}>
+                    <MenuItem
+                      onSelect={() => {
+                        setEditing(m);
+                        dialog.open("member-role");
+                      }}
                     >
-                      Bàn giao việc
-                    </Link>
-                  </MenuItem>
-                  <MenuSeparator />
-                  <MenuItem
-                    tone="danger"
-                    onSelect={() => {
-                      setEnding(m);
-                      dialog.open("end-member");
-                    }}
-                  >
-                    Kết thúc
-                  </MenuItem>
-                </MenuContent>
-              </DropdownMenu.Root>
-            ),
+                      Đổi vai trò
+                    </MenuItem>
+                    <MenuItem asChild>
+                      <Link
+                        href={`/projects/${encodeURIComponent(projectId)}?assigneeId=${encodeURIComponent(m.userId)}#tasks`}
+                      >
+                        Bàn giao việc
+                      </Link>
+                    </MenuItem>
+                    <MenuSeparator />
+                    <MenuItem
+                      tone="danger"
+                      onSelect={() => {
+                        setEnding(m);
+                        dialog.open("end-member");
+                      }}
+                    >
+                      Kết thúc
+                    </MenuItem>
+                  </MenuContent>
+                </DropdownMenu.Root>
+              )}
+            </div>,
+            <div key="role" className="grid gap-0.5">
+              <span>{label(m.projectRole)}</span>
+              <span className="text-xs text-fg-subtle">
+                {m.endedAt ? `Đã kết thúc ${dateTime(m.endedAt)}` : "Đang tham gia"}
+              </span>
+            </div>,
           ])}
         />
       )}
       {manage && (
         <>
-          <HashDialog name="add-member" title="Thêm thành viên dự án">
+          <HashDialog
+            name="add-member"
+            title="Thêm thành viên dự án"
+            returnTo={inDrawer ? "members" : undefined}
+          >
             <Form
               compact
               form={form}
@@ -159,7 +182,7 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
                   payload: values,
                 });
                 toast.success("Đã thêm thành viên dự án.");
-                dialog.close();
+                closeForm();
               }}
               submitLabel="Thêm thành viên"
             >
@@ -179,7 +202,11 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
               />
             </Form>
           </HashDialog>
-          <HashDialog name="member-role" title="Đổi vai trò thành viên">
+          <HashDialog
+            name="member-role"
+            title="Đổi vai trò thành viên"
+            returnTo={inDrawer ? "members" : undefined}
+          >
             {editing && (
               <>
                 <UserBadge name={editing.user.displayName} />
@@ -192,12 +219,16 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
                       (member) => member.id === editing.id,
                     ),
                   })}
-                  onDone={dialog.close}
+                  onDone={closeForm}
                 />
               </>
             )}
           </HashDialog>
-          <HashDialog name="end-member" title="Kết thúc tư cách thành viên">
+          <HashDialog
+            name="end-member"
+            title="Kết thúc tư cách thành viên"
+            returnTo={inDrawer ? "members" : undefined}
+          >
             {ending && (
               <>
                 <UserBadge name={ending.user.displayName} />
@@ -210,7 +241,7 @@ export function ProjectMembersPage({ projectId }: { projectId: string }) {
                       (member) => member.id === ending.id,
                     ),
                   })}
-                  onDone={dialog.close}
+                  onDone={closeForm}
                 />
               </>
             )}

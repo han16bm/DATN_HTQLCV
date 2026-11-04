@@ -5,18 +5,22 @@ import { Form } from "@/components/forms/form";
 import { FormInput } from "@/components/forms/form-field";
 import { KeyValue, KeyValueList } from "@/components/patterns/key-value";
 import { Button } from "@/components/ui/button";
-import { HistoryTable } from "@/components/ui/history-table";
 import { PageSkeleton } from "@/components/ui/loading";
 import { Panel, linkClass } from "@/components/ui/page";
+import { PanelLink } from "@/components/ui/panel-link";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { SlidePanel } from "@/components/ui/slide-panel";
 import { UserBadge } from "@/components/ui/user-badge";
-import { AttachmentViewer } from "@/features/attachments/components/attachment-viewer";
 import { useGetProjectQuery } from "@/features/projects/hooks/use-projects-queries";
+import { SubmissionPreview } from "@/features/submissions/components/submission-detail-page";
+import { SubmissionsPage } from "@/features/submissions/components/submissions-page";
+import { TimeLogsTable } from "@/features/time-logs/components/time-logs-page";
 import { useSession } from "@/lib/auth/session-context";
 import { cn } from "@/lib/cn";
-import { dateTime, hours } from "@/lib/format";
+import { dateTime, eventLabel, hours } from "@/lib/format";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
+import { useHashDialog } from "@/lib/forms/use-hash-dialog";
 import { validationMessage } from "@/lib/forms/validation-message";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
@@ -31,11 +35,15 @@ import {
 } from "../hooks/use-tasks-queries";
 import { remainingSchema } from "../schemas/task-form.schema";
 import type { TaskDto } from "../types/tasks.types";
-import { TaskReportPreview } from "./task-report-preview";
+import { TaskHistoryTable } from "./task-history-page";
 
-// Chi tiết công việc: mô tả, tiêu chí và báo cáo đính kèm ở vùng chính; người thực
-// hiện, hạn và giờ công gọn ở cột phụ; hoạt động gần đây nằm dưới cùng.
+// Nội dung/tiêu chí gọn ở đầu, bảng các lần nộp ở dưới, phân công và giờ công ở cột phụ.
+// Chỉ mở ngăn kéo và tải nội dung/tài liệu sau khi chọn Chi tiết một lần nộp.
 export function TaskDetailPage({ taskId }: { taskId: string }) {
+  const dialog = useHashDialog();
+  const [logPage, setLogPage] = useState(1);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const query = useGetTaskQuery(taskId);
   const history = useListTaskHistoryQuery(taskId, { pageSize: 5 });
   const project = useGetProjectQuery(query.data?.projectId ?? "");
@@ -44,13 +52,17 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
     return <QueryErrorState error={query.error} retry={query.refetch} />;
   if (!query.data) return <PageSkeleton />;
   const task = query.data;
+  const submissionId = detailId ?? task.latestSubmissionId;
+  const close = (open: boolean) => {
+    if (!open) dialog.close();
+  };
   const inspector = (
     <aside
       aria-label="Thông tin công việc"
-      className="grid content-start gap-5"
+      className="grid gap-5"
     >
-      <Panel title="Phân công và thời hạn">
-        <KeyValueList>
+      <Panel title="Phân công và thời hạn" compact>
+        <KeyValueList compact>
           <KeyValue label="Người thực hiện">
             {task.assignee ? (
               <UserBadge
@@ -77,12 +89,12 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
             </span>
           </KeyValue>
         </KeyValueList>
-        <details className="mt-3 border-t border-line pt-2">
+        <details className="border-t border-line pt-2">
           <summary className="cursor-pointer text-xs font-medium text-fg-subtle">
             Các mốc thời gian
           </summary>
           <div className="mt-2">
-            <KeyValueList>
+            <KeyValueList compact>
               <KeyValue label="Ngày tạo">{dateTime(task.createdAt)}</KeyValue>
               <KeyValue label="Bắt đầu thực hiện">
                 {task.firstStartedAt
@@ -96,35 +108,34 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
           </div>
         </details>
       </Panel>
-      <Panel title="Giờ công">
-        <dl className="m-0 mb-4 grid grid-cols-2 gap-3 rounded-md bg-sunken/60 p-3">
-          <div>
-            <dt className="text-xs text-fg-subtle">Đã thực hiện</dt>
-            <dd className="m-0 mt-1 text-base font-semibold text-fg tabular-nums">
+      <Panel
+        title="Giờ công"
+        compact
+        actions={
+          <PanelLink onClick={() => dialog.open("time-logs")}>
+            Nhật ký
+          </PanelLink>
+        }
+      >
+        <KeyValueList compact>
+          <KeyValue label="Đã thực hiện">
+            <span className="font-semibold tabular-nums">
               {hours(task.actualMinutes)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-fg-subtle">Ước lượng hiện tại</dt>
-            <dd className="m-0 mt-1 text-base font-semibold text-fg tabular-nums">
+            </span>
+          </KeyValue>
+          <KeyValue label="Ước lượng hiện tại">
+            <span className="tabular-nums">
               {hours(task.estimatedMinutes)}
-            </dd>
-          </div>
-        </dl>
-        <KeyValueList>
-          {[
-            ["Ước lượng ban đầu", hours(task.originalEstimatedMinutes)],
-            [
-              "Thời gian còn lại",
-              task.remainingMinutes === null
-                ? "Chưa cập nhật"
-                : hours(task.remainingMinutes),
-            ],
-          ].map(([label, value]) => (
-            <KeyValue key={label} label={label}>
-              {value}
-            </KeyValue>
-          ))}
+            </span>
+          </KeyValue>
+          <KeyValue label="Ước lượng ban đầu">
+            {hours(task.originalEstimatedMinutes)}
+          </KeyValue>
+          <KeyValue label="Thời gian còn lại">
+            {task.remainingMinutes === null
+              ? "Chưa cập nhật"
+              : hours(task.remainingMinutes)}
+          </KeyValue>
         </KeyValueList>
         {task.assigneeId === session?.user.id &&
           task.status === "IN_PROGRESS" &&
@@ -136,52 +147,114 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
             />
           )}
       </Panel>
-    </aside>
-  );
-  return (
-    <SplitLayout aside={inspector}>
-      <Panel title="Nội dung công việc">
-        <div className="grid gap-4">
-          <p className="m-0 max-w-[80ch] text-sm leading-relaxed whitespace-pre-wrap text-fg">
-            {task.description || "Chưa có mô tả bổ sung."}
-          </p>
-          <section className="border-t border-line pt-4">
-            <h3 className="m-0 mb-1.5 text-sm font-semibold text-fg">
-              Tiêu chí nghiệm thu
-            </h3>
-            <p className="m-0 max-w-[80ch] text-sm leading-relaxed whitespace-pre-wrap text-fg">
-              {task.acceptanceCriteria}
-            </p>
-          </section>
-        </div>
-      </Panel>
-
-      <section className="min-w-0" aria-label="Kết quả công việc">
-        {task.latestSubmissionId ? (
-          <TaskReportPreview
-            key={task.latestSubmissionId}
-            taskId={task.id}
-            submissionId={task.latestSubmissionId}
-          />
-        ) : (
-          <AttachmentViewer attachmentIds={[]} />
-        )}
-      </section>
-      <section className="min-w-0" aria-label="Hoạt động công việc">
+      <Panel
+        title="Hoạt động gần đây"
+        compact
+        actions={
+          <PanelLink onClick={() => dialog.open("history")}>Lịch sử</PanelLink>
+        }
+      >
         {history.isError ? (
           <QueryErrorState error={history.error} retry={history.refetch} />
         ) : !history.data ? (
-          <PageSkeleton variant="table" />
+          <p className="m-0 text-sm text-fg-subtle">Đang tải…</p>
+        ) : history.data.items.length === 0 ? (
+          <p className="m-0 text-sm text-fg-subtle">Chưa có hoạt động nào.</p>
         ) : (
-          <HistoryTable
-            loading={history.isFetching}
-            title="Hoạt động gần đây"
-            items={history.data.items}
-            pagination={{ total: history.data.pagination.total }}
+          <ol className="m-0 grid list-none gap-3 p-0">
+            {history.data.items.slice(0, 3).map((item) => (
+              <li key={item.id} className="grid text-sm">
+                <span className="font-medium text-fg">
+                  {eventLabel(item.action)}
+                </span>
+                <span className="text-xs text-fg-subtle">
+                  {item.actor.displayName} · {dateTime(item.at)}
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </Panel>
+    </aside>
+  );
+  return (
+    <>
+      <SplitLayout aside={inspector}>
+        <section
+          aria-label="Nội dung và tiêu chí"
+          className="@container/task-content"
+        >
+          <div className="grid divide-y divide-line rounded-lg bg-sunken/60 @min-[600px]/task-content:grid-cols-2 @min-[600px]/task-content:divide-x @min-[600px]/task-content:divide-y-0">
+            <section className="min-w-0 p-4">
+              <h2 className="m-0 mb-2 text-sm font-semibold text-fg">
+                Nội dung công việc
+              </h2>
+              <p className="m-0 text-sm leading-relaxed break-words whitespace-pre-wrap text-fg">
+                {task.description || "Chưa có mô tả bổ sung."}
+              </p>
+            </section>
+            <section className="min-w-0 p-4">
+              <h2 className="m-0 mb-2 text-sm font-semibold text-fg">
+                Tiêu chí nghiệm thu
+              </h2>
+              <p className="m-0 text-sm leading-relaxed break-words whitespace-pre-wrap text-fg">
+                {task.acceptanceCriteria}
+              </p>
+            </section>
+          </div>
+        </section>
+        <SubmissionsPage
+          taskId={task.id}
+          onDetail={(id) => {
+            setDetailId(id);
+            dialog.open("submission");
+          }}
+        />
+      </SplitLayout>
+      <SlidePanel
+        size="lg"
+        open={dialog.name === "time-logs"}
+        onOpenChange={close}
+        title="Nhật ký giờ công"
+        description={`Tổng giờ công hợp lệ: ${hours(task.actualMinutes)}`}
+        closeLabel="Đóng nhật ký giờ công"
+      >
+        <TimeLogsTable
+          taskId={task.id}
+          page={logPage}
+          onPage={setLogPage}
+          onEdit={() => dialog.close()}
+        />
+      </SlidePanel>
+      <SlidePanel
+        size="lg"
+        open={dialog.name === "history"}
+        onOpenChange={close}
+        title="Lịch sử công việc"
+        closeLabel="Đóng lịch sử công việc"
+      >
+        <TaskHistoryTable
+          taskId={task.id}
+          page={historyPage}
+          onPage={setHistoryPage}
+        />
+      </SlidePanel>
+      <SlidePanel
+        size="lg"
+        open={dialog.name === "submission" && Boolean(submissionId)}
+        onOpenChange={close}
+        title="Chi tiết lần nộp"
+        closeLabel="Đóng chi tiết lần nộp"
+      >
+        {submissionId && (
+          <SubmissionPreview
+            key={submissionId}
+            taskId={task.id}
+            submissionId={submissionId}
           />
         )}
-      </section>
-    </SplitLayout>
+      </SlidePanel>
+    </>
   );
 }
 
@@ -207,7 +280,7 @@ function RemainingForm({
   });
   const { errors } = form.formState;
   return (
-    <div className="mt-3 border-t border-line pt-3">
+    <div className="border-t border-line pt-3">
       {open ? (
         <Form
           compact

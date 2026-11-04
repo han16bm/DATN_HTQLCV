@@ -34,7 +34,7 @@ export function AvatarEditor({
         <Avatar
           name={user.displayName}
           src={user.avatarUrl}
-          large
+          size="lg"
           fallback={<UserRound size={56} strokeWidth={1.5} />}
         />
         <label

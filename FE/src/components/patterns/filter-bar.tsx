@@ -15,11 +15,11 @@ export function FilterBar({
   return (
     <section
       aria-label={label}
-      className="mb-4 flex flex-wrap items-end gap-x-3 gap-y-3"
+      className="mb-4 flex flex-wrap items-end gap-2"
     >
       {children}
       {tools && (
-        <div className="ml-auto flex flex-wrap items-center gap-2 max-md:w-full max-md:justify-between">
+        <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
           {tools}
         </div>
       )}
@@ -42,7 +42,7 @@ export function FilterField({
       className={cn(
         "flex min-w-0 flex-col gap-1 text-xs font-medium text-fg-subtle",
         search
-          ? "max-md:basis-full md:min-w-40 md:flex-[0_1_18rem]"
+          ? "max-md:basis-full md:min-w-32 md:max-w-64 md:flex-[1_1_8rem]"
           : "max-md:flex-1 max-md:basis-[calc(50%-6px)]",
       )}
     >

@@ -6,12 +6,22 @@ import type { ReactNode } from "react";
 export function KeyValueList({
   children,
   className,
+  compact = false,
 }: {
   children: ReactNode;
   className?: string;
+  compact?: boolean;
 }) {
   return (
-    <dl className={cn("m-0 grid gap-y-3 text-sm", className)}>{children}</dl>
+    <dl
+      className={cn(
+        "m-0 grid text-sm",
+        compact ? "gap-y-2" : "gap-y-3",
+        className,
+      )}
+    >
+      {children}
+    </dl>
   );
 }
 

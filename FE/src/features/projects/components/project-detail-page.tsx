@@ -1,34 +1,55 @@
 "use client";
 
-import { KeyValue, KeyValueList } from "@/components/patterns/key-value";
-import { SplitLayout } from "@/components/patterns/split-layout";
-import { DataTable } from "@/components/patterns/data-table";
-import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
+import { HeaderActions } from "@/components/ui/header-actions";
 import { HistoryTable } from "@/components/ui/history-table";
-import { PageSkeleton } from "@/components/ui/loading";
-import { StatusLozenge } from "@/components/ui/lozenge";
-import { Panel } from "@/components/ui/page";
+import { PageSkeleton, Spinner } from "@/components/ui/loading";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { SlidePanel } from "@/components/ui/slide-panel";
 import { UserBadge } from "@/components/ui/user-badge";
+import { ProjectMembersSummary } from "@/features/project-members/components/project-members-summary";
+import { TaskListPage } from "@/features/tasks/components/task-list-page";
 import { useListTasksQuery } from "@/features/tasks/hooks/use-tasks-queries";
 import type { TaskRow } from "@/features/tasks/types/tasks.types";
 import { cn } from "@/lib/cn";
 import { dateTime } from "@/lib/format";
+import { useHashDialog } from "@/lib/forms/use-hash-dialog";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useId } from "react";
 import {
   useGetProjectQuery,
   useListProjectHistoryQuery,
 } from "../hooks/use-projects-queries";
 
+// `dot` là chấm ở danh sách, `arc` là cung tương ứng trên biểu đồ vòng.
 const segments = [
-  { key: "done", label: "Hoàn thành", bar: "bg-success-fg" },
-  { key: "review", label: "Chờ nghiệm thu", bar: "bg-warning-fg" },
-  { key: "doing", label: "Đang thực hiện", bar: "bg-action" },
-  { key: "todo", label: "Chưa bắt đầu", bar: "bg-line-input" },
+  {
+    key: "done",
+    label: "Hoàn thành",
+    dot: "bg-success-fg",
+    arc: "stroke-success-fg",
+  },
+  {
+    key: "review",
+    label: "Chờ nghiệm thu",
+    dot: "bg-warning-fg",
+    arc: "stroke-warning-fg",
+  },
+  {
+    key: "doing",
+    label: "Đang thực hiện",
+    dot: "bg-action",
+    arc: "stroke-action",
+  },
+  {
+    key: "todo",
+    label: "Chưa bắt đầu",
+    dot: "bg-line-input",
+    arc: "stroke-line-input",
+  },
 ] as const;
+const ringRadius = 32;
+const ringLength = 2 * Math.PI * ringRadius;
 
 const bucket = (task: TaskRow) =>
   task.status === "COMPLETED"
@@ -41,220 +62,211 @@ const bucket = (task: TaskRow) =>
           ? "cancelled"
           : "todo";
 
-// Tình hình công việc của dự án: thanh phân bố theo trạng thái và tỉ lệ hoàn thành.
+// Tình hình công việc của dự án: biểu đồ vòng (tỉ lệ hoàn thành ở giữa) bên trái, danh
+// sách số việc theo trạng thái bên phải. Phạm vi này luôn là toàn dự án, độc lập bộ lọc.
 function Health({ tasks, total }: { tasks: TaskRow[]; total: number }) {
   const titleId = useId();
   const counts = { done: 0, review: 0, doing: 0, todo: 0, cancelled: 0 };
   for (const task of tasks) counts[bucket(task)]++;
   const active = tasks.length - counts.cancelled;
   const percent = active ? Math.round((counts.done / active) * 100) : 0;
+  // Mỗi cung bắt đầu ở nơi cung trước kết thúc, tính từ đỉnh vòng.
+  const arcs = segments.map((s, index) => ({
+    ...s,
+    count: counts[s.key],
+    before: segments
+      .slice(0, index)
+      .reduce((sum, previous) => sum + counts[previous.key], 0),
+  }));
   return (
     <section
       aria-labelledby={titleId}
-      className="mb-5 grid gap-3 rounded-lg border border-line bg-surface p-4"
+      className="min-w-0 border-t border-line pt-4 @min-[900px]/page:border-t-0 @min-[900px]/page:border-l @min-[900px]/page:pt-0 @min-[900px]/page:pl-5"
     >
-      {/* Theo progress bar của Carbon: nhãn trên thanh, giá trị sát nhãn, chú giải dưới. */}
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 id={titleId} className="m-0 text-heading-sm font-semibold text-fg">
-          Tiến độ công việc
-        </h2>
-        {active > 0 && (
-          <p className="m-0 text-sm text-fg-subtle tabular-nums">
-            <b className="font-semibold text-fg">{percent}%</b>
-            {" · "}
-            {counts.done}/{active} việc hoàn thành
-          </p>
-        )}
-      </div>
+      <h2
+        id={titleId}
+        className="m-0 mb-3 text-sm font-semibold text-fg"
+      >
+        Tiến độ công việc
+      </h2>
       {active === 0 ? (
         <p className="m-0 text-sm text-fg-subtle">
           Dự án chưa có công việc nào đang theo dõi.
         </p>
       ) : (
-        <>
-          <div
-            className="flex h-2 overflow-hidden rounded-full bg-sunken"
-            role="img"
-            aria-label={`Hoàn thành ${percent}%`}
-          >
-            {segments.map((s) => (
-              <span
-                key={s.key}
-                className={s.bar}
-                style={{ width: `${(counts[s.key] / active) * 100}%` }}
+        <div className="flex items-center gap-4">
+          <div className="relative size-20 shrink-0">
+            <svg
+              viewBox="0 0 80 80"
+              className="size-full -rotate-90"
+              role="img"
+              aria-label={`Hoàn thành ${percent}%, ${counts.done}/${active} việc`}
+            >
+              <circle
+                cx="40"
+                cy="40"
+                r={ringRadius}
+                fill="none"
+                strokeWidth="10"
+                className="stroke-sunken"
               />
-            ))}
+              {arcs.map((arc) => {
+                const length = (arc.count / active) * ringLength;
+                return (
+                  <circle
+                    key={arc.key}
+                    cx="40"
+                    cy="40"
+                    r={ringRadius}
+                    fill="none"
+                    strokeWidth="10"
+                    strokeDasharray={`${length} ${ringLength - length}`}
+                    strokeDashoffset={-(arc.before / active) * ringLength}
+                    className={arc.arc}
+                  />
+                );
+              })}
+            </svg>
+            <p
+              aria-hidden="true"
+              className="absolute inset-0 m-0 grid place-content-center text-center leading-tight tabular-nums"
+            >
+              <b className="text-base font-semibold text-fg">{percent}%</b>
+              <span className="text-xs text-fg-subtle">
+                {counts.done}/{active}
+              </span>
+            </p>
           </div>
-          <ul className="m-0 grid list-none grid-cols-2 gap-x-6 gap-y-1 p-0 text-xs @min-[560px]/page:grid-cols-4">
-            {segments.map((s) => (
-              <li key={s.key} className="flex items-center gap-1.5">
+          <ul className="m-0 grid min-w-0 flex-1 list-none gap-1.5 p-0 text-xs">
+            {arcs.map((arc) => (
+              <li key={arc.key} className="flex items-center gap-2">
                 <span
-                  className={cn("size-2 shrink-0 rounded-full", s.bar)}
+                  className={cn("size-2 shrink-0 rounded-full", arc.dot)}
                   aria-hidden="true"
                 />
                 <span className="min-w-0 flex-1 truncate text-fg-subtle">
-                  {s.label}
+                  {arc.label}
                 </span>
                 <b className="font-semibold text-fg tabular-nums">
-                  {counts[s.key]}
+                  {arc.count}
                 </b>
               </li>
             ))}
           </ul>
-          {total > tasks.length && (
-            <p className="m-0 text-xs text-fg-subtle">
-              Tính trên {tasks.length}/{total} việc của dự án.
-            </p>
-          )}
-        </>
+        </div>
+      )}
+      {total > tasks.length && (
+        <p className="m-0 mt-3 text-xs text-fg-subtle">
+          Tính trên {tasks.length}/{total} việc của dự án.
+        </p>
       )}
     </section>
   );
 }
 
-const taskHeaders = [
-  "Công việc",
-  "Người thực hiện",
-  "Hạn hoàn thành",
-  "Trạng thái",
-];
-
-const taskRows = (tasks: TaskRow[]) =>
-  tasks.map((t) => [
-    <Link
-      key="title"
-      href={`/tasks/${encodeURIComponent(t.id)}`}
-      className="block max-w-[30ch] truncate font-medium text-fg hover:text-selected-fg hover:underline"
-      title={t.title}
-    >
-      {t.title}
-    </Link>,
-    t.assignee ? (
-      <UserBadge key="assignee" name={t.assignee.displayName} />
-    ) : (
-      "Chưa phân công"
-    ),
-    <span key="due" className={cn(t.isOverdue && "font-medium text-danger-fg")}>
-      {dateTime(t.dueAt)}
-    </span>,
-    <span key="state" className="flex flex-wrap gap-1">
-      <StatusLozenge value={t.status} />
-      {t.isOverdue && <StatusLozenge value="OVERDUE" />}
-    </span>,
-  ]);
-
-// Tổng quan dự án: tình hình trước, việc cần chú ý và đang diễn ra ở giữa; kế hoạch,
-// mục tiêu và mốc triển khai ở cột phụ.
+// Một trang: mục tiêu/kế hoạch/tiến độ, toàn bộ công việc và thành viên.
+// Lịch sử tải khi mở ngăn kéo, không thay trang hoặc bộ lọc đang xem.
 export function ProjectDetailPage({ projectId }: { projectId: string }) {
-  const search = useSearchParams();
-  const filters = useUrlFilters();
+  const dialog = useHashDialog();
   const project = useGetProjectQuery(projectId);
-  const history = useListProjectHistoryQuery(projectId, {
-    page: filters.page,
-    pageSize: search.get("tab") === "history" ? 20 : 5,
-  });
   const tasks = useListTasksQuery({ projectId, pageSize: 100 });
-  if (project.isError) return <QueryErrorState error={project.error} />;
+  if (project.isError)
+    return <QueryErrorState error={project.error} retry={project.refetch} />;
   if (!project.data) return <PageSkeleton />;
-  if (search.get("tab") === "history")
-    return history.isError ? (
-      <QueryErrorState error={history.error} retry={history.refetch} />
-    ) : !history.data ? (
-      <PageSkeleton variant="table" />
-    ) : (
-      <HistoryTable
-        loading={history.isFetching}
-        title="Lịch sử dự án"
-        pagination={{
-          ...history.data.pagination,
-          onPage: (p) => filters.set("page", String(p)),
-        }}
-        items={history.data.items}
-      />
-    );
   const p = project.data;
-  const items = tasks.data?.items ?? [];
-  const overdue = items.filter(
-    (t) => t.isOverdue && !["COMPLETED", "CANCELLED"].includes(t.status),
-  );
-  const waiting = items.filter((t) => t.status === "PENDING_REVIEW");
-  const doing = items.filter((t) => t.status === "IN_PROGRESS" && !t.isOverdue);
-  // Một bảng: quá hạn trước, rồi chờ nghiệm thu, rồi đang thực hiện; cột Trạng thái
-  // cho biết từng việc đang ở đâu.
-  const tracked = [
-    ...overdue,
-    ...waiting.filter((t) => !t.isOverdue),
-    ...doing,
-  ];
   return (
     <>
-      {tasks.data && !tasks.isError && (
-        <Health tasks={items} total={tasks.data.pagination.total} />
-      )}
-      <SplitLayout
-        aside={
-          <aside
-            aria-label="Kế hoạch dự án"
-            className="grid content-start gap-5"
-          >
-            <Panel title="Thông tin kế hoạch">
-              <KeyValueList>
-                <KeyValue label="Mã dự án">{p.code}</KeyValue>
-                <KeyValue label="Người phụ trách">
-                  <UserBadge
-                    name={p.owner.displayName}
-                    href={`/users/${p.owner.id}`}
-                  />
-                </KeyValue>
-                <KeyValue label="Đơn vị">{p.unit.name}</KeyValue>
-                <KeyValue label="Ngày bắt đầu">
-                  {p.startDate.split("-").reverse().join("/")}
-                </KeyValue>
-                <KeyValue label="Hạn hoàn thành">{dateTime(p.dueAt)}</KeyValue>
-              </KeyValueList>
-            </Panel>
-            <Panel title="Mục tiêu dự án">
-              <p className="m-0 text-sm leading-relaxed whitespace-pre-wrap text-fg">
-                {p.objective}
-              </p>
-            </Panel>
-          </aside>
-        }
+      <section
+        aria-label="Tổng quan dự án"
+        className="mb-5 grid gap-5 rounded-lg bg-sunken/60 p-4 @min-[900px]/page:grid-cols-[minmax(0,1fr)_300px]"
       >
+        <div className="grid min-w-0 content-start gap-4">
+          <section>
+            <h2 className="m-0 mb-2 text-sm font-semibold text-fg">
+              Mục tiêu dự án
+            </h2>
+            <p className="m-0 text-sm leading-relaxed break-words whitespace-pre-wrap text-fg">
+              {p.objective}
+            </p>
+          </section>
+          <dl className="m-0 grid gap-4 @min-[600px]/page:grid-cols-3">
+            <div className="grid content-start gap-1">
+              <dt className="text-xs text-fg-subtle">Người phụ trách</dt>
+              <dd className="m-0 min-w-0 text-sm">
+                <UserBadge
+                  name={p.owner.displayName}
+                  href={`/users/${encodeURIComponent(p.owner.id)}`}
+                />
+              </dd>
+            </div>
+            <div className="grid content-start gap-1">
+              <dt className="text-xs text-fg-subtle">Ngày bắt đầu</dt>
+              <dd className="m-0 text-sm">
+                {p.startDate.split("-").reverse().join("/")}
+              </dd>
+            </div>
+            <div className="grid content-start gap-1">
+              <dt className="text-xs text-fg-subtle">Hạn hoàn thành</dt>
+              <dd className="m-0 text-sm">{dateTime(p.dueAt)}</dd>
+            </div>
+          </dl>
+        </div>
         {tasks.isError ? (
           <QueryErrorState error={tasks.error} retry={tasks.refetch} />
         ) : !tasks.data ? (
-          <PageSkeleton variant="cards" />
+          <p
+            role="status"
+            className="m-0 inline-flex items-center gap-2 text-sm text-fg-subtle"
+          >
+            <Spinner />
+            Đang tải tiến độ…
+          </p>
         ) : (
-          <>
-            <DataTable
-              loading={tasks.isFetching}
-              title={`Công việc cần theo dõi (${tracked.length})`}
-              widths={[34, 24, 24, 18]}
-              headers={taskHeaders}
-              rows={taskRows(tracked)}
-              empty={
-                <EmptyState
-                  title="Chưa có việc cần theo dõi"
-                  message="Không có việc quá hạn, đang thực hiện hay chờ nghiệm thu."
-                  className="py-4"
-                />
-              }
-            />
-          </>
+          <Health tasks={tasks.data.items} total={tasks.data.pagination.total} />
         )}
-        {history.isError ? (
-          <QueryErrorState error={history.error} retry={history.refetch} />
-        ) : !history.data ? (
-          <PageSkeleton variant="table" />
-        ) : (
-          <HistoryTable
-            loading={history.isFetching}
-            title="Các mốc triển khai"
-            items={history.data.items}
-          />
-        )}
-      </SplitLayout>
+      </section>
+      <div className="grid items-start gap-5 @min-[1100px]/page:grid-cols-[minmax(0,1fr)_240px]">
+        <section id="tasks" aria-label="Công việc dự án" className="min-w-0">
+          <h2 className="m-0 mb-3 flex min-h-8 items-center text-heading-sm font-semibold text-fg">
+            Công việc dự án
+          </h2>
+          <TaskListPage projectId={projectId} />
+        </section>
+        <ProjectMembersSummary projectId={projectId} />
+      </div>
+      <HeaderActions>
+        <Button onClick={() => dialog.open("history")}>Lịch sử dự án</Button>
+      </HeaderActions>
+      <SlidePanel
+        size="lg"
+        open={dialog.name === "history"}
+        onOpenChange={(open) => {
+          if (!open) dialog.close();
+        }}
+        title="Lịch sử dự án"
+        closeLabel="Đóng lịch sử dự án"
+      >
+        <ProjectHistoryTable projectId={projectId} />
+      </SlidePanel>
     </>
+  );
+}
+
+function ProjectHistoryTable({ projectId }: { projectId: string }) {
+  const filters = useUrlFilters("history.");
+  const history = useListProjectHistoryQuery(projectId, { page: filters.page });
+  if (history.isError)
+    return <QueryErrorState error={history.error} retry={history.refetch} />;
+  if (!history.data) return <PageSkeleton variant="table" />;
+  return (
+    <HistoryTable
+      loading={history.isFetching}
+      title="Các mốc triển khai"
+      pagination={{
+        ...history.data.pagination,
+        onPage: (page) => filters.set("page", String(page)),
+      }}
+      items={history.data.items}
+    />
   );
 }

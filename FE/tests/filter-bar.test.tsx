@@ -3,6 +3,7 @@ import { FilterBar, FilterField } from "@/components/patterns/filter-bar";
 import { Input, SearchInput } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Select } from "@/components/ui/select";
+import { Columns3, List } from "lucide-react";
 import {
   cleanup,
   fireEvent,
@@ -68,11 +69,11 @@ it("keeps new controls out of the legacy element styles", () => {
   ).toBe(true);
 });
 
-it("switches views with pressed buttons, not only colour", async () => {
+it("names icon view buttons and keeps their selected state when switching", async () => {
   const change = vi.fn();
   const options = [
-    { value: "", label: "Danh sách" },
-    { value: "board", label: "Bảng trạng thái" },
+    { value: "", label: "Danh sách", icon: List },
+    { value: "board", label: "Bảng trạng thái", icon: Columns3 },
   ];
   const view = render(
     <SegmentedControl
@@ -83,6 +84,8 @@ it("switches views with pressed buttons, not only colour", async () => {
     />,
   );
   const group = within(screen.getByRole("group", { name: "Chế độ xem" }));
+  expect(group.getByRole("button", { name: "Danh sách" }).title).toBe("Danh sách");
+  expect(group.getByRole("button", { name: "Bảng trạng thái" }).title).toBe("Bảng trạng thái");
   expect(
     group
       .getByRole("button", { name: "Danh sách" })

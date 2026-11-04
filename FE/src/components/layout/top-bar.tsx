@@ -4,9 +4,8 @@ import { NotificationBell } from "@/features/notifications/components/notificati
 import type { SessionDto } from "@/features/auth/types/auth.types";
 import type { Area } from "@/lib/navigation";
 import { usePreferences } from "@/stores/preferences-store";
-import { useUI } from "@/stores/ui-store";
 import * as Dialog from "@radix-ui/react-dialog";
-import { ArrowLeft, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ArrowLeft, Menu, PanelLeftOpen } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense } from "react";
@@ -16,7 +15,8 @@ import { MainNav } from "./main-nav";
 import { ProjectSwitcher } from "./project-switcher";
 
 // Header giữ bộ chọn dự án, chức năng quản lý bổ sung và menu tài khoản.
-// Chức năng chung nằm ở sidebar; màn hẹp gom menu vào drawer.
+// Chức năng chung nằm ở sidebar; màn hẹp gom menu vào drawer. Thu gọn sidebar làm ở
+// Cài đặt giao diện (và Ctrl+[), nên header chỉ còn nút hiện lại khi sidebar đang ẩn.
 export function TopBar({
   area,
   session,
@@ -29,10 +29,7 @@ export function TopBar({
   onSignOut: () => Promise<void>;
 }) {
   const pathname = usePathname();
-  const collapsed = useUI((s) => s.sidebarCollapsed);
-  const toggleSidebar = useUI((s) => s.toggleSidebar);
   const setPreferences = usePreferences((s) => s.set);
-  const Panel = collapsed ? PanelLeftOpen : PanelLeftClose;
   return (
     <header className="nav-surface fixed inset-x-0 top-0 z-40 flex h-(--topbar-h) items-center gap-1.5 px-2 md:px-3">
       <Dialog.Trigger asChild>
@@ -40,19 +37,7 @@ export function TopBar({
           <Menu className="size-5" aria-hidden="true" />
         </IconButton>
       </Dialog.Trigger>
-      {sidebar ? (
-        <IconButton
-          label={
-            collapsed ? "Mở rộng thanh điều hướng" : "Thu gọn thanh điều hướng"
-          }
-          title="Ctrl+["
-          data-sidebar-toggle
-          className="max-md:hidden"
-          onClick={toggleSidebar}
-        >
-          <Panel className="size-[18px]" aria-hidden="true" />
-        </IconButton>
-      ) : (
+      {!sidebar && (
         <IconButton
           label="Hiện thanh bên"
           title="Ctrl+["
@@ -77,12 +62,22 @@ export function TopBar({
           </span>
         </>
       ) : (
-        <ProjectSwitcher />
+        // Hẹp vừa đủ để không chạm menu quản lý, vốn dóng theo lề trang bên dưới.
+        <div className="flex min-w-0 md:max-w-44">
+          <ProjectSwitcher />
+        </div>
       )}
-      <div className="ml-1 hidden h-full min-w-0 flex-1 md:flex">
-        <Suspense>
-          <MainNav area={area} session={session} />
-        </Suspense>
+      {/* Menu quản lý dóng thẳng với chữ đầu trang: cùng lề trái sidebar, độ rộng tối
+          đa và khoảng đệm của <main> (app-shell). Lớp này không nhận chuột, chỉ menu
+          bên trong nhận. */}
+      <div className="pointer-events-none absolute inset-0 hidden md:block md:pl-(--sidebar-w)">
+        <div className="mx-auto h-full max-w-(--content-data) px-6 lg:px-8">
+          <div className="pointer-events-auto -ml-2.5 h-full w-fit max-w-full lg:-ml-3">
+            <Suspense>
+              <MainNav area={area} session={session} />
+            </Suspense>
+          </div>
+        </div>
       </div>
       <div className="ml-auto flex shrink-0 items-center gap-2">
         <NotificationBell />

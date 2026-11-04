@@ -47,7 +47,7 @@ export function AnalyticsFrame({
                 Bộ lọc{" "}
                 {filterCount > 0 && (
                   <span
-                    className="rounded-full bg-action px-1.5 text-xs font-semibold text-white"
+                    className="rounded-full bg-action px-1.5 text-xs font-semibold text-surface"
                     aria-hidden="true"
                   >
                     {filterCount}

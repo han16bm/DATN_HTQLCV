@@ -32,12 +32,28 @@ export const modalClass = (
     layer === "confirm" ? "z-91" : "z-61",
   );
 
-// Ngăn kéo bên phải, nằm dưới thanh trên để thanh trên luôn dùng được.
-export const drawerClass = cn(
-  "fixed top-(--topbar-h) right-0 bottom-0 z-65 w-[min(420px,100vw)] overflow-y-auto",
-  "border-l border-line bg-surface p-4 shadow-overlay outline-none motion-reduce:animate-none",
+// Ngăn kéo bên phải, nằm dưới thanh trên để thanh trên luôn dùng được. Khung chung
+// không có chiều rộng và padding: class cùng thuộc tính không đè nhau theo thứ tự viết
+// nên mỗi biến thể tự khai báo.
+const drawerFrame = cn(
+  "fixed top-(--topbar-h) right-0 bottom-0 z-65 overflow-hidden",
+  "border-l border-line bg-surface shadow-overlay outline-none motion-reduce:animate-none",
   "data-[state=open]:animate-[slide-in-right_180ms_ease-out] data-[state=closed]:animate-[slide-out-right_140ms_ease-in]",
 );
+// Ngăn kéo của SlidePanel: tiêu đề cố định + thân cuộn nên không có khoảng đệm chung;
+// "sm" cho thay đổi, "lg" cho bảng nhiều cột và xem tài liệu.
+export const slideDrawerClass = (size: "sm" | "md" | "lg" = "md") =>
+  cn(
+    drawerFrame,
+    "flex flex-col",
+    size === "lg"
+      ? "w-[min(800px,100vw)]"
+      : size === "sm"
+        ? "w-[min(420px,100vw)]"
+        : "w-[min(480px,100vw)]",
+  );
+// Ngăn kéo hẹp cho bảng cài đặt: tiêu đề, nội dung và chân tự chia khoảng đệm.
+export const compactDrawerClass = cn(drawerFrame, "w-[min(256px,100vw)]");
 
 // Tiêu đề (h2) kèm nút đóng; Radix gắn tên của hộp thoại vào tiêu đề này.
 export function ModalHeader({

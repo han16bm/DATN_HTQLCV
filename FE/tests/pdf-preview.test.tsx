@@ -36,11 +36,30 @@ import {
   vi,
 } from "vitest";
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
-  usePathname: () => window.location.pathname,
-  useSearchParams: () => new URLSearchParams(window.location.search),
-}));
+vi.mock("next/navigation", async () => {
+  const { useSyncExternalStore } = await import("react");
+  return {
+    useRouter: () => ({
+      push: vi.fn(),
+      replace: (url: string) => {
+        history.replaceState(null, "", url);
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      },
+      back: vi.fn(),
+    }),
+    usePathname: () => window.location.pathname,
+    useSearchParams: () =>
+      new URLSearchParams(
+        useSyncExternalStore(
+          (listener) => {
+            window.addEventListener("popstate", listener);
+            return () => window.removeEventListener("popstate", listener);
+          },
+          () => window.location.search,
+        ),
+      ),
+  };
+});
 const created = vi.hoisted(() => ({
   urls: [] as string[],
   revoked: [] as string[],
@@ -137,30 +156,60 @@ function show(
   );
 }
 
-it("shows the manager an inline PDF preview of the latest submitted report", async () => {
-  show(await login("minh"));
-  const panel = (await screen.findByText("Báo cáo kết quả")).closest(
-    "section",
-  )!;
-  expect(await within(panel).findByText("flow.pdf")).toBeTruthy();
-  const frame = await within(panel).findByTitle("Xem trước flow.pdf");
-  expect(frame.tagName).toBe("IFRAME");
-  expect(frame.getAttribute("src")).toMatch(/^blob:/);
-  expect(
-    within(panel)
-      .getByRole("link", { name: /Mở tab mới/ })
-      .getAttribute("href"),
-  ).toBe(frame.getAttribute("src"));
-  // Thu gọn thì bỏ khung và thu hồi địa chỉ tạm.
-  await userEvent
-    .setup()
-    .click(within(panel).getByRole("button", { name: "Thu gọn" }));
-  expect(within(panel).queryByTitle("Xem trước flow.pdf")).toBeNull();
-  expect(created.revoked).toContain(created.urls[0]);
+async function openSubmission(sequence = 1) {
+  await userEvent.setup().click(
+    await screen.findByRole("button", { name: `Xem lần nộp ${sequence}` }),
+  );
+  return screen.findByRole("dialog", { name: "Chi tiết lần nộp" });
+}
+
+it("lists submissions first and loads their content and PDF only when the manager opens details", async () => {
+  const paths: string[] = [];
+  const observe = ({ request }: { request: Request }) =>
+    paths.push(new URL(request.url).pathname);
+  const session = await login("minh");
+  server.events.on("request:start", observe);
+  try {
+    show(session);
+    const table = await screen.findByRole("table", {
+      name: "Các lần nộp kết quả",
+    });
+    await within(table).findByRole("button", { name: "Xem lần nộp 1" });
+    expect(
+      within(table).getAllByRole("columnheader").map((cell) => cell.textContent),
+    ).toEqual(["Lần nộp", "Thời điểm", "Kết quả xét", "Hành động"]);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByTitle("Xem trước flow.pdf")).toBeNull();
+    expect(
+      paths.some((path) => /\/submissions\/|\/attachments\//.test(path)),
+    ).toBe(false);
+    const panel = await openSubmission();
+    expect(
+      await within(panel).findByText("Đã hoàn thiện API báo cáo"),
+    ).toBeTruthy();
+    expect(await within(panel).findByText("flow.pdf")).toBeTruthy();
+    const frame = await within(panel).findByTitle("Xem trước flow.pdf");
+    expect(frame.tagName).toBe("IFRAME");
+    expect(frame.getAttribute("src")).toMatch(/^blob:/);
+    expect(
+      within(panel)
+        .getByRole("link", { name: /Mở tab mới/ })
+        .getAttribute("href"),
+    ).toBe(frame.getAttribute("src"));
+    // Thu gọn thì bỏ khung và thu hồi địa chỉ tạm.
+    await userEvent
+      .setup()
+      .click(within(panel).getByRole("button", { name: "Thu gọn" }));
+    expect(within(panel).queryByTitle("Xem trước flow.pdf")).toBeNull();
+    expect(created.revoked).toContain(created.urls[0]);
+  } finally {
+    server.events.removeListener("request:start", observe);
+  }
 });
 
 it("shows the submitted report to its employee author who can view the task", async () => {
   show(await login("huy"));
+  await openSubmission();
   expect(await screen.findByTitle("Xem trước flow.pdf")).toBeTruthy();
   expect(
     screen.getByRole("heading", { name: "Báo cáo đính kèm" }),
@@ -169,7 +218,7 @@ it("shows the submitted report to its employee author who can view the task", as
 });
 
 it.each(["minh", "lan"])(
-  "keeps an empty report frame for %s before any submission without requesting a missing file",
+  "keeps an empty submissions table for %s without requesting a missing submission or file",
   async (username) => {
     const session = await login(username);
     const paths: string[] = [];
@@ -179,16 +228,19 @@ it.each(["minh", "lan"])(
     try {
       show(session, <TaskDetailPage taskId="t-2" />);
       const heading = await screen.findByRole("heading", {
-        name: "Báo cáo đính kèm",
+        name: "Các lần nộp kết quả",
       });
       const panel = heading.closest("section")!;
-      expect(within(panel).getByText("Chưa có báo cáo đính kèm.")).toBeTruthy();
       expect(
-        panel.querySelector('[data-slot="panel-body"] [data-slot="pdf-empty"]'),
+        await within(panel).findByText("Chưa có lần nộp kết quả"),
       ).toBeTruthy();
       expect(panel.querySelector("iframe")).toBeNull();
-      expect(within(panel).queryByRole("button")).toBeNull();
-      expect(paths.some((path) => path.includes("/attachments/"))).toBe(false);
+      expect(
+        within(panel).queryByRole("button", { name: /Xem lần nộp/ }),
+      ).toBeNull();
+      expect(
+        paths.some((path) => /\/submissions\/|\/attachments\//.test(path)),
+      ).toBe(false);
     } finally {
       server.events.removeListener("request:start", observe);
     }
@@ -235,6 +287,7 @@ it.each([
         <SubmissionDetailPage taskId="t-4" submissionId="s-pending" />
       ),
     );
+    if (view === "task") await openSubmission();
     const heading = await screen.findByRole("heading", {
       name: "Báo cáo đính kèm",
     });
@@ -259,6 +312,7 @@ it("requests the PDF content again and opens it after a malformed response recov
     }),
   );
   show(await login("minh"));
+  await openSubmission();
   const error = await screen.findByRole("alert");
   expect(within(error).getByText(/Chưa thể tải tệp/)).toBeTruthy();
   await userEvent
@@ -272,13 +326,51 @@ it("requests the PDF content again and opens it after a malformed response recov
   expect(attempts).toBe(2);
 });
 
+it("retries the submissions list through HTTP without loading a document", async () => {
+  let attempts = 0;
+  server.use(
+    http.get("*/api/tasks/t-4/submissions", () => {
+      if (++attempts === 1) return HttpResponse.json({ invalid: true });
+    }),
+  );
+  show(await login("minh"));
+  const error = await screen.findByRole("alert");
+  await userEvent.setup().click(
+    within(error).getByRole("button", { name: "Thử tải lại" }),
+  );
+  expect(
+    await screen.findByRole("button", { name: "Xem lần nộp 1" }),
+  ).toBeTruthy();
+  expect(attempts).toBe(2);
+  expect(screen.queryByRole("alert")).toBeNull();
+  expect(created.urls).toHaveLength(0);
+});
+
+it("keeps a failed submission in the drawer and retries it before fetching its PDF", async () => {
+  let attempts = 0;
+  server.use(
+    http.get("*/api/tasks/t-4/submissions/s-pending", () => {
+      if (++attempts === 1) return HttpResponse.json({ invalid: true });
+    }),
+  );
+  show(await login("minh"));
+  const panel = await openSubmission();
+  const error = await within(panel).findByRole("alert");
+  expect(created.urls).toHaveLength(0);
+  await userEvent.setup().click(
+    within(error).getByRole("button", { name: "Thử tải lại" }),
+  );
+  expect(await within(panel).findByTitle("Xem trước flow.pdf")).toBeTruthy();
+  expect(attempts).toBe(2);
+  expect(location.pathname).toBe("/tasks/t-4");
+  expect(within(panel).queryByRole("alert")).toBeNull();
+});
+
 it("keeps the file picker available when the selected attachment no longer exists", async () => {
   const latest = db.submissions.find((item) => item.id === "s-pending")!;
   latest.attachmentIds = ["a-missing", "a-flow"];
   show(await login("minh"));
-  const panel = (await screen.findByText("Báo cáo kết quả")).closest(
-    "section",
-  )!;
+  const panel = await openSubmission();
   await within(panel).findByRole("heading", {
     name: "Không tìm thấy nội dung",
   });
@@ -293,18 +385,24 @@ it("keeps the file picker available when the selected attachment no longer exist
 it("downloads the PDF content once for the preview that is open", async () => {
   const session = await login("minh");
   const paths: string[] = [];
-  server.events.on("request:start", ({ request }) => {
+  const observe = ({ request }: { request: Request }) => {
     paths.push(new URL(request.url).pathname);
-  });
-  show(session);
-  await screen.findByTitle("Xem trước flow.pdf");
-  expect(paths.filter((path) => path.endsWith("/content"))).toHaveLength(1);
-  expect(
-    paths.filter((path) => path.endsWith("/attachments/a-flow")),
-  ).toHaveLength(1);
+  };
+  server.events.on("request:start", observe);
+  try {
+    show(session);
+    await openSubmission();
+    await screen.findByTitle("Xem trước flow.pdf");
+    expect(paths.filter((path) => path.endsWith("/content"))).toHaveLength(1);
+    expect(
+      paths.filter((path) => path.endsWith("/attachments/a-flow")),
+    ).toHaveLength(1);
+  } finally {
+    server.events.removeListener("request:start", observe);
+  }
 });
 
-it("lets the manager pick any submission and file from dropdowns that show only the round and time", async () => {
+it("opens the selected row's content and documents and releases the preview when the drawer closes", async () => {
   const session = await login("minh");
   const pdf = db.files.get("a-flow")!;
   const latest = db.submissions.find((item) => item.id === "s-pending")!;
@@ -334,22 +432,18 @@ it("lets the manager pick any submission and file from dropdowns that show only 
     db.files.set(id, pdf);
   }
   show(session);
-  const panel = (await screen.findByText("Báo cáo kết quả")).closest(
+  const table = (await screen.findByText("Các lần nộp kết quả")).closest(
     "section",
   )!;
-  const rounds = await within(panel).findByRole("combobox", {
-    name: "Lần nộp",
-  });
+  await within(table).findByText("Lần 2");
   expect(
-    within(rounds)
-      .getAllByRole("option")
-      .map((option) => option.textContent),
-  ).toEqual([
-    expect.stringMatching(/^Lần 2 · .+\(mới nhất\)$/),
-    expect.stringMatching(/^Lần 1 · /),
-  ]);
-  // Không hiện người nộp trong khung báo cáo.
-  expect(within(panel).queryByText("Nguyễn Huy")).toBeNull();
+    within(table)
+      .getAllByRole("row")
+      .slice(1)
+      .map((row) => within(row).getAllByRole("cell")[0].textContent),
+  ).toEqual(["Lần 2", "Lần 1"]);
+  expect(within(table).queryByText("Nguyễn Huy")).toBeNull();
+  const panel = await openSubmission(2);
   const files = await within(panel).findByRole("combobox", {
     name: "Tệp báo cáo",
   });
@@ -360,16 +454,23 @@ it("lets the manager pick any submission and file from dropdowns that show only 
   ).toEqual(["flow.pdf", "extra.pdf"]);
   const user = userEvent.setup();
   await user.selectOptions(files, "a-extra");
-  expect(await within(panel).findByTitle("Xem trước extra.pdf")).toBeTruthy();
-  await user.selectOptions(rounds, "s-first");
-  expect(await within(panel).findByTitle("Xem trước old.pdf")).toBeTruthy();
+  const extra = await within(panel).findByTitle("Xem trước extra.pdf");
+  const previousUrl = extra.getAttribute("src");
+  await user.keyboard("{Escape}");
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(created.revoked).toContain(previousUrl);
+  expect(document.activeElement).toBe(
+    screen.getByRole("button", { name: "Xem lần nộp 2" }),
+  );
+  const oldPanel = await openSubmission(1);
+  expect(await within(oldPanel).findByTitle("Xem trước old.pdf")).toBeTruthy();
   expect(
-    within(panel).queryByRole("combobox", { name: "Tệp báo cáo" }),
+    within(oldPanel).queryByRole("combobox", { name: "Tệp báo cáo" }),
   ).toBeNull();
-  expect(within(panel).queryByTitle("Xem trước extra.pdf")).toBeNull();
+  expect(within(oldPanel).queryByTitle("Xem trước extra.pdf")).toBeNull();
 });
 
-it("sorts and pages attempts without loading every document, and releases the previous preview", async () => {
+it("sorts and pages the table through HTTP and keeps documents unloaded until a row is opened", async () => {
   const session = await login("minh");
   const latest = db.submissions.find((item) => item.id === "s-pending")!;
   latest.sequence = 7;
@@ -387,33 +488,40 @@ it("sorts and pages attempts without loading every document, and releases the pr
   server.events.on("request:start", observe);
   try {
     show(session);
-    const panel = (await screen.findByText("Báo cáo kết quả")).closest(
+    const panel = (await screen.findByText("Các lần nộp kết quả")).closest(
       "section",
     )!;
-    const frame = await within(panel).findByTitle("Xem trước flow.pdf");
-    const url = frame.getAttribute("src");
-    const rounds = within(panel).getByRole("combobox", { name: "Lần nộp" });
-    await waitFor(() =>
-      expect(within(rounds).getAllByRole("option")).toHaveLength(5),
-    );
-    expect((rounds as HTMLSelectElement).value).toBe("s-pending");
+    await within(panel).findByRole("button", { name: "Xem lần nộp 7" });
+    expect(within(panel).getAllByRole("cell")).toHaveLength(20);
+    expect(created.urls).toHaveLength(0);
     const user = userEvent.setup();
-    await user.selectOptions(
-      within(panel).getByRole("combobox", { name: "Sắp xếp" }),
-      "sequence",
-    );
-    await within(panel).findByText("Chưa có báo cáo đính kèm.");
+    await user.click(within(panel).getByRole("button", { name: "Lần nộp" }));
+    await within(panel).findByRole("button", { name: "Xem lần nộp 1" });
+    expect(within(panel).getAllByRole("row")[1].textContent).toContain("Lần 1");
+    expect(new URLSearchParams(location.search).get("sort")).toBe("sequence");
     expect(
-      within(panel).getByRole("heading", { name: "Báo cáo đính kèm" }),
-    ).toBeTruthy();
-    expect((rounds as HTMLSelectElement).value).toBe("round-1");
-    expect(created.revoked).toContain(url);
+      within(panel)
+        .getByRole("columnheader", { name: "Lần nộp" })
+        .getAttribute("aria-sort"),
+    ).toBe("ascending");
     await user.click(within(panel).getByRole("button", { name: "Sau" }));
-    await within(panel).findByText("Trang 2 / 2");
-    expect((rounds as HTMLSelectElement).value).toBe("round-6");
-    expect(within(rounds).getAllByRole("option")).toHaveLength(2);
-    await user.selectOptions(rounds, "s-pending");
-    await within(panel).findByTitle("Xem trước flow.pdf");
+    await within(panel).findByRole("button", { name: "Xem lần nộp 6" });
+    expect(within(panel).getByText("Trang 2 / 2")).toBeTruthy();
+    expect(within(panel).getAllByRole("cell")).toHaveLength(8);
+    expect(new URLSearchParams(location.search).get("page")).toBe("2");
+    expect(
+      requests.filter((request) =>
+        /\/submissions\/|\/attachments\//.test(request.pathname),
+      ),
+    ).toHaveLength(0);
+    const detail = await openSubmission(7);
+    const frame = await within(detail).findByTitle("Xem trước flow.pdf");
+    const url = frame.getAttribute("src");
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(created.revoked).toContain(url);
+    await openSubmission(7);
+    await screen.findByTitle("Xem trước flow.pdf");
     expect(
       requests.filter((request) => request.pathname.endsWith("/content")),
     ).toHaveLength(1);
@@ -424,7 +532,12 @@ it("sorts and pages attempts without loading every document, and releases the pr
           request.searchParams.get("page") === "2",
       ),
     ).toBe(true);
-    expect(within(panel).queryByText("Nguyễn Huy")).toBeNull();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await user.click(within(panel).getByRole("button", { name: "Lần nộp" }));
+    await within(panel).findByRole("button", { name: "Xem lần nộp 7" });
+    expect(new URLSearchParams(location.search).get("page")).toBeNull();
+    expect(within(panel).getByText("Trang 1 / 2")).toBeTruthy();
   } finally {
     server.events.removeListener("request:start", observe);
   }

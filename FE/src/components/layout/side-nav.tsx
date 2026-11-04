@@ -6,24 +6,23 @@ import { ArrowLeft, Clock } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MainList } from "./main-nav";
+import { ProfileCard } from "./profile-card";
 
 type Child = { href: string; label: string };
 
-// Sidebar giữ chức năng chung cho mọi role và mục dự án/công việc trong slot.
+// Sidebar: thẻ người dùng và chức năng chung cho mọi role.
 // Drawer mobile có cả chức năng bổ sung của Manager theo quyền hiện có.
 export function SideNav({
   area,
   session,
   collapsed = false,
   drawer = false,
-  slot,
   onNavigate,
 }: {
   area: Area;
   session: SessionDto;
   collapsed?: boolean;
   drawer?: boolean;
-  slot?: (element: HTMLElement | null) => void;
   onNavigate?: () => void;
 }) {
   const labels = useUI((s) => s.labels);
@@ -41,30 +40,33 @@ export function SideNav({
         ]
       : [];
   });
+  // Thẻ người dùng nằm ngoài vùng cuộn để tràn sát hai mép sidebar.
   return (
-    <div className="grid min-h-0 flex-1 content-start gap-3 overflow-y-auto">
-      {drawer && area === "admin" && (
-        <Link
-          href="/workspace"
-          onClick={onNavigate}
-          className="flex h-9 items-center gap-2 rounded-md px-2.5 text-sm font-medium text-selected-fg hover:bg-hover"
-        >
-          <ArrowLeft className="size-4" aria-hidden="true" />
-          Về không gian làm việc
-        </Link>
-      )}
-      <MainList
-        area={area}
-        session={session}
-        collapsed={collapsed}
-        drawer={drawer}
-        onNavigate={onNavigate}
-      />
-      {!drawer && <div ref={slot} className="pt-2 empty:hidden" />}
-      {area === "workspace" && !collapsed && (
-        <RecentList entries={recentEntries} onNavigate={onNavigate} />
-      )}
-    </div>
+    <>
+      <ProfileCard user={session.user} collapsed={collapsed} />
+      <div className="grid min-h-0 flex-1 content-start gap-3 overflow-y-auto pt-3">
+        {drawer && area === "admin" && (
+          <Link
+            href="/workspace"
+            onClick={onNavigate}
+            className="flex h-9 items-center gap-2 rounded-md px-2.5 text-sm font-medium text-selected-fg hover:bg-hover"
+          >
+            <ArrowLeft className="size-4" aria-hidden="true" />
+            Về không gian làm việc
+          </Link>
+        )}
+        <MainList
+          area={area}
+          session={session}
+          collapsed={collapsed}
+          drawer={drawer}
+          onNavigate={onNavigate}
+        />
+        {area === "workspace" && !collapsed && (
+          <RecentList entries={recentEntries} onNavigate={onNavigate} />
+        )}
+      </div>
+    </>
   );
 }
 

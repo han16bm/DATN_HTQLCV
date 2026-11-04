@@ -96,8 +96,8 @@ it.each(["lan", "minh", "admin"])(
     expect(sidebar?.contains(main)).toBe(true);
     expect(header.contains(main)).toBe(false);
     expect(
-      screen.getByRole("button", { name: "Thu gọn thanh điều hướng" }),
-    ).toBeTruthy();
+      screen.queryByRole("button", { name: "Thu gọn thanh điều hướng" }),
+    ).toBeNull();
     expect(within(main).queryByRole("link", { name: "Nghiệm thu" })).toBeNull();
     expect(
       within(main).queryByRole("button", { name: "Phân tích" }),
@@ -114,6 +114,14 @@ it.each(["lan", "minh", "admin"])(
       ).toBeTruthy();
       expect(within(management!).queryByText("Tổng quan")).toBeNull();
       expect(within(management!).queryByText("Công việc")).toBeNull();
+    } else if (username === "admin") {
+      // Admin chỉ xem: có Phân tích (quyền xem toàn hệ thống), không có Nghiệm thu.
+      expect(
+        within(management!).getByRole("button", { name: "Phân tích" }),
+      ).toBeTruthy();
+      expect(
+        within(management!).queryByRole("link", { name: "Nghiệm thu" }),
+      ).toBeNull();
     } else expect(management).toBeNull();
     const user = userEvent.setup();
     await user.click(within(main).getByRole("button", { name: "Công việc" }));
@@ -137,9 +145,7 @@ it("keeps employee navigation usable when collapsed and retains task filters", a
     session,
   );
   const user = userEvent.setup();
-  await user.click(
-    screen.getByRole("button", { name: "Thu gọn thanh điều hướng" }),
-  );
+  act(() => useUI.getState().toggleSidebar());
   const main = within(
     screen.getByRole("navigation", { name: "Điều hướng chính" }),
   );
@@ -161,9 +167,6 @@ it("keeps employee navigation usable when collapsed and retains task filters", a
   expect(document.activeElement).toBe(trigger);
   await user.keyboard("{Control>}[BracketLeft]{/Control}");
   expect(useUI.getState().sidebarCollapsed).toBe(false);
-  expect(document.activeElement).toBe(
-    screen.getByRole("button", { name: "Thu gọn thanh điều hướng" }),
-  );
 });
 
 function Provider({
@@ -231,9 +234,7 @@ it("opens manager task filters from the collapsed common sidebar", async () => {
   expect(
     screen.getByRole("complementary", { name: "Thanh điều hướng" }),
   ).toBeTruthy();
-  await user.click(
-    screen.getByRole("button", { name: "Thu gọn thanh điều hướng" }),
-  );
+  act(() => useUI.getState().toggleSidebar());
   await user.click(screen.getByRole("button", { name: "Công việc" }));
   const item = await screen.findByRole("menuitem", { name: "Việc của tôi" });
   expect(item.getAttribute("href")).toBe(
@@ -255,9 +256,7 @@ it("preserves project, search and view in the task menu and removes the page", a
     session,
   );
   const user = userEvent.setup();
-  await user.click(
-    screen.getByRole("button", { name: "Thu gọn thanh điều hướng" }),
-  );
+  act(() => useUI.getState().toggleSidebar());
   await user.click(screen.getByRole("button", { name: "Công việc" }));
   const next = new URL(
     (
@@ -286,7 +285,7 @@ it("preserves project, search and view in the task menu and removes the page", a
 
 it("names the project and task in the breadcrumb and goes back to the remembered list with its filters", async () => {
   const session = await login("minh");
-  const list = "/projects/p-main/tasks?status=TODO&view=board&page=2";
+  const list = "/projects/p-main?status=TODO&view=board&page=2";
   useUI.getState().visit(list);
   history.replaceState(null, "", "/tasks/t-3");
   show(<WorkspaceShell>{task}</WorkspaceShell>, session);
@@ -298,7 +297,7 @@ it("names the project and task in the breadcrumb and goes back to the remembered
   expect(within(crumbs).queryByText("t-3")).toBeNull();
   expect(
     within(crumbs).getByRole("link", { name: "Quay lại" }).getAttribute("href"),
-  ).toBe(list);
+  ).toBe(list + "#tasks");
   expect(
     within(crumbs).getByRole("link", { name: "Dự án" }).getAttribute("href"),
   ).toBe("/projects");
@@ -606,61 +605,18 @@ const media = (matches: boolean) =>
     removeEventListener: () => {},
   }));
 
-it("shows employee task sections in the sidebar from medium screens up", async () => {
-  media(true);
-  history.replaceState(null, "", "/tasks/t-3");
-  show(<WorkspaceShell>{task}</WorkspaceShell>, await login("lan"));
-  const tabs = await screen.findByRole("navigation", { name: "Mục công việc" });
-  const sidebar = screen.getByRole("complementary", {
-    name: "Thanh điều hướng",
-  });
-  expect(sidebar.contains(tabs)).toBe(true);
-  expect(within(tabs).getByRole("link", { name: "Giờ công" })).toBeTruthy();
-  expect(
-    within(tabs)
-      .getByRole("link", { name: "Chi tiết" })
-      .getAttribute("aria-current"),
-  ).toBe("page");
-  expect(screen.getByRole("main").contains(tabs)).toBe(false);
-  // Nhân viên có cả menu chung và mục công việc trong cùng sidebar.
-  const main = screen.getByRole("navigation", { name: "Điều hướng chính" });
-  expect(main.closest("header")).toBeNull();
-  expect(sidebar.contains(main)).toBe(true);
-});
-
-it("keeps manager task sections next to common functions in the sidebar", async () => {
+it("has no separate task section navigation because time logs, results and history live on the detail page", async () => {
   media(true);
   history.replaceState(null, "", "/tasks/t-3");
   show(<WorkspaceShell>{task}</WorkspaceShell>, await login("minh"));
-  const tabs = await screen.findByRole("navigation", { name: "Mục công việc" });
-  const sidebar = screen.getByRole("complementary", {
-    name: "Thanh điều hướng",
-  });
-  expect(sidebar.contains(tabs)).toBe(true);
+  await screen.findByRole("navigation", { name: "Điều hướng chính" });
   expect(
-    within(tabs).getByRole("link", { name: "Giờ công" }).getAttribute("href"),
-  ).toBe("/tasks/t-3/time-logs");
-  expect(
-    sidebar.contains(
-      screen.getByRole("navigation", { name: "Điều hướng chính" }),
-    ),
-  ).toBe(true);
-  expect(
-    screen
-      .getByRole("navigation", { name: "Điều hướng quản lý" })
-      .closest("header"),
-  ).toBeTruthy();
+    screen.queryByRole("navigation", { name: "Mục công việc" }),
+  ).toBeNull();
+  expect(screen.queryByRole("link", { name: "Giờ công" })).toBeNull();
 });
 
-it("keeps the task sections as a tab strip inside the page on narrow screens", async () => {
-  media(false);
-  history.replaceState(null, "", "/tasks/t-3");
-  show(<WorkspaceShell>{task}</WorkspaceShell>, await login("minh"));
-  const tabs = await screen.findByRole("navigation", { name: "Mục công việc" });
-  expect(screen.getByRole("main").contains(tabs)).toBe(true);
-});
-
-it("collapses the employee sidebar from the header and remembers the choice", async () => {
+it("collapses the employee sidebar from the interface settings and keeps the header free of a collapse button", async () => {
   history.replaceState(null, "", "/tasks/t-3");
   show(
     <WorkspaceShell>
@@ -669,23 +625,20 @@ it("collapses the employee sidebar from the header and remembers the choice", as
     await login("lan"),
   );
   const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Cài đặt giao diện" }));
   await user.click(
-    screen.getByRole("button", { name: "Thu gọn thanh điều hướng" }),
+    await screen.findByRole("switch", { name: "Thu gọn thanh bên" }),
   );
   expect(useUI.getState().sidebarCollapsed).toBe(true);
+  await user.keyboard("{Escape}");
+  await act(async () => {});
   const header = screen
-    .getByRole("button", {
-      name: "Mở rộng thanh điều hướng",
-    })
+    .getByRole("button", { name: "Mở menu tài khoản" })
     .closest("header")!;
   expect(
     within(header).getByRole("button", { name: "Dự án: Chọn dự án" }),
   ).toBeTruthy();
-  expect(
-    within(
-      screen.getByRole("complementary", { name: "Thanh điều hướng" }),
-    ).queryByRole("button", { name: /thanh điều hướng/ }),
-  ).toBeNull();
+  expect(screen.queryByRole("button", { name: /thanh điều hướng/ })).toBeNull();
 });
 
 it("loads notifications on open, marks the selected event read and opens its task", async () => {
@@ -819,8 +772,8 @@ it("keeps common functions in the sidebar on every manager workspace page", asyn
       name: "Thanh điều hướng",
     });
     expect(
-      screen.getByRole("button", { name: "Thu gọn thanh điều hướng" }),
-    ).toBeTruthy();
+      screen.queryByRole("button", { name: "Thu gọn thanh điều hướng" }),
+    ).toBeNull();
     expect(
       sidebar.contains(
         screen.getByRole("navigation", { name: "Điều hướng chính" }),
@@ -840,9 +793,6 @@ it("hides the sidebar on request and brings it back from the header", async () =
     await login("minh"),
   );
   expect(screen.queryByRole("complementary")).toBeNull();
-  expect(
-    screen.queryByRole("button", { name: "Thu gọn thanh điều hướng" }),
-  ).toBeNull();
   await userEvent
     .setup()
     .click(screen.getByRole("button", { name: "Hiện thanh bên" }));

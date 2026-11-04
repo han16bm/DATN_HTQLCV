@@ -12,7 +12,8 @@ type Session = SessionDto | null | undefined;
 const readsEveryProject: readonly Permission[] = ["ANALYTICS_VIEW"];
 
 // Có quyền ở phạm vi hệ thống, hoặc ở đúng dự án khi truyền projectId. Quyền
-// quản trị tài khoản không kéo theo quyền đọc, sửa hay nghiệm thu dự án.
+// quản trị tài khoản không kéo theo quyền sửa hay nghiệm thu dự án; Admin chỉ được xem
+// qua ANALYTICS_VIEW ở phạm vi hệ thống.
 export function hasPermission(
   session: Session,
   permission: Permission,

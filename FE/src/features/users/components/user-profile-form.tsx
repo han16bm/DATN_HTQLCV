@@ -106,7 +106,7 @@ export function UserProfileForm({
     >
       {user && (
         <div className="mb-3 flex flex-wrap items-center gap-3">
-          <Avatar name={user.displayName} src={user.avatarUrl} large />
+          <Avatar name={user.displayName} src={user.avatarUrl} size="lg" />
           <div className="grid min-w-0 flex-1 leading-snug">
             <strong className="text-sm font-semibold text-fg">
               {user.displayName}

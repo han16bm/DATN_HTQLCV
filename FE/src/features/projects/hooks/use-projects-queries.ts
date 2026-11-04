@@ -15,14 +15,17 @@ import {
   type ProjectQuery,
 } from "../types/projects.types";
 
-export function useListProjectsQuery(query: ProjectQuery = {}) {
+export function useListProjectsQuery(
+  query: ProjectQuery = {},
+  options: QueryOptions = {},
+) {
   const viewerId = useSession().session?.user.id;
 
   const filters = projectQuerySchema.safeParse(query).data ?? query;
   const result = useQuery({
     queryKey: projectsKeys.listProjects(viewerId, filters),
     queryFn: ({ signal }) => projectsService.listProjects(filters, { signal }),
-    enabled: Boolean(viewerId),
+    enabled: options.enabled !== false && Boolean(viewerId),
     staleTime: 30000,
   });
   return useQueryAccess(result, "projects");

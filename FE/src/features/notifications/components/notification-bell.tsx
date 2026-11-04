@@ -85,7 +85,7 @@ export function NotificationBell() {
           {count !== undefined && count > 0 && (
             <span
               aria-hidden="true"
-              className="absolute -top-0.5 -right-0.5 min-w-4.5 rounded-full bg-danger-fg px-1 text-center text-xs leading-4 font-semibold text-white"
+              className="absolute -top-0.5 -right-0.5 min-w-4.5 rounded-full bg-danger-bold px-1 text-center text-xs leading-4 font-semibold text-white"
             >
               {count > 99 ? "99+" : count}
             </span>

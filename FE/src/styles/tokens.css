@@ -27,24 +27,24 @@
   --color-fg-subtlest: #5b7082;
   --color-line: #dce5ed;
   --color-line-input: #7d8c9c;
-  --color-focus: #096e9d;
+  --color-focus: var(--theme-action);
   --color-overlay: rgb(15 23 42 / 0.42);
   --color-hover: rgb(15 23 42 / 0.05);
   --color-pressed: rgb(15 23 42 / 0.11);
 
   /* hành động tách khỏi trạng thái */
-  --color-action: #096e9d;
-  --color-action-hover: #075d87;
-  --color-action-pressed: #064d70;
-  --color-selected-bg: #e5f2f9;
-  --color-selected-fg: #085d88;
+  --color-action: var(--theme-action);
+  --color-action-hover: color-mix(in srgb, var(--theme-action) 88%, black);
+  --color-action-pressed: color-mix(in srgb, var(--theme-action) 74%, black);
+  --color-selected-bg: color-mix(in srgb, var(--theme-action) 10%, white);
+  --color-selected-fg: color-mix(in srgb, var(--theme-action) 90%, black);
 
   /* Điều hướng xanh, chữ trắng; chỉ áp dụng trong nav-surface. */
-  --color-nav: #1177aa;
+  --color-nav: var(--theme-nav);
   --color-nav-fg: #ffffff;
   --color-nav-muted: #ffffff;
-  --color-nav-hover: #0b6891;
-  --color-nav-selected: #055578;
+  --color-nav-hover: color-mix(in srgb, var(--theme-nav) 86%, black);
+  --color-nav-selected: color-mix(in srgb, var(--theme-nav) 70%, black);
   --color-nav-line: rgb(255 255 255 / 0.2);
 
   /* trạng thái */
@@ -66,7 +66,25 @@
 
 /* Font nạp bằng next/font ở app/layout.tsx; inline để var() được tính tại chỗ dùng. */
 @theme inline {
-  --font-sans: var(--font-app), "Segoe UI", sans-serif;
+  --font-sans: var(--font-be-vietnam), "Segoe UI", sans-serif;
+}
+
+/* Phông chữ người dùng chọn trong Cài đặt giao diện (data-font trên <html>); không có
+ * thuộc tính là Be Vietnam Pro ở trên. */
+:root[data-font="inter"] {
+  --font-sans: var(--font-inter), "Segoe UI", sans-serif;
+}
+:root[data-font="noto"] {
+  --font-sans: var(--font-noto), "Segoe UI", sans-serif;
+}
+:root[data-font="roboto"] {
+  --font-sans: var(--font-roboto), "Segoe UI", sans-serif;
+}
+:root[data-font="source"] {
+  --font-sans: var(--font-source), "Segoe UI", sans-serif;
+}
+:root[data-font="open-sans"] {
+  --font-sans: var(--font-open-sans), "Segoe UI", sans-serif;
 }
 
 /*
@@ -84,53 +102,71 @@
   --content-reading: 880px;
 }
 
-/* Màu chủ đạo do người dùng chọn trong Cài đặt giao diện (data-theme trên <html>): mỗi
- * bộ gồm màu thanh điều hướng (nền, hover, đang chọn) và màu hành động (nút, liên kết,
- * mục chọn, vòng focus). Chữ trắng đạt ≥ 4,5:1 trên cả sáu màu nền; màu hành động đạt
- * ≥ 4,5:1 trên nền trắng và nền trang. */
-:root[data-theme="navy"] {
-  --color-nav: #1e3a5f;
-  --color-nav-hover: #162d4a;
-  --color-nav-selected: #0e2038;
-  --color-action: #1d5ea8;
-  --color-action-hover: #174d8c;
-  --color-action-pressed: #123f74;
-  --color-focus: #1d5ea8;
-  --color-selected-bg: #e6eef8;
-  --color-selected-fg: #174d8c;
+/* Màu chủ đạo do người dùng chọn trong Cài đặt giao diện (data-theme). Mỗi bộ chỉ khai
+ * hai màu gốc: nav (thanh điều hướng) và action (nút, liên kết, mục chọn, vòng focus);
+ * hover, đang chọn và nền chọn suy ra bằng color-mix ở @theme. Chữ trắng trên nav và
+ * nền sáng/tối của trang đều phải đạt ≥ 4,5:1 (tests/theme-contrast.test.ts kiểm tra).
+ * Selector không gắn :root để ô màu trong Cài đặt cũng dùng được --theme-nav. */
+:root,
+[data-theme="ocean"] {
+  --theme-nav: #1177aa;
+  --theme-action: #096e9d;
 }
-:root[data-theme="teal"] {
-  --color-nav: #0f766e;
-  --color-nav-hover: #0b625b;
-  --color-nav-selected: #084b46;
-  --color-action: #0f766e;
-  --color-action-hover: #0b625b;
-  --color-action-pressed: #084b46;
-  --color-focus: #0f766e;
-  --color-selected-bg: #e2f4f1;
-  --color-selected-fg: #0b625b;
+[data-theme="navy"] {
+  --theme-nav: #1e3a5f;
+  --theme-action: #1d5ea8;
 }
-:root[data-theme="indigo"] {
-  --color-nav: #4351a8;
-  --color-nav-hover: #37448f;
-  --color-nav-selected: #2b3675;
-  --color-action: #4351a8;
-  --color-action-hover: #37448f;
-  --color-action-pressed: #2b3675;
-  --color-focus: #4351a8;
-  --color-selected-bg: #eceefa;
-  --color-selected-fg: #37448f;
+[data-theme="teal"] {
+  --theme-nav: #0f766e;
+  --theme-action: #0f766e;
 }
-:root[data-theme="slate"] {
-  --color-nav: #38485c;
-  --color-nav-hover: #2a374a;
-  --color-nav-selected: #1b2536;
-  --color-action: #3f5470;
-  --color-action-hover: #324560;
-  --color-action-pressed: #26364d;
-  --color-focus: #3f5470;
-  --color-selected-bg: #e8edf3;
-  --color-selected-fg: #324560;
+[data-theme="indigo"] {
+  --theme-nav: #4351a8;
+  --theme-action: #4351a8;
+}
+[data-theme="slate"] {
+  --theme-nav: #38485c;
+  --theme-action: #3f5470;
+}
+[data-theme="purple"] {
+  --theme-nav: #6b3fa0;
+  --theme-action: #6b3fa0;
+}
+[data-theme="orchid"] {
+  --theme-nav: #9c3d8f;
+  --theme-action: #9c3d8f;
+}
+[data-theme="pink"] {
+  --theme-nav: #c2185b;
+  --theme-action: #c2185b;
+}
+[data-theme="crimson"] {
+  --theme-nav: #b3261e;
+  --theme-action: #b3261e;
+}
+[data-theme="orange"] {
+  --theme-nav: #ad500a;
+  --theme-action: #ad500a;
+}
+[data-theme="amber"] {
+  --theme-nav: #8a6100;
+  --theme-action: #8a6100;
+}
+[data-theme="olive"] {
+  --theme-nav: #566f10;
+  --theme-action: #566f10;
+}
+[data-theme="green"] {
+  --theme-nav: #14773a;
+  --theme-action: #14773a;
+}
+[data-theme="cyan"] {
+  --theme-nav: #0e7490;
+  --theme-action: #0e7490;
+}
+[data-theme="brown"] {
+  --theme-nav: #7a4a2b;
+  --theme-action: #7a4a2b;
 }
 
 /* Nền trang (data-page): chữ phụ nhất vẫn đạt ≥ 4,5:1 trên cả bốn nền. */
@@ -142,6 +178,58 @@
 }
 :root[data-page="sand"] {
   --color-page: #f6f4f0;
+}
+
+/*
+ * Chế độ giao diện (data-mode trên <html>; mặc định là thanh điều hướng màu, nền sáng).
+ * Sáng: thanh điều hướng trắng, chữ tối, có viền mảnh. Tối: nền, bề mặt, chữ, viền và
+ * màu trạng thái đều đổi; màu hành động sáng lên để đạt ≥ 4,5:1 trên nền tối nên chữ
+ * trên nút hành động dùng text-surface (tối ở chế độ này).
+ */
+:root[data-mode="light"] {
+  color-scheme: light;
+  --color-nav: var(--color-surface);
+  --color-nav-fg: var(--color-fg);
+  --color-nav-muted: var(--color-fg-subtlest);
+  --color-nav-hover: var(--color-hover);
+  --color-nav-selected: var(--color-selected-bg);
+  --color-nav-line: var(--color-line);
+  --nav-outline: 0 0 0 1px var(--color-line);
+}
+:root[data-mode="dark"] {
+  color-scheme: dark;
+  --color-page: #0d141c;
+  --color-surface: #16202b;
+  --color-sunken: #1c2835;
+  --color-fg: #e8eef4;
+  --color-fg-subtle: #b4c1ce;
+  --color-fg-subtlest: #9fb0c0;
+  --color-line: #2c3b4a;
+  --color-line-input: #6f8296;
+  --color-overlay: rgb(0 0 0 / 0.6);
+  --color-hover: rgb(255 255 255 / 0.07);
+  --color-pressed: rgb(255 255 255 / 0.13);
+  --color-action: color-mix(in srgb, var(--theme-action) 50%, white);
+  --color-action-hover: color-mix(in srgb, var(--theme-action) 42%, white);
+  --color-action-pressed: color-mix(in srgb, var(--theme-action) 60%, white);
+  --color-focus: var(--color-action);
+  --color-selected-bg: color-mix(
+    in srgb,
+    var(--theme-action) 28%,
+    var(--color-surface)
+  );
+  --color-selected-fg: color-mix(in srgb, var(--theme-action) 38%, white);
+  --color-nav: color-mix(in srgb, var(--theme-nav) 45%, #0b1118);
+  --color-nav-hover: color-mix(in srgb, var(--theme-nav) 35%, #0b1118);
+  --color-nav-selected: color-mix(in srgb, var(--theme-nav) 25%, #0b1118);
+  --color-success-bg: #123124;
+  --color-success-fg: #7ad9a0;
+  --color-warning-bg: #3a2c0b;
+  --color-warning-fg: #f2c661;
+  --color-danger-bg: #3c1815;
+  --color-danger-fg: #ff9f95;
+  --color-info-bg: #12293a;
+  --color-info-fg: #82c8ee;
 }
 
 /* Mật độ bảng: chiều cao hàng dữ liệu (data-density trên <html>). */

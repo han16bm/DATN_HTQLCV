@@ -2,16 +2,19 @@ import { cn } from "@/lib/cn";
 import { Search } from "lucide-react";
 import type { ComponentProps } from "react";
 
-export type ControlSize = "default" | "form" | "auto";
+export type ControlSize = "default" | "form" | "auto" | "compact";
 
 // Điều khiển cao 32px ở thanh công cụ, 36px ở biểu mẫu, tối thiểu 44px khi cảm ứng.
+// "compact" cao 32px như mặc định nhưng chữ nhỏ (12px), dùng khi giá trị chọn là nội dung
+// phụ trong khung hẹp (Cài đặt giao diện).
 // Viền đạt 3:1; ô chỉ
 // đọc đổi nền thay vì viền để không giống ô đang nhập.
 export const controlClass = (size: ControlSize = "default") =>
   cn(
-    "min-w-0 rounded-md border border-line-input bg-surface px-3 text-sm text-fg transition-colors duration-150 motion-reduce:transition-none",
+    "min-w-0 rounded-md border border-line-input bg-surface px-3 text-fg transition-colors duration-150 motion-reduce:transition-none",
+    size === "compact" ? "text-xs" : "text-sm",
     size === "form" && "h-(--control-h-form)",
-    size === "default" && "h-(--control-h)",
+    (size === "default" || size === "compact") && "h-(--control-h)",
     "placeholder:text-fg-subtlest hover:bg-hover disabled:cursor-not-allowed disabled:bg-sunken disabled:text-fg-subtlest",
     "read-only:border-transparent read-only:bg-sunken read-only:text-fg-subtle",
     "aria-invalid:border-danger-bold pointer-coarse:text-base",

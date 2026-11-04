@@ -1,9 +1,7 @@
 "use client";
 import { hasPermission } from "@/lib/auth/access";
-import { TaskStepper } from "./task-stepper";
 
 import { PageSkeleton } from "@/components/ui/loading";
-import { SectionNav } from "@/components/layout/section-nav";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
@@ -17,14 +15,7 @@ import { useSession } from "@/lib/auth/session-context";
 import { useHashDialog } from "@/lib/forms/use-hash-dialog";
 import { useCrumbLabel } from "@/lib/use-crumb-label";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import {
-  Clock,
-  Ellipsis,
-  FileCheck,
-  FileText,
-  History,
-  Settings,
-} from "lucide-react";
+import { Ellipsis } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode } from "react";
@@ -72,48 +63,14 @@ export function TaskShell({
     hasPermission(session, "TASKS_REVIEW", task.projectId) &&
     (!path.startsWith(`${root}/submissions/`) ||
       path === `${root}/submissions/${task.latestSubmissionId}`);
-  const navigation = (
-    <SectionNav
-      label="Mục công việc"
-      items={[
-        {
-          href: root,
-          label: "Chi tiết",
-          icon: FileText,
-          active: path === root,
-        },
-        {
-          href: `${root}/time-logs`,
-          label: "Giờ công",
-          icon: Clock,
-          active: path === `${root}/time-logs`,
-        },
-        {
-          href: `${root}/submissions`,
-          label: "Kết quả",
-          icon: FileCheck,
-          active: path.startsWith(`${root}/submissions`),
-        },
-        {
-          href: `${root}/history`,
-          label: "Lịch sử",
-          icon: History,
-          active: path === `${root}/history`,
-        },
-        ...(path === `${root}/edit`
-          ? [{ href: path, label: "Điều chỉnh", icon: Settings, active: true }]
-          : []),
-      ]}
-    />
-  );
   return (
     <>
-      {navigation}
       <div className="pt-2">
         <PageHeader
           title={task.title}
           status={
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <StatusField value={task.status} />
               <StatusField label="Ưu tiên" value={task.priority} />
               {task.isOverdue && (
                 <StatusField label="Tiến độ" value="OVERDUE" />
@@ -203,10 +160,6 @@ export function TaskShell({
             </>
           }
         />
-      </div>
-
-      <div className="mb-5 min-w-0 overflow-x-auto rounded-lg border border-line bg-surface px-4 py-2">
-        <TaskStepper status={task.status} />
       </div>
 
       {project.isError && (

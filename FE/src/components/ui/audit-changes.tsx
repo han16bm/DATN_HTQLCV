@@ -69,11 +69,11 @@ export function AuditChanges({
       </span>
     );
   return (
-    <dl className="m-0 mt-2 grid gap-2">
+    <dl className="m-0 grid gap-3">
       {keys.map((key) => (
         <div
           key={key}
-          className="grid grid-cols-2 gap-x-3 gap-y-1 rounded-lg border border-line bg-sunken/50 p-2.5"
+          className="grid grid-cols-2 gap-x-3 gap-y-1 rounded-md border border-line bg-surface p-3"
         >
           <dt className="col-span-full text-sm font-medium text-fg">
             {fields[key] ?? key}

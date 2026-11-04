@@ -75,7 +75,7 @@ export function TaskForm({
     submitLabel: task ? "Lưu thay đổi" : "Tạo công việc",
     cancel: (
       <ButtonLink
-        href={task ? `/tasks/${task.id}` : `/projects/${projectId}/tasks`}
+        href={task ? `/tasks/${task.id}` : `/projects/${projectId}#tasks`}
       >
         Hủy
       </ButtonLink>

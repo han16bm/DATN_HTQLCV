@@ -21,6 +21,7 @@ import { useListProjectsQuery } from "@/features/projects/hooks/use-projects-que
 import { useSession } from "@/lib/auth/session-context";
 import { dateTime, label } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
+import { Columns3, List } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useListTasksQuery } from "../hooks/use-tasks-queries";
@@ -39,7 +40,10 @@ export function TaskListPage({
   const status = taskStatusSchema.safeParse(filters.get("status"));
   const priority = prioritySchema.safeParse(filters.get("priority"));
   const projectId = fixedProjectId ?? filters.get("projectId");
-  const projects = useListProjectsQuery({ pageSize: 100 });
+  const projects = useListProjectsQuery(
+    { pageSize: 100 },
+    { enabled: !fixedProjectId },
+  );
   const members = useListProjectMembersQuery(projectId, { pageSize: 100 });
   const query = useListTasksQuery({
     q: filters.get("q") || undefined,
@@ -74,7 +78,7 @@ export function TaskListPage({
     const next = new URLSearchParams(search);
     if (view) next.set("view", view);
     else next.delete("view");
-    router.replace(`?${next}`, { scroll: false });
+    router.replace(`?${next}${window.location.hash}`, { scroll: false });
   };
   const create = <CreateTaskAction projectId={projectId || undefined} />;
   return (
@@ -95,8 +99,8 @@ export function TaskListPage({
               value={board ? "board" : ""}
               onChange={setView}
               options={[
-                { value: "", label: "Danh sách" },
-                { value: "board", label: "Bảng trạng thái" },
+                { value: "", label: "Danh sách", icon: List },
+                { value: "board", label: "Bảng trạng thái", icon: Columns3 },
               ]}
             />
           </>
@@ -200,7 +204,7 @@ export function TaskListPage({
           </Button>
         )}
       </FilterBar>
-      {projects.isError && (
+      {!fixedProjectId && projects.isError && (
         <QueryErrorState error={projects.error} retry={projects.refetch} />
       )}
       {members.isError && (
@@ -291,6 +295,7 @@ export function TaskListPage({
             </div>
           ) : (
             <DataTable
+              fit={Boolean(fixedProjectId)}
               loading={query.isFetching}
               filtered={filtered}
               onClearFilters={clearFilters}
@@ -301,7 +306,7 @@ export function TaskListPage({
               actions
               widths={
                 fixedProjectId
-                  ? [24, 17, 11, 18, 11, 11, 8]
+                  ? [21, 16, 11, 17, 12, 12, 11]
                   : [21, 12, 14, 10, 13, 11, 11, 8]
               }
               headers={[
@@ -329,13 +334,19 @@ export function TaskListPage({
                 ) : (
                   "Chưa phân công"
                 ),
-                <Priority key="priority" value={t.priority} />,
-                <span key="state" className="flex flex-wrap items-center gap-1">
+                <span key="priority" className={fixedProjectId ? "text-xs [&>span]:whitespace-normal" : undefined}>
+                  <Priority value={t.priority} />
+                </span>,
+                <span key="state" className="flex flex-wrap items-center gap-1 [&>span]:whitespace-normal">
                   <StatusLozenge value={t.status} />
                   {t.isOverdue && <StatusLozenge value="OVERDUE" />}
                 </span>,
-                t.firstStartedAt ? dateTime(t.firstStartedAt) : "Chưa bắt đầu",
-                dateTime(t.dueAt),
+                <span key="start" className={fixedProjectId ? "text-xs tabular-nums" : undefined}>
+                  {t.firstStartedAt ? dateTime(t.firstStartedAt) : "Chưa bắt đầu"}
+                </span>,
+                <span key="due" className={fixedProjectId ? "text-xs tabular-nums" : undefined}>
+                  {dateTime(t.dueAt)}
+                </span>,
                 <DetailLink
                   key="detail"
                   href={`/tasks/${t.id}`}

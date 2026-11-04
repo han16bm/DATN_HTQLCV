@@ -216,7 +216,7 @@ export function ProjectSwitcher() {
           sideOffset={4}
           collisionPadding={12}
           aria-label="Chọn dự án"
-          className="z-70 w-[min(380px,calc(100vw-24px))] rounded-lg border border-line bg-surface shadow-overlay"
+          className="z-70 w-[min(288px,calc(100vw-24px))] rounded-lg border border-line bg-surface shadow-overlay"
         >
           <div className="border-b border-line p-2">
             <label htmlFor={`${listId}-search`} className="sr-only">

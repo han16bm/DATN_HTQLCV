@@ -1,4 +1,5 @@
 "use client";
+import { PreferencesSync } from "@/components/layout/preferences-sync";
 import { AuthObserver } from "@/features/auth/components/auth-observer";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -69,6 +70,7 @@ export function Providers({ children }: { children: ReactNode }) {
     );
   return (
     <QueryClientProvider client={client}>
+      <PreferencesSync />
       <AuthObserver>{children}</AuthObserver>
       <ConfirmDialog />
       <Toaster position="top-right" richColors closeButton duration={3500} />

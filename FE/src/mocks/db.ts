@@ -4236,8 +4236,8 @@ function visibleNotifications(user: User) {
     const task = db.tasks.find((item) => item.id === notice.taskId);
     return Boolean(
       task &&
-      visibleTask(user, task) &&
-      (!notice.alertId || can(user, "ANALYTICS_VIEW", task.projectId)),
+        visibleTask(user, task) &&
+        (!notice.alertId || can(user, "ANALYTICS_VIEW", task.projectId)),
     );
   });
 }

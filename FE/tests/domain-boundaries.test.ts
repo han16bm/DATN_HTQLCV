@@ -25,41 +25,44 @@ it.each([
   ["2026-10-31T03:00:00.000Z", "2026-11-06T10:00:00.000Z"],
   ["2026-12-31T18:30:00.000Z", "2027-01-07T10:00:00.000Z"],
   ["2028-02-25T03:00:00.000Z", "2028-03-02T10:00:00.000Z"],
-])("initializes open mock tasks six Vietnam calendar days after %s", async (date, dueAt) => {
-  const past = structuredClone(
-    db.tasks.filter((task) => ["t-4", "t-5", "t-6"].includes(task.id)),
-  );
-  const submissions = structuredClone(db.submissions);
-  resetDatabase(date);
-  await login("minh");
-  const tasks = await tasksService.listTasks({ projectId: "p-main" });
-  for (const id of ["t-1", "t-2", "t-3"])
-    expect(tasks.items.find((task) => task.id === id)?.dueAt).toBe(dueAt);
-  for (const id of ["t-1", "t-2", "t-3", "t-other"])
-    expect(db.tasks.find((task) => task.id === id)).toMatchObject({
-      dueAt,
-      originalDueAt: dueAt,
-    });
-  expect(
-    db.tasks.filter((task) => past.some((item) => item.id === task.id)),
-  ).toEqual(past);
-  expect(db.submissions).toEqual(submissions);
-  expect((await tasksService.getTask("t-4")).isOverdue).toBe(true);
-  const created = await tasksService.createTask(
-    "p-main",
-    {
-      title: "Công việc với hạn tương đối",
-      description: null,
-      acceptanceCriteria: "Có kết quả",
-      priority: "NORMAL",
-      dueAt,
-      estimatedMinutes: 60,
-    },
-    { key: "relative-deadline" },
-  );
-  expect(created.createdAt).toBe(date);
-  expect(created.isOverdue).toBe(false);
-});
+])(
+  "initializes open mock tasks six Vietnam calendar days after %s",
+  async (date, dueAt) => {
+    const past = structuredClone(
+      db.tasks.filter((task) => ["t-4", "t-5", "t-6"].includes(task.id)),
+    );
+    const submissions = structuredClone(db.submissions);
+    resetDatabase(date);
+    await login("minh");
+    const tasks = await tasksService.listTasks({ projectId: "p-main" });
+    for (const id of ["t-1", "t-2", "t-3"])
+      expect(tasks.items.find((task) => task.id === id)?.dueAt).toBe(dueAt);
+    for (const id of ["t-1", "t-2", "t-3", "t-other"])
+      expect(db.tasks.find((task) => task.id === id)).toMatchObject({
+        dueAt,
+        originalDueAt: dueAt,
+      });
+    expect(
+      db.tasks.filter((task) => past.some((item) => item.id === task.id)),
+    ).toEqual(past);
+    expect(db.submissions).toEqual(submissions);
+    expect((await tasksService.getTask("t-4")).isOverdue).toBe(true);
+    const created = await tasksService.createTask(
+      "p-main",
+      {
+        title: "Công việc với hạn tương đối",
+        description: null,
+        acceptanceCriteria: "Có kết quả",
+        priority: "NORMAL",
+        dueAt,
+        estimatedMinutes: 60,
+      },
+      { key: "relative-deadline" },
+    );
+    expect(created.createdAt).toBe(date);
+    expect(created.isOverdue).toBe(false);
+  },
+);
 it("expires access sessions and never revives an old token when signing in again", async () => {
   await login("lan");
   const old = token.get();

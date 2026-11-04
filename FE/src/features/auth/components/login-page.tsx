@@ -9,7 +9,6 @@ import { useSession } from "@/lib/auth/session-context";
 import { safeNext } from "@/lib/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, CircleAlert } from "lucide-react";
-import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
@@ -48,7 +47,8 @@ function Field({
   );
 }
 
-// Đăng nhập: giới thiệu ngắn bên trái (ẩn ở màn hẹp), biểu mẫu gọn bên phải.
+// Đăng nhập: một thẻ trắng ở giữa trên nền xanh của thanh điều hướng. Chỉ có tên sản
+// phẩm, hai ô nhập và một hành động chính; không có lời giới thiệu hay tranh minh họa.
 export function LoginPage() {
   const router = useRouter();
   const search = useSearchParams();
@@ -65,31 +65,16 @@ export function LoginPage() {
   }, [session, router, next]);
   const { errors } = form.formState;
   return (
-    <main className="grid min-h-screen w-full bg-surface lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-      <div className="order-2 hidden flex-col items-start justify-center bg-selected-bg/60 px-12 py-12 lg:flex">
-        <p className="mt-0 mb-0 text-3xl leading-tight font-semibold tracking-tight text-fg">
-          Cùng một mục tiêu.
-          <br />
-          Rõ từng bước tiến.
-        </p>
-        <p className="mt-3 mb-0 max-w-md text-sm text-fg-subtle">
-          Quản lý dự án, công việc và kết quả thực hiện trong một không gian
-          chung.
-        </p>
-        <Image
-          className="mt-6 h-auto w-full max-w-lg"
-          src="/illustrations/login-work.svg"
-          alt="Nhân viên ngồi làm việc trước máy tính, nhìn từ phía sau"
-          width={680}
-          height={440}
-          loading="eager"
-        />
-      </div>
-      <section className="order-1 mx-auto flex w-full max-w-[440px] flex-col justify-center px-6 py-12 sm:px-10">
-        <div className="mb-10">
-          <BrandLogo size={32} large />
-        </div>
-        <h1 className="mt-2 mb-0 text-heading-lg font-semibold text-fg">
+    <main className="grid min-h-screen w-full place-items-center bg-nav p-4">
+      <section
+        aria-labelledby="login-title"
+        className="w-full max-w-[400px] rounded-xl bg-surface p-6 shadow-overlay sm:p-8"
+      >
+        <BrandLogo size={32} large />
+        <h1
+          id="login-title"
+          className="mt-8 mb-0 text-heading-lg font-semibold text-fg"
+        >
           Đăng nhập
         </h1>
         {search.get("expired") && !session ? (
@@ -178,7 +163,7 @@ export function LoginPage() {
             </Button>
           </fieldset>
         </form>
-        <p className="mt-4 mb-0 text-xs text-fg-subtle">
+        <p className="mt-5 mb-0 text-xs text-fg-subtle">
           Quên mật khẩu? Liên hệ người quản lý tài khoản.
         </p>
       </section>

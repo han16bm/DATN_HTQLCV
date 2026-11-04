@@ -33,7 +33,7 @@ export function Avatar({
     <span
       className={cn(
         "grid shrink-0 place-items-center rounded-full font-medium",
-        large ? "size-16 text-xl" : "size-7 text-[11px]",
+        large ? "size-16 text-xl" : "size-7 text-xs",
         tones[toneOf(name)],
       )}
       aria-hidden="true"

@@ -10,6 +10,7 @@ import { notificationsService } from "@/features/notifications/api/notifications
 import { Session } from "@/lib/auth/session-context";
 import { resetMockState, server } from "@/mocks/node";
 import { registerRefresh, token } from "@/services/api-client";
+import { usePreferences } from "@/stores/preferences-store";
 import { useUI } from "@/stores/ui-store";
 import {
   QueryClient,
@@ -827,4 +828,27 @@ it("keeps common functions in the sidebar on every manager workspace page", asyn
     ).toBe(true);
     cleanup();
   }
+});
+
+it("hides the sidebar on request and brings it back from the header", async () => {
+  history.replaceState(null, "", "/workspace");
+  act(() => usePreferences.getState().set({ hideSidebar: true }));
+  show(
+    <WorkspaceShell>
+      <p>Trang chủ</p>
+    </WorkspaceShell>,
+    await login("minh"),
+  );
+  expect(screen.queryByRole("complementary")).toBeNull();
+  expect(
+    screen.queryByRole("button", { name: "Thu gọn thanh điều hướng" }),
+  ).toBeNull();
+  await userEvent
+    .setup()
+    .click(screen.getByRole("button", { name: "Hiện thanh bên" }));
+  expect(usePreferences.getState().hideSidebar).toBe(false);
+  expect(
+    screen.getByRole("complementary", { name: "Thanh điều hướng" }),
+  ).toBeTruthy();
+  act(() => usePreferences.getState().reset());
 });

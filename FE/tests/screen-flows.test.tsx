@@ -2533,18 +2533,24 @@ it("shows only the administration entry the account is permitted to open", async
       "Tài khoản của bạn chưa được cấp quyền truy cập trang này.",
     ),
   ).toBeTruthy();
-  const admin = screen.getByRole("navigation", { name: "Điều hướng quản trị" });
-  expect(admin.closest("header")).toBeTruthy();
+  // Các mục quản trị nằm ở sidebar, không còn trên header.
+  const sidebar = screen.getByRole("complementary", {
+    name: "Thanh điều hướng",
+  });
+  const admin = within(sidebar).getByRole("navigation", {
+    name: "Điều hướng quản trị",
+  });
   expect(within(admin).queryByRole("link", { name: "Tài khoản" })).toBeNull();
   for (const name of ["Đơn vị", "Nhóm nhân sự"])
     expect(within(admin).getByRole("link", { name })).toBeTruthy();
-  const back = within(admin.closest("header")!).getByRole("link", {
+  const header = sidebar.parentElement!.querySelector("header")!;
+  expect(within(header).queryByRole("link", { name: "Đơn vị" })).toBeNull();
+  const back = within(header).getByRole("link", {
     name: "Về không gian làm việc",
   });
   expect(back.getAttribute("href")).toBe("/workspace");
-  // Khu quản trị không có bộ chọn dự án và không có sidebar theo ngữ cảnh.
+  // Khu quản trị không có bộ chọn dự án.
   expect(screen.queryByRole("button", { name: /^Dự án:/ })).toBeNull();
-  expect(screen.queryByRole("complementary")).toBeNull();
 });
 
 it("keeps administration out of the work area for people without administration permissions", async () => {

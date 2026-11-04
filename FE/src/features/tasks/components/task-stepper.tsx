@@ -40,7 +40,7 @@ export function TaskStepper({ status }: { status: TaskDto["status"] }) {
           >
             <span
               className={cn(
-                "grid size-5 place-items-center rounded-full border text-[10px] font-semibold",
+                "grid size-5 place-items-center rounded-full border text-xs font-semibold",
                 done && "border-success-fg bg-success-fg text-white",
                 now && "border-action bg-action text-white",
                 !done && !now && "border-line-input bg-surface text-fg-subtle",

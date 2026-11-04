@@ -55,12 +55,6 @@ export function ReportPage({
             <aside aria-label="Số liệu đã chốt">
               <Panel title="Thông tin báo cáo">
                 <KeyValueList>
-                  <KeyValue label="Dự án">
-                    {project.data?.name ?? "Đang tải dự án…"}
-                  </KeyValue>
-                  <KeyValue label="Người lập">
-                    <UserBadge name={r.author.displayName} />
-                  </KeyValue>
                   <KeyValue label="Giờ công">
                     {hours(r.snapshot.totalMinutes)}
                   </KeyValue>

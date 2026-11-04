@@ -8,6 +8,7 @@ import { useSession } from "@/lib/auth/session-context";
 import { cn } from "@/lib/cn";
 import { confirmDiscard } from "@/lib/forms/confirm-discard";
 import type { Area } from "@/lib/navigation";
+import { usePreferences } from "@/stores/preferences-store";
 import { useUI } from "@/stores/ui-store";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
@@ -51,8 +52,11 @@ export function AppShell({
   const toggleSidebar = useUI((s) => s.toggleSidebar);
   const leaving = useRef(false);
   const [navSlot, setNavSlot] = useState<HTMLElement | null>(null);
-  // Chức năng chung ở sidebar của mọi role; mục quản lý bổ sung ở header.
-  const sidebar = area === "workspace";
+  // Cả hai khu đều có sidebar (chức năng chung hoặc các mục quản trị) trừ khi người
+  // dùng chọn ẩn trong Cài đặt giao diện; mục quản lý bổ sung nằm ở header.
+  const hidden = usePreferences((s) => s.hideSidebar);
+  const showSidebar = usePreferences((s) => s.set);
+  const sidebar = !hidden;
   const slots = useMemo(
     () => ({ nav: navSlot, enabled: sidebar }),
     [navSlot, sidebar],
@@ -73,7 +77,6 @@ export function AppShell({
   }, [setSidebar]);
   // Ctrl+[ thu gọn/mở rộng sidebar như Jira.
   useEffect(() => {
-    if (!sidebar) return;
     const shortcut = (event: KeyboardEvent) => {
       if (
         event.ctrlKey &&
@@ -82,7 +85,8 @@ export function AppShell({
         event.key === "["
       ) {
         event.preventDefault();
-        toggleSidebar();
+        if (hidden) showSidebar({ hideSidebar: false });
+        else toggleSidebar();
         document
           .querySelector<HTMLButtonElement>("[data-sidebar-toggle]")
           ?.focus();
@@ -90,7 +94,7 @@ export function AppShell({
     };
     window.addEventListener("keydown", shortcut);
     return () => window.removeEventListener("keydown", shortcut);
-  }, [sidebar, toggleSidebar]);
+  }, [hidden, showSidebar, toggleSidebar]);
   if (loading || !session)
     return (
       <div

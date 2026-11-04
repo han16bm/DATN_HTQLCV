@@ -3,12 +3,14 @@ import { IconButton } from "@/components/ui/icon-button";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import type { SessionDto } from "@/features/auth/types/auth.types";
 import type { Area } from "@/lib/navigation";
+import { usePreferences } from "@/stores/preferences-store";
 import { useUI } from "@/stores/ui-store";
 import * as Dialog from "@radix-ui/react-dialog";
 import { ArrowLeft, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense } from "react";
+import { SettingsPanel } from "./settings-panel";
 import { AccountMenu } from "./account-menu";
 import { MainNav } from "./main-nav";
 import { ProjectSwitcher } from "./project-switcher";
@@ -29,6 +31,7 @@ export function TopBar({
   const pathname = usePathname();
   const collapsed = useUI((s) => s.sidebarCollapsed);
   const toggleSidebar = useUI((s) => s.toggleSidebar);
+  const setPreferences = usePreferences((s) => s.set);
   const Panel = collapsed ? PanelLeftOpen : PanelLeftClose;
   return (
     <header className="nav-surface fixed inset-x-0 top-0 z-40 flex h-(--topbar-h) items-center gap-1.5 px-2 md:px-3">
@@ -37,7 +40,7 @@ export function TopBar({
           <Menu className="size-5" aria-hidden="true" />
         </IconButton>
       </Dialog.Trigger>
-      {sidebar && (
+      {sidebar ? (
         <IconButton
           label={
             collapsed ? "Mở rộng thanh điều hướng" : "Thu gọn thanh điều hướng"
@@ -48,6 +51,16 @@ export function TopBar({
           onClick={toggleSidebar}
         >
           <Panel className="size-[18px]" aria-hidden="true" />
+        </IconButton>
+      ) : (
+        <IconButton
+          label="Hiện thanh bên"
+          title="Ctrl+["
+          data-sidebar-toggle
+          className="max-md:hidden"
+          onClick={() => setPreferences({ hideSidebar: false })}
+        >
+          <PanelLeftOpen className="size-[18px]" aria-hidden="true" />
         </IconButton>
       )}
       {area === "admin" ? (
@@ -73,6 +86,7 @@ export function TopBar({
       </div>
       <div className="ml-auto flex shrink-0 items-center gap-2">
         <NotificationBell />
+        <SettingsPanel />
         <AccountMenu
           key={pathname}
           area={area}

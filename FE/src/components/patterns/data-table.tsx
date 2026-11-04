@@ -190,7 +190,7 @@ export function DataTable({
                           <td
                             key={j}
                             className={cn(
-                              "h-11 border-t border-line/70 px-3 py-2 align-middle text-sm leading-5 break-words",
+                              "h-(--row-h) border-t border-line/70 px-3 py-2 align-middle text-sm leading-5 break-words",
                               actions &&
                                 j === row.length - 1 &&
                                 "text-center whitespace-nowrap [&_.actions]:flex-nowrap [&_.actions]:justify-center [&_.actions]:gap-1.5 [&_button]:min-h-7 [&_button]:px-1.5",

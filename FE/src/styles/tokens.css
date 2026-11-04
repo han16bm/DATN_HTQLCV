@@ -43,8 +43,8 @@
   --color-nav: #1177aa;
   --color-nav-fg: #ffffff;
   --color-nav-muted: #ffffff;
-  --color-nav-hover: #0874a3;
-  --color-nav-selected: #066a98;
+  --color-nav-hover: #0b6891;
+  --color-nav-selected: #055578;
   --color-nav-line: rgb(255 255 255 / 0.2);
 
   /* trạng thái */
@@ -82,4 +82,72 @@
   --content-data: 1680px;
   --content-form: 720px;
   --content-reading: 880px;
+}
+
+/* Màu chủ đạo do người dùng chọn trong Cài đặt giao diện (data-theme trên <html>): mỗi
+ * bộ gồm màu thanh điều hướng (nền, hover, đang chọn) và màu hành động (nút, liên kết,
+ * mục chọn, vòng focus). Chữ trắng đạt ≥ 4,5:1 trên cả sáu màu nền; màu hành động đạt
+ * ≥ 4,5:1 trên nền trắng và nền trang. */
+:root[data-theme="navy"] {
+  --color-nav: #1e3a5f;
+  --color-nav-hover: #162d4a;
+  --color-nav-selected: #0e2038;
+  --color-action: #1d5ea8;
+  --color-action-hover: #174d8c;
+  --color-action-pressed: #123f74;
+  --color-focus: #1d5ea8;
+  --color-selected-bg: #e6eef8;
+  --color-selected-fg: #174d8c;
+}
+:root[data-theme="teal"] {
+  --color-nav: #0f766e;
+  --color-nav-hover: #0b625b;
+  --color-nav-selected: #084b46;
+  --color-action: #0f766e;
+  --color-action-hover: #0b625b;
+  --color-action-pressed: #084b46;
+  --color-focus: #0f766e;
+  --color-selected-bg: #e2f4f1;
+  --color-selected-fg: #0b625b;
+}
+:root[data-theme="indigo"] {
+  --color-nav: #4351a8;
+  --color-nav-hover: #37448f;
+  --color-nav-selected: #2b3675;
+  --color-action: #4351a8;
+  --color-action-hover: #37448f;
+  --color-action-pressed: #2b3675;
+  --color-focus: #4351a8;
+  --color-selected-bg: #eceefa;
+  --color-selected-fg: #37448f;
+}
+:root[data-theme="slate"] {
+  --color-nav: #38485c;
+  --color-nav-hover: #2a374a;
+  --color-nav-selected: #1b2536;
+  --color-action: #3f5470;
+  --color-action-hover: #324560;
+  --color-action-pressed: #26364d;
+  --color-focus: #3f5470;
+  --color-selected-bg: #e8edf3;
+  --color-selected-fg: #324560;
+}
+
+/* Nền trang (data-page): chữ phụ nhất vẫn đạt ≥ 4,5:1 trên cả bốn nền. */
+:root[data-page="gray"] {
+  --color-page: #f2f3f5;
+}
+:root[data-page="white"] {
+  --color-page: #ffffff;
+}
+:root[data-page="sand"] {
+  --color-page: #f6f4f0;
+}
+
+/* Mật độ bảng: chiều cao hàng dữ liệu (data-density trên <html>). */
+:root {
+  --row-h: 44px;
+}
+:root[data-density="compact"] {
+  --row-h: 36px;
 }

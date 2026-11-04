@@ -108,8 +108,8 @@ function NavDropdown({
   );
 }
 
-// Chỉ mục quản lý bổ sung ở header; khu admin có menu riêng. Cùng nguồn khai báo
-// với sidebar/mobile, quyền mở từng mục vẫn do canVisit quyết định.
+// Chỉ mục quản lý bổ sung của khu làm việc ở header; các mục quản trị nằm ở sidebar.
+// Cùng nguồn khai báo với sidebar/mobile, quyền mở từng mục vẫn do canVisit quyết định.
 export function MainNav({
   area,
   session,
@@ -119,14 +119,12 @@ export function MainNav({
 }) {
   const context = useNavContext(session);
   const items = navigation[area].filter(
-    (item) =>
-      canVisit(session, item.href) &&
-      (area === "admin" || item.placement === "header"),
+    (item) => canVisit(session, item.href) && item.placement === "header",
   );
   if (!items.length) return null;
   return (
     <nav
-      aria-label={area === "admin" ? name(area) : "Điều hướng quản lý"}
+      aria-label="Điều hướng quản lý"
       className="hidden h-full min-w-0 items-center gap-1 overflow-x-auto [scrollbar-width:none] md:flex"
     >
       {items.map((item) => {

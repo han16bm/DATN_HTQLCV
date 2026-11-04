@@ -1,6 +1,7 @@
 import { type Metadata } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 import { type ReactNode } from "react";
+import { preferencesBootScript } from "@/stores/preferences-store";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -18,7 +19,10 @@ export const metadata: Metadata = {
 };
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="vi" className={font.variable}>
+    <html lang="vi" className={font.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: preferencesBootScript }} />
+      </head>
       <body>
         <Providers>{children}</Providers>
       </body>

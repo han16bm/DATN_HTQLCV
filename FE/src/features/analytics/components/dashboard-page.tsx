@@ -34,14 +34,23 @@ const basisText = (metric: MetricDto) =>
     metric.denominator !== null ? ` · Tổng ${number(metric.denominator)}` : ""
   }`;
 
-// Chỉ số chính: số lớn, cơ sở tính nhỏ bên dưới, lối vào phân tích chi tiết.
+// Chỉ số chính: nhãn và lối vào phân tích chi tiết cùng một hàng, số lớn ở giữa, cơ
+// sở tính nhỏ bên dưới.
 function MetricCard({ metric }: { metric: MetricDto }) {
   return (
     <article
       aria-label={metric.label}
       className="grid min-w-0 content-start gap-1 bg-surface px-4 py-3"
     >
-      <p className="m-0 text-xs font-medium text-fg-subtle">{metric.label}</p>
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="m-0 min-w-0 text-xs font-medium text-fg-subtle">
+          {metric.label}
+        </p>
+        <AnalysisLink
+          value={metric.analysisRef}
+          label={`Xem chỉ số ${metric.label}`}
+        />
+      </div>
       <p
         className={cn(
           "m-0 text-metric font-semibold tabular-nums",
@@ -51,10 +60,6 @@ function MetricCard({ metric }: { metric: MetricDto }) {
         {metricValue(metric.value, metric.unit)}
       </p>
       <p className="m-0 text-xs text-fg-subtle">{basisText(metric)}</p>
-      <AnalysisLink
-        value={metric.analysisRef}
-        label={`Xem chỉ số ${metric.label}`}
-      />
     </article>
   );
 }

@@ -47,7 +47,7 @@ public sealed class AnalysisExplanationGenerator(
 
         var model = configuration[$"Analytics:{provider}:Model"];
         if (string.IsNullOrWhiteSpace(model))
-            model = isGemini ? "gemini-3.8-flash" : "claude-sonnet-4-5-20250929";
+            model = isGemini ? "gemini-3.5-flash-lite" : "claude-sonnet-4-5-20250929";
         if (model.Length > 120 || model.Any(char.IsControl))
             throw new AnalysisGenerationException(
                 "LLM_NOT_CONFIGURED",

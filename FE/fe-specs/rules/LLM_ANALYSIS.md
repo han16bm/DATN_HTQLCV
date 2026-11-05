@@ -20,7 +20,7 @@ Adapter gọi [Gemini API qua OpenAI compatibility endpoint](https://ai.google.d
 ```powershell
 dotnet user-secrets set "Analytics:Provider" "Gemini" --project BE\Services\Analytics.Api\Analytics.Api.csproj
 dotnet user-secrets set "Analytics:Gemini:ApiKey" "<API_KEY>" --project BE\Services\Analytics.Api\Analytics.Api.csproj
-dotnet user-secrets set "Analytics:Gemini:Model" "gemini-3.8-flash" --project BE\Services\Analytics.Api\Analytics.Api.csproj
+dotnet user-secrets set "Analytics:Gemini:Model" "gemini-3.5-flash-lite" --project BE\Services\Analytics.Api\Analytics.Api.csproj
 ```
 
 Khởi động lại `Analytics.Api` để nạp User Secrets. Khi chạy thử qua FE, khởi động cả Gateway và các service/DB như luồng BE bình thường, rồi yêu cầu sinh hoặc tạo lại lời giải thích phân tích. Model phải được bật cho API key của bạn. Không dùng `user-secrets list` khi chia sẻ màn hình/log vì lệnh đó hiển thị giá trị secret.

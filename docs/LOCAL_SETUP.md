@@ -63,7 +63,7 @@ Tạo API key trong [Google AI Studio](https://aistudio.google.com/apikey). Tạ
 
 ```powershell
 dotnet user-secrets set "Analytics:Provider" "Gemini" --project BE\Services\Analytics.Api\Analytics.Api.csproj
-dotnet user-secrets set "Analytics:Gemini:Model" "gemini-3.8-flash" --project BE\Services\Analytics.Api\Analytics.Api.csproj
+dotnet user-secrets set "Analytics:Gemini:Model" "gemini-3.5-flash-lite" --project BE\Services\Analytics.Api\Analytics.Api.csproj
 ```
 
 Nhập API key mà không ghi trực tiếp vào lệnh hoặc PowerShell history:
@@ -87,7 +87,7 @@ Các key LLM dành cho local:
 |---|---|
 | `Analytics:Provider` | `Gemini` |
 | `Analytics:Gemini:ApiKey` | API key riêng của máy/môi trường, lưu bằng User Secrets |
-| `Analytics:Gemini:Model` | Model được API key cho phép; hướng dẫn hiện dùng `gemini-3.8-flash` |
+| `Analytics:Gemini:Model` | Model được API key cho phép; hướng dẫn hiện dùng `gemini-3.5-flash-lite` |
 
 User Secrets gắn với project `Analytics.Api`, không được chia sẻ qua Git. Nếu provider hoặc API key thay đổi, khởi động lại `Analytics.Api`. Tránh dùng `dotnet user-secrets list` khi chia sẻ màn hình vì lệnh hiển thị giá trị secret.
 

@@ -11,6 +11,11 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<AnalysisSnapshotStore>();
         services.AddScoped<IAnalyticsService, AnalyticsService>();
         services.AddScoped<IAnalysisService, AnalysisService>();
+        services.AddHttpClient("Anthropic", client => client.Timeout = TimeSpan.FromSeconds(60));
+        services.AddHttpClient("Gemini", client => client.Timeout = TimeSpan.FromSeconds(60));
+        services.AddScoped<IAnalysisExplanationGenerator, AnalysisExplanationGenerator>();
+        services.AddScoped<AnalysisJobProcessor>();
+        services.AddHostedService<AnalysisGenerationBackgroundService>();
         services.AddScoped<IAlertService, AlertService>();
 
         services.Configure<AlertGenerationOptions>(configuration.GetSection("AlertGeneration"));

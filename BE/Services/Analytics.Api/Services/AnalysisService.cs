@@ -13,19 +13,13 @@ using Shared.Entities.Entities;
 
 namespace Analytics.Api.Services;
 
-/// <summary>
-/// Trang tổng hợp và chi tiết phân tích (GET /analytics/summary, /analytics/details/{id}), job diễn giải
-/// (POST/GET /analytics/jobs) và phản hồi (POST /analytics/details/{id}/feedback) — khớp analyticsDb của mock.
-/// Diễn giải sinh theo quy tắc từ chính số liệu/căn cứ của bản chụp (chưa gọi mô hình AI ngoài), nên mọi
-/// trích dẫn luôn trỏ đúng thông số/căn cứ có thật.
-/// </summary>
+/// <summary>Trang tổng hợp, snapshot phân tích, job diễn giải AI và phản hồi quản lý.</summary>
 public class AnalysisService(
     ApplicationDbContext context,
     IHttpContextAccessor http,
     IAnalyticsService analytics,
     AnalysisSnapshotStore snapshots) : IAnalysisService
 {
-    private const string ModelName = "Diễn giải tự động theo quy tắc";
     private static readonly JsonSerializerOptions Json = AnalysisSnapshotStore.Json;
 
     private string ViewerId => http.HttpContext?.GetUserId() ?? throw new UnauthorizedException("Phiên đăng nhập không hợp lệ.");
@@ -56,37 +50,66 @@ public class AnalysisService(
     {
         var mode = request.GenerationMode ?? "REUSE_OR_CREATE";
         var (snapshot, access) = await RequireAsync(request.AnalysisId);
-        var latestJob = await context.AnalysisJobs.AsNoTracking().Where(j => j.AnalysisId == snapshot.Id)
-            .OrderByDescending(j => j.CreatedAt).FirstOrDefaultAsync();
-        if (latestJob is not null && mode == "REUSE_OR_CREATE" && latestJob.Status == "SUCCEEDED" && snapshot.ExplanationJson is not null)
+        var latestJob = await context.AnalysisJobs.AsNoTracking().Where(job => job.AnalysisId == snapshot.Id)
+            .OrderByDescending(job => job.CreatedAt).FirstOrDefaultAsync();
+        if (latestJob is not null && latestJob.Status is "QUEUED" or "RUNNING")
+            return (ToDto(latestJob), false);
+        if (latestJob is not null && mode == "REUSE_OR_CREATE"
+            && latestJob.Status == "SUCCEEDED" && HasLlmExplanation(snapshot))
             return (ToDto(latestJob), true);
 
         var detail = await BuildDetailAsync(snapshot, access);
         if (!detail.Generation.Allowed)
             throw new BusinessRuleException("Không thể yêu cầu diễn giải cho bản dữ liệu này.") { Code = "GENERATION_BLOCKED" };
 
-        var now = DateTime.UtcNow;
         var job = new AnalysisJob
         {
             Id = GuidGenerator.NewId(),
             AnalysisId = snapshot.Id,
-            Status = "SUCCEEDED",
+            Status = "QUEUED",
             CreatedBy = ViewerId,
-            CreatedAt = now,
-            CompletedAt = now
+            CreatedAt = DateTime.UtcNow
         };
-        // Diễn giải theo quy tắc chạy ngay trong request (vài mili giây) nên job kết thúc luôn, FE không cần poll.
-        if (mode == "REGENERATE" || snapshot.ExplanationJson is null)
+
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        var activeJob = await context.AnalysisJobs.AsNoTracking()
+            .Where(item => item.AnalysisId == snapshot.Id && (item.Status == "QUEUED" || item.Status == "RUNNING"))
+            .OrderByDescending(item => item.CreatedAt)
+            .FirstOrDefaultAsync();
+        if (activeJob is not null)
+            return (ToDto(activeJob), false);
+
+        if (mode == "REUSE_OR_CREATE")
         {
-            var tracked = await context.AnalysisSnapshots.FirstAsync(s => s.Id == snapshot.Id);
-            tracked.ExplanationJson = JsonSerializer.Serialize(Explain(tracked, now), Json);
-            tracked.ExplanationStatus = "READY";
-            tracked.ExplanationErrorJson = null;
-            tracked.ActiveJobId = null;
+            var successfulJob = await context.AnalysisJobs.AsNoTracking()
+                .Where(item => item.AnalysisId == snapshot.Id && item.Status == "SUCCEEDED")
+                .OrderByDescending(item => item.CreatedAt)
+                .FirstOrDefaultAsync();
+            if (successfulJob is not null && HasLlmExplanation(snapshot))
+                return (ToDto(successfulJob), true);
         }
+
+        var reserved = await context.AnalysisSnapshots
+            .Where(item => item.Id == snapshot.Id && item.ExplanationStatus != "QUEUED" && item.ExplanationStatus != "RUNNING")
+            .ExecuteUpdateAsync(update => update
+                .SetProperty(item => item.ExplanationStatus, "QUEUED")
+                .SetProperty(item => item.ExplanationErrorJson, (string?)null)
+                .SetProperty(item => item.ActiveJobId, job.Id));
+        if (reserved == 0)
+        {
+            var inProgress = await context.AnalysisJobs.AsNoTracking()
+                .Where(item => item.AnalysisId == snapshot.Id && (item.Status == "QUEUED" || item.Status == "RUNNING"))
+                .OrderByDescending(item => item.CreatedAt)
+                .FirstOrDefaultAsync();
+            if (inProgress is not null)
+                return (ToDto(inProgress), false);
+            throw new BusinessRuleException("Không thể tạo tiến trình cho bản phân tích hiện tại.") { Code = "GENERATION_CONFLICT" };
+        }
+
         context.AnalysisJobs.Add(job);
         await context.SaveChangesAsync();
-        return (ToDto(job), true);
+        await transaction.CommitAsync();
+        return (ToDto(job), false);
     }
 
     public async Task<AnalysisJobDto> GetJobAsync(string jobId)
@@ -144,8 +167,15 @@ public class AnalysisService(
         var latest = await LatestIdAsync(snapshot, payload.Subject);
         var outdated = latest != snapshot.Id;
         var scope = JsonSerializer.Deserialize<SnapshotScope>(snapshot.ScopeJson, Json)!;
-        var explanation = snapshot.ExplanationJson is null ? null : JsonSerializer.Deserialize<ExplanationDto>(snapshot.ExplanationJson, Json);
-        var error = snapshot.ExplanationErrorJson is null ? null : JsonSerializer.Deserialize<JobErrorDto>(snapshot.ExplanationErrorJson, Json);
+        var explanation = snapshot.ExplanationJson is null
+            ? null
+            : JsonSerializer.Deserialize<ExplanationDto>(snapshot.ExplanationJson, Json);
+        var isLegacyExplanation = explanation?.ModelDisplayName == "Diễn giải tự động theo quy tắc";
+        if (isLegacyExplanation)
+            explanation = null;
+        var error = snapshot.ExplanationErrorJson is null || isLegacyExplanation
+            ? null
+            : JsonSerializer.Deserialize<JobErrorDto>(snapshot.ExplanationErrorJson, Json);
         var feedback = await context.AnalysisFeedback.AsNoTracking().Where(f => f.AnalysisId == snapshot.Id)
             .OrderByDescending(f => f.CreatedAt).FirstOrDefaultAsync();
         var hasData = !(payload.Metrics.Count > 0 && payload.Metrics.All(m => m.Value is null));
@@ -155,8 +185,11 @@ public class AnalysisService(
                 new AnalysisScopeDto(scope.From, scope.To), snapshot.CreatedAt, payload.Quality, payload.Metrics, payload.Context,
                 payload.Series, payload.Evidence),
             new FreshnessDto(outdated ? "OUTDATED" : "CURRENT", outdated ? latest : null),
-            new ExplanationStateDto(explanation is null ? (error is null ? "NOT_REQUESTED" : "FAILED") : "READY", explanation, null,
-                explanation is null ? error : null),
+            new ExplanationStateDto(
+                isLegacyExplanation ? "NOT_REQUESTED" : snapshot.ExplanationStatus,
+                explanation,
+                snapshot.ActiveJobId,
+                error),
             new GenerationPolicyDto(hasData && !outdated),
             payload.SystemSummary,
             new FeedbackStateDto(
@@ -168,10 +201,17 @@ public class AnalysisService(
     // Tính lại cùng phạm vi để biết bản đang xem còn là bản mới nhất của đối tượng không (null: đối tượng không còn trong kết quả).
     private async Task<string?> LatestIdAsync(AnalysisSnapshot snapshot, AnalysisSubjectDto subject)
     {
-        // Tính lại cả phân tích tốn nhiều truy vấn: chỉ làm khi dữ liệu nguồn trong phạm vi đã đổi sau lần chụp.
-        if (!await SourceChangedSinceAsync(snapshot.ProjectIds, snapshot.CreatedAt))
+        var scope = JsonSerializer.Deserialize<SnapshotScope>(snapshot.ScopeJson, Json)!;
+        var payload = Payload(snapshot);
+        var hasTimeDependentMetrics = payload.Metrics.Any(metric =>
+            metric.Id is "m-k10" or "m-k15");
+        var timeDependent = snapshot.AnalysisType is "RISK" or "BOTTLENECK" or "SUMMARY"
+            || snapshot.AnalysisType == "METRIC" && hasTimeDependentMetrics
+            || scope.TeamId is not null;
+        var sourceChanged = await SourceChangedSinceAsync(snapshot.ProjectIds, snapshot.CreatedAt, scope.TeamId);
+        if (!timeDependent && !sourceChanged)
             return snapshot.Id;
-        var query = JsonSerializer.Deserialize<SnapshotScope>(snapshot.ScopeJson, Json)!.ToQuery();
+        var query = scope.ToQuery();
         try
         {
             switch (snapshot.AnalysisType)
@@ -189,44 +229,39 @@ public class AnalysisService(
         return snapshots.Latest(snapshot.AnalysisType, subject);
     }
 
-    private async Task<bool> SourceChangedSinceAsync(List<string> projectIds, DateTime since)
+    private async Task<bool> SourceChangedSinceAsync(List<string> projectIds, DateTime since, string? teamId)
     {
         var all = projectIds.Count == 0;
         var tasks = context.Tasks.AsNoTracking().Where(t => all || projectIds.Contains(t.ProjectId));
         var taskIds = tasks.Select(t => t.Id);
+        var projects = context.Projects.AsNoTracking().Where(project => all || projectIds.Contains(project.Id));
+        var ownerIds = projects.Select(project => project.OwnerId);
+        var assigneeIds = tasks.Where(task => task.AssigneeId != null).Select(task => task.AssigneeId!);
+        var memberIds = context.ProjectMemberships.AsNoTracking()
+            .Where(member => all || projectIds.Contains(member.ProjectId))
+            .Select(member => member.UserId);
+        var affectedUserIds = ownerIds.Concat(assigneeIds).Concat(memberIds).Distinct();
+        var unitIds = projects.Select(project => project.UnitId);
         return await tasks.AnyAsync(t => t.UpdatedAt > since)
             || await context.Submissions.AsNoTracking().AnyAsync(s => taskIds.Contains(s.TaskId) && s.UpdatedAt > since)
             || await context.TimeLogs.AsNoTracking().AnyAsync(l => taskIds.Contains(l.TaskId) && l.UpdatedAt > since)
             || await context.Reports.AsNoTracking().AnyAsync(r => (all || projectIds.Contains(r.ProjectId)) && r.UpdatedAt > since)
-            || await context.ProjectMemberships.AsNoTracking().AnyAsync(m => (all || projectIds.Contains(m.ProjectId)) && m.UpdatedAt > since);
+            || await context.ProjectMemberships.AsNoTracking().AnyAsync(m => (all || projectIds.Contains(m.ProjectId)) && m.UpdatedAt > since)
+            || await projects.AnyAsync(project => project.UpdatedAt > since)
+            || await context.Users.AsNoTracking().AnyAsync(user => affectedUserIds.Contains(user.Id) && user.UpdatedAt > since)
+            || await context.Units.AsNoTracking().AnyAsync(unit => unitIds.Contains(unit.Id) && unit.UpdatedAt > since)
+            || teamId is not null && await context.Teams.AsNoTracking()
+                .AnyAsync(team => team.Id == teamId && team.UpdatedAt > since);
     }
 
     private static SnapshotPayload Payload(AnalysisSnapshot snapshot) =>
         JsonSerializer.Deserialize<SnapshotPayload>(snapshot.PayloadJson, Json)!;
 
-    private static ExplanationDto Explain(AnalysisSnapshot snapshot, DateTime now)
+    private static bool HasLlmExplanation(AnalysisSnapshot snapshot)
     {
-        var payload = Payload(snapshot);
-        var findings = new List<FindingDto>
-        {
-            new("finding-1", "Tình hình hiện tại",
-                payload.Metrics.Count > 0
-                    ? string.Join("; ", payload.Metrics.Select(m => $"{m.Label}: {AnalyticsService.FormatValue(m.Value, m.Unit)}"))
-                    : payload.SystemSummary,
-                payload.Metrics.Select(m => m.Id).ToList(),
-                payload.Evidence.Select(e => e.Id).ToList())
-        };
-        var missing = payload.Metrics.Where(m => m.Value is null).ToList();
-        if (missing.Count > 0)
-            findings.Add(new FindingDto("finding-2", "Số liệu còn thiếu",
-                $"Chưa có dữ liệu cho: {string.Join(", ", missing.Select(m => m.Label))}.", missing.Select(m => m.Id).ToList(), []));
-        var recommendations = payload.Evidence.Where(e => e.Action is not null).Take(3)
-            .Select((e, i) => new RecommendationDto($"recommendation-{i + 1}", "Xem thông tin liên quan", e.Label, [e.Id], e.Action))
-            .ToList();
-        var limitations = new List<string> { "Kết quả phân tích cần được đối chiếu với tiến độ và báo cáo thực tế." };
-        if (missing.Count > 0)
-            limitations.Add("Nguồn dữ liệu còn thiếu; chưa đủ căn cứ kết luận quá tải hoặc hiệu suất cá nhân.");
-        return new ExplanationDto(snapshot.Id, snapshot.SnapshotId, now, ModelName, payload.SystemSummary, findings, recommendations, limitations);
+        return snapshot.ExplanationJson is not null
+            && JsonSerializer.Deserialize<ExplanationDto>(snapshot.ExplanationJson, Json)?.ModelDisplayName
+                != "Diễn giải tự động theo quy tắc";
     }
 
     private async Task<PersonRefDto> PersonAsync(string userId)

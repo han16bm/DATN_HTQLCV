@@ -1,6 +1,39 @@
 # Phân tích bằng LLM có sẵn: luồng dữ liệu và quy tắc triển khai
 
-Contract đề xuất 0.3.0 · cập nhật 24/10/2026. Dùng LLM do BE cấu hình qua API/endpoint có sẵn. Không đặt yêu cầu huấn luyện một mô hình dự báo riêng. Chưa ràng buộc nhà cung cấp hay tên model cụ thể.
+Contract đề xuất 0.3.0 · cập nhật 24/10/2026. Dùng LLM do BE cấu hình qua API/endpoint có sẵn. Không đặt yêu cầu huấn luyện một mô hình dự báo riêng. Provider hỗ trợ: Anthropic Claude và Google Gemini; mặc định là Anthropic nếu không đặt `Analytics:Provider`.
+
+## Trạng thái triển khai
+
+Cập nhật 05/11/2026: MVP dùng adapter có thể chọn Anthropic Claude hoặc Google Gemini qua `Analytics.Api`. Job được lưu ở `AnalysisJobs`, chạy nền và có thể poll; đầu ra được kiểm tra schema và mọi metric/evidence citation phải tồn tại trong snapshot. FE chỉ hiển thị lời giải thích đã qua kiểm tra. Không có API key trong source code.
+
+Sau khi áp migration `AddAnthropicLlmConfigs`, cấu hình tại **Admin → Cấu hình tập trung → Analytics.Api → AI**:
+
+- `Analytics:Anthropic:ApiKey`: nhập khóa trong cấu hình secret (BE mã hóa khi lưu, không trả giá trị lại).
+- `Analytics:Anthropic:Model`: model ID được tài khoản Anthropic cấp quyền; mặc định `claude-sonnet-4-5-20250929`.
+
+Secret được giải mã bằng `CentralConfig:SecretKey` hoặc `Jwt:SigningKey` theo `ConfigSecretBox`; phải giữ nguyên khóa mã hóa giữa các lần chạy. Nếu chưa cấu hình key, giao diện giữ nguyên số liệu và báo trạng thái LLM chưa khả dụng. Chưa thực hiện kiểm thử gọi provider thật; các kiểm thử hiện dùng HTTP handler giả.
+
+### Dùng Gemini tạm thời để test local
+
+Adapter gọi [Gemini API qua OpenAI compatibility endpoint](https://ai.google.dev/gemini-api/docs/openai). Lấy API key từ [Google AI Studio](https://aistudio.google.com/apikey), rồi chạy tại thư mục gốc repo. User Secrets được ưu tiên cao hơn `SystemConfigs`, nên không cần thêm migration hay lưu key vào DB:
+
+```powershell
+dotnet user-secrets set "Analytics:Provider" "Gemini" --project BE\Services\Analytics.Api\Analytics.Api.csproj
+dotnet user-secrets set "Analytics:Gemini:ApiKey" "<API_KEY>" --project BE\Services\Analytics.Api\Analytics.Api.csproj
+dotnet user-secrets set "Analytics:Gemini:Model" "gemini-3.8-flash" --project BE\Services\Analytics.Api\Analytics.Api.csproj
+```
+
+Khởi động lại `Analytics.Api` để nạp User Secrets. Khi chạy thử qua FE, khởi động cả Gateway và các service/DB như luồng BE bình thường, rồi yêu cầu sinh hoặc tạo lại lời giải thích phân tích. Model phải được bật cho API key của bạn. Không dùng `user-secrets list` khi chia sẻ màn hình/log vì lệnh đó hiển thị giá trị secret.
+
+Để quay về Claude, đặt `Analytics:Provider` thành `Anthropic` và cấu hình `Analytics:Anthropic:ApiKey`; hoặc xóa selector local bằng:
+
+```powershell
+dotnet user-secrets remove "Analytics:Provider" --project BE\Services\Analytics.Api\Analytics.Api.csproj
+```
+
+Sau đó khởi động lại Analytics.Api. Chỉ gửi dữ liệu dự án đã được phép xử lý qua Google; evidence label có thể chứa tiêu đề công việc.
+
+Khi sinh lời giải thích, BE gửi tới provider đang chọn loại phân tích, loại đối tượng, kỳ, chất lượng, metrics, context, chuỗi số liệu và nhãn evidence tối thiểu. Không gửi subject ID, snapshot/analysis ID, tên/tiêu đề dự án riêng, domain action ID, email, tài khoản, tệp đính kèm hoặc system summary. Nhãn evidence vẫn có thể chứa tiêu đề công việc; chỉ bật provider sau khi tổ chức chấp thuận việc xử lý dữ liệu đó với nhà cung cấp tương ứng.
 
 ## Trải nghiệm người dùng
 
@@ -28,7 +61,7 @@ Mọi access key/provider URL riêng nằm ở BE. FE không gửi prompt tự d
 3. READY: render lastSuccess. QUEUED/RUNNING: theo dõi activeJobId. NOT_REQUESTED + allowed: một mutation createAnalysisJob với analysisId, generationMode=REUSE_OR_CREATE, locale=vi-VN và Idempotency-Key.
 4. BE kiểm tra snapshot còn hiệu lực/đúng quyền, gom lượt yêu cầu trùng, cố định snapshotId, promptVersion, model configuration và locale vào job.
 5. Adapter tạo đầu vào từ metrics, context và evidence đã lọc. Nếu nhà cung cấp/model hỗ trợ structured output/JSON schema, dùng khả năng đó; luôn kiểm tra lại phía BE. Nếu chỉ trả text JSON, parse/validate có giới hạn; lỗi không trở thành READY.
-6. LLM trả summary/findings/recommendations/limitations có metricIds/evidenceIds. BE kiểm tra tham chiếu, các giá trị số được khẳng định và mâu thuẫn với snapshot; lỗi output đánh FAILED/OUTPUT_INVALID. Chỉ lưu kết quả đã qua kiểm tra.
+6. LLM trả summary/findings/recommendations/limitations có metricIds/evidenceIds. BE kiểm tra schema, giới hạn độ dài, citation và map action từ evidence có sẵn; từ chối câu chữ chứa chữ số để không biến số do model tự tạo thành kết luận. Nhận định định tính vẫn cần người quản lý đối chiếu; lỗi output đánh FAILED/OUTPUT_INVALID.
 7. FE poll getAnalysisJob theo pollAfterMs; terminal refetch getAnalysisDetail của đúng analysisId. Không gắn nội dung của snapshot cũ vào số liệu mới.
 8. Phân tích lại là hành động rõ ràng dùng REGENERATE và khóa mới; không tự chạy do refocus, render lại, đổi tab hoặc refetch. Cùng snapshot/job đang chạy được reuse hoặc trả 409 kèm activeJobId.
 

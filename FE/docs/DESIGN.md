@@ -23,7 +23,7 @@ Người dùng nội bộ cần nhận ra việc phải xử lý trước, đọ
 
 ## Hệ thống dùng chung
 
-Be Vietnam Pro (400/500/600/700), tự host bằng next/font, phục vụ nhãn tiếng Việt và bảng dữ liệu. H1 24px, heading khối 16px, nội dung/control 14px, metadata 12px. Xanh biển giữ từ ngữ cảnh người dùng, màu hành động #096e9d thay xanh chàm cũ; nền xám xanh #f3f7fa, chữ #213547. Header 52px, sidebar 224/64px; control 32px, form 36px, bảng 44px; vùng cảm ứng tối thiểu 44px. Bo 6px cho control, 8px cho nội dung; lớp nổi có bóng riêng. Chuyển trạng thái 150–200ms và tôn trọng reduced motion.
+Be Vietnam Pro (400/500/600/700), tự host bằng next/font, phục vụ nhãn tiếng Việt và bảng dữ liệu. H1 24px, heading khối 16px, nội dung/control 14px, metadata 12px. Xanh biển giữ từ ngữ cảnh người dùng, màu theo design system BHXH: điều hướng #0077b4 (blue-600), hành động #0074b0, nền #f6f9fb, bề mặt trắng, chữ #15222b; trạng thái dùng cặp nền/chữ của chip DS (vàng giữ chữ #7a4b00 cho đủ 4,5:1). Header 64px, sidebar 280/80px; nút và ô nhập 38px (cả thanh lọc và biểu mẫu), hàng bảng 44px (gọn 36px); vùng cảm ứng tối thiểu 44px. Chuẩn chung với các phần mềm quản trị gần đây của nhóm và quy tắc chống AI slop ở CLAUDE.md: nút, badge, segmented và liên kết nhỏ bo tròn hẳn (pill); ô nhập bo 8px; thẻ, bảng, panel vuông vức 4px; hộp thoại 8px. Header bảng tô màu điều hướng chữ trắng, hàng chẵn nền nhạt, hover tô màu chọn. Bề mặt tách bằng viền, không bóng nổi; chỉ menu/hộp thoại có một bóng ngắn. Không gradient trang trí. Dấu * bắt buộc màu đỏ. Nút có hiệu ứng nhấn thu nhỏ 3% và chuyển màu 150ms ease-out; tắt khi giảm chuyển động.
 
 | Thành phần | Vai trò trong bản mới |
 |---|---|

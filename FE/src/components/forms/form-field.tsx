@@ -68,7 +68,12 @@ export function Field({
     <div className={cn("min-w-0", columns[width], className)}>
       <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-fg">
         {label}
-        {required && " *"}
+        {required && (
+          <>
+            {" "}
+            <span className="text-danger-fg">*</span>
+          </>
+        )}
       </label>
       {children({
         id,

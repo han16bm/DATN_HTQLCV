@@ -30,7 +30,7 @@ export const modes = [
   { value: "dark", label: "Tối" },
 ] as const;
 export const pages = [
-  { value: "blue", label: "Xanh nhạt", color: "#f3f7fa" },
+  { value: "blue", label: "Xanh nhạt", color: "#f6f9fb" },
   { value: "gray", label: "Xám", color: "#f2f3f5" },
   { value: "white", label: "Trắng", color: "#ffffff" },
   { value: "sand", label: "Be nhạt", color: "#f6f4f0" },

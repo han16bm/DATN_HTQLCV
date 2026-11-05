@@ -19,7 +19,7 @@ export function SegmentedControl({
     <div
       role="group"
       aria-label={label}
-      className="inline-flex h-(--control-h) shrink-0 items-center gap-0.5 rounded-md bg-sunken p-0.5 pointer-coarse:h-12"
+      className="inline-flex h-(--control-h) shrink-0 items-center gap-0.5 rounded-full bg-sunken p-0.5 pointer-coarse:h-12"
     >
       {options.map(({ value: key, label: name, icon: Icon }) => (
         <button
@@ -31,7 +31,7 @@ export function SegmentedControl({
           aria-pressed={key === value}
           onClick={() => onChange(key)}
           className={cn(
-            "grid aspect-square h-full place-items-center rounded-sm text-fg-subtle transition-colors duration-150 hover:bg-hover active:bg-pressed motion-reduce:transition-none",
+            "grid aspect-square h-full place-items-center rounded-full text-fg-subtle transition-colors duration-150 ease-out hover:bg-hover active:bg-pressed motion-reduce:transition-none",
             "aria-pressed:bg-surface aria-pressed:text-selected-fg",
           )}
         >

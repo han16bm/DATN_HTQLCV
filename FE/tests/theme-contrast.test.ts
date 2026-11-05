@@ -27,8 +27,8 @@ const contrast = (a: Rgb, b: Rgb) => {
 
 const WHITE = rgb("#ffffff");
 const BLACK = rgb("#000000");
-const SURFACE = rgb("#fdfefe");
-const PAGES = ["#f3f7fa", "#f2f3f5", "#ffffff", "#f6f4f0"].map(rgb);
+const SURFACE = rgb("#ffffff");
+const PAGES = ["#f6f9fb", "#f2f3f5", "#ffffff", "#f6f4f0"].map(rgb);
 const DARK_SURFACE = rgb("#16202b");
 const DARK_PAGE = rgb("#0d141c");
 

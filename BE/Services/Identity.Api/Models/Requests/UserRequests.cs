@@ -15,10 +15,28 @@ public record UserCreateRequest
     public List<string> GroupIds { get; init; } = [];
     [Required, MinLength(8), MaxLength(128)]
     public string InitialPassword { get; init; } = null!;
+
+    // Thông tin cá nhân tùy chọn (chuỗi rỗng = bỏ trống), kiểm tra ở PersonalInfoRules.
+    public string? Gender { get; init; }
+    public string? BirthDate { get; init; }
+    public string? Phone { get; init; }
+    public string? PermanentAddress { get; init; }
+    public string? TemporaryAddress { get; init; }
 }
 
+// Trường lạ (position, systemRole, username...) → 422 thay vì bị bỏ qua lặng lẽ.
+[System.Text.Json.Serialization.JsonUnmappedMemberHandling(System.Text.Json.Serialization.JsonUnmappedMemberHandling.Disallow)]
 public record UserPatchRequest
 {
+    // Thông tin cá nhân: chỉ trường có mặt trong body mới được ghi (null = xóa giá trị).
+    private readonly Dictionary<string, string?> _personal = new();
+    public string? Gender { get => _personal.GetValueOrDefault("gender"); init => _personal["gender"] = value; }
+    public string? BirthDate { get => _personal.GetValueOrDefault("birthDate"); init => _personal["birthDate"] = value; }
+    public string? Phone { get => _personal.GetValueOrDefault("phone"); init => _personal["phone"] = value; }
+    public string? PermanentAddress { get => _personal.GetValueOrDefault("permanentAddress"); init => _personal["permanentAddress"] = value; }
+    public string? TemporaryAddress { get => _personal.GetValueOrDefault("temporaryAddress"); init => _personal["temporaryAddress"] = value; }
+    public IEnumerable<KeyValuePair<string, string?>> PersonalFields() => _personal;
+
     [MaxLength(255)]
     public string? DisplayName { get; init; }
     [EmailAddress]

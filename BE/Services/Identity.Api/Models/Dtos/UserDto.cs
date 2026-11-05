@@ -15,7 +15,37 @@ public record UserDto(
     string Status,
     EntityLabelDto Unit,
     RefDto? CreatedBy,
-    RefDto? UpdatedBy);
+    RefDto? UpdatedBy,
+    string? Gender,
+    DateOnly? BirthDate,
+    string? Phone,
+    string? PermanentAddress,
+    string? TemporaryAddress,
+    List<EntityLabelDto> Teams,
+    List<EntityLabelDto> Projects);
+
+/// <summary>GET /api/auth/me/profile: hồ sơ riêng của người đăng nhập (không có id/quyền/token).</summary>
+public record PersonalProfileDto(
+    int Version,
+    DateTime CreatedAt,
+    string Username,
+    string DisplayName,
+    string Email,
+    bool IsSysAdmin,
+    List<RefDto> Groups,
+    string Unit,
+    RefDto? CreatedBy,
+    RefDto? UpdatedBy,
+    string? Gender,
+    DateOnly? BirthDate,
+    string? Phone,
+    string? PermanentAddress,
+    string? TemporaryAddress,
+    List<EntityLabelDto> Teams,
+    List<EntityLabelDto> Projects);
+
+/// <summary>Nhóm ACTIVE đang là thành viên và dự án PLANNED/ACTIVE còn tư cách thành viên.</summary>
+public record UserAffiliations(List<EntityLabelDto> Teams, List<EntityLabelDto> Projects);
 
 public record ProfileDto(string Id, string DisplayName, string? AvatarUrl, string Email, string Unit, List<string> Groups);
 

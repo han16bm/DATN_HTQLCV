@@ -23,6 +23,7 @@ import {
   useCreateUserMutation,
   useUpdateUserMutation,
 } from "../hooks/use-users-mutations";
+import { genders } from "../schemas/personal-info.schema";
 import {
   createUserSchema,
   updateUserSchema,
@@ -57,8 +58,9 @@ export function UserProfileForm({
         .extend({ reason: z.string().trim().max(2000).optional() })
     : createUserSchema;
   type Values = z.input<typeof schema>;
-  const form = useForm<Values>({
-    resolver: zodResolver<Values, unknown, Values>(schema, {
+  type Output = z.output<typeof schema>;
+  const form = useForm<Values, unknown, Output>({
+    resolver: zodResolver(schema, {
       error: validationMessage,
     }),
     defaultValues: user
@@ -66,6 +68,11 @@ export function UserProfileForm({
           displayName: user.displayName,
           email: user.email,
           unitId: user.unitId,
+          gender: user.gender ?? "",
+          birthDate: user.birthDate ?? "",
+          phone: user.phone ?? "",
+          permanentAddress: user.permanentAddress ?? "",
+          temporaryAddress: user.temporaryAddress ?? "",
           reason: "",
         }
       : {
@@ -105,6 +112,11 @@ export function UserProfileForm({
         compareFields={[
           { name: "displayName", label: "Họ tên" },
           { name: "email", label: "Email" },
+          { name: "gender", label: "Giới tính", options: genders },
+          { name: "birthDate", label: "Ngày sinh" },
+          { name: "phone", label: "Số điện thoại" },
+          { name: "permanentAddress", label: "Địa chỉ thường trú" },
+          { name: "temporaryAddress", label: "Địa chỉ tạm trú" },
           { name: "unitId", label: "Đơn vị", options: units },
         ]}
         onConflictReload={() => snapshot.load(reload)}
@@ -123,6 +135,11 @@ export function UserProfileForm({
                   "displayName",
                   "email",
                   "unitId",
+                  "gender",
+                  "birthDate",
+                  "phone",
+                  "permanentAddress",
+                  "temporaryAddress",
                 ]),
                 ...(values.reason ? { reason: values.reason } : {}),
               },
@@ -155,6 +172,37 @@ export function UserProfileForm({
           required
           {...form.register("email")}
           error={errors.email}
+        />
+        <FormSelect
+          label="Giới tính"
+          options={[{ value: "", label: "Chưa cập nhật" }, ...genders]}
+          width="short"
+          {...form.register("gender")}
+          error={form.getFieldState("gender", form.formState).error}
+        />
+        <FormInput
+          label="Ngày sinh"
+          type="date"
+          width="short"
+          {...form.register("birthDate")}
+          error={form.getFieldState("birthDate", form.formState).error}
+        />
+        <FormInput
+          label="Số điện thoại"
+          type="tel"
+          width="short"
+          {...form.register("phone")}
+          error={form.getFieldState("phone", form.formState).error}
+        />
+        <FormTextarea
+          label="Địa chỉ thường trú"
+          {...form.register("permanentAddress")}
+          error={form.getFieldState("permanentAddress", form.formState).error}
+        />
+        <FormTextarea
+          label="Địa chỉ tạm trú"
+          {...form.register("temporaryAddress")}
+          error={form.getFieldState("temporaryAddress", form.formState).error}
         />
         <FormSelect
           label="Đơn vị"

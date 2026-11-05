@@ -112,6 +112,11 @@ public class Seeder(ApplicationDbContext context, JsonElement root, string uploa
                 IsSysAdmin = u.TryGetProperty("isSysAdmin", out var sys) ? sys.GetBoolean() : legacyRole == "ADMIN",
                 GrantedFeatures = StrList(u, "grantedFeatures"),
                 RevokedFeatures = StrList(u, "revokedFeatures"),
+                Gender = OptStr(u, "gender"),
+                BirthDate = OptStr(u, "birthDate") is { } birth ? DateOnly.Parse(birth, CultureInfo.InvariantCulture) : null,
+                Phone = OptStr(u, "phone"),
+                PermanentAddress = OptStr(u, "permanentAddress"),
+                TemporaryAddress = OptStr(u, "temporaryAddress"),
                 FailedLoginCount = 0, TokenVersion = 0,
                 CreatedBy = OptStr(u, "createdBy") ?? _adminId, UpdatedBy = OptStr(u, "updatedBy") ?? _adminId
             };

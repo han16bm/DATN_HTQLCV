@@ -60,7 +60,7 @@ describe("Feature organization and HTTP boundaries", () => {
     const actual = handlers
       .map((h) => `${h.info.method} ${String(h.info.path).replace(/^\*/, "")}`)
       .sort();
-    expect(actual).toHaveLength(119);
+    expect(actual).toHaveLength(120);
     expect(actual).toEqual(expected);
     const services = readdirSync("src/features")
       .flatMap((feature) => {

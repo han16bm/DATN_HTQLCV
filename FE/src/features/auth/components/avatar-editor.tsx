@@ -1,20 +1,18 @@
 "use client";
 
-import { Avatar } from "@/components/ui/avatar";
 import { buttonClass } from "@/components/ui/button";
-import { UserRound } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { avatarSchema } from "../schemas/profile.schema";
 import type { SessionDto } from "../types/auth.types";
 import { AvatarCropDialog } from "./avatar-crop-dialog";
 
 export function AvatarEditor({
-  user,
+  onSelect,
   onSave,
   onConflictReload,
   onConflictAccept,
 }: {
-  user: SessionDto["user"];
+  onSelect: () => void;
   onSave: (file: File) => Promise<void>;
   onConflictReload: () => Promise<SessionDto["user"]>;
   onConflictAccept: () => void;
@@ -30,15 +28,10 @@ export function AvatarEditor({
   );
   return (
     <>
-      <div className="grid justify-items-center gap-4 p-2 text-center">
-        <Avatar
-          name={user.displayName}
-          src={user.avatarUrl}
-          size="lg"
-          fallback={<UserRound size={56} strokeWidth={1.5} />}
-        />
+      <div className="min-w-0">
         <label
-          className={`${buttonClass()} relative h-10 cursor-pointer px-5 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus`}
+          className={`${buttonClass()} relative cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus`}
+          title="Ảnh JPG, PNG hoặc WebP, tối đa 2 MB."
         >
           Chọn ảnh
           <input
@@ -55,16 +48,18 @@ export function AvatarEditor({
               setError(
                 result.success ? undefined : result.error.issues[0].message,
               );
-              if (result.success)
+              if (result.success) {
+                onSelect();
                 setSource({ name: file.name, url: URL.createObjectURL(file) });
+              }
             }}
           />
         </label>
-        <p className="m-0 text-xs text-fg-subtle" id={`${id}-hint`}>
+        <p className="sr-only" id={`${id}-hint`}>
           Ảnh JPG, PNG hoặc WebP, tối đa 2 MB.
         </p>
         {error && (
-          <p className="text-sm text-danger-fg" role="alert" id={`${id}-error`}>
+          <p className="mt-2 mb-0 max-w-64 text-xs text-danger-fg" role="alert" id={`${id}-error`}>
             {error}
           </p>
         )}

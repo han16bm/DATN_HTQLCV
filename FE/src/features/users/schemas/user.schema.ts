@@ -7,6 +7,7 @@ import {
 import { checkProjection } from "@/lib/validation/contract-refinements";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
+import { affiliationsSchema, personalInfoSchema } from "./personal-info.schema";
 export const userStatusSchema = z.enum(["ACTIVE", "LOCKED"]);
 export const userQuerySchema = z
   .object({
@@ -19,6 +20,8 @@ export const userQuerySchema = z
   .strict();
 export const userSchema = z
   .object({
+    ...personalInfoSchema.shape,
+    ...affiliationsSchema.shape,
     id: idSchema,
     version: z.number().int().safe().positive(),
     createdAt: z.iso.datetime(),

@@ -24,6 +24,13 @@ public class User : ICreateStamped, IUpdateStamped
     /// <summary>Khoá lưu trữ của ảnh hiện tại (IFileStorage), dùng để xoá ảnh cũ khi thay.</summary>
     public string? AvatarKey { get; set; }
 
+    // Thông tin cá nhân (tùy chọn), sửa ở hồ sơ cá nhân hoặc màn quản trị.
+    public string? Gender { get; set; } // MALE | FEMALE | OTHER
+    public DateOnly? BirthDate { get; set; }
+    public string? Phone { get; set; }
+    public string? PermanentAddress { get; set; }
+    public string? TemporaryAddress { get; set; }
+
     public bool IsSysAdmin { get; set; }
     public List<string> GrantedFeatures { get; set; } = [];
     public List<string> RevokedFeatures { get; set; } = [];

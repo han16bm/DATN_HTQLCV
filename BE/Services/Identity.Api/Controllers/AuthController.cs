@@ -39,17 +39,29 @@ public class AuthController(ILogger<BaseApiController> logger, IAuthService auth
     [Authorize]
     [RequestSizeLimit(3 * 1024 * 1024)]
     [RequestFormLimits(MultipartBodyLengthLimit = 3 * 1024 * 1024)]
-    public async Task<object> UpdateProfile([FromForm] ProfileUpdateForm form)
+    public async Task<object> UpdateProfile()
     {
+        if (!Request.HasFormContentType)
+            throw new Shared.Commons.Exceptions.ValidationException("Hồ sơ gửi dạng multipart/form-data.");
+        var form = await Request.ReadFormAsync();
         return await profileService.UpdateProfileAsync(HttpContext.GetUserId()!, form, Request.GetIfMatchVersion());
+    }
+
+    // Hồ sơ riêng của người đăng nhập; không nhận userId/query (query thừa → 422, như mock).
+    [HttpGet("me/profile")]
+    [Authorize]
+    public async Task<object> Profile()
+    {
+        if (Request.Query.Count > 0)
+            throw new Shared.Commons.Exceptions.ValidationException("Hồ sơ cá nhân không nhận tham số truy vấn.");
+        return await profileService.GetProfileAsync(HttpContext.GetUserId()!);
     }
 
     [HttpPut("me/password")]
     [Authorize]
     public async Task<object> ChangePassword([FromBody] ChangePasswordRequest request)
     {
-        await profileService.ChangePasswordAsync(HttpContext.GetUserId()!, request);
-        return new { ok = true };
+        return await profileService.ChangePasswordAsync(HttpContext.GetUserId()!, request);
     }
 
     [HttpPost("logout")]

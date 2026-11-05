@@ -51,6 +51,7 @@ import type {
 } from "@/features/attachments/types/attachments.types";
 import type {
   LoginInput,
+  PersonalProfileDto,
   SessionDto,
   UpdateProfileInput,
   ChangePasswordInput,
@@ -216,6 +217,10 @@ import type {
   Permission,
 } from "@/types/common";
 import { z } from "zod";
+import {
+  createUserSchema,
+  updateUserSchema,
+} from "@/features/users/schemas/user-form.schema";
 import seed from "./data.json";
 
 // Dữ liệu và kiểu lưu trữ.
@@ -230,6 +235,8 @@ const userModel = z
     unit: true,
     avatarUrl: true,
     groups: true,
+    teams: true,
+    projects: true,
     createdBy: true,
     updatedBy: true,
   })
@@ -717,8 +724,30 @@ const userRow = (user: User): UserRow => ({
   status: user.status,
   unit: unitRef(user.unitId),
 });
+const affiliations = (userId: string) => {
+  const projectIds = new Set(db.members
+    .filter((member) => member.userId === userId && !member.endedAt)
+    .map((member) => member.projectId));
+  return {
+    teams: db.teams
+      .filter((team) => team.status === "ACTIVE" && team.memberIds.includes(userId))
+      .map(({ id, name }) => ({ id, name })),
+    projects: db.projects
+      .filter((project) => projectIds.has(project.id) && ["PLANNED", "ACTIVE"].includes(project.status))
+      .map(({ id, name }) => ({ id, name })),
+  };
+};
+const personalInfo = (user: User) => ({
+  gender: user.gender,
+  birthDate: user.birthDate,
+  phone: user.phone,
+  permanentAddress: user.permanentAddress,
+  temporaryAddress: user.temporaryAddress,
+});
 const userDTO = (user: User): UserDto => ({
   ...userRow(user),
+  ...personalInfo(user),
+  ...affiliations(user.id),
   version: user.version,
   createdAt: user.createdAt,
   updatedAt: user.updatedAt,
@@ -1009,14 +1038,17 @@ export const authDb = {
   getSession(accessToken: string | undefined) {
     return sessionDTO(sessionUser(accessToken));
   },
+  getProfile(viewer: User): PersonalProfileDto {
+    const { id: _id, updatedAt: _u, avatarUrl: _a, unitId: _ui, status: _s, ...dto } =
+      userDTO(viewer);
+    return { ...dto, unit: unitRef(viewer.unitId).name };
+  },
   async updateProfile(
     viewer: User,
     body: UpdateProfileInput,
     expectedVersion: string | null,
   ) {
     requireVersion(expectedVersion, viewer);
-    if (body.username !== undefined)
-      unique(body.username, viewer.email, viewer.id);
     const { avatar, ...data } = body;
     if (avatar) {
       const bytes = new Uint8Array(await avatar.slice(0, 12).arrayBuffer());
@@ -1046,8 +1078,8 @@ export const authDb = {
         );
     }
     const before = {
-      username: viewer.username,
       displayName: viewer.displayName,
+      ...personalInfo(viewer),
     };
     if (avatar) {
       if (viewer.avatarId) db.avatars.delete(viewer.avatarId);
@@ -1585,7 +1617,7 @@ export const usersDb = {
     requireAdmin(viewer, "USERS_MANAGE");
     return userDTO(requireUser(userId));
   },
-  createUser(viewer: User, body: CreateUserInput) {
+  createUser(viewer: User, body: z.output<typeof createUserSchema>) {
     requireAdmin(viewer, "USERS_MANAGE");
     activeUnit(body.unitId);
     unique(body.username, body.email);
@@ -1603,6 +1635,11 @@ export const usersDb = {
     );
     const user: User = {
       ...entity(),
+      gender: null,
+      birthDate: null,
+      phone: null,
+      permanentAddress: null,
+      temporaryAddress: null,
       ...data,
       avatarId: null,
       isSysAdmin: false,
@@ -1624,7 +1661,7 @@ export const usersDb = {
   updateUser(
     viewer: User,
     userId: string,
-    body: UpdateUserInput,
+    body: z.output<typeof updateUserSchema>,
     expectedVersion: string | null,
   ) {
     requireAdmin(viewer, "USERS_MANAGE");
@@ -1656,6 +1693,7 @@ export const usersDb = {
       displayName: user.displayName,
       email: user.email,
       unitId: user.unitId,
+      ...personalInfo(user),
     };
     Object.assign(user, patch);
     touch(user);

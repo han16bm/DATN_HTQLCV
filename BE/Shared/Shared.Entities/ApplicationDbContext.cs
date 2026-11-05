@@ -57,6 +57,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasIndex(x => x.Username).IsUnique();
             e.Property(x => x.AvatarUrl).HasMaxLength(1000);
             e.Property(x => x.AvatarKey).HasMaxLength(500);
+            e.Property(x => x.Gender).HasMaxLength(10);
+            e.Property(x => x.Phone).HasMaxLength(32);
+            e.Property(x => x.PermanentAddress).HasMaxLength(500);
+            e.Property(x => x.TemporaryAddress).HasMaxLength(500);
             e.HasOne(x => x.Unit).WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
         });
 

@@ -5,7 +5,8 @@ namespace Identity.Api.Interfaces;
 
 public interface IProfileService
 {
-    Task<SessionDto> UpdateProfileAsync(string userId, ProfileUpdateForm form, int ifMatchVersion);
-    Task ChangePasswordAsync(string userId, ChangePasswordRequest request);
+    Task<PersonalProfileDto> GetProfileAsync(string userId);
+    Task<SessionDto> UpdateProfileAsync(string userId, IFormCollection form, int ifMatchVersion);
+    Task<ChangePasswordResultDto> ChangePasswordAsync(string userId, ChangePasswordRequest request);
     Task<(Stream Content, string ContentType)> OpenAvatarAsync(string name);
 }

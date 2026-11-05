@@ -41,6 +41,7 @@ public class ProjectsController(ILogger<BaseApiController> logger, IProjectServi
 
     // Quản trị bàn giao thay chủ dự án (offboarding); quyền kiểm ở service (sysadmin hoặc USERS_MANAGE).
     [HttpPost("{projectId}/transfer-owner")]
+    [AdminArea] // thao tác quản trị: cùng danh sách IP quản trị như khóa tài khoản
     public async Task<object> TransferOwner(string projectId, [FromBody] TransferOwnerRequest request)
     {
         return await projectService.TransferOwnerAsync(projectId, request);

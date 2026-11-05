@@ -86,6 +86,11 @@ public class UserService(ApplicationDbContext context, IHttpContextAccessor http
             Version = 1
         };
         user.PasswordHash = Hasher.HashPassword(user, request.InitialPassword);
+        PersonalInfoRules.Apply(user, "gender", request.Gender);
+        PersonalInfoRules.Apply(user, "birthDate", request.BirthDate);
+        PersonalInfoRules.Apply(user, "phone", request.Phone);
+        PersonalInfoRules.Apply(user, "permanentAddress", request.PermanentAddress);
+        PersonalInfoRules.Apply(user, "temporaryAddress", request.TemporaryAddress);
 
         await context.Users.AddAsync(user);
         await context.PermissionGroupMembers.AddRangeAsync(groupIds.Select(id => new PermissionGroupMember { PermissionGroupId = id, UserId = user.Id }));
@@ -102,15 +107,18 @@ public class UserService(ApplicationDbContext context, IHttpContextAccessor http
         await EnsureCanManageAsync(user);
         CheckVersion(user.Version, ifMatchVersion);
 
-        var before = new { user.DisplayName, user.Email, user.UnitId };
+        var before = new { user.DisplayName, user.Email, user.UnitId, Personal = PersonalInfoRules.Snapshot(user) };
         if (request.DisplayName is not null) user.DisplayName = request.DisplayName.Trim();
         if (request.Email is not null) user.Email = request.Email.Trim().ToLowerInvariant();
         if (request.UnitId is not null) user.UnitId = request.UnitId;
+        foreach (var (field, value) in request.PersonalFields())
+            PersonalInfoRules.Apply(user, field, value);
 
         user.UpdatedAt = DateTime.UtcNow;
         user.Version++;
 
-        await WriteAuditLog(user.Id, "UPDATE", before, new { user.DisplayName, user.Email, user.UnitId }, request.Reason);
+        await WriteAuditLog(user.Id, "UPDATE", before,
+            new { user.DisplayName, user.Email, user.UnitId, Personal = PersonalInfoRules.Snapshot(user) }, request.Reason);
         await context.SaveChangesAsync();
         return await ToDtoAsync(user);
     }
@@ -290,19 +298,41 @@ public class UserService(ApplicationDbContext context, IHttpContextAccessor http
     }
 
     /// <summary>names = null → không trả dấu vết (session /auth/me, §8.3).</summary>
-    public static UserDto ToDto(User u, Dictionary<string, List<RefDto>> groups, Dictionary<string, string>? names)
+    public static UserDto ToDto(User u, Dictionary<string, List<RefDto>> groups, Dictionary<string, string>? names,
+        UserAffiliations? affiliations = null)
     {
         return new(
             u.Id, u.Version, u.CreatedAt, u.UpdatedAt, u.Username, u.DisplayName, u.Email, u.AvatarUrl, u.UnitId,
             u.IsSysAdmin, groups.GetValueOrDefault(u.Id, []), u.Status.ToString().ToUpperInvariant(),
             new EntityLabelDto(u.UnitId, u.Unit?.Name ?? string.Empty),
             names is null ? null : PersonRef(u.CreatedBy, names),
-            names is null ? null : PersonRef(u.UpdatedBy, names));
+            names is null ? null : PersonRef(u.UpdatedBy, names),
+            u.Gender, u.BirthDate, u.Phone, u.PermanentAddress, u.TemporaryAddress,
+            affiliations?.Teams ?? [], affiliations?.Projects ?? []);
+    }
+
+    public static async Task<UserAffiliations> LoadAffiliationsAsync(ApplicationDbContext db, string userId)
+    {
+        var teams = await db.TeamMembers.AsNoTracking()
+            .Where(m => m.UserId == userId && m.Team!.Status == OrgStatus.Active)
+            .OrderBy(m => m.Team!.Name)
+            .Select(m => new EntityLabelDto(m.TeamId, m.Team!.Name))
+            .ToListAsync();
+        var projects = await db.ProjectMemberships.AsNoTracking()
+            .Where(m => m.UserId == userId && m.EndedAt == null)
+            .Join(db.Projects, m => m.ProjectId, p => p.Id, (m, p) => p)
+            .Where(p => p.Status == ProjectStatus.Planned || p.Status == ProjectStatus.Active)
+            .Select(p => new { p.Id, p.Name })
+            .Distinct()
+            .OrderBy(p => p.Name)
+            .ToListAsync();
+        return new UserAffiliations(teams, projects.Select(p => new EntityLabelDto(p.Id, p.Name)).ToList());
     }
 
     private async Task<UserDto> ToDtoAsync(User u)
     {
-        return ToDto(u, await LoadActiveGroupsAsync(context, [u.Id]), await LoadDisplayNamesAsync([u.CreatedBy, u.UpdatedBy]));
+        return ToDto(u, await LoadActiveGroupsAsync(context, [u.Id]), await LoadDisplayNamesAsync([u.CreatedBy, u.UpdatedBy]),
+            await LoadAffiliationsAsync(context, u.Id));
     }
 
     private async Task<UserPermissionsDto> ToPermissionsDtoAsync(User u)

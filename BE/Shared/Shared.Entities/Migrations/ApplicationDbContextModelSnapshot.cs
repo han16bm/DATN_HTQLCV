@@ -1448,6 +1448,9 @@ namespace Shared.Entities.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<DateOnly?>("BirthDate")
+                        .HasColumnType("date");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1464,6 +1467,10 @@ namespace Shared.Entities.Migrations
 
                     b.Property<int>("FailedLoginCount")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Gender")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
 
                     b.Property<List<string>>("GrantedFeatures")
                         .IsRequired()
@@ -1484,6 +1491,14 @@ namespace Shared.Entities.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("PermanentAddress")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
                     b.Property<List<string>>("RevokedFeatures")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -1493,6 +1508,10 @@ namespace Shared.Entities.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("TemporaryAddress")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<int>("TokenVersion")
                         .HasColumnType("integer");

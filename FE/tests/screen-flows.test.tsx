@@ -426,6 +426,72 @@ it("keeps admin account information and access actions together without exposing
     screen.getByRole("textbox", { name: "Họ tên *" }).closest("fieldset"),
   ).toHaveProperty("disabled", false);
 });
+it.each([
+  { username: "lan", position: "Nhân viên chính thức" },
+  { username: "minh", position: "Leader" },
+  { username: "admin", position: "Admin" },
+])("shows the $position profile as read-only until editing is requested", async ({ username, position }) => {
+  show(<ProfilePage />, await login(username));
+  await screen.findByRole("button", { name: "Chỉnh sửa" });
+  expect(screen.queryByRole("textbox")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Lưu hồ sơ" })).toBeNull();
+  const work = screen.getByRole("region", { name: "Thông tin công việc" });
+  const term = within(work).getByText("Vị trí");
+  expect(term.nextElementSibling?.textContent).toBe(position);
+  await userEvent.setup().click(screen.getByRole("button", { name: "Chỉnh sửa" }));
+  expect(screen.getByRole("textbox", { name: "Họ tên *" })).toBeTruthy();
+  expect(screen.queryByRole("textbox", { name: "Vị trí" })).toBeNull();
+  expect(screen.queryByRole("combobox", { name: "Vai trò hệ thống" })).toBeNull();
+  expect(term.nextElementSibling?.textContent).toBe(position);
+});
+
+it("discards or retains a profile edit on cancel and returns to the saved read view", async () => {
+  const session = await login("lan");
+  show(<ProfilePage />, session);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Chỉnh sửa" }));
+  const name = screen.getByRole("textbox", { name: "Họ tên *" });
+  await user.clear(name);
+  await user.type(name, "Bản chưa lưu");
+  await user.click(screen.getByRole("button", { name: "Hủy" }));
+  const confirm = await screen.findByRole("alertdialog", { name: "Thay đổi chưa được lưu" });
+  await user.click(within(confirm).getByRole("button", { name: "Ở lại" }));
+  expect(name).toHaveProperty("value", "Bản chưa lưu");
+  await user.click(screen.getByRole("button", { name: "Hủy" }));
+  await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Bỏ thay đổi" }));
+  await screen.findByRole("button", { name: "Chỉnh sửa" });
+  expect(screen.queryByRole("textbox")).toBeNull();
+  expect((await authService.getProfile()).displayName).toBe(session.user.displayName);
+  await user.click(screen.getByRole("button", { name: "Chỉnh sửa" }));
+  expect(screen.getByRole("textbox", { name: "Họ tên *" })).toHaveProperty("value", session.user.displayName);
+});
+
+it("keeps profile and password drafts independent when cancelling either form", async () => {
+  show(<ProfilePage />, await login("lan"));
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Chỉnh sửa" }));
+  const personal = within(screen.getByRole("region", { name: "Thông tin cá nhân" }));
+  const account = within(screen.getByRole("complementary", { name: "Tùy chọn tài khoản" }));
+  await user.click(account.getByRole("button", { name: "Đổi mật khẩu" }));
+  const password = within(account.getByRole("region", { name: "Mật khẩu" }));
+  await user.type(password.getByLabelText("Mật khẩu hiện tại *"), "Draft@12345");
+  await user.click(personal.getByRole("button", { name: "Hủy" }));
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+  expect(password.getByLabelText("Mật khẩu hiện tại *")).toHaveProperty("value", "Draft@12345");
+  await user.click(personal.getByRole("button", { name: "Chỉnh sửa" }));
+  const name = personal.getByRole("textbox", { name: "Họ tên *" });
+  await user.clear(name);
+  await user.type(name, "Bản nháp hồ sơ");
+  await user.click(password.getByRole("button", { name: "Hủy" }));
+  await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Ở lại" }));
+  expect(password.getByLabelText("Mật khẩu hiện tại *")).toHaveProperty("value", "Draft@12345");
+  await user.click(password.getByRole("button", { name: "Hủy" }));
+  await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Bỏ thay đổi" }));
+  expect(account.queryByRole("region", { name: "Mật khẩu" })).toBeNull();
+  expect(name).toHaveProperty("value", "Bản nháp hồ sơ");
+  expect(useUI.getState().dirtyForms).toHaveLength(1);
+});
+
 it("edits the signed-in profile through HTTP and immediately updates the avatar menu", async () => {
   const session = await login("lan");
   show(
@@ -434,11 +500,9 @@ it("edits the signed-in profile through HTTP and immediately updates the avatar 
     </WorkspaceShell>,
     session,
   );
-  expect(screen.getByRole("textbox", { name: "Email" })).toHaveProperty(
-    "readOnly",
-    true,
-  );
   const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Chỉnh sửa" }));
+  expect(screen.getByRole("textbox", { name: "Email" })).toHaveProperty("readOnly", true);
   expect(
     screen
       .getByRole("link", { name: "Xem hồ sơ công khai" })
@@ -447,19 +511,15 @@ it("edits the signed-in profile through HTTP and immediately updates the avatar 
   const name = screen.getByRole("textbox", { name: "Họ tên *" });
   await user.clear(name);
   await user.type(name, "Lan Nguyễn");
-  const username = screen.getByRole("textbox", { name: "Tên đăng nhập *" });
-  await user.clear(username);
-  await user.type(username, "lan.profile");
+  const username = screen.getByRole("textbox", { name: "Tên đăng nhập" });
+  expect(username).toHaveProperty("readOnly", true);
+  expect(username).toHaveProperty("value", session.user.username);
   vi.stubEnv("NEXT_PUBLIC_MSW_DELAY", "80");
   await user.click(screen.getByRole("button", { name: "Lưu hồ sơ" }));
   expect(
     screen.getByRole("button", { name: "Đang lưu…" }).matches(":disabled"),
   ).toBe(true);
-  await waitFor(() =>
-    expect(
-      screen.getByRole("button", { name: "Lưu hồ sơ" }).matches(":disabled"),
-    ).toBe(false),
-  );
+  await screen.findByRole("button", { name: "Chỉnh sửa" });
   await waitFor(() =>
     expect(
       screen
@@ -467,27 +527,79 @@ it("edits the signed-in profile through HTTP and immediately updates the avatar 
         .getAttribute("title"),
     ).toBe("Lan Nguyễn"),
   );
-  expect(
-    screen.getByRole("textbox", { name: "Tên đăng nhập *" }),
-  ).toHaveProperty("value", "lan.profile");
+  expect(within(screen.getByRole("region", { name: "Thông tin cơ bản" })).getByText(session.user.username)).toBeTruthy();
   expect((await authService.getSession()).user).toMatchObject({
     displayName: "Lan Nguyễn",
-    username: "lan.profile",
+    username: session.user.username,
     email: session.user.email,
   });
-  await user.clear(name);
-  await user.type(name, "Lan Trần");
+  await user.click(screen.getByRole("button", { name: "Chỉnh sửa" }));
+  const nextName = screen.getByRole("textbox", { name: "Họ tên *" });
+  await user.clear(nextName);
+  await user.type(nextName, "Lan Trần");
   await user.click(screen.getByRole("button", { name: "Lưu hồ sơ" }));
-  await waitFor(() =>
-    expect(
-      screen.getByRole("button", { name: "Lưu hồ sơ" }).matches(":disabled"),
-    ).toBe(false),
-  );
+  await screen.findByRole("button", { name: "Chỉnh sửa" });
   expect((await authService.getSession()).user).toMatchObject({
     displayName: "Lan Trần",
     version: session.user.version + 2,
   });
 });
+it("edits the expanded personal profile while keeping department, groups and current projects assigned by the system", async () => {
+  const session = await login("lan");
+  const requests: string[][] = [];
+  server.use(http.patch("*/api/auth/me", async ({ request }) => {
+    requests.push([...new Set((await request.clone().formData()).keys())].sort());
+  }));
+  show(<ProfilePage />, session);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Chỉnh sửa" }));
+  const phone = await screen.findByRole("textbox", { name: "Số điện thoại" });
+  expect(phone).toHaveProperty("value", "0912345678");
+  expect(within(screen.getByRole("region", { name: "Thông tin công việc" })).getByText("Phòng sản phẩm")).toBeTruthy();
+  expect(screen.queryByRole("textbox", { name: "Vị trí" })).toBeNull();
+  expect(within(screen.getByRole("region", { name: "Nhóm nhân sự" })).getByText("Nhóm phát triển")).toBeTruthy();
+  expect(within(screen.getByRole("region", { name: "Dự án đang tham gia" })).getByRole("link", { name: "Cổng quản lý nội bộ" }).getAttribute("href")).toBe("/projects/p-main");
+  await user.selectOptions(screen.getByLabelText("Giới tính"), "OTHER");
+  fireEvent.change(screen.getByLabelText("Ngày sinh"), { target: { value: "1996-02-29" } });
+  await user.clear(phone);
+  await user.type(phone, "0987654321");
+  for (const [name, value] of [
+    ["Địa chỉ thường trú", "Đà Nẵng"], ["Địa chỉ tạm trú", "Cần Thơ"],
+  ]) {
+    const field = screen.getByLabelText(name);
+    await user.clear(field);
+    await user.type(field, value);
+  }
+  await user.click(screen.getByRole("button", { name: "Lưu hồ sơ" }));
+  await screen.findByRole("button", { name: "Chỉnh sửa" });
+  expect(await authService.getProfile()).toMatchObject({ gender: "OTHER", birthDate: "1996-02-29", phone: "0987654321", permanentAddress: "Đà Nẵng", temporaryAddress: "Cần Thơ" });
+  expect(requests).toEqual([["birthDate", "gender", "permanentAddress", "phone", "temporaryAddress"]]);
+  expect((await authService.getSession()).user.unitId).toBe(session.user.unitId);
+});
+
+it("shows a user's personal details in the admin dialog and saves edits to the added fields", async () => {
+  const session = await login("admin");
+  at("/admin/users?dialog=edit&id=u-lan");
+  show(<UsersPage />, session);
+  const dialog = await screen.findByRole("dialog", { name: "Sửa tài khoản" });
+  const phone = await within(dialog).findByLabelText("Số điện thoại");
+  expect(phone).toHaveProperty("value", "0912345678");
+  expect(within(dialog).getByLabelText("Giới tính")).toHaveProperty("value", "FEMALE");
+  expect(within(dialog).getByLabelText("Ngày sinh")).toHaveProperty("value", "1997-08-21");
+  const user = userEvent.setup();
+  await user.clear(phone);
+  await user.type(phone, "0987654321");
+  await user.click(within(dialog).getByRole("button", { name: "Lưu thông tin" }));
+  await waitFor(async () =>
+    expect(await usersService.getUser("u-lan")).toMatchObject({
+      phone: "0987654321",
+      gender: "FEMALE",
+      birthDate: "1997-08-21",
+      permanentAddress: "Hải Phòng",
+    }),
+  );
+});
+
 it("drags and zooms an avatar, uploads only the cropped image and updates the avatar menu", async () => {
   const session = await login("admin");
   const browser = avatarBrowser();
@@ -498,7 +610,6 @@ it("drags and zooms an avatar, uploads only the cropped image and updates the av
     session,
   );
   const user = userEvent.setup();
-  await user.click(screen.getByRole("tab", { name: "Ảnh đại diện" }));
   await user.upload(screen.getByLabelText("Chọn ảnh"), browser.file);
   const dialog = await screen.findByRole("dialog", { name: "Chỉnh sửa ảnh" });
   const image = within(dialog).getByAltText("Ảnh đang cắt");
@@ -532,11 +643,8 @@ it("drags and zooms an avatar, uploads only the cropped image and updates the av
   expect(browser.revoke).toHaveBeenCalledWith(
     browser.create.mock.results[0].value,
   );
-  expect(
-    screen
-      .getByRole("tab", { name: "Ảnh đại diện" })
-      .getAttribute("aria-selected"),
-  ).toBe("true");
+  expect(screen.queryByRole("tablist", { name: "Mục hồ sơ" })).toBeNull();
+  expect(within(screen.getByRole("complementary", { name: "Tùy chọn tài khoản" })).getByLabelText("Chọn ảnh")).toBeTruthy();
   const updated = await authService.getSession();
   expect(updated.user.avatarUrl).toBeTruthy();
   const uploaded = await fetch(`http://gateway.test${updated.user.avatarUrl}`);
@@ -551,15 +659,44 @@ it("drags and zooms an avatar, uploads only the cropped image and updates the av
   expect(src).toBeTruthy();
   expect(new URL(src!, location.origin).pathname).toBe(updated.user.avatarUrl);
 });
+
+it("uses the saved profile version when selecting a new avatar from the side controls", async () => {
+  const session = await login("lan");
+  const browser = avatarBrowser();
+  show(<ProfilePage />, session);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Chỉnh sửa" }));
+  const name = screen.getByRole("textbox", { name: "Họ tên *" });
+  await user.clear(name);
+  await user.type(name, "Lan Nguyễn");
+  await user.click(screen.getByRole("button", { name: "Lưu hồ sơ" }));
+  await screen.findByRole("button", { name: "Chỉnh sửa" });
+  const personal = screen.getByRole("region", { name: "Thông tin cá nhân" });
+  expect(within(personal).getByRole("heading", { name: "Lan Nguyễn" })).toBeTruthy();
+  expect(within(personal).getByRole("region", { name: "Thông tin cơ bản" })).toBeTruthy();
+  const controls = within(screen.getByRole("complementary", { name: "Tùy chọn tài khoản" }));
+  await user.upload(controls.getByLabelText("Chọn ảnh"), browser.file);
+  const dialog = await screen.findByRole("dialog", { name: "Chỉnh sửa ảnh" });
+  fireEvent.load(within(dialog).getByAltText("Ảnh đang cắt"));
+  await user.click(within(dialog).getByRole("button", { name: "Cập nhật" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect((await authService.getSession()).user).toMatchObject({
+    displayName: "Lan Nguyễn",
+    version: session.user.version + 2,
+    avatarUrl: expect.any(String),
+  });
+});
+
 it("retains a profile draft through a version conflict and saves after comparison", async () => {
   const session = await login("lan");
   show(<ProfilePage />, session);
   const user = userEvent.setup();
-  const name = screen.getByRole("textbox", { name: "Họ tên *" });
+  await user.click(await screen.findByRole("button", { name: "Chỉnh sửa" }));
+  const name = await screen.findByRole("textbox", { name: "Họ tên *" });
   await user.clear(name);
   await user.type(name, "Bản đang sửa");
   await authService.updateProfile(
-    { username: session.user.username, displayName: "Bản mới nhất" },
+    { displayName: "Bản mới nhất" },
     { key: crypto.randomUUID(), version: session.user.version },
   );
   await user.click(screen.getByRole("button", { name: "Lưu hồ sơ" }));
@@ -572,11 +709,7 @@ it("retains a profile draft through a version conflict and saves after compariso
     screen.getByRole("button", { name: "Đã đối chiếu, tiếp tục chỉnh sửa" }),
   );
   await user.click(screen.getByRole("button", { name: "Lưu hồ sơ" }));
-  await waitFor(() =>
-    expect(
-      screen.getByRole("button", { name: "Lưu hồ sơ" }).matches(":disabled"),
-    ).toBe(false),
-  );
+  await screen.findByRole("button", { name: "Chỉnh sửa" });
   expect((await authService.getSession()).user.displayName).toBe(
     "Bản đang sửa",
   );
@@ -585,7 +718,6 @@ it("rejects oversized avatars before cropping and leaves the avatar section with
   const session = await login("lan");
   show(<ProfilePage />, session);
   const user = userEvent.setup();
-  await user.click(screen.getByRole("tab", { name: "Ảnh đại diện" }));
   await user.upload(
     screen.getByLabelText("Chọn ảnh"),
     new File([new Uint8Array(2 * 1024 ** 2 + 1)], "large.png", {
@@ -597,8 +729,7 @@ it("rejects oversized avatars before cropping and leaves the avatar section with
   expect((await authService.getSession()).user.version).toBe(
     session.user.version,
   );
-  await user.click(screen.getByRole("tab", { name: "Thông tin cá nhân" }));
-  await screen.findByRole("button", { name: "Lưu hồ sơ" });
+  await screen.findByRole("button", { name: "Chỉnh sửa" });
   expect(screen.queryByRole("alertdialog")).toBeNull();
 });
 it("cancels avatar cropping without saving or prompting and allows selecting the same file again", async () => {
@@ -606,7 +737,6 @@ it("cancels avatar cropping without saving or prompting and allows selecting the
   const browser = avatarBrowser();
   show(<ProfilePage />, session);
   const user = userEvent.setup();
-  await user.click(screen.getByRole("tab", { name: "Ảnh đại diện" }));
   await user.upload(screen.getByLabelText("Chọn ảnh"), browser.file);
   await user.click(
     within(await screen.findByRole("dialog")).getByRole("button", {
@@ -626,8 +756,7 @@ it("cancels avatar cropping without saving or prompting and allows selecting the
     session.user.version,
   );
   expect(useUI.getState().dirtyForms).toEqual([]);
-  await user.click(screen.getByRole("tab", { name: "Thông tin cá nhân" }));
-  await screen.findByRole("button", { name: "Lưu hồ sơ" });
+  await screen.findByRole("button", { name: "Chỉnh sửa" });
   expect(screen.queryByRole("alertdialog")).toBeNull();
 });
 it("keeps the crop and zoom after a version conflict and retries with the accepted profile version", async () => {
@@ -635,7 +764,6 @@ it("keeps the crop and zoom after a version conflict and retries with the accept
   const browser = avatarBrowser();
   show(<ProfilePage />, session);
   const user = userEvent.setup();
-  await user.click(screen.getByRole("tab", { name: "Ảnh đại diện" }));
   await user.upload(screen.getByLabelText("Chọn ảnh"), browser.file);
   const dialog = await screen.findByRole("dialog");
   fireEvent.load(within(dialog).getByAltText("Ảnh đang cắt"));
@@ -670,7 +798,6 @@ it("retains the selected crop when image encoding fails and permits retrying", a
   browser.encode.mockImplementationOnce((done) => done(null));
   show(<ProfilePage />, session);
   const user = userEvent.setup();
-  await user.click(screen.getByRole("tab", { name: "Ảnh đại diện" }));
   await user.upload(screen.getByLabelText("Chọn ảnh"), browser.file);
   const dialog = await screen.findByRole("dialog");
   fireEvent.load(within(dialog).getByAltText("Ảnh đang cắt"));
@@ -695,13 +822,10 @@ it("changes the password in its own profile section and keeps credentials out of
   const client = show(<ProfilePage />, session);
   expect(screen.queryByLabelText("Mật khẩu hiện tại *")).toBeNull();
   const user = userEvent.setup();
-  screen.getByRole("tab", { name: "Thông tin cá nhân" }).focus();
-  await user.keyboard("{End}");
-  expect(document.activeElement).toBe(
-    screen.getByRole("tab", { name: "Đổi mật khẩu" }),
-  );
+  const password = within(screen.getByRole("complementary", { name: "Tùy chọn tài khoản" })).getByRole("button", { name: "Đổi mật khẩu" });
+  password.focus();
   await user.keyboard("{Enter}");
-  expect(screen.getByRole("tabpanel", { name: "Đổi mật khẩu" })).toBeTruthy();
+  expect(screen.queryByRole("tablist")).toBeNull();
   const current = screen.getByLabelText("Mật khẩu hiện tại *");
   const next = screen.getByLabelText("Mật khẩu mới *");
   const confirm = screen.getByLabelText("Nhập lại mật khẩu mới *");
@@ -719,7 +843,7 @@ it("changes the password in its own profile section and keeps credentials out of
   await user.clear(current);
   await user.type(current, "Mock@12345");
   await user.click(screen.getByRole("button", { name: "Cập nhật mật khẩu" }));
-  await screen.findByRole("button", { name: "Lưu hồ sơ" });
+  await screen.findByRole("button", { name: "Chỉnh sửa" });
   expect(screen.queryByLabelText("Mật khẩu mới *")).toBeNull();
   const states = JSON.stringify(
     client
@@ -1169,9 +1293,9 @@ it("keeps account actions in the avatar menu and shows the signed-in profile", a
   // Quản trị không nằm trong menu làm việc.
   expect(within(main).queryByRole("button", { name: "Phân tích" })).toBeNull();
   expect(within(main).queryByRole("link", { name: "Tài khoản" })).toBeNull();
-  const email = screen.getByRole("textbox", { name: "Email" });
-  expect(email).toHaveProperty("value", "admin@example.test");
-  expect(email).toHaveProperty("readOnly", true);
+  const contact = await screen.findByRole("region", { name: "Thông tin liên hệ" });
+  expect(within(contact).getByText("admin@example.test")).toBeTruthy();
+  expect(screen.queryByRole("textbox", { name: "Email" })).toBeNull();
   await user.click(screen.getByRole("button", { name: "Mở menu tài khoản" }));
   const menu = await screen.findByRole("menu");
   expect(

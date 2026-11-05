@@ -15,7 +15,7 @@ Contract 0.3.0; cập nhật LLM và màn S43.
 - background refetch giữ nội dung cũ có chỉ báo đang làm mới; lỗi refetch có banner và thời điểm dữ liệu. Không thay toàn bộ trang bằng skeleton nếu đã có dữ liệu hợp lệ.
 - Response Zod lỗi: ContractError, không ghi dữ liệu vào cache. Mutation có thể đã thành công trên server: đọc lại hoặc retry cùng idempotency key, không tạo thao tác mới bằng key mới.
 
-## Ma trận 86 endpoint HTTP
+## Ma trận 87 endpoint HTTP
 
 Ba endpoint thông báo được bổ sung theo yêu cầu 03/11; hợp đồng chi tiết ở NOTIFICATIONS.md. Query key có viewer; summary poll 30s, danh sách chỉ enabled khi chuông mở. Mark read dùng useMutation/idempotency; response id/readAt cập nhật list cache của viewer và invalidate summary, không version vì chỉ chuyển sang đã đọc một chiều. Không dùng Zustand lưu danh sách/count từ server.
 
@@ -104,7 +104,8 @@ Ba endpoint thông báo được bổ sung theo yêu cầu 03/11; hợp đồng 
 | `createAnalysisFeedback` | `useCreateAnalysisFeedbackMutation` · useMutation | params + query + strict body + success/error JSON; kiểm tra actor/analysis/snapshot | Không có query key; refetch đúng detail của người xem | Click xác nhận/bác bỏ BOTTLENECK, CURRENT, canSubmit; retry=false; Idempotency-Key |
 | `listAnalyticsFilterOptions` | `useListAnalyticsFilterOptionsQuery` · useQuery | strict params/query + Page<EntityLabel> success/error JSON | ['analytics-options', viewerId, normalizedQuery] | Phiên/quyền/query hợp lệ; staleTime 30.000 ms; search/page theo server |
 
-| `updateProfile` | `useUpdateProfileMutation` | multipart whitelist + SessionDTO | Cập nhật auth.getSession; invalidate dữ liệu cùng viewer | If-Match từ user.version; giữ draft/crop khi 412 |
+| `getPersonalProfile` | `useProfileQuery` | Auth.PersonalProfileDTO; không query/userId | ['auth', viewerId, 'getProfile'] | Có phiên; staleTime 0; mount một lần ở trang hồ sơ |
+| `updateProfile` | `useUpdateProfileMutation` | multipart whitelist + SessionDTO | Cập nhật auth.getSession; invalidate auth.getProfile và dữ liệu cùng viewer | If-Match từ version hồ sơ/ảnh đang sửa; giữ draft/crop khi 412 |
 | `changePassword` | `useChangePasswordMutation` | currentPassword/newPassword + kết quả ok | Không lưu mật khẩu trong Query cache | Click; không If-Match, có idempotency |
 | `getProfile` | `useGetProfileQuery` | userId + hồ sơ nhận diện/email | ['users', viewerId, 'getProfile', userId] | Phiên/ID; staleTime 0 ms |
 | `getAvatar` | Browser tải URL ảnh từ DTO | avatarId ở handler; binary ảnh | URL ảnh có ID riêng; không Query cache Blob | GET /api/avatars/:avatarId; không có service/hook chuyển tiếp |

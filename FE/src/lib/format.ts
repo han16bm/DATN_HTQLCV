@@ -1,7 +1,10 @@
 const labels: Record<string, string> = {
-  EMPLOYEE: "Nhân viên",
-  MANAGER: "Quản lý",
-  ADMIN: "Quản trị viên",
+  MALE: "Nam",
+  FEMALE: "Nữ",
+  OTHER: "Khác",
+  EMPLOYEE: "Nhân viên chính thức",
+  MANAGER: "Leader",
+  ADMIN: "Admin",
   OWNER: "Phụ trách",
   MEMBER: "Thành viên",
   ACTIVE: "Hoạt động",

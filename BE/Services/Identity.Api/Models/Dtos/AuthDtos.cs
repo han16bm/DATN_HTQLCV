@@ -4,3 +4,6 @@ namespace Identity.Api.Models.Dtos;
 public record ProjectAccessDto(string ProjectId, string ProjectRole, IReadOnlyList<string> Permissions);
 public record SessionDto(UserDto User, List<ProjectAccessDto> ProjectAccess, List<string> Permissions);
 public record LoginResponseDto(SessionDto Session, string AccessToken, DateTime ExpiresAt);
+
+/// <summary>Đổi mật khẩu: phiên khác bị thu hồi, phiên hiện tại dùng token mới.</summary>
+public record ChangePasswordResultDto(bool Ok, string AccessToken, DateTime ExpiresAt);

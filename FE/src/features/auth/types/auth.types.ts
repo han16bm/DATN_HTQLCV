@@ -4,7 +4,10 @@ import type {
   changePasswordSchema,
   passwordResultSchema,
 } from "../schemas/password.schema";
-import type { personalProfileSchema, updateProfileSchema } from "../schemas/profile.schema";
+import type {
+  personalProfileSchema,
+  updateProfileSchema,
+} from "../schemas/profile.schema";
 import type {
   loginResponseSchema,
   logoutResultSchema,

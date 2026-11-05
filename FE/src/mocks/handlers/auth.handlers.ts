@@ -1,5 +1,8 @@
 import { loginSchema } from "@/features/auth/schemas/login.schema";
-import { personalProfileSchema, updateProfileSchema } from "@/features/auth/schemas/profile.schema";
+import {
+  personalProfileSchema,
+  updateProfileSchema,
+} from "@/features/auth/schemas/profile.schema";
 import {
   changePasswordSchema,
   passwordResultSchema,
@@ -12,7 +15,13 @@ import {
 import { emptySchema, idSchema } from "@/lib/validation/request.schema";
 import { http, HttpResponse } from "msw";
 import { authDb } from "../db";
-import { authenticatedUser, mockCommand, mockHandler, mockJson, parseQuery } from "./http";
+import {
+  authenticatedUser,
+  mockCommand,
+  mockHandler,
+  mockJson,
+  parseQuery,
+} from "./http";
 const accessToken = (request: Request) =>
   request.headers.get("Authorization")?.replace(/^Bearer /, "");
 export const authHandlers = [
@@ -21,7 +30,11 @@ export const authHandlers = [
     mockHandler(({ request }) => {
       const viewer = authenticatedUser(request);
       parseQuery(request, emptySchema);
-      return mockJson(request, authDb.getProfile(viewer), personalProfileSchema);
+      return mockJson(
+        request,
+        authDb.getProfile(viewer),
+        personalProfileSchema,
+      );
     }),
   ),
   http.put(

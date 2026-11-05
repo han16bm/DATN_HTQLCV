@@ -19,7 +19,8 @@ namespace Identity.Api.Services;
 public class SystemConfigService(
     ApplicationDbContext context,
     IHttpContextAccessor httpContextAccessor,
-    ICentralConfigReloader reloader)
+    ICentralConfigReloader reloader,
+    IConfiguration configuration)
     : BaseService<SystemConfig>(context, httpContextAccessor), ISystemConfigService
 {
     public async Task<List<SystemConfigDto>> ListAsync(SystemConfigQuery query)
@@ -46,19 +47,20 @@ public class SystemConfigService(
 
         if (!ConfigCatalog.IsValidKeyFormat(key))
             throw new ValidationException("Key phải là đường dẫn cấu hình dạng Section:SubKey (chữ, số, dấu chấm, gạch dưới).", ["key"]);
-        if (ConfigCatalog.IsForbiddenKey(key))
+        var definition = ConfigCatalog.Find(key, serviceType);
+        // Secret chỉ được lưu qua key đã khai báo Secret trong ConfigCatalog (mã hoá, không hiển thị lại).
+        if (ConfigCatalog.IsForbiddenKey(key) && definition is null)
             throw new ValidationException("Không được lưu secret, connection string hay cấu hình hạ tầng trong cấu hình tập trung.", ["key"]);
         if (!ConfigCatalog.DataTypes.Contains(dataType))
             throw new ValidationException("Kiểu dữ liệu phải là INT, BOOL hoặc STRING.", ["dataType"]);
 
-        var definition = ConfigCatalog.Find(key, serviceType);
         if (definition is not null && definition.DataType != dataType)
             throw new ValidationException($"Key này phải có kiểu {definition.DataType}.", ["dataType"]);
 
         if (await context.SystemConfigs.AnyAsync(c => c.Key.ToLower() == key.ToLower() && c.ServiceType == serviceType))
             throw new BusinessRuleException($"Key '{key}' đã tồn tại cho {serviceType}.");
 
-        var value = NormalizeValue(dataType, request.Value, definition);
+        var value = Protect(definition, NormalizeValue(dataType, request.Value, definition));
         if (definition?.Key == ConfigCatalog.AdminIpWhitelistEnabled && value == "true")
             await EnsureWhitelistKeepsCurrentIpAsync();
 
@@ -97,8 +99,9 @@ public class SystemConfigService(
         var definition = ConfigCatalog.Find(config.Key, config.ServiceType);
         var before = Snapshot(config);
 
-        if (request.Value is not null)
-            config.Value = NormalizeValue(config.DataType, request.Value, definition);
+        // Secret: để trống = giữ giá trị cũ (FE không bao giờ nhận lại giá trị thật để gửi lên).
+        if (request.Value is not null && !(definition?.Secret == true && string.IsNullOrEmpty(request.Value)))
+            config.Value = Protect(definition, NormalizeValue(config.DataType, request.Value, definition));
         if (request.Name is not null)
         {
             if (string.IsNullOrWhiteSpace(request.Name))
@@ -172,17 +175,34 @@ public class SystemConfigService(
         return value;
     }
 
+    private string Protect(ConfigDefinition? definition, string value)
+    {
+        if (definition?.Secret != true || value.Length == 0) return value;
+        var root = ConfigSecretBox.RootSecret(configuration)
+            ?? throw new UnprocessableRuleException("Chưa có khoá gốc (CentralConfig:SecretKey hoặc Jwt:SigningKey) để mã hoá secret.");
+        return ConfigSecretBox.Protect(value, root);
+    }
+
+    // Audit không ghi secret (kể cả bản mã), chỉ ghi đã đặt hay chưa.
     private static object Snapshot(SystemConfig c)
     {
-        return new { c.Key, c.ServiceType, c.Group, c.Name, c.Description, c.DataType, c.Value, c.IsActive };
+        var secret = ConfigCatalog.Find(c.Key, c.ServiceType)?.Secret == true;
+        return new
+        {
+            c.Key, c.ServiceType, c.Group, c.Name, c.Description, c.DataType,
+            Value = secret ? (string.IsNullOrEmpty(c.Value) ? "" : "(đã đặt)") : c.Value,
+            c.IsActive
+        };
     }
 
     private static SystemConfigDto ToDto(SystemConfig c, Dictionary<string, string> names)
     {
         var definition = ConfigCatalog.Find(c.Key, c.ServiceType);
+        var secret = definition?.Secret == true;
         return new SystemConfigDto(
-            c.Id, c.Version, c.Key, c.ServiceType, c.Group, c.Name, c.Description, c.DataType, c.Value, c.IsActive,
+            c.Id, c.Version, c.Key, c.ServiceType, c.Group, c.Name, c.Description, c.DataType, secret ? "" : c.Value, c.IsActive,
             definition is not null, definition?.RequiresRestart ?? false, definition?.MinValue, definition?.MaxValue,
-            definition?.AllowedValues, c.CreatedAt, c.UpdatedAt, PersonRef(c.CreatedBy, names), PersonRef(c.UpdatedBy, names));
+            definition?.AllowedValues, c.CreatedAt, c.UpdatedAt, PersonRef(c.CreatedBy, names), PersonRef(c.UpdatedBy, names),
+            secret, secret && !string.IsNullOrEmpty(c.Value));
     }
 }

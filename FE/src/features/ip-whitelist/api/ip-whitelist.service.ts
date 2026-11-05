@@ -7,7 +7,6 @@ import {
 import { page } from "@/lib/validation/common.schema";
 import {
   allowIpAccessLogResultSchema,
-  ipAccessLogQuerySchema,
   ipAccessLogSchema,
   ipWhitelistEntrySchema,
   ipWhitelistSchema,
@@ -31,7 +30,7 @@ export const ipWhitelistService = {
   ) {
     const response = await apiClient.get<IpAccessLogList>("/ip-access-logs", {
       ...options,
-      params: ipAccessLogQuerySchema.parse(query),
+      params: query,
       schema: page(ipAccessLogSchema),
     });
     return response.data;

@@ -12,7 +12,10 @@ import type { z } from "zod";
 import { useChangePasswordMutation } from "../hooks/use-auth-mutations";
 import { passwordFormSchema } from "../schemas/password.schema";
 
-export function ChangePasswordForm({ onSaved, onCancel }: {
+export function ChangePasswordForm({
+  onSaved,
+  onCancel,
+}: {
   onSaved: () => void;
   onCancel: () => void;
 }) {
@@ -35,7 +38,10 @@ export function ChangePasswordForm({ onSaved, onCancel }: {
       cancel={
         <Button
           onClick={async () => {
-            if (!form.formState.isDirty || await confirmDiscard("Bỏ thay đổi mật khẩu chưa lưu?"))
+            if (
+              !form.formState.isDirty ||
+              (await confirmDiscard("Bỏ thay đổi mật khẩu chưa lưu?"))
+            )
               onCancel();
           }}
         >

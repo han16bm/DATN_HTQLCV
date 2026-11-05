@@ -53,23 +53,35 @@ async function call<T>(user: string, label: string, fn: () => Promise<T>) {
   try {
     const data = await fn();
     rows.push({ user, call: label, result: "ok" });
-    if (process.env.LIVE_VERBOSE) console.log(`${user} ${label} ok ${Date.now() - started}ms`);
+    if (process.env.LIVE_VERBOSE)
+      console.log(`${user} ${label} ok ${Date.now() - started}ms`);
     return data;
   } catch (error) {
-    const e = error as { name?: string; status?: number; code?: string; message?: string };
+    const e = error as {
+      name?: string;
+      status?: number;
+      code?: string;
+      message?: string;
+    };
     rows.push({
       user,
       call: label,
-      result: e.name === "ContractError" ? "SCHEMA" : String(e.status ?? e.name),
+      result:
+        e.name === "ContractError" ? "SCHEMA" : String(e.status ?? e.name),
       detail: lastIssues ?? `${e.code ?? ""} ${e.message ?? ""}`.trim(),
     });
-    if (process.env.LIVE_VERBOSE) console.log(`${user} ${label} ${rows.at(-1)!.result} ${Date.now() - started}ms`);
+    if (process.env.LIVE_VERBOSE)
+      console.log(
+        `${user} ${label} ${rows.at(-1)!.result} ${Date.now() - started}ms`,
+      );
     return undefined;
   }
 }
 
 const today = new Date().toISOString().slice(0, 10);
-const monthAgo = new Date(Date.now() - 35 * 86400_000).toISOString().slice(0, 10);
+const monthAgo = new Date(Date.now() - 35 * 86400_000)
+  .toISOString()
+  .slice(0, 10);
 const range = { from: monthAgo, to: today };
 
 async function probe(user: string) {
@@ -79,77 +91,156 @@ async function probe(user: string) {
   });
   const u = (label: string) => label;
   await call(user, u("getSession"), () => authService.getSession());
-  const users = await call(user, "listUsers", () => usersService.listUsers({ pageSize: 50 }));
-  const someone = users?.items.find((x) => x.id !== session.user.id)?.id ?? session.user.id;
+  const users = await call(user, "listUsers", () =>
+    usersService.listUsers({ pageSize: 50 }),
+  );
+  const someone =
+    users?.items.find((x) => x.id !== session.user.id)?.id ?? session.user.id;
   await call(user, "getUser", () => usersService.getUser(someone));
   await call(user, "getProfile", () => usersService.getProfile(someone));
-  await call(user, "listUserProjects", () => usersService.listUserProjects(someone));
-  await call(user, "getUserPermissions", () => usersService.getUserPermissions(someone));
+  await call(user, "listUserProjects", () =>
+    usersService.listUserProjects(someone),
+  );
+  await call(user, "getUserPermissions", () =>
+    usersService.getUserPermissions(someone),
+  );
 
-  const units = await call(user, "listUnits", () => organizationService.listUnits({}));
-  if (units?.items[0]) await call(user, "getUnit", () => organizationService.getUnit(units.items[0].id));
-  const teams = await call(user, "listTeams", () => organizationService.listTeams({}));
-  if (teams?.items[0]) await call(user, "getTeam", () => organizationService.getTeam(teams.items[0].id));
+  const units = await call(user, "listUnits", () =>
+    organizationService.listUnits({}),
+  );
+  if (units?.items[0])
+    await call(user, "getUnit", () =>
+      organizationService.getUnit(units.items[0].id),
+    );
+  const teams = await call(user, "listTeams", () =>
+    organizationService.listTeams({}),
+  );
+  if (teams?.items[0])
+    await call(user, "getTeam", () =>
+      organizationService.getTeam(teams.items[0].id),
+    );
 
   await call(user, "listFeatures", () => permissionsService.listFeatures());
-  const groups = await call(user, "listPermissionGroups", () => permissionsService.listPermissionGroups({}));
+  const groups = await call(user, "listPermissionGroups", () =>
+    permissionsService.listPermissionGroups({}),
+  );
   if (groups?.items[0])
-    await call(user, "getPermissionGroup", () => permissionsService.getPermissionGroup(groups.items[0].id));
+    await call(user, "getPermissionGroup", () =>
+      permissionsService.getPermissionGroup(groups.items[0].id),
+    );
   await call(user, "listSettings", () => settingsService.listSettings({}));
   await call(user, "getIpWhitelist", () => ipWhitelistService.getIpWhitelist());
-  await call(user, "listIpAccessLogs", () => ipWhitelistService.listIpAccessLogs({}));
-  await call(user, "listProjectRolePolicies", () => permissionsService.listProjectRolePolicies());
-  const audits = await call(user, "listAuditLogs", () => auditLogsService.listAuditLogs({}));
-  if (audits?.items[0]) await call(user, "getAuditLog", () => auditLogsService.getAuditLog(audits.items[0].id));
+  await call(user, "listIpAccessLogs", () =>
+    ipWhitelistService.listIpAccessLogs({}),
+  );
+  await call(user, "listProjectRolePolicies", () =>
+    permissionsService.listProjectRolePolicies(),
+  );
+  const audits = await call(user, "listAuditLogs", () =>
+    auditLogsService.listAuditLogs({}),
+  );
+  if (audits?.items[0])
+    await call(user, "getAuditLog", () =>
+      auditLogsService.getAuditLog(audits.items[0].id),
+    );
   await call(user, "listEntityTypes", () => auditLogsService.listEntityTypes());
   const jobs = await call(user, "listJobs", () => jobsService.listJobs());
-  if (jobs?.[0]) await call(user, "listJobRuns", () => jobsService.listJobRuns(jobs[0].code));
+  if (jobs?.[0])
+    await call(user, "listJobRuns", () =>
+      jobsService.listJobRuns(jobs[0].code),
+    );
 
   await call(user, "notifications.list", () => notificationsService.list({}));
-  await call(user, "notifications.summary", () => notificationsService.summary());
+  await call(user, "notifications.summary", () =>
+    notificationsService.summary(),
+  );
 
-  const projects = await call(user, "listProjects", () => projectsService.listProjects({ pageSize: 50 }));
+  const projects = await call(user, "listProjects", () =>
+    projectsService.listProjects({ pageSize: 50 }),
+  );
   const project = projects?.items[0];
   if (project) {
-    await call(user, "getProject", () => projectsService.getProject(project.id));
-    await call(user, "getProjectClosureChecks", () => projectsService.getProjectClosureChecks(project.id));
-    await call(user, "listProjectHistory", () => projectsService.listProjectHistory(project.id));
-    await call(user, "listProjectMembers", () => projectMembersService.listProjectMembers(project.id));
+    await call(user, "getProject", () =>
+      projectsService.getProject(project.id),
+    );
+    await call(user, "getProjectClosureChecks", () =>
+      projectsService.getProjectClosureChecks(project.id),
+    );
+    await call(user, "listProjectHistory", () =>
+      projectsService.listProjectHistory(project.id),
+    );
+    await call(user, "listProjectMembers", () =>
+      projectMembersService.listProjectMembers(project.id),
+    );
     await call(user, "getReportPreview", () =>
-      reportsService.getReportPreview({ projectId: project.id, periodType: "WEEKLY", periodStart: monthAgo }),
+      reportsService.getReportPreview({
+        projectId: project.id,
+        periodType: "WEEKLY",
+        periodStart: monthAgo,
+      }),
     );
   }
 
-  const tasks = await call(user, "listTasks", () => tasksService.listTasks({ pageSize: 50 }));
+  const tasks = await call(user, "listTasks", () =>
+    tasksService.listTasks({ pageSize: 50 }),
+  );
   for (const task of tasks?.items.slice(0, 3) ?? []) {
     await call(user, "getTask", () => tasksService.getTask(task.id));
-    await call(user, "listTaskHistory", () => tasksService.listTaskHistory(task.id));
-    await call(user, "listTimeLogs", () => timeLogsService.listTimeLogs(task.id));
-    const subs = await call(user, "listSubmissions", () => submissionsService.listSubmissions(task.id));
+    await call(user, "listTaskHistory", () =>
+      tasksService.listTaskHistory(task.id),
+    );
+    await call(user, "listTimeLogs", () =>
+      timeLogsService.listTimeLogs(task.id),
+    );
+    const subs = await call(user, "listSubmissions", () =>
+      submissionsService.listSubmissions(task.id),
+    );
     const sub = subs?.items[0];
     if (sub) {
       const detail = await call(user, "getSubmission", () =>
         submissionsService.getSubmission(task.id, sub.id),
       );
       for (const attachmentId of detail?.attachmentIds.slice(0, 1) ?? []) {
-        await call(user, "getAttachment", () => attachmentsService.getAttachment(attachmentId));
-        await call(user, "downloadAttachment", () => attachmentsService.downloadAttachment(attachmentId));
+        await call(user, "getAttachment", () =>
+          attachmentsService.getAttachment(attachmentId),
+        );
+        await call(user, "downloadAttachment", () =>
+          attachmentsService.downloadAttachment(attachmentId),
+        );
       }
     }
   }
-  await call(user, "listReviewQueue", () => submissionsService.listReviewQueue({}));
-  await call(user, "getUploadPolicy", () => attachmentsService.getUploadPolicy());
+  await call(user, "listReviewQueue", () =>
+    submissionsService.listReviewQueue({}),
+  );
+  await call(user, "getUploadPolicy", () =>
+    attachmentsService.getUploadPolicy(),
+  );
 
-  const reports = await call(user, "listReports", () => reportsService.listReports({}));
-  if (reports?.items[0]) await call(user, "getReport", () => reportsService.getReport(reports.items[0].id));
+  const reports = await call(user, "listReports", () =>
+    reportsService.listReports({}),
+  );
+  if (reports?.items[0])
+    await call(user, "getReport", () =>
+      reportsService.getReport(reports.items[0].id),
+    );
 
-  const alerts = await call(user, "listAlerts", () => alertsService.listAlerts({}));
-  if (alerts?.items[0]) await call(user, "getAlert", () => alertsService.getAlert(alerts.items[0].id));
+  const alerts = await call(user, "listAlerts", () =>
+    alertsService.listAlerts({}),
+  );
+  if (alerts?.items[0])
+    await call(user, "getAlert", () =>
+      alertsService.getAlert(alerts.items[0].id),
+    );
 
   await call(user, "getDashboard", () => analyticsService.getDashboard(range));
-  await call(user, "getDeadlineRisks", () => analyticsService.getDeadlineRisks(range));
+  await call(user, "getDeadlineRisks", () =>
+    analyticsService.getDeadlineRisks(range),
+  );
   await call(user, "getWorkload", () => analyticsService.getWorkload(range));
-  await call(user, "getBottlenecks", () => analyticsService.getBottlenecks(range));
+  await call(user, "getBottlenecks", () =>
+    analyticsService.getBottlenecks(range),
+  );
   const summary = await call(user, "getAnalysisSummary", () =>
     analyticsService.getAnalysisSummary(range),
   );
@@ -162,36 +253,54 @@ async function probe(user: string) {
         analyticsService.getAnalysisDetail(highlight.analysisRef.analysisId),
       );
   }
-  const risks = await call(user, "getDeadlineRisks(ref)", () => analyticsService.getDeadlineRisks(range));
+  const risks = await call(user, "getDeadlineRisks(ref)", () =>
+    analyticsService.getDeadlineRisks(range),
+  );
   if (risks?.items[0])
     await call(user, "getAnalysisDetail(risk)", () =>
       analyticsService.getAnalysisDetail(risks.items[0].analysisRef.analysisId),
     );
-  const workload = await call(user, "getWorkload(ref)", () => analyticsService.getWorkload(range));
+  const workload = await call(user, "getWorkload(ref)", () =>
+    analyticsService.getWorkload(range),
+  );
   if (workload?.items[0])
     await call(user, "getAnalysisDetail(workload)", () =>
-      analyticsService.getAnalysisDetail(workload.items[0].analysisRef.analysisId),
+      analyticsService.getAnalysisDetail(
+        workload.items[0].analysisRef.analysisId,
+      ),
     );
   if (project) {
-    await call(user, "getDashboard(project)", () => analyticsService.getDashboard({ ...range, projectId: project.id }));
+    await call(user, "getDashboard(project)", () =>
+      analyticsService.getDashboard({ ...range, projectId: project.id }),
+    );
     await call(user, "getAnalysisSummary(project)", () =>
       analyticsService.getAnalysisSummary({ ...range, projectId: project.id }),
     );
   }
   for (const kind of ["UNIT", "PROJECT", "TEAM", "PERSON"] as const)
-    await call(user, `filterOptions ${kind}`, () => analyticsService.listAnalyticsFilterOptions({ kind }));
+    await call(user, `filterOptions ${kind}`, () =>
+      analyticsService.listAnalyticsFilterOptions({ kind }),
+    );
   token.set(null);
 }
 
 it("FE schemas parse every live GET response", async () => {
-  for (const user of (process.env.LIVE_USERS ?? "admin,minh,lan").split(",")) await probe(user);
-  const bad = rows.filter((r) => r.result === "SCHEMA" || r.result === "404" || /^5/.test(r.result));
+  for (const user of (process.env.LIVE_USERS ?? "admin,minh,lan").split(","))
+    await probe(user);
+  const bad = rows.filter(
+    (r) => r.result === "SCHEMA" || r.result === "404" || /^5/.test(r.result),
+  );
   console.log(
     rows
       .filter((r) => r.result !== "ok")
-      .map((r) => `${r.user.padEnd(6)} ${r.call.padEnd(28)} ${r.result.padEnd(8)} ${r.detail ?? ""}`)
+      .map(
+        (r) =>
+          `${r.user.padEnd(6)} ${r.call.padEnd(28)} ${r.result.padEnd(8)} ${r.detail ?? ""}`,
+      )
       .join("\n") || "all ok",
   );
-  console.log(`calls: ${rows.length}, ok: ${rows.filter((r) => r.result === "ok").length}, bad: ${bad.length}`);
+  console.log(
+    `calls: ${rows.length}, ok: ${rows.filter((r) => r.result === "ok").length}, bad: ${bad.length}`,
+  );
   expect(bad).toEqual([]);
 });

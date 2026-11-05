@@ -57,7 +57,8 @@ public static class CentralConfigurationExtensions
 
         var reloadSeconds = builder.Configuration.GetValue("CentralConfig:ReloadSeconds", 30);
         configuration.Sources.Insert(insertAt,
-            new CentralConfigurationSource(connectionString, serviceType, TimeSpan.FromSeconds(Math.Max(reloadSeconds, 0))));
+            new CentralConfigurationSource(connectionString, serviceType, TimeSpan.FromSeconds(Math.Max(reloadSeconds, 0)),
+                ConfigSecretBox.RootSecret(builder.Configuration)));
 
         // Không throw để `dotnet ef` vẫn dựng được host trên DB chưa migrate; chỉ cảnh báo rõ ràng
         var missing = ConfigCatalog.Known

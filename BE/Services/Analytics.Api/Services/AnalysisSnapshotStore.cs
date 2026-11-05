@@ -73,6 +73,7 @@ public class AnalysisSnapshotStore(ApplicationDbContext context, IHttpContextAcc
     public const int RetentionDays = 7;
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
+    private static long _lastCleanupTicks;
     private readonly Dictionary<string, AnalysisSnapshot> _pending = new();
     private readonly Dictionary<string, string> _latest = new();
 
@@ -125,13 +126,18 @@ public class AnalysisSnapshotStore(ApplicationDbContext context, IHttpContextAcc
         if (_pending.Count == 0) return;
         var now = DateTime.UtcNow;
         var ids = _pending.Keys.ToList();
-        var existing = await context.AnalysisSnapshots.Where(s => ids.Contains(s.Id)).Select(s => s.Id).ToListAsync();
-        if (existing.Count > 0)
-            await context.AnalysisSnapshots.Where(s => existing.Contains(s.Id))
+        var rows = await context.AnalysisSnapshots.Where(s => ids.Contains(s.Id))
+            .Select(s => new { s.Id, s.ExpiresAt }).ToListAsync();
+        var existing = rows.Select(r => r.Id).ToList();
+        // Gia hạn bản đang được xem; chỉ ghi khi còn dưới (RetentionDays - 1) ngày để không ghi DB mỗi lần tải trang.
+        var renew = rows.Where(r => r.ExpiresAt < now.AddDays(RetentionDays - 1)).Select(r => r.Id).ToList();
+        if (renew.Count > 0)
+            await context.AnalysisSnapshots.Where(s => renew.Contains(s.Id))
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.ExpiresAt, now.AddDays(RetentionDays)));
 
         var fresh = _pending.Values.Where(s => !existing.Contains(s.Id)).ToList();
         _pending.Clear();
+        await CleanupAsync(now);
         if (fresh.Count == 0) return;
         context.AnalysisSnapshots.AddRange(fresh);
         try
@@ -148,7 +154,15 @@ public class AnalysisSnapshotStore(ApplicationDbContext context, IHttpContextAcc
             await context.SaveChangesAsync();
         }
 
-        // Dọn bản hết hạn (cùng phản hồi/job của chúng).
+    }
+
+    // Dọn bản hết hạn (cùng phản hồi/job của chúng) tối đa 30 phút một lần mỗi tiến trình.
+    private async Task CleanupAsync(DateTime now)
+    {
+        var last = Interlocked.Read(ref _lastCleanupTicks);
+        if (now.Ticks - last < TimeSpan.FromMinutes(30).Ticks
+            || Interlocked.CompareExchange(ref _lastCleanupTicks, now.Ticks, last) != last)
+            return;
         var expired = context.AnalysisSnapshots.Where(s => s.ExpiresAt < now).Select(s => s.Id);
         await context.AnalysisJobs.Where(j => expired.Contains(j.AnalysisId)).ExecuteDeleteAsync();
         await context.AnalysisFeedback.Where(f => expired.Contains(f.AnalysisId)).ExecuteDeleteAsync();

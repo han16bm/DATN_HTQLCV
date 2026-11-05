@@ -142,11 +142,9 @@ import type {
 } from "@/features/time-logs/types/time-logs.types";
 import { userSchema } from "@/features/users/schemas/user.schema";
 import type {
-  CreateUserInput,
   LockUserInput,
   ResetUserPasswordInput,
   UnlockUserInput,
-  UpdateUserInput,
   UpdateUserPermissionsInput,
   UserDto,
   UserPermissionsDto,
@@ -217,7 +215,7 @@ import type {
   Permission,
 } from "@/types/common";
 import { z } from "zod";
-import {
+import type {
   createUserSchema,
   updateUserSchema,
 } from "@/features/users/schemas/user-form.schema";
@@ -725,15 +723,23 @@ const userRow = (user: User): UserRow => ({
   unit: unitRef(user.unitId),
 });
 const affiliations = (userId: string) => {
-  const projectIds = new Set(db.members
-    .filter((member) => member.userId === userId && !member.endedAt)
-    .map((member) => member.projectId));
+  const projectIds = new Set(
+    db.members
+      .filter((member) => member.userId === userId && !member.endedAt)
+      .map((member) => member.projectId),
+  );
   return {
     teams: db.teams
-      .filter((team) => team.status === "ACTIVE" && team.memberIds.includes(userId))
+      .filter(
+        (team) => team.status === "ACTIVE" && team.memberIds.includes(userId),
+      )
       .map(({ id, name }) => ({ id, name })),
     projects: db.projects
-      .filter((project) => projectIds.has(project.id) && ["PLANNED", "ACTIVE"].includes(project.status))
+      .filter(
+        (project) =>
+          projectIds.has(project.id) &&
+          ["PLANNED", "ACTIVE"].includes(project.status),
+      )
       .map(({ id, name }) => ({ id, name })),
   };
 };
@@ -1039,9 +1045,21 @@ export const authDb = {
     return sessionDTO(sessionUser(accessToken));
   },
   getProfile(viewer: User): PersonalProfileDto {
-    const { id: _id, updatedAt: _u, avatarUrl: _a, unitId: _ui, status: _s, ...dto } =
-      userDTO(viewer);
-    return { ...dto, unit: unitRef(viewer.unitId).name };
+    const user = userDTO(viewer);
+    return {
+      version: user.version,
+      createdAt: user.createdAt,
+      username: user.username,
+      displayName: user.displayName,
+      email: user.email,
+      isSysAdmin: user.isSysAdmin,
+      groups: user.groups,
+      createdBy: user.createdBy,
+      updatedBy: user.updatedBy,
+      ...personalInfo(viewer),
+      ...affiliations(viewer.id),
+      unit: unitRef(viewer.unitId).name,
+    };
   },
   async updateProfile(
     viewer: User,
@@ -2568,7 +2586,13 @@ export const ipWhitelistDb = {
   },
   listIpAccessLogs(
     viewer: User,
-    query: { page?: number; pageSize?: number; q?: string; status?: string; scope?: string },
+    query: {
+      page?: number;
+      pageSize?: number;
+      q?: string;
+      status?: string;
+      scope?: string;
+    },
   ) {
     requireAdmin(viewer, "SETTINGS_MANAGE");
     const q = query.q?.toLowerCase();
@@ -2968,15 +2992,10 @@ export const projectsDb = {
         "Chỉ quản trị tài khoản được bàn giao dự án thay chủ dự án.",
       );
     const project = db.projects.find((p) => p.id === projectId);
-    if (!project)
-      throw new ApiError(404, "NOT_FOUND", "Không tìm thấy dự án.");
+    if (!project) throw new ApiError(404, "NOT_FOUND", "Không tìm thấy dự án.");
     requireVersion(expectedVersion, project);
     if (["COMPLETED", "CANCELLED"].includes(project.status))
-      throw new ApiError(
-        409,
-        "CONFLICT",
-        "Dự án đã đóng, không cần bàn giao.",
-      );
+      throw new ApiError(409, "CONFLICT", "Dự án đã đóng, không cần bàn giao.");
     if (body.newOwnerId === project.ownerId)
       throw new ApiError(422, "INVALID_OWNER", "Người nhận đang là chủ dự án.");
     const owner = requireUser(body.newOwnerId);

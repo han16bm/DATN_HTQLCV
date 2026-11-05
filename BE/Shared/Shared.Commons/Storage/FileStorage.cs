@@ -2,68 +2,84 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Shared.Commons.Storage;
 
 /// <summary>
 /// Tệp mới vào provider đang bật; tệp cũ đọc/xoá theo tiền tố khoá ("cloudinary:" / "local:" / đường dẫn tuyệt đối cũ),
-/// nên đổi provider không làm hỏng minh chứng đã lưu trước đó.
+/// nên đổi provider không làm hỏng minh chứng đã lưu trước đó. Cấu hình lấy từ cấu hình tập trung (SystemConfigs,
+/// nhóm STORAGE) qua IOptionsMonitor: sửa ở màn Cấu hình tập trung có hiệu lực sau chu kỳ reload, không cần khởi động lại.
 /// </summary>
 public sealed class FileStorage : IFileStorage
 {
-    private readonly LocalFileStorage _local;
-    private readonly CloudinaryFileStorage? _cloudinary;
+    private readonly string _contentRoot;
     private readonly ILogger<FileStorage> _logger;
+    private volatile Backends _current;
 
-    public FileStorage(StorageOptions options, string contentRoot, ILogger<FileStorage> logger)
+    private sealed record Backends(string Provider, LocalFileStorage Local, CloudinaryFileStorage? Cloudinary);
+
+    public FileStorage(IOptionsMonitor<StorageOptions> options, string contentRoot, ILogger<FileStorage> logger)
     {
+        _contentRoot = contentRoot;
         _logger = logger;
-        _local = new LocalFileStorage(Path.Combine(contentRoot, options.LocalRoot), options.PublicBaseUrl);
+        _current = Build(options.CurrentValue);
+        options.OnChange(o =>
+        {
+            try
+            {
+                _current = Build(o);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Cấu hình lưu tệp mới không hợp lệ — giữ cấu hình cũ ({Provider}).", _current.Provider);
+            }
+        });
+    }
+
+    private Backends Build(StorageOptions options)
+    {
+        var local = new LocalFileStorage(Path.Combine(_contentRoot, options.LocalRoot), options.PublicBaseUrl);
         var cloud = WithEnvironmentUrl(options.Cloudinary);
         var provider = options.Provider.Trim();
         if (provider.Equals("Cloudinary", StringComparison.OrdinalIgnoreCase) && !cloud.IsConfigured)
-            throw new InvalidOperationException(
-                "Storage:Provider = Cloudinary nhưng thiếu Storage:Cloudinary:CloudName/ApiKey/ApiSecret (đặt trong BE/appsettings.Shared.json hoặc biến môi trường CLOUDINARY_URL).");
-
-        if (cloud.IsConfigured)
-            _cloudinary = new CloudinaryFileStorage(cloud);
-        Provider = _cloudinary is not null && !provider.Equals("Local", StringComparison.OrdinalIgnoreCase) ? "Cloudinary" : "Local";
-
-        if (Provider == "Local" && !provider.Equals("Local", StringComparison.OrdinalIgnoreCase))
-            logger.LogWarning(
-                "Cloudinary chưa đủ cấu hình (cần CloudName, ApiKey và ApiSecret) — tệp mới lưu cục bộ tại {Root}.",
-                Path.GetFullPath(Path.Combine(contentRoot, options.LocalRoot)));
-        else
-            logger.LogInformation("Lưu tệp qua {Provider}.", Provider);
+            _logger.LogWarning("Storage:Provider = Cloudinary nhưng thiếu CloudName/ApiKey/ApiSecret — tạm lưu cục bộ.");
+        var cloudinary = cloud.IsConfigured ? new CloudinaryFileStorage(cloud) : null;
+        var active = cloudinary is not null && !provider.Equals("Local", StringComparison.OrdinalIgnoreCase) ? "Cloudinary" : "Local";
+        _logger.LogInformation("Lưu tệp qua {Provider}{Detail}.", active,
+            active == "Local" ? $" ({Path.GetFullPath(Path.Combine(_contentRoot, options.LocalRoot))})" : $" (cloud {cloud.CloudName})");
+        return new Backends(active, local, cloudinary);
     }
 
-    public string Provider { get; }
-
+    public string Provider => _current.Provider;
     public Task<StoredFile> SaveAsync(Stream content, string fileName, string contentType, string folder,
         StoredFileAccess access, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(folder) || !folder.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c == '-'))
             throw new ArgumentException("Tên nhóm tệp chỉ gồm chữ thường, số và gạch ngang.", nameof(folder));
-        return _cloudinary is not null && Provider == "Cloudinary"
-            ? _cloudinary.SaveAsync(content, fileName, contentType, folder, access, cancellationToken)
-            : _local.SaveAsync(content, fileName, contentType, folder, access, cancellationToken);
+        var backends = _current;
+        return backends.Cloudinary is not null && backends.Provider == "Cloudinary"
+            ? backends.Cloudinary.SaveAsync(content, fileName, contentType, folder, access, cancellationToken)
+            : backends.Local.SaveAsync(content, fileName, contentType, folder, access, cancellationToken);
     }
 
     public async Task<Stream?> OpenReadAsync(string key, CancellationToken cancellationToken = default)
     {
+        var backends = _current;
         if (!CloudinaryFileStorage.Owns(key))
-            return _local.OpenRead(key);
-        if (_cloudinary is null)
+            return backends.Local.OpenRead(key);
+        if (backends.Cloudinary is null)
             throw new StorageUnavailableException("Tệp nằm trên Cloudinary nhưng máy chủ chưa cấu hình Cloudinary.");
-        return await _cloudinary.OpenReadAsync(key, cancellationToken);
+        return await backends.Cloudinary.OpenReadAsync(key, cancellationToken);
     }
 
     public async Task DeleteAsync(string key, CancellationToken cancellationToken = default)
     {
         try
         {
-            if (!CloudinaryFileStorage.Owns(key)) _local.Delete(key);
-            else if (_cloudinary is not null) await _cloudinary.DeleteAsync(key);
+            var backends = _current;
+            if (!CloudinaryFileStorage.Owns(key)) backends.Local.Delete(key);
+            else if (backends.Cloudinary is not null) await backends.Cloudinary.DeleteAsync(key);
         }
         catch (Exception ex)
         {
@@ -94,10 +110,9 @@ public static class FileStorageServiceCollectionExtensions
 {
     public static IServiceCollection AddFileStorage(this IServiceCollection services, IConfiguration configuration)
     {
-        var options = configuration.GetSection(StorageOptions.Section).Get<StorageOptions>() ?? new StorageOptions();
-        services.AddSingleton(options);
+        services.Configure<StorageOptions>(configuration.GetSection(StorageOptions.Section));
         services.AddSingleton<IFileStorage>(sp => new FileStorage(
-            options,
+            sp.GetRequiredService<IOptionsMonitor<StorageOptions>>(),
             sp.GetRequiredService<IHostEnvironment>().ContentRootPath,
             sp.GetRequiredService<ILogger<FileStorage>>()));
         return services;

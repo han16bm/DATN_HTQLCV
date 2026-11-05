@@ -31,11 +31,7 @@ export function UserHandoverPanel({ user }: { user: UserDto }) {
       </p>
       <ul className="m-0 mt-2 grid list-none gap-3 p-0">
         {owned.map((project) => (
-          <HandoverRow
-            key={project.project.id}
-            user={user}
-            project={project}
-          />
+          <HandoverRow key={project.project.id} user={user} project={project} />
         ))}
       </ul>
     </Notice>
@@ -57,7 +53,9 @@ function HandoverRow({
     { enabled: open },
   );
   const transfer = useTransferProjectOwnerMutation();
-  const options = (candidates.data?.items ?? []).filter((u) => u.id !== user.id);
+  const options = (candidates.data?.items ?? []).filter(
+    (u) => u.id !== user.id,
+  );
   return (
     <li className="grid gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -113,7 +111,7 @@ function HandoverRow({
             <Button
               type="submit"
               variant="primary"
-             
+
               disabled={!ownerId || !reason.trim() || transfer.isPending}
             >
               Xác nhận bàn giao

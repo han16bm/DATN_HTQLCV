@@ -22,7 +22,11 @@ import { useUpdateProfileMutation } from "../hooks/use-auth-mutations";
 import { profileInfoSchema } from "../schemas/profile.schema";
 import type { PersonalProfileDto } from "../types/auth.types";
 
-export function ProfileInfoForm({ profile, reload, onDone }: {
+export function ProfileInfoForm({
+  profile,
+  reload,
+  onDone,
+}: {
   profile: PersonalProfileDto;
   reload: () => Promise<{ data?: PersonalProfileDto }>;
   onDone: () => void;
@@ -52,7 +56,10 @@ export function ProfileInfoForm({ profile, reload, onDone }: {
       cancel={
         <Button
           onClick={async () => {
-            if (!form.formState.isDirty || await confirmDiscard("Bỏ thay đổi hồ sơ chưa lưu?"))
+            if (
+              !form.formState.isDirty ||
+              (await confirmDiscard("Bỏ thay đổi hồ sơ chưa lưu?"))
+            )
               onDone();
           }}
         >
@@ -71,8 +78,12 @@ export function ProfileInfoForm({ profile, reload, onDone }: {
       ]}
       onSubmit={async (values) => {
         const payload = changedFields(snapshot.base, values, [
-          "displayName", "gender", "birthDate", "phone",
-          "permanentAddress", "temporaryAddress",
+          "displayName",
+          "gender",
+          "birthDate",
+          "phone",
+          "permanentAddress",
+          "temporaryAddress",
         ]);
         if (!Object.keys(payload).length) {
           onDone();
@@ -87,66 +98,85 @@ export function ProfileInfoForm({ profile, reload, onDone }: {
       }}
     >
       <div className="col-span-12 grid min-w-0 gap-5">
-          <section aria-label="Thông tin cơ bản" className="grid grid-cols-12 gap-4">
-            <h3 className="col-span-12 m-0 text-sm font-semibold text-fg">
-              Thông tin cơ bản
-            </h3>
-            <FormInput
-              label="Họ tên"
-              required
-              autoComplete="name"
-              {...form.register("displayName")}
-              error={errors.displayName}
-            />
-            <Field label="Tên đăng nhập">
-              {(a11y) => (
-                <Input {...a11y} size="form" value={profile.username} readOnly autoComplete="username" />
-              )}
-            </Field>
-            <FormSelect
-              label="Giới tính"
-              options={genders}
-              {...form.register("gender")}
-              error={errors.gender}
-            />
-            <FormInput
-              label="Ngày sinh"
-              type="date"
-              width="medium"
-              autoComplete="bday"
-              {...form.register("birthDate")}
-              error={errors.birthDate}
-            />
-          </section>
-          <section aria-label="Thông tin liên hệ" className="grid grid-cols-12 gap-4 border-t border-line pt-4">
-            <h3 className="col-span-12 m-0 text-sm font-semibold text-fg">
-              Thông tin liên hệ
-            </h3>
-            <Field label="Email">
-              {(a11y) => (
-                <Input {...a11y} size="form" type="email" value={profile.email} readOnly autoComplete="email" />
-              )}
-            </Field>
-            <FormInput
-              label="Số điện thoại"
-              type="tel"
-              autoComplete="tel"
-              {...form.register("phone")}
-              error={errors.phone}
-            />
-            <FormTextarea
-              label="Địa chỉ thường trú"
-              width="medium"
-              {...form.register("permanentAddress")}
-              error={errors.permanentAddress}
-            />
-            <FormTextarea
-              label="Địa chỉ tạm trú"
-              width="medium"
-              {...form.register("temporaryAddress")}
-              error={errors.temporaryAddress}
-            />
-          </section>
+        <section
+          aria-label="Thông tin cơ bản"
+          className="grid grid-cols-12 gap-4"
+        >
+          <h3 className="col-span-12 m-0 text-sm font-semibold text-fg">
+            Thông tin cơ bản
+          </h3>
+          <FormInput
+            label="Họ tên"
+            required
+            autoComplete="name"
+            {...form.register("displayName")}
+            error={errors.displayName}
+          />
+          <Field label="Tên đăng nhập">
+            {(a11y) => (
+              <Input
+                {...a11y}
+                size="form"
+                value={profile.username}
+                readOnly
+                autoComplete="username"
+              />
+            )}
+          </Field>
+          <FormSelect
+            label="Giới tính"
+            options={genders}
+            {...form.register("gender")}
+            error={errors.gender}
+          />
+          <FormInput
+            label="Ngày sinh"
+            type="date"
+            width="medium"
+            autoComplete="bday"
+            {...form.register("birthDate")}
+            error={errors.birthDate}
+          />
+        </section>
+        <section
+          aria-label="Thông tin liên hệ"
+          className="grid grid-cols-12 gap-4 border-t border-line pt-4"
+        >
+          <h3 className="col-span-12 m-0 text-sm font-semibold text-fg">
+            Thông tin liên hệ
+          </h3>
+          <Field label="Email">
+            {(a11y) => (
+              <Input
+                {...a11y}
+                size="form"
+                type="email"
+                value={profile.email}
+                readOnly
+                autoComplete="email"
+              />
+            )}
+          </Field>
+          <FormInput
+            label="Số điện thoại"
+            type="tel"
+            autoComplete="tel"
+            {...form.register("phone")}
+            error={errors.phone}
+          />
+          <FormTextarea
+            label="Địa chỉ thường trú"
+            width="medium"
+            {...form.register("permanentAddress")}
+            error={errors.permanentAddress}
+          />
+          <FormTextarea
+            label="Địa chỉ tạm trú"
+            width="medium"
+            {...form.register("temporaryAddress")}
+            error={errors.temporaryAddress}
+          />
+        </section>
       </div>
     </Form>
   );

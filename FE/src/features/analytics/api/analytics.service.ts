@@ -28,10 +28,14 @@ import type {
   WorkloadDto,
 } from "../types/analytics.types";
 
+// Tổng hợp/phân tích chạy nhiều truy vấn gộp (DB ở xa) nên cho phép lâu hơn mặc định 15 giây.
+const slow = 45000;
+
 export const analyticsService = {
   async getDashboard(query: AnalyticsQuery, options: RequestOptions = {}) {
     const response = await apiClient.get<DashboardDto>("/dashboard", {
       ...options,
+      timeout: slow,
       params: query,
       schema: dashboardSchema,
     });
@@ -41,6 +45,7 @@ export const analyticsService = {
   async getDeadlineRisks(query: AnalyticsQuery, options: RequestOptions = {}) {
     const response = await apiClient.get<RisksDto>("/analytics/risks", {
       ...options,
+      timeout: slow,
       params: query,
       schema: risksSchema,
     });
@@ -50,6 +55,7 @@ export const analyticsService = {
   async getWorkload(query: AnalyticsQuery, options: RequestOptions = {}) {
     const response = await apiClient.get<WorkloadDto>("/analytics/workload", {
       ...options,
+      timeout: slow,
       params: query,
       schema: workloadSchema,
     });
@@ -59,7 +65,7 @@ export const analyticsService = {
   async getBottlenecks(query: AnalyticsQuery, options: RequestOptions = {}) {
     const response = await apiClient.get<BottlenecksDto>(
       "/analytics/bottlenecks",
-      { ...options, params: query, schema: bottlenecksSchema },
+      { ...options, timeout: slow, params: query, schema: bottlenecksSchema },
     );
     return response.data;
   },
@@ -70,6 +76,7 @@ export const analyticsService = {
   ) {
     const response = await apiClient.get<SummaryDto>("/analytics/summary", {
       ...options,
+      timeout: slow,
       params: query,
       schema: summarySchema,
     });
@@ -79,6 +86,7 @@ export const analyticsService = {
   async createAnalysisJob(payload: CreateJobInput, options: MutationOptions) {
     const response = await apiClient.post<JobDto>("/analytics/jobs", payload, {
       ...options,
+      timeout: slow,
       schema: jobSchema,
     });
     return response.data;
@@ -95,7 +103,7 @@ export const analyticsService = {
   async getAnalysisDetail(analysisId: string, options: RequestOptions = {}) {
     const response = await apiClient.get<AnalysisDto>(
       `/analytics/details/${encodeURIComponent(analysisId)}`,
-      { ...options, schema: analysisSchema },
+      { ...options, timeout: slow, schema: analysisSchema },
     );
     return response.data;
   },
@@ -108,7 +116,7 @@ export const analyticsService = {
     const response = await apiClient.post<FeedbackDto>(
       `/analytics/details/${encodeURIComponent(analysisId)}/feedback`,
       payload,
-      { ...options, schema: feedbackSchema },
+      { ...options, timeout: slow, schema: feedbackSchema },
     );
     return response.data;
   },

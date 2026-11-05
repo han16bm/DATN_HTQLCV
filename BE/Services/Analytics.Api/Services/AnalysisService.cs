@@ -168,6 +168,9 @@ public class AnalysisService(
     // Tính lại cùng phạm vi để biết bản đang xem còn là bản mới nhất của đối tượng không (null: đối tượng không còn trong kết quả).
     private async Task<string?> LatestIdAsync(AnalysisSnapshot snapshot, AnalysisSubjectDto subject)
     {
+        // Tính lại cả phân tích tốn nhiều truy vấn: chỉ làm khi dữ liệu nguồn trong phạm vi đã đổi sau lần chụp.
+        if (!await SourceChangedSinceAsync(snapshot.ProjectIds, snapshot.CreatedAt))
+            return snapshot.Id;
         var query = JsonSerializer.Deserialize<SnapshotScope>(snapshot.ScopeJson, Json)!.ToQuery();
         try
         {
@@ -184,6 +187,18 @@ public class AnalysisService(
             return snapshot.Id; // Không tính lại được trong quyền hiện tại: giữ nguyên bản đang xem.
         }
         return snapshots.Latest(snapshot.AnalysisType, subject);
+    }
+
+    private async Task<bool> SourceChangedSinceAsync(List<string> projectIds, DateTime since)
+    {
+        var all = projectIds.Count == 0;
+        var tasks = context.Tasks.AsNoTracking().Where(t => all || projectIds.Contains(t.ProjectId));
+        var taskIds = tasks.Select(t => t.Id);
+        return await tasks.AnyAsync(t => t.UpdatedAt > since)
+            || await context.Submissions.AsNoTracking().AnyAsync(s => taskIds.Contains(s.TaskId) && s.UpdatedAt > since)
+            || await context.TimeLogs.AsNoTracking().AnyAsync(l => taskIds.Contains(l.TaskId) && l.UpdatedAt > since)
+            || await context.Reports.AsNoTracking().AnyAsync(r => (all || projectIds.Contains(r.ProjectId)) && r.UpdatedAt > since)
+            || await context.ProjectMemberships.AsNoTracking().AnyAsync(m => (all || projectIds.Contains(m.ProjectId)) && m.UpdatedAt > since);
     }
 
     private static SnapshotPayload Payload(AnalysisSnapshot snapshot) =>

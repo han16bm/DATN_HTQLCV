@@ -45,6 +45,9 @@ export const settingSchema = z.object({
   updatedAt: z.iso.datetime(),
   updatedBy: refSchema.nullable(),
   createdBy: refSchema.nullable(),
+  // Cấu hình bí mật (ví dụ Cloudinary API secret): BE lưu mã hoá, value luôn rỗng, secretSet = đã nhập.
+  secret: z.boolean().optional(),
+  secretSet: z.boolean().optional(),
 });
 const required = (max: number) =>
   z.string().trim().min(1, "Vui lòng nhập thông tin bắt buộc").max(max);

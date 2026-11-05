@@ -358,6 +358,13 @@ public partial class AnalyticsService(ApplicationDbContext context, IHttpContext
         var assigneeIds = tasks.Where(t => t.AssigneeId != null).Select(t => t.AssigneeId!).Distinct().ToList();
         var assignees = await context.Users.AsNoTracking().Where(u => assigneeIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id);
 
+        var bottleneckTaskIds = tasks.Select(t => t.Id).ToList();
+        var revisionCounts = await context.Submissions.AsNoTracking()
+            .Where(s => bottleneckTaskIds.Contains(s.TaskId) && s.Status == SubmissionStatus.RevisionRequested)
+            .GroupBy(s => s.TaskId)
+            .Select(g => new { TaskId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.TaskId, x => x.Count);
+
         var items = new List<BottleneckItemDto>();
         foreach (var t in tasks)
         {
@@ -369,8 +376,7 @@ public partial class AnalyticsService(ApplicationDbContext context, IHttpContext
                 _ => false
             };
 
-            var revisionCount = await context.Submissions.AsNoTracking()
-                .CountAsync(s => s.TaskId == t.Id && s.Status == SubmissionStatus.RevisionRequested);
+            var revisionCount = revisionCounts.GetValueOrDefault(t.Id);
             var isRevisionBottleneck = revisionCount >= Thresholds.RevisionBottleneckCount;
 
             if (!isElapsedBottleneck && !isRevisionBottleneck) continue;

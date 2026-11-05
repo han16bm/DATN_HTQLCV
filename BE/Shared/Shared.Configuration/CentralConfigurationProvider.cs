@@ -3,11 +3,12 @@ using Npgsql;
 
 namespace Shared.Configuration;
 
-public class CentralConfigurationSource(string connectionString, string serviceType, TimeSpan reloadInterval) : IConfigurationSource
+public class CentralConfigurationSource(string connectionString, string serviceType, TimeSpan reloadInterval, string? rootSecret = null)
+    : IConfigurationSource
 {
     public IConfigurationProvider Build(IConfigurationBuilder builder)
     {
-        return new CentralConfigurationProvider(connectionString, serviceType, reloadInterval);
+        return new CentralConfigurationProvider(connectionString, serviceType, reloadInterval, rootSecret);
     }
 }
 
@@ -25,8 +26,11 @@ public sealed class CentralConfigurationProvider : ConfigurationProvider, IDispo
     private readonly object _sync = new();
     private readonly Timer? _timer;
 
-    public CentralConfigurationProvider(string connectionString, string serviceType, TimeSpan reloadInterval)
+    private readonly string? _rootSecret;
+
+    public CentralConfigurationProvider(string connectionString, string serviceType, TimeSpan reloadInterval, string? rootSecret = null)
     {
+        _rootSecret = rootSecret;
         _connectionString = connectionString;
         _serviceType = serviceType;
         if (reloadInterval > TimeSpan.Zero)
@@ -115,8 +119,23 @@ public sealed class CentralConfigurationProvider : ConfigurationProvider, IDispo
 
         var data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         foreach (var (key, value) in global.Concat(service))
-            data[key] = value;
+            data[key] = ConfigSecretBox.IsProtected(value) ? Reveal(key, value) : value;
         return data;
+    }
+
+    // Secret mã hoá trong DB → giá trị thật chỉ có trong bộ nhớ service; không giải mã được thì coi như chưa cấu hình.
+    private string? Reveal(string key, string value)
+    {
+        if (string.IsNullOrEmpty(_rootSecret)) return null;
+        try
+        {
+            return ConfigSecretBox.Unprotect(value, _rootSecret);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[CentralConfig:{_serviceType}] Không giải mã được '{key}' ({ex.GetType().Name}) — nhập lại giá trị ở màn Cấu hình tập trung.");
+            return null;
+        }
     }
 
     private static bool SameContent(IDictionary<string, string?> current, Dictionary<string, string?> fresh)

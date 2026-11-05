@@ -59,7 +59,11 @@ export function AvatarEditor({
           Ảnh JPG, PNG hoặc WebP, tối đa 2 MB.
         </p>
         {error && (
-          <p className="mt-2 mb-0 max-w-64 text-xs text-danger-fg" role="alert" id={`${id}-error`}>
+          <p
+            className="mt-2 mb-0 max-w-64 text-xs text-danger-fg"
+            role="alert"
+            id={`${id}-error`}
+          >
             {error}
           </p>
         )}

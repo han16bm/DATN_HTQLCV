@@ -47,10 +47,12 @@ function ProfileDetails({ user }: { user: SessionDto["user"] }) {
                   snapshot.saved(result.user);
                   toast.success("Đã cập nhật ảnh đại diện.");
                 }}
-                onConflictReload={() => snapshot.load(async () => {
-                  const result = await refresh();
-                  return { data: result.data?.user };
-                })}
+                onConflictReload={() =>
+                  snapshot.load(async () => {
+                    const result = await refresh();
+                    return { data: result.data?.user };
+                  })
+                }
                 onConflictAccept={snapshot.accept}
               />
               {!passwordOpen && (

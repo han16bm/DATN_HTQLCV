@@ -21,7 +21,8 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
         services.AddScoped<AuditStampInterceptor>();
         services.AddDbContext<ApplicationDbContext>((provider, options) => options
-            .UseNpgsql(connectionString)
+            // DB từ xa (Neon): lỗi mạng tạm thời được thử lại thay vì trả 500 (service không tự mở transaction).
+            .UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure(3, TimeSpan.FromSeconds(2), null))
             .AddInterceptors(provider.GetRequiredService<AuditStampInterceptor>()));
 
         // IP whitelist (§5, §10): một quyết định dùng chung cho [AdminArea], bộ lọc phạm vi SYSTEM và đăng nhập

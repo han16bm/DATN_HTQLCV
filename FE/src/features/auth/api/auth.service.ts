@@ -63,10 +63,13 @@ export const authService = {
   },
 
   async getProfile(options: RequestOptions = {}) {
-    const response = await apiClient.get<PersonalProfileDto>("/auth/me/profile", {
-      ...options,
-      schema: personalProfileSchema,
-    });
+    const response = await apiClient.get<PersonalProfileDto>(
+      "/auth/me/profile",
+      {
+        ...options,
+        schema: personalProfileSchema,
+      },
+    );
     return response.data;
   },
 

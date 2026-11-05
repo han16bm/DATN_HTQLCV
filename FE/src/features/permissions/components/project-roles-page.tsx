@@ -32,7 +32,8 @@ const roleText: Record<ProjectRolePolicyDto["role"], string> = {
   MEMBER: "Thành viên",
 };
 const roleHint: Record<ProjectRolePolicyDto["role"], string> = {
-  OWNER: "Luôn có đủ quyền trong dự án của mình; chỉ chủ dự án bàn giao được dự án.",
+  OWNER:
+    "Luôn có đủ quyền trong dự án của mình; chỉ chủ dự án bàn giao được dự án.",
   MANAGER: "Chỉ có hiệu lực khi tài khoản có quyền Leader/PM (PROJECT_CREATE).",
   MEMBER: "Áp dụng cho mọi thành viên của dự án, không cần quyền Leader/PM.",
 };
@@ -61,7 +62,9 @@ export function ProjectRolesPage() {
         rows={query.data.map((policy) => [
           <span key="role" className="grid gap-0.5">
             <span className="font-medium">{roleText[policy.role]}</span>
-            <span className="text-xs text-fg-subtle">{roleHint[policy.role]}</span>
+            <span className="text-xs text-fg-subtle">
+              {roleHint[policy.role]}
+            </span>
           </span>,
           <span key="perms" className="flex flex-wrap gap-1">
             {policy.permissions.length ? (
@@ -74,8 +77,13 @@ export function ProjectRolesPage() {
               <span className="text-fg-subtle">Chỉ làm việc được giao</span>
             )}
           </span>,
-          policy.updatedAt ? stampText(policy.updatedBy, policy.updatedAt) : "Mặc định",
-          <span key="actions" className="actions inline-flex items-center gap-1">
+          policy.updatedAt
+            ? stampText(policy.updatedBy, policy.updatedAt)
+            : "Mặc định",
+          <span
+            key="actions"
+            className="actions inline-flex items-center gap-1"
+          >
             <RowDialogLinks
               name={roleText[policy.role]}
               view={dialog.href("view", policy.role)}
@@ -113,7 +121,8 @@ export function ProjectRolesPage() {
                 };
               }}
               onCancel={async () => {
-                if (await confirmDiscard()) dialog.switchTo("view", selected.role);
+                if (await confirmDiscard())
+                  dialog.switchTo("view", selected.role);
               }}
               onDone={() => dialog.switchTo("view", selected.role)}
             />

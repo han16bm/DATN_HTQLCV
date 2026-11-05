@@ -28,7 +28,10 @@ public record SystemConfigDto(
     DateTime CreatedAt,
     DateTime UpdatedAt,
     RefDto? CreatedBy,
-    RefDto? UpdatedBy);
+    RefDto? UpdatedBy,
+    // Cấu hình bí mật: Value luôn rỗng, SecretSet cho biết đã nhập hay chưa.
+    bool Secret = false,
+    bool SecretSet = false);
 
 public record IpWhitelistEntryDto(
     string Id,

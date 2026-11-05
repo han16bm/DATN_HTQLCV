@@ -162,7 +162,13 @@ export function SettingsPage() {
                     </span>
                   )}
                 </span>,
-                <code key="value">{s.value}</code>,
+                s.secret ? (
+                  <span key="value" className="text-fg-subtle">
+                    {s.secretSet ? "•••••• (đã đặt)" : "Chưa đặt"}
+                  </span>
+                ) : (
+                  <code key="value">{s.value}</code>
+                ),
                 <span
                   key="status"
                   className="m-0 flex list-none flex-wrap gap-1.5 p-0"
@@ -488,6 +494,19 @@ function SettingForm({
             label="Giá trị"
             required
             options={setting.allowedValues.map((v) => ({ value: v, label: v }))}
+            {...form.register("value")}
+            error={errors.value}
+          />
+        ) : setting?.secret ? (
+          <FormInput
+            label="Giá trị bí mật"
+            type="password"
+            autoComplete="new-password"
+            hint={
+              setting.secretSet
+                ? "Đã đặt. Để trống để giữ nguyên; nhập giá trị mới để thay. Giá trị không bao giờ được hiển thị lại."
+                : "Chưa đặt. Giá trị được lưu mã hoá và không hiển thị lại."
+            }
             {...form.register("value")}
             error={errors.value}
           />

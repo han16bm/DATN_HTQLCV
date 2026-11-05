@@ -127,7 +127,12 @@ export function IpAccessLogsPanel() {
       ])}
       pagination={
         pagination
-          ? { page, pageSize: pagination.pageSize, total: pagination.total, onPage: setPage }
+          ? {
+              page,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              onPage: setPage,
+            }
           : undefined
       }
     />

@@ -17,13 +17,16 @@ export const avatarSchema = z
     "Vui lòng chọn ảnh JPG, PNG hoặc WebP.",
   );
 
-export const personalProfileSchema = z.object(userSchema.shape).omit({
-  id: true,
-  updatedAt: true,
-  avatarUrl: true,
-  unitId: true,
-  status: true,
-}).extend({ unit: z.string().min(1) });
+export const personalProfileSchema = z
+  .object(userSchema.shape)
+  .omit({
+    id: true,
+    updatedAt: true,
+    avatarUrl: true,
+    unitId: true,
+    status: true,
+  })
+  .extend({ unit: z.string().min(1) });
 
 export const profileInfoSchema = createUserSchema
   .pick({ displayName: true })

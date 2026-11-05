@@ -1,7 +1,8 @@
 namespace Shared.Commons.Storage;
 
 /// <summary>
-/// Cấu hình lưu tệp (section "Storage" trong BE/appsettings.Shared.json — file đã gitignore, không commit secret).
+/// Cấu hình lưu tệp (section "Storage"): Provider, PublicBaseUrl và Cloudinary:* nằm ở cấu hình tập trung (SystemConfigs,
+/// nhóm STORAGE — ApiSecret lưu mã hoá); LocalRoot là cấu hình hạ tầng của từng service, giữ mặc định trong code.
 /// Provider "Auto": dùng Cloudinary khi đủ CloudName + ApiKey + ApiSecret (hoặc biến môi trường CLOUDINARY_URL),
 /// ngược lại lưu đĩa cục bộ để dev vẫn chạy được khi chưa có secret.
 /// </summary>

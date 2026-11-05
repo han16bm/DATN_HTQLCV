@@ -15,11 +15,13 @@ public record ConfigDefinition(
     int? MaxValue = null,
     string[]? AllowedValues = null,
     bool RequiresRestart = false,
-    bool Required = false);
+    bool Required = false,
+    bool Secret = false);
 
 /// <summary>
 /// Danh mục key cấu hình tập trung (bảng SystemConfigs). Dùng cho seed, validate khi sửa và hiển thị ràng buộc ở FE.
-/// Không key nào được chứa secret — xem <see cref="IsForbiddenKey"/>.
+/// Key tự thêm không được chứa secret (<see cref="IsForbiddenKey"/>); secret chỉ đi qua key đã khai báo Secret = true,
+/// được mã hoá (<see cref="ConfigSecretBox"/>) và không bao giờ trả lại giá trị qua API.
 /// </summary>
 public static class ConfigCatalog
 {
@@ -41,6 +43,13 @@ public static class ConfigCatalog
     public const string AdminIpWhitelistEnabled = "Security:AdminIpWhitelistEnabled";
     public const string SerilogMinimumLevel = "Serilog:MinimumLevel";
     public const string IpWhitelistScope = "Security:IpWhitelistScope";
+
+    public const string StorageProvider = "Storage:Provider";
+    public const string StoragePublicBaseUrl = "Storage:PublicBaseUrl";
+    public const string CloudinaryCloudName = "Storage:Cloudinary:CloudName";
+    public const string CloudinaryApiKey = "Storage:Cloudinary:ApiKey";
+    public const string CloudinaryApiSecret = "Storage:Cloudinary:ApiSecret";
+    public const string CloudinaryFolder = "Storage:Cloudinary:Folder";
 
     public const string IpScopeAdmin = "ADMIN";
     public const string IpScopeSystem = "SYSTEM";
@@ -72,7 +81,26 @@ public static class ConfigCatalog
         // Thêm cuối danh sách: Id seed theo vị trí (cfg-00N), chèn giữa sẽ đổi Id các dòng đã có
         new(IpWhitelistScope, Global, "SECURITY", "Phạm vi IP whitelist",
             "ADMIN: chỉ chặn API khu quản trị. SYSTEM: chặn mọi API của 4 service, kể cả đăng nhập.",
-            DataTypeString, IpScopeAdmin, AllowedValues: [IpScopeAdmin, IpScopeSystem])
+            DataTypeString, IpScopeAdmin, AllowedValues: [IpScopeAdmin, IpScopeSystem]),
+        // Lưu tệp (ảnh đại diện, minh chứng): Auto = Cloudinary khi đủ CloudName/ApiKey/ApiSecret, ngược lại đĩa cục bộ.
+        new(StorageProvider, Global, "STORAGE", "Nơi lưu tệp",
+            "Auto: Cloudinary khi đã nhập đủ thông tin Cloudinary, ngược lại lưu đĩa cục bộ của service. Local: luôn lưu cục bộ.",
+            DataTypeString, "Auto", AllowedValues: ["Auto", "Cloudinary", "Local"]),
+        new(StoragePublicBaseUrl, Global, "STORAGE", "Địa chỉ công khai của gateway",
+            "Dùng dựng link ảnh đại diện khi lưu cục bộ (FE và gateway khác origin), ví dụ https://api.congty.vn.",
+            DataTypeString, "http://localhost:5000"),
+        new(CloudinaryCloudName, Global, "STORAGE", "Cloudinary - Cloud name",
+            "Product environment (cloud name) trên trang Cloudinary > Settings > API Keys.",
+            DataTypeString, ""),
+        new(CloudinaryApiKey, Global, "STORAGE", "Cloudinary - API key",
+            "API key của Cloudinary (định danh công khai, đi kèm API secret).",
+            DataTypeString, ""),
+        new(CloudinaryApiSecret, Global, "STORAGE", "Cloudinary - API secret",
+            "Bí mật ký yêu cầu Cloudinary. Lưu mã hoá, không hiển thị lại; để trống khi sửa nghĩa là giữ giá trị cũ.",
+            DataTypeString, "", Secret: true),
+        new(CloudinaryFolder, Global, "STORAGE", "Cloudinary - Thư mục gốc",
+            "Thư mục gốc trên Cloudinary, ví dụ datn → datn/avatars, datn/evidence.",
+            DataTypeString, "datn")
     ];
 
     // Secret và cấu hình hạ tầng không bao giờ được nằm trong DB (khác UD_CAUHINH của DVCLT)

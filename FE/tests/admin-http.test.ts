@@ -85,19 +85,38 @@ describe("Member profiles via HTTP/MSW", () => {
 
 describe("Personal profile via HTTP/MSW", () => {
   it("returns personal and employment details only from the viewer's private profile", async () => {
-    const session = await authService.login({ username: "lan", password: "Mock@12345" });
+    const session = await authService.login({
+      username: "lan",
+      password: "Mock@12345",
+    });
     const profile = await authService.getProfile();
     expect(profile).toMatchObject({
-      displayName: "Trần Lan", gender: "FEMALE", birthDate: "1997-08-21",
-      phone: "0912345678", permanentAddress: "Hải Phòng", temporaryAddress: "Hà Nội",
-      isSysAdmin: false, unit: "Phòng sản phẩm",
+      displayName: "Trần Lan",
+      gender: "FEMALE",
+      birthDate: "1997-08-21",
+      phone: "0912345678",
+      permanentAddress: "Hải Phòng",
+      temporaryAddress: "Hà Nội",
+      isSysAdmin: false,
+      unit: "Phòng sản phẩm",
       teams: [{ id: "team-main", name: "Nhóm phát triển" }],
       projects: [{ id: "p-main", name: "Cổng quản lý nội bộ" }],
     });
     const publicProfile = await usersService.getProfile("u-lan");
     await authService.login({ username: "admin", password: "Mock@12345" });
-    const row = (await usersService.listUsers()).items.find((user) => user.id === "u-lan");
-    for (const field of ["gender", "birthDate", "phone", "permanentAddress", "temporaryAddress", "position", "teams", "projects"]) {
+    const row = (await usersService.listUsers()).items.find(
+      (user) => user.id === "u-lan",
+    );
+    for (const field of [
+      "gender",
+      "birthDate",
+      "phone",
+      "permanentAddress",
+      "temporaryAddress",
+      "position",
+      "teams",
+      "projects",
+    ]) {
       expect(session.user).not.toHaveProperty(field);
       expect(publicProfile).not.toHaveProperty(field);
       expect(row).not.toHaveProperty(field);
@@ -105,82 +124,177 @@ describe("Personal profile via HTTP/MSW", () => {
   });
 
   it("saves all editable personal fields, allows clearing them and protects assigned affiliations", async () => {
-    const session = await authService.login({ username: "lan", password: "Mock@12345" });
-    const updated = await authService.updateProfile({
-      gender: "OTHER", birthDate: "1996-02-29", phone: "+84 912 345 678",
-      permanentAddress: "  Đà Nẵng  ", temporaryAddress: "Hà Nội",
-    }, { key: key(), version: session.user.version });
-    expect(await authService.getProfile()).toMatchObject({
-      gender: "OTHER", birthDate: "1996-02-29", phone: "+84 912 345 678",
-      permanentAddress: "Đà Nẵng", temporaryAddress: "Hà Nội",
+    const session = await authService.login({
+      username: "lan",
+      password: "Mock@12345",
     });
-    for (const field of ["teams", "projects", "unitId", "systemRole", "position"]) {
+    const updated = await authService.updateProfile(
+      {
+        gender: "OTHER",
+        birthDate: "1996-02-29",
+        phone: "+84 912 345 678",
+        permanentAddress: "  Đà Nẵng  ",
+        temporaryAddress: "Hà Nội",
+      },
+      { key: key(), version: session.user.version },
+    );
+    expect(await authService.getProfile()).toMatchObject({
+      gender: "OTHER",
+      birthDate: "1996-02-29",
+      phone: "+84 912 345 678",
+      permanentAddress: "Đà Nẵng",
+      temporaryAddress: "Hà Nội",
+    });
+    for (const field of [
+      "teams",
+      "projects",
+      "unitId",
+      "systemRole",
+      "position",
+    ]) {
       const form = new FormData();
       form.set(field, "changed");
-      await expect(apiClient.patch("/auth/me", form, { headers: {
-        "If-Match": `"${updated.user.version}"`, "Idempotency-Key": key(),
-      } })).rejects.toMatchObject({ status: 422 });
+      await expect(
+        apiClient.patch("/auth/me", form, {
+          headers: {
+            "If-Match": `"${updated.user.version}"`,
+            "Idempotency-Key": key(),
+          },
+        }),
+      ).rejects.toMatchObject({ status: 422 });
     }
-    await authService.updateProfile({ gender: null, birthDate: null, phone: null, permanentAddress: null, temporaryAddress: null },
-      { key: key(), version: updated.user.version });
-    expect(await authService.getProfile()).toMatchObject({ gender: null, birthDate: null, phone: null, permanentAddress: null, temporaryAddress: null });
+    await authService.updateProfile(
+      {
+        gender: null,
+        birthDate: null,
+        phone: null,
+        permanentAddress: null,
+        temporaryAddress: null,
+      },
+      { key: key(), version: updated.user.version },
+    );
+    expect(await authService.getProfile()).toMatchObject({
+      gender: null,
+      birthDate: null,
+      phone: null,
+      permanentAddress: null,
+      temporaryAddress: null,
+    });
   });
 
   it("derives current groups and projects without including inactive groups or ended membership", async () => {
     await authService.login({ username: "lan", password: "Mock@12345" });
     db.teams[0].status = "INACTIVE";
-    const member = db.members.find((member) => member.projectId === "p-main" && member.userId === "u-lan")!;
+    const member = db.members.find(
+      (member) => member.projectId === "p-main" && member.userId === "u-lan",
+    )!;
     member.endedAt = new Date().toISOString();
-    expect(await authService.getProfile()).toMatchObject({ teams: [], projects: [] });
+    expect(await authService.getProfile()).toMatchObject({
+      teams: [],
+      projects: [],
+    });
   });
 
-  it.each(["COMPLETED", "CANCELLED"] as const)("omits %s projects from current affiliations", async (status) => {
-    await authService.login({ username: "lan", password: "Mock@12345" });
-    db.projects.find((project) => project.id === "p-main")!.status = status;
-    expect((await authService.getProfile()).projects).toEqual([]);
-  });
+  it.each(["COMPLETED", "CANCELLED"] as const)(
+    "omits %s projects from current affiliations",
+    async (status) => {
+      await authService.login({ username: "lan", password: "Mock@12345" });
+      db.projects.find((project) => project.id === "p-main")!.status = status;
+      expect((await authService.getProfile()).projects).toEqual([]);
+    },
+  );
 
   it.each([
-    { gender: "UNKNOWN" }, { birthDate: "2999-01-01" }, { birthDate: "2001-02-29" },
-    { phone: "abc123" }, { phone: "123" }, { permanentAddress: "x".repeat(501) },
+    { gender: "UNKNOWN" },
+    { birthDate: "2999-01-01" },
+    { birthDate: "2001-02-29" },
+    { phone: "abc123" },
+    { phone: "123" },
+    { permanentAddress: "x".repeat(501) },
     { position: "Leader" },
   ])("rejects invalid personal data atomically: %j", async (payload) => {
     const before = await authService.getProfile();
     const form = new FormData();
     form.set("displayName", "Không được lưu");
     for (const [name, value] of Object.entries(payload)) form.set(name, value);
-    await expect(apiClient.patch("/auth/me", form, { headers: {
-      "If-Match": `"${before.version}"`, "Idempotency-Key": key(),
-    } })).rejects.toMatchObject({ status: 422 });
+    await expect(
+      apiClient.patch("/auth/me", form, {
+        headers: {
+          "If-Match": `"${before.version}"`,
+          "Idempotency-Key": key(),
+        },
+      }),
+    ).rejects.toMatchObject({ status: 422 });
     expect(await authService.getProfile()).toEqual(before);
   });
 
   it("requires authentication and refuses targeting a different private profile by query", async () => {
-    await expect(apiClient.get("/auth/me/profile", { params: { userId: "u-lan" } })).rejects.toMatchObject({ status: 422 });
+    await expect(
+      apiClient.get("/auth/me/profile", { params: { userId: "u-lan" } }),
+    ).rejects.toMatchObject({ status: 422 });
     token.set(null);
-    await expect(authService.getProfile()).rejects.toMatchObject({ status: 401 });
+    await expect(authService.getProfile()).rejects.toMatchObject({
+      status: 401,
+    });
   });
 
   it("returns the same personal fields in administrator details and saves their edits without exposing them in the list", async () => {
     const user = await usersService.getUser("u-lan");
-    expect(user).toMatchObject({ gender: "FEMALE", phone: "0912345678", isSysAdmin: false, teams: [{ id: "team-main" }], projects: [{ id: "p-main" }] });
-    const updated = await usersService.updateUser(user.id, {
-      gender: "OTHER", birthDate: "1994-10-12", phone: "0987654321", permanentAddress: "Cần Thơ", temporaryAddress: "Đà Nẵng",
-    }, { key: key(), version: user.version });
-    expect(updated).toMatchObject({ gender: "OTHER", birthDate: "1994-10-12", phone: "0987654321", permanentAddress: "Cần Thơ", temporaryAddress: "Đà Nẵng" });
+    expect(user).toMatchObject({
+      gender: "FEMALE",
+      phone: "0912345678",
+      isSysAdmin: false,
+      teams: [{ id: "team-main" }],
+      projects: [{ id: "p-main" }],
+    });
+    const updated = await usersService.updateUser(
+      user.id,
+      {
+        gender: "OTHER",
+        birthDate: "1994-10-12",
+        phone: "0987654321",
+        permanentAddress: "Cần Thơ",
+        temporaryAddress: "Đà Nẵng",
+      },
+      { key: key(), version: user.version },
+    );
+    expect(updated).toMatchObject({
+      gender: "OTHER",
+      birthDate: "1994-10-12",
+      phone: "0987654321",
+      permanentAddress: "Cần Thơ",
+      temporaryAddress: "Đà Nẵng",
+    });
     expect(updated.teams).toEqual(user.teams);
     expect(updated.projects).toEqual(user.projects);
-    expect((await usersService.listUsers()).items.find((item) => item.id === user.id)).not.toHaveProperty("birthDate");
+    expect(
+      (await usersService.listUsers()).items.find(
+        (item) => item.id === user.id,
+      ),
+    ).not.toHaveProperty("birthDate");
   });
 
   it("has no independently editable position, even for admins", async () => {
     const user = await usersService.getUser("u-lan");
     expect(user).not.toHaveProperty("position");
-    expect(db.users.find((item) => item.id === user.id)).not.toHaveProperty("position");
-    await expect(apiClient.patch(`/users/${user.id}`, { position: "Admin", displayName: "Không được lưu" }, {
-      headers: { "If-Match": `"${user.version}"`, "Idempotency-Key": key() },
-    })).rejects.toMatchObject({ status: 422 });
-    expect((await usersService.getUser(user.id)).displayName).toBe(user.displayName);
+    expect(db.users.find((item) => item.id === user.id)).not.toHaveProperty(
+      "position",
+    );
+    await expect(
+      apiClient.patch(
+        `/users/${user.id}`,
+        { position: "Admin", displayName: "Không được lưu" },
+        {
+          headers: {
+            "If-Match": `"${user.version}"`,
+            "Idempotency-Key": key(),
+          },
+        },
+      ),
+    ).rejects.toMatchObject({ status: 422 });
+    expect((await usersService.getUser(user.id)).displayName).toBe(
+      user.displayName,
+    );
     await authService.login({ username: "lan", password: "Mock@12345" });
     expect(await authService.getProfile()).not.toHaveProperty("position");
   });

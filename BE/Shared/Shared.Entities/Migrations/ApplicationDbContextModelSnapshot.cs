@@ -1258,6 +1258,96 @@ namespace Shared.Entities.Migrations
                             UpdatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
                             Value = "ADMIN",
                             Version = 1
+                        },
+                        new
+                        {
+                            Id = "cfg-008",
+                            CreatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "STRING",
+                            Description = "Auto: Cloudinary khi đã nhập đủ thông tin Cloudinary, ngược lại lưu đĩa cục bộ của service. Local: luôn lưu cục bộ.",
+                            Group = "STORAGE",
+                            IsActive = true,
+                            Key = "Storage:Provider",
+                            Name = "Nơi lưu tệp",
+                            ServiceType = "Global",
+                            UpdatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "Auto",
+                            Version = 1
+                        },
+                        new
+                        {
+                            Id = "cfg-009",
+                            CreatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "STRING",
+                            Description = "Dùng dựng link ảnh đại diện khi lưu cục bộ (FE và gateway khác origin), ví dụ https://api.congty.vn.",
+                            Group = "STORAGE",
+                            IsActive = true,
+                            Key = "Storage:PublicBaseUrl",
+                            Name = "Địa chỉ công khai của gateway",
+                            ServiceType = "Global",
+                            UpdatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "http://localhost:5000",
+                            Version = 1
+                        },
+                        new
+                        {
+                            Id = "cfg-010",
+                            CreatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "STRING",
+                            Description = "Product environment (cloud name) trên trang Cloudinary > Settings > API Keys.",
+                            Group = "STORAGE",
+                            IsActive = true,
+                            Key = "Storage:Cloudinary:CloudName",
+                            Name = "Cloudinary - Cloud name",
+                            ServiceType = "Global",
+                            UpdatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "",
+                            Version = 1
+                        },
+                        new
+                        {
+                            Id = "cfg-011",
+                            CreatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "STRING",
+                            Description = "API key của Cloudinary (định danh công khai, đi kèm API secret).",
+                            Group = "STORAGE",
+                            IsActive = true,
+                            Key = "Storage:Cloudinary:ApiKey",
+                            Name = "Cloudinary - API key",
+                            ServiceType = "Global",
+                            UpdatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "",
+                            Version = 1
+                        },
+                        new
+                        {
+                            Id = "cfg-012",
+                            CreatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "STRING",
+                            Description = "Bí mật ký yêu cầu Cloudinary. Lưu mã hoá, không hiển thị lại; để trống khi sửa nghĩa là giữ giá trị cũ.",
+                            Group = "STORAGE",
+                            IsActive = true,
+                            Key = "Storage:Cloudinary:ApiSecret",
+                            Name = "Cloudinary - API secret",
+                            ServiceType = "Global",
+                            UpdatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "",
+                            Version = 1
+                        },
+                        new
+                        {
+                            Id = "cfg-013",
+                            CreatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "STRING",
+                            Description = "Thư mục gốc trên Cloudinary, ví dụ datn → datn/avatars, datn/evidence.",
+                            Group = "STORAGE",
+                            IsActive = true,
+                            Key = "Storage:Cloudinary:Folder",
+                            Name = "Cloudinary - Thư mục gốc",
+                            ServiceType = "Global",
+                            UpdatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "datn",
+                            Version = 1
                         });
                 });
 

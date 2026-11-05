@@ -24,7 +24,9 @@ export function ProfileHeader({
       data-slot="panel"
       className={cn(
         "flex flex-wrap items-center gap-4",
-        embedded ? "p-4 md:p-5" : "mb-5 rounded-lg border border-line bg-surface p-5",
+        embedded
+          ? "p-4 md:p-5"
+          : "mb-5 rounded-lg border border-line bg-surface p-5",
       )}
     >
       <Avatar name={name} src={avatarUrl} size="lg" />

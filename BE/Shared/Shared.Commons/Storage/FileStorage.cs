@@ -14,6 +14,7 @@ namespace Shared.Commons.Storage;
 public sealed class FileStorage : IFileStorage
 {
     private readonly string _contentRoot;
+    private readonly string _localRoot;
     private readonly ILogger<FileStorage> _logger;
     private volatile Backends _current;
 
@@ -21,8 +22,12 @@ public sealed class FileStorage : IFileStorage
 
     public FileStorage(IOptionsMonitor<StorageOptions> options, string contentRoot, ILogger<FileStorage> logger)
     {
-        _contentRoot = contentRoot;
+        _contentRoot = Path.GetFullPath(contentRoot);
         _logger = logger;
+        // LocalRoot là cấu hình hạ tầng: chốt lúc khởi động (không nhận đổi nóng) và phải nằm trong thư mục service.
+        _localRoot = Path.GetFullPath(Path.Combine(_contentRoot, options.CurrentValue.LocalRoot));
+        if (!_localRoot.StartsWith(_contentRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Storage:LocalRoot phải là thư mục con của thư mục service.");
         _current = Build(options.CurrentValue);
         options.OnChange(o =>
         {
@@ -39,7 +44,7 @@ public sealed class FileStorage : IFileStorage
 
     private Backends Build(StorageOptions options)
     {
-        var local = new LocalFileStorage(Path.Combine(_contentRoot, options.LocalRoot), options.PublicBaseUrl);
+        var local = new LocalFileStorage(_localRoot, options.PublicBaseUrl);
         var cloud = WithEnvironmentUrl(options.Cloudinary);
         var provider = options.Provider.Trim();
         if (provider.Equals("Cloudinary", StringComparison.OrdinalIgnoreCase) && !cloud.IsConfigured)
@@ -47,7 +52,7 @@ public sealed class FileStorage : IFileStorage
         var cloudinary = cloud.IsConfigured ? new CloudinaryFileStorage(cloud) : null;
         var active = cloudinary is not null && !provider.Equals("Local", StringComparison.OrdinalIgnoreCase) ? "Cloudinary" : "Local";
         _logger.LogInformation("Lưu tệp qua {Provider}{Detail}.", active,
-            active == "Local" ? $" ({Path.GetFullPath(Path.Combine(_contentRoot, options.LocalRoot))})" : $" (cloud {cloud.CloudName})");
+            active == "Local" ? $" ({_localRoot})" : $" (cloud {cloud.CloudName})");
         return new Backends(active, local, cloudinary);
     }
 

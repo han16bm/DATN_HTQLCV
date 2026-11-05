@@ -78,7 +78,7 @@ export function SettingsPage() {
     <>
       <PageHeader
         title="Cấu hình tập trung"
-        description="Cấu hình mọi service đọc từ cơ sở dữ liệu. Không lưu secret, chuỗi kết nối hay khóa ký ở đây."
+        description="Cấu hình mọi service đọc từ cơ sở dữ liệu. Secret chỉ lưu qua mục khai báo sẵn (mã hoá, không hiển thị lại); không lưu chuỗi kết nối hay khóa ký ở đây."
         actions={
           <Button
             type="button"

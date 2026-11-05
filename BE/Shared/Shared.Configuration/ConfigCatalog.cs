@@ -105,7 +105,8 @@ public static class ConfigCatalog
 
     // Secret và cấu hình hạ tầng không bao giờ được nằm trong DB (khác UD_CAUHINH của DVCLT)
     private static readonly Regex ForbiddenKeyPattern = new(
-        @"(^ConnectionStrings:|^CentralConfig:|^Kestrel:|password|secret|signingkey|apikey|privatekey)",
+        // Storage:* chỉ nhận các key đã khai báo trong Known (không tự thêm Storage:LocalRoot...).
+        @"(^ConnectionStrings:|^CentralConfig:|^Kestrel:|^Storage:|password|secret|signingkey|apikey|privatekey)",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly Regex KeyFormat = new(@"^[A-Za-z][A-Za-z0-9_.]*(:[A-Za-z0-9_.]+)*$", RegexOptions.Compiled);

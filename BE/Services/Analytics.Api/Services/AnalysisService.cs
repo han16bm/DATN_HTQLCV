@@ -71,45 +71,68 @@ public class AnalysisService(
             CreatedAt = DateTime.UtcNow
         };
 
-        await using var transaction = await context.Database.BeginTransactionAsync();
-        var activeJob = await context.AnalysisJobs.AsNoTracking()
-            .Where(item => item.AnalysisId == snapshot.Id && (item.Status == "QUEUED" || item.Status == "RUNNING"))
-            .OrderByDescending(item => item.CreatedAt)
-            .FirstOrDefaultAsync();
-        if (activeJob is not null)
-            return (ToDto(activeJob), false);
-
-        if (mode == "REUSE_OR_CREATE")
+        var strategy = context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
         {
-            var successfulJob = await context.AnalysisJobs.AsNoTracking()
-                .Where(item => item.AnalysisId == snapshot.Id && item.Status == "SUCCEEDED")
-                .OrderByDescending(item => item.CreatedAt)
-                .FirstOrDefaultAsync();
-            if (successfulJob is not null && HasLlmExplanation(snapshot))
-                return (ToDto(successfulJob), true);
-        }
+            await using var transaction = await context.Database.BeginTransactionAsync();
+            try
+            {
+                var activeJob = await context.AnalysisJobs.AsNoTracking()
+                    .Where(item => item.AnalysisId == snapshot.Id && (item.Status == "QUEUED" || item.Status == "RUNNING"))
+                    .OrderByDescending(item => item.CreatedAt)
+                    .FirstOrDefaultAsync();
+                if (activeJob is not null)
+                {
+                    await transaction.CommitAsync();
+                    return (ToDto(activeJob), false);
+                }
 
-        var reserved = await context.AnalysisSnapshots
-            .Where(item => item.Id == snapshot.Id && item.ExplanationStatus != "QUEUED" && item.ExplanationStatus != "RUNNING")
-            .ExecuteUpdateAsync(update => update
-                .SetProperty(item => item.ExplanationStatus, "QUEUED")
-                .SetProperty(item => item.ExplanationErrorJson, (string?)null)
-                .SetProperty(item => item.ActiveJobId, job.Id));
-        if (reserved == 0)
-        {
-            var inProgress = await context.AnalysisJobs.AsNoTracking()
-                .Where(item => item.AnalysisId == snapshot.Id && (item.Status == "QUEUED" || item.Status == "RUNNING"))
-                .OrderByDescending(item => item.CreatedAt)
-                .FirstOrDefaultAsync();
-            if (inProgress is not null)
-                return (ToDto(inProgress), false);
-            throw new BusinessRuleException("Không thể tạo tiến trình cho bản phân tích hiện tại.") { Code = "GENERATION_CONFLICT" };
-        }
+                if (mode == "REUSE_OR_CREATE")
+                {
+                    var successfulJob = await context.AnalysisJobs.AsNoTracking()
+                        .Where(item => item.AnalysisId == snapshot.Id && item.Status == "SUCCEEDED")
+                        .OrderByDescending(item => item.CreatedAt)
+                        .FirstOrDefaultAsync();
+                    if (successfulJob is not null && HasLlmExplanation(snapshot))
+                    {
+                        await transaction.CommitAsync();
+                        return (ToDto(successfulJob), true);
+                    }
+                }
 
-        context.AnalysisJobs.Add(job);
-        await context.SaveChangesAsync();
-        await transaction.CommitAsync();
-        return (ToDto(job), false);
+                var reserved = await context.AnalysisSnapshots
+                    .Where(item => item.Id == snapshot.Id && item.ExplanationStatus != "QUEUED" && item.ExplanationStatus != "RUNNING")
+                    .ExecuteUpdateAsync(update => update
+                        .SetProperty(item => item.ExplanationStatus, "QUEUED")
+                        .SetProperty(item => item.ExplanationErrorJson, (string?)null)
+                        .SetProperty(item => item.ActiveJobId, job.Id));
+                if (reserved == 0)
+                {
+                    var inProgress = await context.AnalysisJobs.AsNoTracking()
+                        .Where(item => item.AnalysisId == snapshot.Id && (item.Status == "QUEUED" || item.Status == "RUNNING"))
+                        .OrderByDescending(item => item.CreatedAt)
+                        .FirstOrDefaultAsync();
+                    if (inProgress is not null)
+                    {
+                        await transaction.CommitAsync();
+                        return (ToDto(inProgress), false);
+                    }
+
+                    throw new BusinessRuleException("Không thể tạo tiến trình cho bản phân tích hiện tại.")
+                        { Code = "GENERATION_CONFLICT" };
+                }
+
+                context.AnalysisJobs.Add(job);
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return (ToDto(job), false);
+            }
+            catch
+            {
+                context.Entry(job).State = EntityState.Detached;
+                throw;
+            }
+        });
     }
 
     public async Task<AnalysisJobDto> GetJobAsync(string jobId)

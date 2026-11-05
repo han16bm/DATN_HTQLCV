@@ -108,6 +108,7 @@ Mỗi service BE theo cùng pattern: `Controllers/` (mỏng, chỉ gọi service
 
 | 26 | Snapshot freshness bỏ qua các chuyển đổi phụ thuộc thời gian khi không có row nào đổi | Trung bình — chi tiết có thể báo CURRENT với risk/bottleneck cũ | ✅ Đã sửa: detail tính lại RISK/BOTTLENECK/SUMMARY và metric tuổi K10/K15 để tạo/refetch snapshot mới khi nội dung thay đổi |
 | 27 | Snapshot freshness bỏ sót thay đổi nhãn dự án/người/đơn vị và team filter | Trung bình — phân tích có thể giữ nhãn hoặc phạm vi cũ | ✅ Đã sửa: kiểm tra UpdatedAt các project/user/unit/team liên quan; scope team được tính lại để bắt thay đổi thành viên |
+| 28 | `POST /api/analytics/jobs` trả 500 khi tạo job với PostgreSQL: `CreateJobAsync` mở transaction tường minh trong khi `ApplicationDbContext` bật `NpgsqlRetryingExecutionStrategy` | Cao — không tạo được job diễn giải, worker không thể gọi Gemini/Anthropic | ✅ Đã sửa: chạy toàn bộ transaction qua `Database.CreateExecutionStrategy().ExecuteAsync(...)`, commit các nhánh trả sớm và detach job entity nếu transaction lỗi để an toàn khi retry. Đã build/test Analytics adapter; cần restart Analytics.Api và xác minh lại request thật với DB |
 
 Đã verify **end-to-end thật** bằng Playwright (browser thật, không phải test giả định, dùng tài khoản seed + 2 tài khoản Manager + 1 Employee-role chưa cần, tự tạo qua UI):
 - **Login**: `http://localhost:3000/login` → vào `/workspace`, đúng tên/vai trò.

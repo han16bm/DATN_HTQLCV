@@ -1,0 +1,153 @@
+- generic [active]:
+  - generic [aria-hidden]:
+    - complementary:
+      - generic:
+        - link:
+          - /url: /workspace
+          - generic: Cổng công việc
+        - button
+      - generic:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph: Phong CNTT
+      - navigation:
+        - generic:
+          - button [expanded]:
+            - generic: Công việc
+          - generic:
+            - link:
+              - /url: /workspace
+              - generic: Tổng quan cá nhân
+            - link:
+              - /url: /projects
+              - generic: Dự án
+            - link:
+              - /url: /tasks
+              - generic: Công việc
+            - link:
+              - /url: /reviews
+              - generic: Chờ nghiệm thu
+            - link:
+              - /url: /reports
+              - generic: Báo cáo công việc
+        - generic:
+          - button [expanded]:
+            - generic: Theo dõi & phân tích
+          - generic:
+            - link:
+              - /url: /dashboard
+              - generic: Bảng tổng quan
+            - link:
+              - /url: /analytics/risks
+              - generic: Phân tích & AI
+            - link:
+              - /url: /alerts
+              - generic: Cảnh báo
+      - generic:
+        - paragraph: Theo phạm vi được cấp quyền
+    - generic:
+      - banner:
+        - generic:
+          - generic: Không gian làm việc
+          - strong: Dự án
+        - generic:
+          - button:
+            - generic [aria-hidden]: QL
+            - generic:
+              - text: Nguyen Quan Ly
+              - generic: Quản lý
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=1]: Dự án thử nghiệm E2E
+                - generic: Hoạt động
+              - paragraph: Phong CNTT
+            - generic:
+              - link:
+                - /url: /projects
+                - text: Danh sách
+              - link:
+                - /url: /projects/716a4376b89b4d498a708c54350b6a61/edit
+                - text: Chỉnh sửa kế hoạch
+              - button: Kết thúc / hủy
+          - generic:
+            - combobox
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=1]: Thành viên dự án
+            - generic:
+              - button: Thêm thành viên
+          - generic:
+            - generic:
+              - table:
+                - rowgroup:
+                  - row:
+                    - columnheader: Thành viên
+                    - columnheader: Vai trò dự án
+                    - columnheader: Tư cách
+                    - columnheader: Hành động
+                - rowgroup:
+                  - row:
+                    - cell:
+                      - link:
+                        - /url: /users/184728461ea949e0b1d34d1ac9217d9d
+                        - generic [aria-hidden]: QL
+                        - generic: Nguyen Quan Ly
+                    - cell: Phụ trách
+                    - cell: Đang tham gia
+                    - cell
+                  - row:
+                    - cell:
+                      - link:
+                        - /url: /users/01f6b300092f4918a0ae12c2170314bb
+                        - generic [aria-hidden]: tv
+                        - generic: Quan tri vien
+                    - cell: Quản lý
+                    - cell: Đang tham gia
+                    - cell:
+                      - generic:
+                        - button: Đổi vai trò
+                        - link:
+                          - /url: /tasks?projectId=716a4376b89b4d498a708c54350b6a61&assigneeId=01f6b300092f4918a0ae12c2170314bb
+                          - text: Bàn giao việc
+                        - button: Kết thúc
+                  - row:
+                    - cell:
+                      - link:
+                        - /url: /users/84513f59992d438584aa0608d7505d1d
+                        - generic [aria-hidden]: LH
+                        - generic: Tran Quan Ly Hai
+                    - cell: Quản lý
+                    - cell: Đang tham gia
+                    - cell:
+                      - generic:
+                        - button: Đổi vai trò
+                        - link:
+                          - /url: /tasks?projectId=716a4376b89b4d498a708c54350b6a61&assigneeId=84513f59992d438584aa0608d7505d1d
+                          - text: Bàn giao việc
+                        - button: Kết thúc
+            - generic: 3 kết quả
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f1e9] [cursor=pointer]
+  - alert
+  - dialog [ref=f1e169]:
+    - generic [ref=f1e170]:
+      - heading "Đổi vai trò thành viên" [level=2] [ref=f1e171]
+      - button "Đóng biểu mẫu" [ref=f1e172] [cursor=pointer]: ×
+    - paragraph [ref=f1e173]: Kiểm tra thông tin trước khi xác nhận.
+    - generic [ref=f1e174]:
+      - paragraph [ref=f1e175]: Quan tri vien
+      - group [ref=f1e177]:
+        - generic [ref=f1e178]:
+          - generic [ref=f1e179]: Vai trò dự án *
+          - combobox "Vai trò dự án *" [disabled] [ref=f1e180]:
+            - option "Chọn vai trò dự án" [disabled]
+            - option "Thành viên" [disabled]
+            - option "Quản lý" [disabled] [selected]
+          - paragraph [ref=f1e181]: Vai trò quản lý dành cho Leader/PM, cho phép quản lý công việc và thành viên trong dự án.
+        - generic [ref=f1e182]:
+          - generic [ref=f1e183]: Lý do thay đổi *
+          - textbox "Lý do thay đổi *" [disabled] [ref=f1e184]: Thang chuc quan ly du an de ho tro dieu phoi cong viec
+        - button "Đang lưu…" [disabled] [ref=f1e187]

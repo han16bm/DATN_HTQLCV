@@ -1,0 +1,148 @@
+"use client";
+
+import { Form } from "@/components/forms/form";
+import { Button } from "@/components/ui/button";
+import { Field } from "@/components/forms/form-field";
+import { Select } from "@/components/ui/select";
+import { FormTextarea } from "@/components/forms/form-field";
+import { confirmDiscard } from "@/lib/forms/confirm-discard";
+import { useEditSnapshot } from "@/lib/forms/use-edit-snapshot";
+import { validationMessage } from "@/lib/forms/validation-message";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import type { z } from "zod";
+import {
+  useApproveSubmissionMutation,
+  useRequestSubmissionRevisionMutation,
+} from "../hooks/use-submissions-mutations";
+import { approveSchema, revisionSchema } from "../schemas/submissions.schema";
+import type { SubmissionDto } from "../types/submissions.types";
+export function ReviewForm({
+  submission,
+  reload,
+  close,
+}: {
+  submission: SubmissionDto;
+  reload: () => Promise<{ data?: SubmissionDto }>;
+  close: () => void;
+}) {
+  const [decision, setDecision] = useState("APPROVE");
+  const cancel = async () => {
+    if (await confirmDiscard("Bỏ quyết định nghiệm thu chưa lưu?")) close();
+  };
+  return (
+    <div className="w-full max-w-[760px]">
+      <Field label="Quyết định" className="mb-4 max-w-80">
+        {(a11y) => (
+          <Select
+            size="form"
+            {...a11y}
+            value={decision}
+            onChange={async (e) => {
+              const value = e.target.value;
+              if (await confirmDiscard()) setDecision(value);
+            }}
+          >
+            <option value="APPROVE">Chấp nhận kết quả</option>
+            <option value="REVISION">Yêu cầu chỉnh sửa</option>
+          </Select>
+        )}
+      </Field>
+      <DecisionForm
+        key={decision}
+        decision={decision}
+        submission={submission}
+        reload={reload}
+        cancel={cancel}
+        close={close}
+      />
+    </div>
+  );
+}
+
+function DecisionForm({
+  decision,
+  submission,
+  reload,
+  cancel,
+  close,
+}: {
+  decision: string;
+  submission: SubmissionDto;
+  reload: () => Promise<{ data?: SubmissionDto }>;
+  cancel: () => Promise<void>;
+  close: () => void;
+}) {
+  const approve = useApproveSubmissionMutation();
+  const revision = useRequestSubmissionRevisionMutation();
+  const router = useRouter();
+  const snapshot = useEditSnapshot(submission);
+  const schema = decision === "APPROVE" ? approveSchema : revisionSchema;
+  type Values = z.input<typeof schema>;
+  const form = useForm<Values>({
+    resolver: zodResolver<Values, unknown, Values>(schema, {
+      error: validationMessage,
+    }),
+    defaultValues:
+      decision === "APPROVE"
+        ? { comment: "" }
+        : { reason: "", requestedChanges: "" },
+  });
+  return (
+    <Form
+      compact
+      form={form}
+      cancel={
+        <Button type="button" onClick={cancel}>
+          Hủy
+        </Button>
+      }
+      submitLabel="Xác nhận quyết định"
+      compareFields={[
+        { name: "status", label: "Trạng thái lần nộp" },
+        { name: "summary", label: "Tóm tắt kết quả" },
+      ]}
+      onConflictReload={() => snapshot.load(reload)}
+      onConflictAccept={snapshot.accept}
+      onSubmit={async (values) => {
+        const input = {
+          taskId: submission.taskId,
+          submissionId: submission.id,
+          version: snapshot.base.version,
+        };
+        if ("requestedChanges" in values)
+          await revision.mutateAsync({ ...input, payload: values });
+        else await approve.mutateAsync({ ...input, payload: values });
+        toast.success("Đã ghi nhận quyết định nghiệm thu.");
+        close();
+        router.push(`/tasks/${submission.taskId}`);
+      }}
+    >
+      {decision === "APPROVE" ? (
+        <FormTextarea
+          label="Nhận xét"
+          {...form.register("comment")}
+          error={form.getFieldState("comment", form.formState).error}
+        />
+      ) : (
+        <>
+          <FormTextarea
+            label="Lý do yêu cầu sửa"
+            required
+            {...form.register("reason")}
+            error={form.getFieldState("reason", form.formState).error}
+          />
+          <FormTextarea
+            label="Nội dung cần sửa"
+            required
+            {...form.register("requestedChanges")}
+            error={form.getFieldState("requestedChanges", form.formState).error}
+          />
+        </>
+      )}
+    </Form>
+  );
+}

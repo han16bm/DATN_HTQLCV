@@ -1,0 +1,25 @@
+- generic [active] [ref=f7e1]:
+  - main [ref=f7e2]:
+    - generic [ref=f7e3]:
+      - generic [ref=f7e4]: Cổng công việc
+      - generic [ref=f7e9]: KẾT NỐI CÔNG VIỆC · CÙNG NHAU TIẾN XA
+      - heading "Cùng một mục tiêu. Rõ từng bước tiến." [level=1] [ref=f7e10]: Cùng một mục tiêu.Rõ từng bước tiến.
+      - paragraph [ref=f7e11]: Quản lý dự án, công việc và kết quả thực hiện trong một không gian chung.
+      - img "Nhân viên ngồi làm việc trước máy tính, nhìn từ phía sau" [ref=f7e12]
+      - generic [ref=f7e13]: Kế hoạch rõ ràng. Làm việc hiệu quả.
+    - generic [ref=f7e15]:
+      - generic [ref=f7e22]:
+        - generic [ref=f7e23]: CHÀO MỪNG BẠN TRỞ LẠI
+        - heading "Đăng nhập" [level=2] [ref=f7e24]
+      - paragraph [ref=f7e25]: Sử dụng tài khoản nội bộ đã được cấp.
+      - group [ref=f7e27]:
+        - generic [ref=f7e28]: Tên đăng nhập
+        - textbox "Tên đăng nhập" [ref=f7e29]: manager2
+        - generic [ref=f7e30]: Mật khẩu
+        - textbox "Mật khẩu" [ref=f7e31]: wrong-password
+        - alert [ref=f7e48]: Sai tên đăng nhập hoặc mật khẩu.
+        - button "Đăng nhập" [ref=f7e44] [cursor=pointer]
+      - paragraph [ref=f7e34]: Quên mật khẩu? Liên hệ người quản lý tài khoản.
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f7e40] [cursor=pointer]
+  - alert [ref=f7e47]

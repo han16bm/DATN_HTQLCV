@@ -1,0 +1,94 @@
+- generic [active] [ref=f22e1]:
+  - generic [ref=f22e13]:
+    - complementary "Thanh điều hướng" [ref=f22e14]:
+      - generic [ref=f22e15]:
+        - link "Cổng công việc" [ref=f22e16] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f22e22] [cursor=pointer]
+      - generic [ref=f22e25]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f22e26]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f22e31]:
+        - generic [ref=f22e32]:
+          - button "Công việc" [expanded] [ref=f22e33] [cursor=pointer]
+          - generic [ref=f22e37]:
+            - link "Tổng quan cá nhân" [ref=f22e38] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f22e43] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f22e47] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f22e52] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f22e57] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f22e62]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f22e63] [cursor=pointer]
+          - generic [ref=f22e67]:
+            - link "Bảng tổng quan" [ref=f22e68] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f22e75] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f22e79] [cursor=pointer]:
+              - /url: /alerts
+        - generic [ref=f22e84]:
+          - button "Quản trị hệ thống" [expanded] [ref=f22e85] [cursor=pointer]
+          - generic [ref=f22e89]:
+            - link "Tài khoản người dùng" [ref=f22e90] [cursor=pointer]:
+              - /url: /admin/users
+            - link "Cơ cấu đơn vị" [ref=f22e97] [cursor=pointer]:
+              - /url: /admin/organization
+            - link "Nhóm nhân sự" [ref=f22e103] [cursor=pointer]:
+              - /url: /admin/teams
+      - paragraph [ref=f22e110]: Theo phạm vi được cấp quyền
+    - generic [ref=f22e111]:
+      - banner [ref=f22e112]:
+        - generic [ref=f22e113]:
+          - generic [ref=f22e114]: Không gian làm việc
+          - strong [ref=f22e117]: Công việc
+        - button "Mở menu tài khoản" [ref=f22e276] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f22e277]: tv
+          - generic [ref=f22e278]:
+            - text: Quan tri vien
+            - generic [ref=f22e279]: Quản trị viên
+      - main [ref=f22e125]:
+        - generic [ref=f22e126]:
+          - generic [ref=f22e128]:
+            - generic [ref=f22e129]:
+              - heading "Kiem thu tam dung va ban giao" [level=1] [ref=f22e130]
+              - generic [ref=f22e131]: Chờ nghiệm thu
+              - generic [ref=f22e132]: Ưu tiên bình thường
+            - paragraph [ref=f22e133]: Du an kiem thu task flows
+          - combobox "Mục công việc" [ref=f22e140]:
+            - option "Thông tin"
+            - option "Giờ công"
+            - option "Các lần nộp" [selected]
+            - option "Lịch sử"
+          - generic [ref=f22e282]:
+            - heading "Các lần nộp kết quả" [level=2] [ref=f22e284]
+            - table "Các lần nộp kết quả" [ref=f22e286]:
+              - rowgroup [ref=f22e287]:
+                - row [ref=f22e288]:
+                  - columnheader "Lần nộp" [ref=f22e289]
+                  - columnheader "Người nộp" [ref=f22e290]
+                  - columnheader "Thời điểm" [ref=f22e291]
+                  - columnheader "Kết quả xét" [ref=f22e292]
+                  - columnheader "Hành động" [ref=f22e293]
+              - rowgroup [ref=f22e294]:
+                - row [ref=f22e295]:
+                  - cell "Lần 1" [ref=f22e296]
+                  - cell "Quan tri vien" [ref=f22e297]
+                  - cell "14:03 28/10/26" [ref=f22e298]
+                  - cell "Chờ xét" [ref=f22e299]
+                  - cell [ref=f22e301]:
+                    - link "Xem lần nộp 1" [ref=f22e302] [cursor=pointer]:
+                      - /url: /tasks/3a7dc0ba0d624350ab2315a925cc776a/submissions/d63ce7c1f46046d3863ad6bdf7795af5
+                      - text: Chi tiết
+            - generic [ref=f22e303]: 1 kết quả
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=f22e305]:
+        - button "Close toast" [ref=f22e306] [cursor=pointer]
+        - generic [ref=f22e313]: Đã nộp kết quả.
+  - button "Open Next.js Dev Tools" [ref=f22e9] [cursor=pointer]
+  - alert [ref=f22e252]: Kiem thu tam dung va ban giao

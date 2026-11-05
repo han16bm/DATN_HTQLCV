@@ -1,0 +1,62 @@
+using System.Text.Json;
+using Microsoft.AspNetCore.Http;
+using Shared.Commons.Exceptions;
+using Shared.Commons.Extensions;
+using Shared.Commons.Utils;
+using Projects.Api.Models.Dtos;
+using Shared.Entities;
+using Shared.Entities.Auditing;
+using Shared.Entities.Authorization;
+using Shared.Entities.Entities;
+
+namespace Projects.Api.Services;
+
+public abstract class BaseService<T>(ApplicationDbContext context, IHttpContextAccessor httpContextAccessor)
+{
+    protected readonly ApplicationDbContext Context = context;
+    protected readonly IHttpContextAccessor HttpContextAccessor = httpContextAccessor;
+
+    protected string CurrentUserId => HttpContextAccessor.HttpContext?.GetUserId() ?? "UNKNOWN";
+
+    /// <summary>Quyền của người gọi trong từng dự án (ADMIN_MODULES §11).</summary>
+    protected Task<ProjectAccess> AccessAsync() => ProjectAccess.LoadAsync(Context, CurrentUserId);
+
+    /// <summary>Dự án không có → 404; không đọc được hoặc thiếu mã quyền → 403.</summary>
+    protected async Task<Project> RequireProjectAsync(string projectId, string? permission = null) =>
+        await (await AccessAsync()).EnsureAsync(Context, projectId, permission);
+
+    protected async Task WriteAuditLogAsync(string entityId, string action, object? before, object? after, string? reason = null)
+    {
+        Context.AuditLogs.Add(new AuditLog
+        {
+            Id = GuidGenerator.NewId(),
+            EntityType = typeof(T).Name,
+            EntityId = entityId,
+            ActorId = CurrentUserId,
+            Action = action,
+            At = DateTime.UtcNow,
+            BeforeJson = before is null ? null : JsonSerializer.Serialize(before),
+            AfterJson = after is null ? null : JsonSerializer.Serialize(after),
+            Reason = reason
+        });
+        await Task.CompletedTask;
+    }
+
+    /// <summary>Dấu vết CreatedBy/UpdatedBy dạng { id, label } | null (ADMIN_MODULES §8.3).</summary>
+    protected static RefDto? StampRef(string? actorId, IReadOnlyDictionary<string, string> names)
+    {
+        var label = AuditActorNames.Label(actorId, names);
+        return label is null ? null : new RefDto(actorId!, label);
+    }
+
+    /// <summary>If-Match bắt buộc với API có version; thiếu header -> 428, khác version hiện tại -> 412.</summary>
+    protected void CheckIfMatch(int currentVersion)
+    {
+        var header = HttpContextAccessor.HttpContext?.Request.Headers.IfMatch.ToString();
+        if (string.IsNullOrWhiteSpace(header))
+            throw new PreconditionRequiredException("Thiếu header If-Match.");
+
+        if (!int.TryParse(header.Trim('"'), out var requestedVersion) || requestedVersion != currentVersion)
+            throw new PreconditionFailedException("Dữ liệu vừa được thay đổi, vui lòng tải lại.");
+    }
+}

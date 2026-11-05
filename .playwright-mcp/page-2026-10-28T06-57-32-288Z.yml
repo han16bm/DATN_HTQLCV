@@ -1,0 +1,139 @@
+- generic [active] [ref=f14e1]:
+  - generic [ref=f14e13]:
+    - complementary "Thanh điều hướng" [ref=f14e14]:
+      - generic [ref=f14e15]:
+        - link "Cổng công việc" [ref=f14e16] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f14e22] [cursor=pointer]
+      - generic [ref=f14e25]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f14e26]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f14e31]:
+        - generic [ref=f14e32]:
+          - button "Công việc" [expanded] [ref=f14e33] [cursor=pointer]
+          - generic [ref=f14e37]:
+            - link "Tổng quan cá nhân" [ref=f14e38] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f14e43] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f14e47] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f14e52] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f14e57] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f14e62]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f14e63] [cursor=pointer]
+          - generic [ref=f14e67]:
+            - link "Bảng tổng quan" [ref=f14e68] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f14e75] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f14e79] [cursor=pointer]:
+              - /url: /alerts
+      - paragraph [ref=f14e85]: Theo phạm vi được cấp quyền
+    - generic [ref=f14e86]:
+      - banner [ref=f14e87]:
+        - generic [ref=f14e88]:
+          - generic [ref=f14e89]: Không gian làm việc
+          - strong [ref=f14e92]: Dự án
+        - button "Mở menu tài khoản" [ref=f14e139] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f14e140]: LH
+          - generic [ref=f14e141]:
+            - text: Tran Quan Ly Hai
+            - generic [ref=f14e142]: Quản lý
+      - main [ref=f14e100]:
+        - generic [ref=f14e101]:
+          - generic [ref=f14e145]:
+            - generic [ref=f14e146]:
+              - generic [ref=f14e147]:
+                - heading "Du an kiem thu task flows" [level=1] [ref=f14e148]
+                - generic [ref=f14e149]: Dự kiến
+              - paragraph [ref=f14e150]: Phong CNTT
+            - generic [ref=f14e151]:
+              - link "Danh sách" [ref=f14e152] [cursor=pointer]:
+                - /url: /projects
+              - link "Chỉnh sửa kế hoạch" [ref=f14e153] [cursor=pointer]:
+                - /url: /projects/40094846ced24d88ab0c825cd83b84cc/edit
+              - button "Triển khai dự án" [ref=f14e155] [cursor=pointer]
+              - button "Kết thúc / hủy" [ref=f14e156] [cursor=pointer]
+          - combobox "Mục dự án" [ref=f14e158]:
+            - option "Tổng quan" [selected]
+            - option "Công việc"
+            - option "Thành viên"
+            - option "Lịch sử"
+          - generic [ref=f14e159]:
+            - generic [ref=f14e160]:
+              - generic [ref=f14e161]:
+                - heading "Mục tiêu dự án" [level=2] [ref=f14e163]
+                - paragraph [ref=f14e164]: "Kiem thu cac luong task: tam dung, huy, cap nhat uoc luong, ban giao."
+              - generic [ref=f14e165]:
+                - generic [ref=f14e166]:
+                  - heading "Các mốc triển khai" [level=2] [ref=f14e167]
+                  - link "Xem toàn bộ lịch sử" [ref=f14e168] [cursor=pointer]:
+                    - /url: /projects/40094846ced24d88ab0c825cd83b84cc?tab=history
+                - table "Các mốc triển khai" [ref=f14e170]:
+                  - rowgroup [ref=f14e171]:
+                    - row [ref=f14e172]:
+                      - columnheader "Thời điểm" [ref=f14e173]
+                      - columnheader "Người thực hiện" [ref=f14e174]
+                      - columnheader "Sự kiện" [ref=f14e175]
+                      - columnheader "Hành động" [ref=f14e176]
+                  - rowgroup [ref=f14e177]:
+                    - row [ref=f14e178]:
+                      - cell "13:57 28/10/26" [ref=f14e179]
+                      - cell "Tran Quan Ly Hai" [ref=f14e180]
+                      - cell "CREATE" [ref=f14e181]
+                      - cell [ref=f14e183]:
+                        - group [ref=f14e184]:
+                          - generic "Xem thay đổi (6)" [ref=f14e185] [cursor=pointer]
+                - generic [ref=f14e186]: 1 kết quả
+              - generic [ref=f14e188]:
+                - generic [ref=f14e189]:
+                  - heading "Công việc gần đây" [level=2] [ref=f14e190]
+                  - link "Tất cả công việc" [ref=f14e191] [cursor=pointer]:
+                    - /url: /tasks?projectId=40094846ced24d88ab0c825cd83b84cc
+                - generic [ref=f14e192]:
+                  - table "Công việc gần đây" [ref=f14e193]:
+                    - rowgroup [ref=f14e194]:
+                      - row [ref=f14e195]:
+                        - columnheader "Công việc" [ref=f14e196]
+                        - columnheader "Trạng thái" [ref=f14e197]
+                        - columnheader "Hạn" [ref=f14e198]
+                        - columnheader "Hành động" [ref=f14e199]
+                    - rowgroup
+                  - generic [ref=f14e200]:
+                    - heading "Chưa có dữ liệu" [level=2] [ref=f14e201]
+                    - paragraph [ref=f14e202]: Chưa có dữ liệu phù hợp trong phạm vi này.
+                - generic [ref=f14e203]: 0 kết quả
+            - generic [ref=f14e205]:
+              - generic [ref=f14e206]:
+                - heading "Thông tin kế hoạch" [level=2] [ref=f14e208]
+                - generic [ref=f14e209]:
+                  - generic [ref=f14e210]:
+                    - term [ref=f14e211]: Mã dự án
+                    - definition [ref=f14e212]: DATN-02
+                  - generic [ref=f14e213]:
+                    - term [ref=f14e214]: Người phụ trách
+                    - definition [ref=f14e215]: Tran Quan Ly Hai
+                  - generic [ref=f14e216]:
+                    - term [ref=f14e217]: Đơn vị
+                    - definition [ref=f14e218]: Phong CNTT
+                  - generic [ref=f14e219]:
+                    - term [ref=f14e220]: Ngày bắt đầu
+                    - definition [ref=f14e221]: 2026-10-28
+                  - generic [ref=f14e222]:
+                    - term [ref=f14e223]: Hạn hoàn thành
+                    - definition [ref=f14e224]: 17:00 31/12/26
+              - generic [ref=f14e225]:
+                - link "Mở công việc trong dự án" [ref=f14e226] [cursor=pointer]:
+                  - /url: /tasks?projectId=40094846ced24d88ab0c825cd83b84cc
+                - link "Thành viên dự án" [ref=f14e227] [cursor=pointer]:
+                  - /url: /projects/40094846ced24d88ab0c825cd83b84cc/members
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=f14e228]:
+        - button "Close toast" [ref=f14e229] [cursor=pointer]
+        - generic [ref=f14e236]: Đã tạo dự án ở trạng thái dự kiến.
+  - button "Open Next.js Dev Tools" [ref=f14e9] [cursor=pointer]
+  - alert [ref=f14e138]

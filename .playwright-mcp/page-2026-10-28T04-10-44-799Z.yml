@@ -1,0 +1,138 @@
+- generic [ref=f39e1]:
+  - generic [ref=f39e2]:
+    - complementary "Thanh điều hướng" [ref=f39e3]:
+      - generic [ref=f39e4]:
+        - link "Cổng công việc" [ref=f39e5] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f39e11] [cursor=pointer]
+      - generic [ref=f39e14]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f39e15]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f39e20]:
+        - generic [ref=f39e21]:
+          - button "Công việc" [expanded] [ref=f39e22] [cursor=pointer]
+          - generic [ref=f39e26]:
+            - link "Tổng quan cá nhân" [ref=f39e27] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f39e32] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f39e36] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f39e41] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f39e46] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f39e51]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f39e52] [cursor=pointer]
+          - generic [ref=f39e56]:
+            - link "Bảng tổng quan" [ref=f39e57] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f39e64] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f39e68] [cursor=pointer]:
+              - /url: /alerts
+        - generic [ref=f39e73]:
+          - button "Quản trị hệ thống" [expanded] [ref=f39e74] [cursor=pointer]
+          - generic [ref=f39e78]:
+            - link "Tài khoản người dùng" [ref=f39e79] [cursor=pointer]:
+              - /url: /admin/users
+            - link "Cơ cấu đơn vị" [ref=f39e86] [cursor=pointer]:
+              - /url: /admin/organization
+            - link "Nhóm nhân sự" [ref=f39e92] [cursor=pointer]:
+              - /url: /admin/teams
+      - paragraph [ref=f39e99]: Theo phạm vi được cấp quyền
+    - generic [ref=f39e100]:
+      - banner [ref=f39e101]:
+        - generic [ref=f39e102]:
+          - generic [ref=f39e103]: Không gian làm việc
+          - strong [ref=f39e106]: Phân tích
+        - button "Mở menu tài khoản" [ref=f39e109] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f39e110]: tv
+          - generic [ref=f39e111]:
+            - text: Quan tri vien
+            - generic [ref=f39e112]: Quản trị viên
+      - main [ref=f39e115]:
+        - generic [ref=f39e116]:
+          - heading "Điểm nghẽn quy trình" [level=1] [ref=f39e120]
+          - generic [ref=f39e121]:
+            - combobox "Mục phân tích" [ref=f39e122]:
+              - option "Tổng quan"
+              - option "Nguy cơ trễ hạn"
+              - option "Khối lượng"
+              - option "Điểm nghẽn" [selected]
+              - option "Tổng hợp"
+            - button "Bộ lọc" [expanded] [ref=f39e123] [cursor=pointer]
+          - paragraph [ref=f39e167]:
+            - text: Cập nhật 11:10 28/10/26 ·
+            - generic [ref=f39e168]: Chưa đủ dữ liệu
+          - generic [ref=f39e169]:
+            - generic [ref=f39e170]:
+              - table [ref=f39e171]:
+                - rowgroup [ref=f39e172]:
+                  - row [ref=f39e173]:
+                    - columnheader "Khâu xử lý" [ref=f39e174]
+                    - columnheader "Công việc" [ref=f39e175]
+                    - columnheader "Người nhận" [ref=f39e176]
+                    - columnheader "Thời gian tồn đọng" [ref=f39e177]
+                    - columnheader "Số vòng sửa" [ref=f39e178]
+                    - columnheader "Bằng chứng" [ref=f39e179]
+                    - columnheader "Hành động" [ref=f39e180]
+                - rowgroup
+              - generic [ref=f39e181]:
+                - heading "Chưa có dữ liệu" [level=2] [ref=f39e182]
+                - paragraph [ref=f39e183]: Chưa có dữ liệu phù hợp trong phạm vi này.
+            - generic [ref=f39e184]: 0 kết quả
+          - link "Mở hàng chờ nghiệm thu" [ref=f39e186] [cursor=pointer]:
+            - /url: /reviews
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f39e162] [cursor=pointer]
+  - alert [ref=f39e166]
+  - dialog "Bộ lọc phân tích" [ref=f39e188]:
+    - generic [ref=f39e189]:
+      - heading "Bộ lọc" [level=2] [ref=f39e190]
+      - button "Đóng bộ lọc" [active] [ref=f39e191] [cursor=pointer]: ×
+    - generic [ref=f39e192]:
+      - generic [ref=f39e193]:
+        - text: Đơn vị
+        - combobox "Đơn vị" [ref=f39e194]:
+          - option "Tất cả" [selected]
+          - option "Phong CNTT"
+          - option "Phòng QA"
+      - generic [ref=f39e195]:
+        - text: Dự án
+        - combobox "Dự án" [ref=f39e196]:
+          - option "Tất cả" [selected]
+          - option "Dự án thử nghiệm E2E"
+      - generic [ref=f39e197]:
+        - text: Từ ngày
+        - textbox "Từ ngày" [ref=f39e198]: 2026-10-01
+      - generic [ref=f39e199]:
+        - text: Đến ngày
+        - textbox "Đến ngày" [ref=f39e200]: 2026-10-28
+    - group [ref=f39e201]:
+      - generic "Bộ lọc khác" [ref=f39e202] [cursor=pointer]
+      - option "Tất cả" [selected]
+      - option "Nhóm kiểm thử"
+      - option "Tất cả" [selected]
+      - option "Nguyen Quan Ly"
+      - option "Quan tri vien"
+      - option "Tran Quan Ly Hai"
+      - option "Tất cả" [selected]
+      - option "Nguyen Quan Ly"
+      - option "Quan tri vien"
+      - option "Tran Quan Ly Hai"
+      - option "Tất cả" [selected]
+      - option "Mới tạo"
+      - option "Chờ thực hiện"
+      - option "Đang thực hiện"
+      - option "Chờ nghiệm thu"
+      - option "Hoàn thành"
+      - option "Đã hủy"
+      - option "Tất cả" [selected]
+      - option "Thấp"
+      - option "Bình thường"
+      - option "Cao"
+      - option "Khẩn cấp"
+    - generic [ref=f39e203]:
+      - button "Đặt lại" [ref=f39e204] [cursor=pointer]
+      - button "Xong" [ref=f39e205] [cursor=pointer]

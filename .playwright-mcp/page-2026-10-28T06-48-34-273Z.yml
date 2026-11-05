@@ -1,0 +1,82 @@
+- generic [active] [ref=f6e1]:
+  - generic [ref=f6e13]:
+    - complementary "Thanh điều hướng" [ref=f6e14]:
+      - generic [ref=f6e15]:
+        - link "Cổng công việc" [ref=f6e16] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f6e22] [cursor=pointer]
+      - generic [ref=f6e25]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f6e26]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f6e31]:
+        - generic [ref=f6e32]:
+          - button "Công việc" [expanded] [ref=f6e33] [cursor=pointer]
+          - generic [ref=f6e37]:
+            - link "Tổng quan cá nhân" [ref=f6e38] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f6e43] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f6e47] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f6e52] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f6e57] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f6e62]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f6e63] [cursor=pointer]
+          - generic [ref=f6e67]:
+            - link "Bảng tổng quan" [ref=f6e68] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f6e75] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f6e79] [cursor=pointer]:
+              - /url: /alerts
+      - paragraph [ref=f6e85]: Theo phạm vi được cấp quyền
+    - generic [ref=f6e86]:
+      - banner [ref=f6e87]:
+        - generic [ref=f6e88]:
+          - generic [ref=f6e89]: Không gian làm việc
+          - strong [ref=f6e92]: Công việc
+        - button "Mở menu tài khoản" [ref=f6e95] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f6e96]: QL
+          - generic [ref=f6e97]:
+            - text: Nguyen Quan Ly
+            - generic [ref=f6e98]: Quản lý
+      - main [ref=f6e101]:
+        - generic [ref=f6e102]:
+          - generic [ref=f6e104]:
+            - generic [ref=f6e105]:
+              - heading "Kiểm thử upload minh chứng" [level=1] [ref=f6e106]
+              - generic [ref=f6e107]: Chờ nghiệm thu
+              - generic [ref=f6e108]: Ưu tiên bình thường
+            - paragraph [ref=f6e109]: Dự án thử nghiệm E2E
+          - combobox "Mục công việc" [ref=f6e111]:
+            - option "Thông tin"
+            - option "Giờ công"
+            - option "Các lần nộp" [selected]
+            - option "Lịch sử"
+          - heading "Đối chiếu kết quả · Lần 1" [level=1] [ref=f6e129]
+          - generic [ref=f6e130]:
+            - generic [ref=f6e131]:
+              - heading "Tiêu chí nghiệm thu" [level=2] [ref=f6e133]
+              - paragraph [ref=f6e134]: Tải lên tệp minh chứng thành công.
+            - generic [ref=f6e135]:
+              - heading "Kết quả đã nộp" [level=2] [ref=f6e137]
+              - generic [ref=f6e138]: Chờ xét
+              - paragraph [ref=f6e139]: Nguyen Quan Ly · 11:18 28/10/26
+              - paragraph [ref=f6e140]: Đã tải minh chứng kiểm thử upload.
+              - generic [ref=f6e141]:
+                - generic [ref=f6e142]:
+                  - term [ref=f6e143]: Hạn tại lúc nộp
+                  - definition [ref=f6e144]: 17:00 5/11/26
+                - generic [ref=f6e145]:
+                  - term [ref=f6e146]: Tình trạng nộp
+                  - definition [ref=f6e147]: Nộp trong hạn
+                - generic [ref=f6e148]:
+                  - term [ref=f6e149]: Giờ công tại lúc nộp
+                  - definition [ref=f6e150]: 0,5 giờ
+              - button "Tải evidence.txt (60 B)" [ref=f6e152] [cursor=pointer]
+          - paragraph [ref=f6e153]: Bạn đang xem kết quả đã nộp.
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f6e9] [cursor=pointer]
+  - alert [ref=f6e125]

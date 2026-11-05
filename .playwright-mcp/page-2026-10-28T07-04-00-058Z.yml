@@ -1,0 +1,94 @@
+- generic [active] [ref=f23e1]:
+  - generic [ref=f23e13]:
+    - complementary "Thanh điều hướng" [ref=f23e14]:
+      - generic [ref=f23e15]:
+        - link "Cổng công việc" [ref=f23e16] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f23e22] [cursor=pointer]
+      - generic [ref=f23e25]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f23e26]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f23e31]:
+        - generic [ref=f23e32]:
+          - button "Công việc" [expanded] [ref=f23e33] [cursor=pointer]
+          - generic [ref=f23e37]:
+            - link "Tổng quan cá nhân" [ref=f23e38] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f23e43] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f23e47] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f23e52] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f23e57] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f23e62]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f23e63] [cursor=pointer]
+          - generic [ref=f23e67]:
+            - link "Bảng tổng quan" [ref=f23e68] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f23e75] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f23e79] [cursor=pointer]:
+              - /url: /alerts
+      - paragraph [ref=f23e85]: Theo phạm vi được cấp quyền
+    - generic [ref=f23e86]:
+      - banner [ref=f23e87]:
+        - generic [ref=f23e88]:
+          - generic [ref=f23e89]: Không gian làm việc
+          - strong [ref=f23e92]: Công việc
+        - button "Mở menu tài khoản" [ref=f23e94] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f23e95]: LH
+          - generic [ref=f23e96]:
+            - text: Tran Quan Ly Hai
+            - generic [ref=f23e97]: Quản lý
+      - main [ref=f23e100]:
+        - generic [ref=f23e101]:
+          - generic [ref=f23e103]:
+            - generic [ref=f23e104]:
+              - heading "Kiem thu tam dung va ban giao" [level=1] [ref=f23e105]
+              - generic [ref=f23e106]: Chờ nghiệm thu
+              - generic [ref=f23e107]: Ưu tiên bình thường
+            - paragraph [ref=f23e108]: Du an kiem thu task flows
+          - combobox "Mục công việc" [ref=f23e110]:
+            - option "Thông tin"
+            - option "Giờ công"
+            - option "Các lần nộp" [selected]
+            - option "Lịch sử"
+          - heading "Đối chiếu kết quả · Lần 1" [level=1] [ref=f23e114]
+          - generic [ref=f23e115]:
+            - generic [ref=f23e116]:
+              - heading "Tiêu chí nghiệm thu" [level=2] [ref=f23e118]
+              - paragraph [ref=f23e119]: Hoan thanh kiem thu tam dung, cap nhat uoc luong va ban giao task.
+            - generic [ref=f23e120]:
+              - heading "Kết quả đã nộp" [level=2] [ref=f23e122]
+              - generic [ref=f23e123]: Chờ xét
+              - paragraph [ref=f23e124]: Quan tri vien · 14:03 28/10/26
+              - paragraph [ref=f23e125]: Da hoan thanh tam dung va cap nhat uoc luong, san sang xet duyet.
+              - generic [ref=f23e126]:
+                - generic [ref=f23e127]:
+                  - term [ref=f23e128]: Hạn tại lúc nộp
+                  - definition [ref=f23e129]: 17:00 15/11/26
+                - generic [ref=f23e130]:
+                  - term [ref=f23e131]: Tình trạng nộp
+                  - definition [ref=f23e132]: Nộp trong hạn
+                - generic [ref=f23e133]:
+                  - term [ref=f23e134]: Giờ công tại lúc nộp
+                  - definition [ref=f23e135]: 0,5 giờ
+            - generic [ref=f23e139]:
+              - heading "Quyết định nghiệm thu" [level=2] [ref=f23e141]
+              - generic [ref=f23e142]:
+                - text: Quyết định
+                - combobox "Quyết định" [ref=f23e143]:
+                  - option "Chấp nhận kết quả" [selected]
+                  - option "Yêu cầu chỉnh sửa"
+              - group [ref=f23e145]:
+                - generic [ref=f23e146]:
+                  - generic [ref=f23e147]: Nhận xét
+                  - textbox "Nhận xét" [ref=f23e148]
+                - generic [ref=f23e149]:
+                  - button "Hủy" [ref=f23e150] [cursor=pointer]
+                  - button "Xác nhận quyết định" [ref=f23e151] [cursor=pointer]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f23e9] [cursor=pointer]
+  - alert [ref=f23e138]

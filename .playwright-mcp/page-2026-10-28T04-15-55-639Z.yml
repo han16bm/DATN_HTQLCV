@@ -1,0 +1,155 @@
+- generic [active] [ref=f45e1]:
+  - generic [ref=f45e13]:
+    - complementary "Thanh điều hướng" [ref=f45e14]:
+      - generic [ref=f45e15]:
+        - link "Cổng công việc" [ref=f45e16] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f45e22] [cursor=pointer]
+      - generic [ref=f45e25]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f45e26]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f45e31]:
+        - generic [ref=f45e32]:
+          - button "Công việc" [expanded] [ref=f45e33] [cursor=pointer]
+          - generic [ref=f45e37]:
+            - link "Tổng quan cá nhân" [ref=f45e38] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f45e43] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f45e47] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f45e52] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f45e57] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f45e62]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f45e63] [cursor=pointer]
+          - generic [ref=f45e67]:
+            - link "Bảng tổng quan" [ref=f45e68] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f45e75] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f45e79] [cursor=pointer]:
+              - /url: /alerts
+      - paragraph [ref=f45e85]: Theo phạm vi được cấp quyền
+    - generic [ref=f45e86]:
+      - banner [ref=f45e87]:
+        - generic [ref=f45e88]:
+          - generic [ref=f45e89]: Không gian làm việc
+          - strong [ref=f45e92]: Công việc
+        - button "Mở menu tài khoản" [ref=f45e94] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f45e95]: QL
+          - generic [ref=f45e96]:
+            - text: Nguyen Quan Ly
+            - generic [ref=f45e97]: Quản lý
+      - main [ref=f45e100]:
+        - generic [ref=f45e101]:
+          - generic [ref=f45e102]:
+            - generic [ref=f45e103]:
+              - generic [ref=f45e104]:
+                - heading "Kiểm thử upload minh chứng" [level=1] [ref=f45e105]
+                - generic [ref=f45e106]: Đang thực hiện
+                - generic [ref=f45e107]: Ưu tiên bình thường
+              - paragraph [ref=f45e108]: Dự án thử nghiệm E2E
+            - generic [ref=f45e109]:
+              - button "Nộp kết quả" [ref=f45e110] [cursor=pointer]
+              - button "Ghi giờ công" [ref=f45e111] [cursor=pointer]
+              - button "Tải minh chứng" [ref=f45e112] [cursor=pointer]
+              - link "Điều chỉnh" [ref=f45e113] [cursor=pointer]:
+                - /url: /tasks/c34d1b46fe77454280a46cae23a5ef9c/edit
+              - button "Bàn giao" [ref=f45e114] [cursor=pointer]
+              - button "Tạm dừng / hủy" [ref=f45e115] [cursor=pointer]
+          - combobox "Mục công việc" [ref=f45e117]:
+            - option "Thông tin" [selected]
+            - option "Giờ công"
+            - option "Các lần nộp"
+            - option "Lịch sử"
+          - generic [ref=f45e118]:
+            - generic [ref=f45e119]:
+              - heading "Thông tin công việc" [level=2] [ref=f45e121]
+              - generic [ref=f45e122]:
+                - generic [ref=f45e123]:
+                  - term [ref=f45e124]: Người thực hiện
+                  - definition [ref=f45e125]:
+                    - link "Xem hồ sơ công khai của Nguyen Quan Ly" [ref=f45e126] [cursor=pointer]:
+                      - /url: /users/184728461ea949e0b1d34d1ac9217d9d
+                      - generic [aria-hidden] [ref=f45e127]: QL
+                      - generic [ref=f45e128]: Nguyen Quan Ly
+                - generic [ref=f45e130]:
+                  - term [ref=f45e131]: Dự án
+                  - definition [ref=f45e132]:
+                    - link "Dự án thử nghiệm E2E" [ref=f45e133] [cursor=pointer]:
+                      - /url: /projects/716a4376b89b4d498a708c54350b6a61
+                - generic [ref=f45e134]:
+                  - term [ref=f45e135]: Ngày tạo
+                  - definition [ref=f45e136]: 11:14 28/10/26
+                - generic [ref=f45e137]:
+                  - term [ref=f45e138]: Bắt đầu thực hiện
+                  - definition [ref=f45e139]: 11:15 28/10/26
+                - generic [ref=f45e140]:
+                  - term [ref=f45e141]: Hạn hoàn thành
+                  - definition [ref=f45e142]: 17:00 5/11/26
+                - generic [ref=f45e143]:
+                  - term [ref=f45e144]: Hạn ban đầu
+                  - definition [ref=f45e145]: 17:00 5/11/26
+            - generic [ref=f45e146]:
+              - generic [ref=f45e147]:
+                - heading "Nội dung công việc" [level=2] [ref=f45e149]
+                - paragraph [ref=f45e150]: Chưa có mô tả bổ sung.
+                - generic [ref=f45e151]:
+                  - heading "Tiêu chí nghiệm thu" [level=3] [ref=f45e152]
+                  - paragraph [ref=f45e153]: Tải lên tệp minh chứng thành công.
+              - generic [ref=f45e154]:
+                - heading "Giờ công" [level=2] [ref=f45e156]
+                - generic [ref=f45e157]:
+                  - generic [ref=f45e158]:
+                    - term [ref=f45e159]: Đã thực hiện
+                    - definition [ref=f45e160]: 0 giờ
+                  - generic [ref=f45e161]:
+                    - term [ref=f45e162]: Ước lượng hiện tại
+                    - definition [ref=f45e163]: 1 giờ
+                  - generic [ref=f45e164]:
+                    - term [ref=f45e165]: Ước lượng ban đầu
+                    - definition [ref=f45e166]: 1 giờ
+                  - generic [ref=f45e167]:
+                    - term [ref=f45e168]: Ước tính còn lại
+                    - definition [ref=f45e169]: Chưa cập nhật
+                - button "Cập nhật thời gian còn lại" [ref=f45e171] [cursor=pointer]
+            - generic [ref=f45e172]:
+              - generic [ref=f45e173]:
+                - heading "Hoạt động gần đây" [level=2] [ref=f45e174]
+                - link "Xem toàn bộ lịch sử" [ref=f45e175] [cursor=pointer]:
+                  - /url: /tasks/c34d1b46fe77454280a46cae23a5ef9c/history
+              - table "Hoạt động gần đây" [ref=f45e177]:
+                - rowgroup [ref=f45e178]:
+                  - row [ref=f45e179]:
+                    - columnheader "Thời điểm" [ref=f45e180]
+                    - columnheader "Người thực hiện" [ref=f45e181]
+                    - columnheader "Sự kiện" [ref=f45e182]
+                    - columnheader "Hành động" [ref=f45e183]
+                - rowgroup [ref=f45e184]:
+                  - row [ref=f45e185]:
+                    - cell "11:15 28/10/26" [ref=f45e186]
+                    - cell "Nguyen Quan Ly" [ref=f45e187]
+                    - cell "START" [ref=f45e188]
+                    - cell [ref=f45e190]:
+                      - group [ref=f45e191]:
+                        - generic "Xem thay đổi (2)" [ref=f45e192] [cursor=pointer]
+                  - row [ref=f45e193]:
+                    - cell "11:15 28/10/26" [ref=f45e194]
+                    - cell "Nguyen Quan Ly" [ref=f45e195]
+                    - cell "ASSIGN" [ref=f45e196]
+                    - cell [ref=f45e198]:
+                      - group [ref=f45e199]:
+                        - generic "Xem thay đổi (3)" [ref=f45e200] [cursor=pointer]
+                  - row [ref=f45e201]:
+                    - cell "11:14 28/10/26" [ref=f45e202]
+                    - cell "Nguyen Quan Ly" [ref=f45e203]
+                    - cell "CREATE" [ref=f45e204]
+                    - cell [ref=f45e206]:
+                      - group [ref=f45e207]:
+                        - generic "Xem thay đổi (26)" [ref=f45e208] [cursor=pointer]
+              - generic [ref=f45e209]: 3 kết quả
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f45e9] [cursor=pointer]
+  - alert [ref=f45e211]

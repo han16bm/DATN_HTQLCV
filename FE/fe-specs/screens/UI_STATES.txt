@@ -1,0 +1,113 @@
+UI STATES – TRẠNG THÁI VÀ HÀNH VI CỦA TỪNG MÀN
+Tài liệu 0.4 · 24/10/2026
+Không xuất ảnh state. Các state sau là cùng một route/dialog, không phải thêm màn.
+
+1. QUY TẮC DÙNG CHUNG
+normal: Dữ liệu hợp lệ; render action theo quyền và trạng thái nghiệp vụ.
+loading: Tải lần đầu: skeleton theo vùng; giữ shell/nhãn. Refetch có dữ liệu thì giữ nội dung và báo đang làm mới.
+empty: Danh sách rỗng giữ filter, giải thích phạm vi; chỉ cho tạo khi có quyền. Chi tiết không dùng empty thay 404.
+error: GET có thử lại có kiểm soát. Mutation giữ input; kết quả chưa rõ thì đọc lại hoặc replay cùng key, không báo thành công giả.
+forbidden: 403 không lộ dữ liệu và không retry để vượt quyền. Mất quyền bỏ cache tương ứng.
+validation: Zod/422 đặt lỗi cạnh trường, focus trường lỗi đầu; giữ toàn bộ giá trị đã nhập.
+pending: Khóa submit và trường làm đổi payload trong thao tác; không gửi lặp hoặc tự bỏ form khi kết quả chưa rõ.
+conflict: 412 giữ bản đang soạn; tải bản mới để đối chiếu, không tự ghi đè. 409 là xung đột nghiệp vụ khác 412.
+not-found: 404 dùng nội dung S42, không giả lập một entity rỗng để tiếp tục.
+401: auth adapter refresh single-flight theo contract; thất bại dọn phiên và về S01.
+428: thiếu If-Match cần đọc lại version trước command; 429 theo retryAfter, không tạo key mới để né giới hạn.
+ContractError: không ghi response sai vào cache; mutation có thể đã lưu trên BE, cần đối chiếu/replay đúng key.
+Lỗi form giữ dữ liệu; lookup rỗng chỉ báo tại control, không làm toàn form biến thành empty.
+Logout/rời trang có dữ liệu chưa lưu: nhắc lưu hoặc xác nhận bỏ. Logout lỗi mạng vẫn dọn dữ liệu client và nêu chưa xác nhận thu hồi phiên server.
+
+2. ÁP DỤNG THEO MÀN
+S01. Đăng nhập
+  State: normal, error, validation, pending.
+S02. Không gian làm việc
+  State: normal, loading, empty, error, forbidden.
+S03. Tài khoản người dùng
+  State: normal, loading, empty, error, forbidden.
+S04. Cấp tài khoản nội bộ
+  State: normal, loading, error, forbidden, validation, pending.
+S05. Chi tiết tài khoản
+  State: normal, loading, error, forbidden, validation, pending, conflict.
+S06. Cơ cấu đơn vị
+  State: normal, loading, empty, error, forbidden, validation, pending, conflict.
+S07. Nhóm nhân sự
+  State: normal, loading, empty, error, forbidden, validation, pending, conflict.
+S08. Danh sách dự án
+  State: normal, loading, empty, error, forbidden.
+S09. Tạo dự án
+  State: normal, loading, error, forbidden, validation, pending.
+S10. Cổng quản lý nội bộ
+  State: normal, loading, error, forbidden, pending, conflict.
+S11. Điều chỉnh dự án
+  State: normal, loading, error, forbidden, validation, pending, conflict.
+S12. Thành viên dự án
+  State: normal, loading, empty, error, forbidden, validation, pending, conflict.
+S13. Quyền trên dự án
+  State: normal, loading, error, forbidden, validation, pending, conflict.
+S14. Kết thúc dự án
+  State: normal, loading, error, forbidden, validation, pending, conflict.
+S15. Công việc
+  State: normal, loading, empty, error, forbidden.
+S16. Bảng trạng thái công việc
+  State: normal, loading, empty, error, forbidden.
+S17. Tạo công việc
+  State: normal, loading, error, forbidden, validation, pending.
+S18. Chi tiết công việc
+  State: normal, loading, error, forbidden, validation, pending, conflict.
+S19. Điều chỉnh công việc
+  State: normal, loading, error, forbidden, validation, pending, conflict.
+S20. Giao hoặc bàn giao công việc
+  State: normal, loading, error, forbidden, validation, pending, conflict.
+S21. Thực hiện hoặc dừng công việc
+  State: normal, loading, error, forbidden, validation, pending, conflict.
+S22. Nhật ký giờ công
+  State: normal, loading, empty, error, forbidden.
+S23. Ghi hoặc chỉnh giờ công
+  State: normal, loading, error, forbidden, validation, pending, conflict.
+S24. Nộp kết quả công việc
+  State: normal, loading, error, forbidden, validation, pending, conflict.
+S25. Các lần nộp kết quả
+  State: normal, loading, empty, error, forbidden.
+S26. Kết quả chờ nghiệm thu
+  State: normal, loading, empty, error, forbidden.
+S27. Đối chiếu và nghiệm thu
+  State: normal, loading, error, forbidden, validation, pending, conflict.
+S28. Lịch sử công việc
+  State: normal, loading, empty, error, forbidden.
+S29. Báo cáo công việc
+  State: normal, loading, empty, error, forbidden.
+S30. Chọn kỳ báo cáo
+  State: normal, loading, error, forbidden, validation, pending.
+S31. Soạn báo cáo nháp
+  State: normal, loading, error, forbidden, validation, pending, conflict.
+S32. Báo cáo đã gửi
+  State: normal, loading, error, forbidden.
+S33. Bảng tổng quan
+  State: normal, loading, empty, error, forbidden.
+S34. Nguy cơ trễ hạn
+  State: normal, loading, empty, error, forbidden.
+S35. Khối lượng công việc
+  State: normal, loading, empty, error, forbidden.
+S36. Điểm nghẽn quy trình
+  State: normal, loading, empty, error, forbidden.
+S37. Cảnh báo
+  State: normal, loading, empty, error, forbidden.
+S38. Chi tiết và xử lý cảnh báo
+  State: normal, loading, error, forbidden, validation, pending, conflict.
+S39. Tổng hợp phân tích và đề xuất
+  State: normal, loading, empty, error, forbidden.
+S40. Tiến trình AI phân tích
+  State: normal, loading, error, forbidden, validation, pending.
+S41. Tải tệp minh chứng
+  State: normal, loading, error, forbidden, validation, pending.
+S42. Không thể mở nội dung
+  State: normal, not-found, error.
+S43. Chi tiết phân tích
+  State: normal, loading, error, forbidden, validation, pending.
+  validation/pending chỉ cho thao tác phản hồi BOTTLENECK khi canSubmit; state AI, quality/freshness và job được tách riêng ở ANALYSIS_FLOW.txt.
+
+3. PHÂN BIỆT NHÓM TRẠNG THÁI
+Task/Project/Report/Submission/Alert là state nghiệp vụ ở BUSINESS_STATES.txt.
+Explanation/job/quality/freshness/generation của phân tích ở ANALYSIS_FLOW.txt. Có thể cùng lúc READY+PARTIAL hoặc giữ lastSuccess khi lượt tạo lại FAILED.
+Mỗi state phải có nhãn chữ và hành động phù hợp, không chỉ đổi màu. Không dùng spinner che mọi thông số khi chỉ LLM đang chạy.

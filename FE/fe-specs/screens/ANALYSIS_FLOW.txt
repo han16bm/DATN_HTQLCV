@@ -1,0 +1,49 @@
+ANALYSIS FLOW – NGUỒN SỐ LIỆU, LỜI AI VÀ PHẢN HỒI
+Tài liệu 0.4 · Contract 0.3.0 · 24/10/2026
+
+1. TÓM TẮT LUỒNG
+1) Rule scheduler/nguồn nghiệp vụ tạo read model/snapshot và cập nhật cảnh báo theo quyền, độc lập người đang mở trang.
+2) S33/S34/S35/S36/S37/S38/S39 đọc số liệu và analysisRef; GET không tạo LLM call.
+3) Người dùng click chi tiết: S43 GET analysisId, kiểm tra quyền hiện tại, hiện metrics/context/evidence và systemSummary theo mẫu.
+4) READY: hiện lastSuccess đúng snapshot. QUEUED/RUNNING: theo dõi activeJobId, không tạo thêm job.
+5) NOT_REQUESTED+allowed: đúng một mutation REUSE_OR_CREATE cho lượt mở có chủ ý. StrictMode/refocus không nhân đôi; BE idempotency+coalesce.
+6) BE adapter gọi LLM có sẵn trên dữ liệu tối thiểu đã lọc; kiểm tra schema/citation/claim số. Output sai không thành READY.
+7) Poll job chỉ đọc, theo pollAfterMs 2–10 giây. Terminal refetch detail đúng analysisId. Dừng theo dõi sau 2 phút chỉ là PAUSED UI, không đổi JobDTO thành FAILED.
+8) Phân tích lại là click REGENERATE với key mới, không tự chạy khi nguồn/refocus thay đổi.
+9) S43 BOTTLENECK: người có canSubmit mở form verdict/comment, validate rồi createAnalysisFeedback; refetch feedback đúng detail. Không làm job/task/cảnh báo đổi.
+
+2. CÁC NHÓM STATE PHẢI TÁCH RIÊNG
+Explanation: NOT_REQUESTED / QUEUED / RUNNING / READY / FAILED / UNAVAILABLE.
+Job: QUEUED / RUNNING / SUCCEEDED / FAILED.
+Quality: SUFFICIENT / PARTIAL / INSUFFICIENT.
+Freshness: CURRENT / OUTDATED; hết hạn lưu trả 410, không là một chất lượng dữ liệu.
+Generation: allowed, blockedReason, retryAfterSeconds. Đây là policy hiện tại, không thay phân quyền BE.
+Feedback: CONFIRMED / REJECTED là ý kiến người quản lý, không tự làm nhận định nguồn đúng/sai hoặc sửa riskLevel.
+
+3. HÀNH VI TỪNG TÌNH HUỐNG
+READY: bắt buộc lastSuccess cùng snapshotId. Finding/recommendation chỉ tham chiếu metric/evidence của snapshot đó.
+QUEUED/RUNNING: giữ thông số và tổng hợp theo mẫu; chỉ panel AI chờ/chạy.
+FAILED/UNAVAILABLE: giữ metrics/systemSummary; hiện lỗi typed và retry khi policy cho phép, không retry tự động vô hạn.
+PARTIAL: null ở phần thiếu, limitations rõ; không kết luận quá tải khi thiếu capacity/remaining.
+INSUFFICIENT: nêu nguồn thiếu; generation có thể blocked, không dựng nhận định như đã quan sát.
+OUTDATED: giữ bản cũ bất biến, hiển thị thời điểm và mở latestAnalysisId khi có; không ghép metrics mới với lời cũ.
+Regenerate thất bại: được giữ lastSuccess cùng snapshot, báo lượt mới lỗi và thời gian bản đang xem.
+EXPIRED/410: lấy ref mới từ trang nguồn, không tự đoán ID.
+Mất quyền/403: cancel/remove cache nhạy cảm và từ chối đọc nguồn/job/lời cũ, kể cả URL đã biết.
+Kết quả đến muộn: chỉ cập nhật key analysisId cũ; abort FE không tự hủy job BE.
+Feedback lỗi 422/network: giữ comment. 403/409/410: giải thích mất quyền/bản đã cũ/hết hạn, không chuyển ý kiến sang snapshot mới tự động.
+
+4. QUY ƯỚC HTTP VÀ CACHE
+POST job: 200 khi reuse job đã SUCCEEDED; 202 khi QUEUED/RUNNING. Replay giữ receipt ban đầu, GET đọc trạng thái mới nhất.
+Lỗi provider sau khi nhận job: GET job HTTP 200/status FAILED/error typed. Không chờ API trả 5xx mới nhận biết job lỗi.
+Detail key: ['analytics', viewerId, 'detail', analysisId]. Job key: ['analytics', viewerId, 'job', jobId].
+Source mutation làm stale analytics/detail cùng scope, không ghi đè snapshot. Job/feedback chỉ làm mới detail/trạng thái ref liên quan.
+
+5. LOẠI NỘI DUNG TRÊN S43
+RISK: TASK hoặc PROJECT; số liệu trễ/độ sát hạn, nguồn so sánh, quy tắc và giới hạn; không phần trăm xác suất từ LLM.
+WORKLOAD: PERSON hoặc PROJECT; TODO/IN_PROGRESS, tách pending review, dự kiến gốc/hiện tại/còn lại/khả dụng.
+BOTTLENECK: TASK hoặc PROCESS; thời gian ở trạng thái/chờ nghiệm thu/vòng sửa và phản hồi người quản lý.
+SUMMARY: PROJECT hoặc UNIT; bộ KPI/highlight/tổng hợp theo mẫu và lời AI, đề xuất dẫn tới màn nghiệp vụ.
+METRIC: KPI cụ thể; công thức, mẫu số/đơn vị/kỳ, chuỗi số liệu và nguồn tạo thành chỉ số.
+
+Chi tiết DTO/API và giới hạn xử lý ở rules/LLM_ANALYSIS.md, api/API_CATALOG.md và mock/MOCK_MODELS.txt.

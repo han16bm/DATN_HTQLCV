@@ -1,0 +1,3022 @@
+ĐẶC TẢ MOCK MODEL CHO FRONTEND
+Phiên bản tài liệu: 0.4 | Contract đề xuất: 0.3.0 | Ngày: 23/10/2026
+
+Cập nhật rà dọn 31/10/2026: model hiện hành ở src/mocks/db.ts, seed/policy ở data.json. Session không trả projectRole/hạn token; membership và sessionExpiry vẫn giữ cho nghiệp vụ. Measure giữ basis và snapshot giữ scope đầy đủ để tính KPI/quyền, response chỉ giữ trường màn dùng. Alert model giữ handledBy, DTO dựng handler (PersonRef); ruleVersion lấy từ analysisPolicy. Nhóm policy nội bộ chỉ còn features/memberIds, không có API quản trị permission-groups. Danh sách lần nộp sort sequence/-sequence trước paginate, không giới hạn tổng lần nộp ở 100.
+
+Hạn task tương đối (31/10/2026): khi mở mock browser, lấy ngày thực tế tại Asia/Ho_Chi_Minh. Các task chưa hoàn thành/hủy và còn hạn tại seed.clock nhận dueAt là hôm nay + taskPolicy.dueInDays (6), giữ giờ seed 17:00; originalDueAt dời cùng khoảng để giữ chênh lệch kế hoạch. Nới dueAt của dự án nếu nhỏ hơn hạn task mới. Không sửa case quá hạn, task đã kết thúc, lịch sử/lần nộp/snapshot. Node tests không truyền ngày khởi tạo nên tiếp tục dùng mốc gốc; setClock không tự dời hạn.
+
+1. MỤC ĐÍCH VÀ PHẠM VI
+Đây là đặc tả để Codex viết fixture và MSW handler sau. Model mô tả bộ nhớ giả lập của FE, không phải thiết kế database/ERD của BE. UI gọi cùng API Gateway path trong API_CATALOG.md. MSW chặn HTTP; component không import fixture để render.
+Response DTO, request DTO, form model và mock model là các khái niệm riêng. DTO có đủ trường trong api/DTO_MODELS.md; các model bộ nhớ dưới đây dùng các DTO đọc và thêm lịch sử/state cần cho mock.
+
+2. QUY ƯỚC CHUNG
+- ID: chuỗi opaque, không tái sử dụng sau khi reset scenario trong một lượt test.
+- Entity có id, version số nguyên dương, createdAt, updatedAt UTC.
+- Mốc mock: 2026-10-23T10:05:00.000Z = 17:05 ngày 23/10/2026 tại Việt Nam. Snapshot phân tích mặc định chốt dữ liệu lúc 10:00Z, lời mô phỏng tạo lúc 10:01Z.
+- workDate, kỳ báo cáo: YYYY-MM-DD theo Asia/Ho_Chi_Minh. Event time: ISO UTC có Z.
+- Số phút là số nguyên. Không suy giờ công từ timer/trạng thái; không tự tính remaining = estimate - actual.
+- null là chưa có/không áp dụng khi DTO cho phép. [] là tập rỗng. undefined chỉ có ở input trước khi serialize và nghĩa là không gửi.
+- Không dùng faker ngẫu nhiên cho số liệu nghiệp vụ làm ảnh/chỉ số thay đổi qua mỗi reload.
+- Mutation hợp lệ: kiểm tra request/quyền/version trước, thay đổi các model liên quan đồng bộ, tăng version tài nguyên thay đổi và thêm audit.
+- Lỗi ở giữa thao tác: hoàn tác state bộ nhớ của thao tác đó; mock không chứng minh giao dịch phân tán BE.
+
+3. CÁC TẬP DỮ LIỆU NGHIỆP VỤ TRONG MOCK STORE
+Các model nghiệp vụ dưới đây giữ ID, không lưu trùng projection nhãn. UserDTO.unit, ProjectDTO.owner/unit, TaskDTO.assignee/project, MembershipDTO.user, TimeLogDTO.user, SubmissionDTO.submitter/reviewer, ReportDTO.author và AlertDTO.taskTitle/analysisRef được handler dựng khi trả response. Định nghĩa đầy đủ ở DTO_MODELS.md.
+
+3.1. users: array<UserModel>
+Tài khoản nội bộ. Không có mật khẩu/token trong model trả API.
+  - id: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Định danh do BE sinh, không tự đổi.
+  - version: integer; bắt buộc=Có. > 0; Phiên bản đọc; gửi qua If-Match nếu contract yêu cầu.
+  - createdAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm tạo UTC.
+  - updatedAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm cập nhật UTC; không dùng thay thời điểm chuyển trạng thái.
+  - username: string; bắt buộc=Có. độ dài ≥ 1; Tên đăng nhập nội bộ; trim đầu/cuối, giữ quy ước hoa/thường đã chốt.
+  - displayName: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 255; Họ tên hiển thị.
+  - email: string · email; bắt buộc=Có. Email; request trim rồi lowercase.
+  - unitId: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; ID đơn vị trong phạm vi được phép.
+  - systemRole: enum(EMPLOYEE, MANAGER, ADMIN); bắt buộc=Có. Vai trò hệ thống, không tự cấp quyền mọi dự án.
+  - status: enum(ACTIVE, LOCKED); bắt buộc=Có. Trạng thái theo enum của đúng model; không dùng chung enum cho mọi phân hệ.
+
+3.2. units: array<UnitModel>
+Đơn vị; parentId null là gốc. Không tạo chu trình.
+  - id: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Định danh do BE sinh, không tự đổi.
+  - version: integer; bắt buộc=Có. > 0; Phiên bản đọc; gửi qua If-Match nếu contract yêu cầu.
+  - createdAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm tạo UTC.
+  - updatedAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm cập nhật UTC; không dùng thay thời điểm chuyển trạng thái.
+  - name: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 255; Tên hiển thị sau trim.
+  - parentId: string / null; bắt buộc=Có. Đơn vị cấp trên; null là không có.
+  - managerId: string / null; bắt buộc=Có. Người quản lý đơn vị; null là chưa chỉ định.
+  - status: enum(ACTIVE, INACTIVE); bắt buộc=Có. Trạng thái theo enum của đúng model; không dùng chung enum cho mọi phân hệ.
+
+3.3. teams: array<TeamModel>
+Nhóm; memberIds không tự cấp quyền dự án.
+  - id: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Định danh do BE sinh, không tự đổi.
+  - version: integer; bắt buộc=Có. > 0; Phiên bản đọc; gửi qua If-Match nếu contract yêu cầu.
+  - createdAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm tạo UTC.
+  - updatedAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm cập nhật UTC; không dùng thay thời điểm chuyển trạng thái.
+  - name: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 255; Tên hiển thị sau trim.
+  - unitId: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; ID đơn vị trong phạm vi được phép.
+  - memberIds: array<string>; bắt buộc=Có. Danh sách ID tài khoản thuộc nhóm; không tạo quyền dự án.
+  - status: enum(ACTIVE, INACTIVE); bắt buộc=Có. Trạng thái theo enum của đúng model; không dùng chung enum cho mọi phân hệ.
+
+3.4. projects: array<ProjectModel>
+Kế hoạch/trạng thái dự án, liên kết ownerId/unitId.
+  - id: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Định danh do BE sinh, không tự đổi.
+  - version: integer; bắt buộc=Có. > 0; Phiên bản đọc; gửi qua If-Match nếu contract yêu cầu.
+  - createdAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm tạo UTC.
+  - updatedAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm cập nhật UTC; không dùng thay thời điểm chuyển trạng thái.
+  - code: string; bắt buộc=Có. độ dài ≥ 1; Mã dự án duy nhất; không sửa bằng ProjectPatch.
+  - name: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 255; Tên hiển thị sau trim.
+  - objective: string; bắt buộc=Có. độ dài ≤ 10000; Mục tiêu dự án.
+  - unitId: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; ID đơn vị trong phạm vi được phép.
+  - ownerId: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Người phụ trách hoạt động; đổi owner đồng bộ tư cách và quyền trên dự án.
+  - startDate: string · YYYY-MM-DD; bắt buộc=Có. Ngày bắt đầu kế hoạch theo ngày Việt Nam.
+  - dueAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Hạn hiện tại đủ ngày/giờ, ISO UTC có Z.
+  - status: enum(PLANNED, ACTIVE, COMPLETED, CANCELLED); bắt buộc=Có. Trạng thái theo enum của đúng model; không dùng chung enum cho mọi phân hệ.
+  - completedAt: string · UTC ISO 8601 có Z / null; bắt buộc=Có. Thời điểm nghiệm thu hoàn thành, không phải thời điểm nộp.
+  - cancelledAt: string · UTC ISO 8601 có Z / null; bắt buộc=Có. Thời điểm hủy hợp lệ.
+
+3.5. members: array<MembershipModel>
+Tư cách thành viên theo projectId/userId; endedAt null đang hiệu lực.
+  - id: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Định danh do BE sinh, không tự đổi.
+  - version: integer; bắt buộc=Có. > 0; Phiên bản đọc; gửi qua If-Match nếu contract yêu cầu.
+  - projectId: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; ID dự án; không đồng nghĩa ID service.
+  - userId: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Tài khoản của thành viên/người ghi theo đúng model.
+  - projectRole: enum(OWNER, MANAGER, MEMBER); bắt buộc=Có. Vai trò xác định thao tác cố định theo role hệ thống và phạm vi dự án.
+  - endedAt: string · UTC ISO 8601 có Z / null; bắt buộc=Có. Kết thúc tư cách; null khi đang hiệu lực.
+
+3.6. tasks: array<TaskModel>
+Một assignee hiện tại khi công việc mở; giữ thông tin cuối khi đã đóng.
+  - id: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Định danh do BE sinh, không tự đổi.
+  - version: integer; bắt buộc=Có. > 0; Phiên bản đọc; gửi qua If-Match nếu contract yêu cầu.
+  - createdAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm tạo UTC.
+  - updatedAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm cập nhật UTC; không dùng thay thời điểm chuyển trạng thái.
+  - projectId: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; ID dự án; không đồng nghĩa ID service.
+  - title: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 255; Tên công việc 1–255 ký tự sau trim.
+  - description: string / null; bắt buộc=Có. Mô tả; task nhận null để bỏ mô tả.
+  - acceptanceCriteria: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 2000; Tiêu chí dùng đối chiếu khi nghiệm thu.
+  - priority: enum(LOW, NORMAL, HIGH, URGENT); bắt buộc=Có. LOW/NORMAL/HIGH/URGENT; UI ánh xạ nhãn Việt.
+  - dueAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Hạn hiện tại đủ ngày/giờ, ISO UTC có Z.
+  - originalDueAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Hạn ban đầu, không đổi khi điều chỉnh kế hoạch.
+  - estimatedMinutes: integer; bắt buộc=Có. > 0; Phút dự kiến hiện tại, số nguyên dương.
+  - originalEstimatedMinutes: integer; bắt buộc=Có. > 0; Phút dự kiến ban đầu, không ghi đè.
+  - remainingMinutes: integer / null; bắt buộc=Có. Phút còn lại được nhập riêng; null là chưa cập nhật, không tự suy bằng phép trừ.
+  - assigneeId: string / null; bắt buộc=Có. Người chịu trách nhiệm hiện tại với việc mở; với việc kết thúc, giữ người phụ trách cuối theo D15.
+  - status: enum(NEW, TODO, IN_PROGRESS, PENDING_REVIEW, COMPLETED, CANCELLED); bắt buộc=Có. Trạng thái theo enum của đúng model; không dùng chung enum cho mọi phân hệ.
+  - statusChangedAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Lần gần nhất vào trạng thái hiện tại; không tăng khi chỉ ghi giờ hoặc sửa mô tả.
+  - firstStartedAt: string · UTC ISO 8601 có Z / null; bắt buộc=Có. Lần bắt đầu đầu tiên; giữ khi tạm dừng/bắt đầu lại hoặc bàn giao.
+  - completedAt: string · UTC ISO 8601 có Z / null; bắt buộc=Có. Thời điểm nghiệm thu hoàn thành, không phải thời điểm nộp.
+  - cancelledAt: string · UTC ISO 8601 có Z / null; bắt buộc=Có. Thời điểm hủy hợp lệ.
+  - actualMinutes: integer; bắt buộc=Có. ≥ 0; Tổng phút của nhật ký ACTIVE, do BE tính.
+  - latestSubmissionId: string / null; bắt buộc=Có. ID lần nộp gần nhất, không sửa từ TaskPatch.
+  - isOverdue: boolean; bắt buộc=Có. Cờ BE tính từ hạn hiện tại và trạng thái, không phải một trạng thái riêng.
+
+3.7. timeLogs: array<TimeLogModel>
+ACTIVE được cộng tổng, VOID vẫn giữ và không cộng tổng.
+  - id: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Định danh do BE sinh, không tự đổi.
+  - version: integer; bắt buộc=Có. > 0; Phiên bản đọc; gửi qua If-Match nếu contract yêu cầu.
+  - createdAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm tạo UTC.
+  - updatedAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm cập nhật UTC; không dùng thay thời điểm chuyển trạng thái.
+  - taskId: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; ID công việc; BE kiểm tra phạm vi và quyền hiện tại.
+  - userId: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Tài khoản của thành viên/người ghi theo đúng model.
+  - workDate: string · YYYY-MM-DD; bắt buộc=Có. Ngày làm việc YYYY-MM-DD theo Asia/Ho_Chi_Minh.
+  - minutes: integer; bắt buộc=Có. > 0; ≤ 1440; Phút nguyên dương; từng log ≤1440, tổng mọi log/người/ngày do BE kiểm tra.
+  - description: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 2000; Mô tả; task nhận null để bỏ mô tả.
+  - status: enum(ACTIVE, VOID); bắt buộc=Có. Trạng thái theo enum của đúng model; không dùng chung enum cho mọi phân hệ.
+  - voidReason: string / null; bắt buộc=Có. Lý do loại nhật ký khỏi tổng; null nếu còn hiệu lực.
+
+3.8. submissions: array<SubmissionModel>
+Lần nộp có sequence, snapshot hạn/giờ tại lúc nộp.
+  - id: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Định danh do BE sinh, không tự đổi.
+  - version: integer; bắt buộc=Có. > 0; Phiên bản đọc; gửi qua If-Match nếu contract yêu cầu.
+  - createdAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm tạo UTC.
+  - updatedAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm cập nhật UTC; không dùng thay thời điểm chuyển trạng thái.
+  - taskId: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; ID công việc; BE kiểm tra phạm vi và quyền hiện tại.
+  - sequence: integer; bắt buộc=Có. > 0; Số thứ tự lần nộp tăng dần trong công việc.
+  - submittedBy: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Người nộp do server xác định từ phiên.
+  - submittedAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm gửi/nộp do server lưu.
+  - summary: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 2000; Tóm tắt kết quả bắt buộc.
+  - links: array<string>; bắt buộc=Có. Mảng liên kết HTTP/HTTPS tùy chọn.
+  - attachmentIds: array<string>; bắt buộc=Có. Tệp READY đúng quyền/công việc; tối đa theo contract và policy.
+  - dueAtSnapshot: string · UTC ISO 8601 có Z; bắt buộc=Có. Hạn tại lần nộp, giữ để đánh giá nộp/hoàn tất muộn.
+  - actualMinutesSnapshot: integer; bắt buộc=Có. ≥ 0; Tổng phút tại lúc nộp.
+  - status: enum(PENDING, ACCEPTED, REVISION_REQUESTED); bắt buộc=Có. Trạng thái theo enum của đúng model; không dùng chung enum cho mọi phân hệ.
+  - reviewedBy: string / null; bắt buộc=Có. Người xét có quyền, khác người nộp.
+  - reviewedAt: string · UTC ISO 8601 có Z / null; bắt buộc=Có. Thời điểm quyết định nghiệm thu.
+  - reviewComment: string / null; bắt buộc=Có. Nhận xét đã lưu của quyết định.
+  - requestedChanges: string / null; bắt buộc=Có. Nội dung cần sửa; bắt buộc khi yêu cầu chỉnh sửa.
+
+3.9. reports: array<ReportModel>
+DRAFT riêng tác giả; SUBMITTED có snapshot bất biến.
+  - id: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Định danh do BE sinh, không tự đổi.
+  - version: integer; bắt buộc=Có. > 0; Phiên bản đọc; gửi qua If-Match nếu contract yêu cầu.
+  - createdAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm tạo UTC.
+  - updatedAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm cập nhật UTC; không dùng thay thời điểm chuyển trạng thái.
+  - projectId: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; ID dự án; không đồng nghĩa ID service.
+  - periodType: enum(DAILY, WEEKLY); bắt buộc=Có. DAILY hoặc WEEKLY; tuần từ thứ Hai theo Việt Nam.
+  - periodStart: string · YYYY-MM-DD; bắt buộc=Có. Ngày đầu kỳ, không ở tương lai.
+  - authorId: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Tác giả do server gắn theo phiên.
+  - status: enum(DRAFT, SUBMITTED); bắt buộc=Có. Trạng thái theo enum của đúng model; không dùng chung enum cho mọi phân hệ.
+  - achievements: string; bắt buộc=Có. độ dài ≤ 10000; Kết quả thực hiện; nháp được rỗng, khi gửi phải có.
+  - blockers: string; bắt buộc=Có. độ dài ≤ 10000; Khó khăn cần ghi nhận, được rỗng.
+  - nextPlan: string; bắt buộc=Có. độ dài ≤ 10000; Kế hoạch tiếp theo; nháp được rỗng, khi gửi phải có.
+  - selectedTaskIds: array<string>; bắt buộc=Có. Các công việc hợp lệ được chọn trong preview của đúng kỳ.
+  - zeroTimeReason: string / null; bắt buộc=Có. Giải thích khi gửi báo cáo có tổng 0 phút.
+  - submittedAt: string · UTC ISO 8601 có Z / null; bắt buộc=Có. Thời điểm gửi/nộp do server lưu.
+  - snapshot: Reports.ReportPreviewDTO / null; bắt buộc=Có. Bản chốt từ dữ liệu server tại lúc gửi; null khi nháp, bất biến sau gửi.
+
+3.10. attachments: array<AttachmentModel>
+Metadata tệp; dữ liệu byte ở files, không trả đường dẫn nội bộ.
+  - id: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Định danh do BE sinh, không tự đổi.
+  - version: integer; bắt buộc=Có. > 0; Phiên bản đọc; gửi qua If-Match nếu contract yêu cầu.
+  - createdAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm tạo UTC.
+  - updatedAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm cập nhật UTC; không dùng thay thời điểm chuyển trạng thái.
+  - taskId: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; ID công việc; BE kiểm tra phạm vi và quyền hiện tại.
+  - uploadedBy: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Người tải lên từ phiên.
+  - filename: string; bắt buộc=Có. độ dài ≥ 1; Tên tệp đã nhận.
+  - mimeType: string; bắt buộc=Có. độ dài ≥ 1; Loại nội dung đã xác minh theo chính sách BE.
+  - sizeBytes: integer; bắt buộc=Có. > 0; Dung lượng tệp tính byte.
+  - status: enum(READY, REJECTED); bắt buộc=Có. Trạng thái theo enum của đúng model; không dùng chung enum cho mọi phân hệ.
+
+3.11. alerts: array<AlertModel>
+Bằng chứng tách khỏi trạng thái xử lý, không sửa task khi đóng alert.
+  - id: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Định danh do BE sinh, không tự đổi.
+  - version: integer; bắt buộc=Có. > 0; Phiên bản đọc; gửi qua If-Match nếu contract yêu cầu.
+  - createdAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm tạo UTC.
+  - updatedAt: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm cập nhật UTC; không dùng thay thời điểm chuyển trạng thái.
+  - projectId: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; ID dự án; không đồng nghĩa ID service.
+  - taskId: string / null; bắt buộc=Có. ID công việc; BE kiểm tra phạm vi và quyền hiện tại.
+  - type: enum(DEADLINE_RISK, OVERDUE, WORKLOAD, BOTTLENECK, DATA_QUALITY); bắt buộc=Có. Loại cảnh báo.
+  - severity: enum(INFO, LOW, MEDIUM, HIGH, CRITICAL); bắt buộc=Có. Mức độ cảnh báo, khác trạng thái xử lý.
+  - status: enum(UNREAD, READ, IN_PROGRESS, RESOLVED, DISMISSED); bắt buộc=Có. Trạng thái theo enum của đúng model; không dùng chung enum cho mọi phân hệ.
+  - conditionActive: boolean; bắt buộc=Có. Điều kiện nguồn còn tồn tại; không sửa bằng AlertPatch.
+  - evidence: array<string>; bắt buộc=Có. Căn cứ cho nhận định, không phải lệnh thực hiện.
+  - dataAsOf: string · UTC ISO 8601 có Z; bắt buộc=Có. Thời điểm số liệu nguồn, không trình bày dữ liệu cũ như mới.
+  - methodVersion: string; bắt buộc=Có. Phiên bản phương pháp để đối chiếu.
+  - resolutionNote: string / null; bắt buộc=Có. Hướng xử lý/lý do; bắt buộc với trạng thái xử lý khác READ.
+  - handledBy: string / null; bắt buộc=Có. Người xử lý từ phiên.
+  - handledAt: string · UTC ISO 8601 có Z / null; bắt buộc=Có. Thời điểm xử lý cảnh báo.
+
+3.12. audits: array<AuditModel>
+Lịch sử ai/lúc nào/trước/sau/lý do; không đưa credential vào audit.
+  - id: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Định danh do BE sinh, không tự đổi.
+  - entityType: string; bắt buộc=Có. Loại đối tượng lịch sử.
+  - entityId: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; ID đối tượng lịch sử.
+  - actorId: string; bắt buộc=Có. độ dài ≥ 1; độ dài ≤ 100; Người thực hiện thao tác.
+  - action: string; bắt buộc=Có. Tên thao tác đã lưu thành công.
+  - at: string · UTC ISO 8601 có Z; bắt buộc=Có. Mốc sự kiện UTC.
+  - before: JSON value / null; bắt buộc=Có. Dữ liệu trước thay đổi, không chứa mật khẩu/token.
+  - after: JSON value / null; bắt buộc=Có. Dữ liệu sau thay đổi, không chứa mật khẩu/token.
+  - reason: string / null; bắt buộc=Có. Lý do của thao tác, trim và không được để trống khi bắt buộc.
+
+4. MODEL NỘI BỘ BỔ SUNG, KHÔNG TRẢ TRỰC TIẾP QUA API
+
+4.1 AssignmentModel
+  - id: ID, bắt buộc.
+  - taskId: ID công việc, bắt buộc.
+  - userId: ID người được phân công, bắt buộc.
+  - startedAt: UTC, bắt buộc.
+  - endedAt: UTC hoặc null; null là phân công còn hiệu lực.
+  - reason: string hoặc null; bàn giao có lý do.
+  - Invariant: mỗi task đang mở có tối đa một assignment chưa kết thúc; NEW không có assignment.
+
+4.2 AnalysisJobModel (thay JobModel cũ)
+  - public: Analytics.AnalysisJobDTO trong từ điển DTO mới.
+  - requestedBy, scopeFingerprint: ID/ngữ cảnh quyền nội bộ.
+  - generationMode, modelConfigAlias, promptVersion, inputSnapshotHash: cố định khi nhận job.
+  - scenario, scheduledStartAt, scheduledFinishAt: điều khiển mock clock/timer.
+  - Không dùng polls để chuyển trạng thái. GET job chỉ đọc; clock/scheduler mới đổi QUEUED ->RUNNING ->SUCCEEDED/FAILED.
+
+4.3 CredentialStore
+  - Map userId -> mật khẩu mẫu; chỉ phát triển/test.
+  - Mật khẩu mẫu đề xuất Mock@12345; không có trong UserDTO, cache, audit hoặc log.
+
+4.4 SessionStore
+  - Map opaqueMockToken -> userId; chỉ người ACTIVE có phiên hợp lệ.
+  - Thu hồi phiên khi logout/khóa/cấp lại mật khẩu theo operation.
+  - Mock token không phải JWT; cookie refresh mock không chứng minh bảo mật production.
+
+4.5 IdempotencyStore
+  - Key phạm vi: viewerId + operationId + Idempotency-Key.
+  - fingerprint: hash method + path đã chuẩn hóa + payload đã chuẩn hóa, gồm metadata/tệp nếu upload.
+  - status: HTTP status kết quả đầu.
+  - data: response đã validate.
+  - Cùng key/cùng fingerprint trả lại kết quả; cùng key khác payload trả 409; không nhân đôi audit hoặc giờ công.
+
+4.6 FileStore
+  - Map attachmentId -> byte/File/Blob giả.
+  - Metadata phải khớp filename/mimeType/sizeBytes; chỉ READY được dùng làm minh chứng.
+  - File lỗi/hỏng/oversize là scenario riêng; không ghi dữ liệu nhị phân vào Query cache.
+
+4.7 MockControl
+  - clock: UTC cố định của scenario.
+  - sequence: integer tăng sinh ID, bắt đầu 100.
+  - pendingReports: số báo cáo cần gửi theo projectId để kiểm tra đóng dự án, là fixture điều khiển.
+  - capacityByUserDate: fixture optional cho workload; thiếu phải trả null kèm quality, không mặc định 8 giờ/ngày.
+  - Không có control scenario trong giao diện người dùng production.
+
+5. PERSONA VÀ QUYỀN
+  admin/u-admin: ADMIN, quản trị tài khoản/tổ chức, không membership p-main.
+  minh/u-pm: MANAGER, OWNER p-main; PROJECT_MANAGE, MEMBERS_MANAGE, TASKS_MANAGE, TASKS_REVIEW, ANALYTICS_VIEW, ALERTS_MANAGE.
+  lan/u-lan: EMPLOYEE, MEMBER p-main, thực hiện việc được giao và báo cáo của mình.
+  huy/u-huy: EMPLOYEE, MEMBER p-main, người nộp kết quả chờ xét.
+  other/u-other: OWNER p-other, không là thành viên p-main; kiểm tra dữ liệu ngoài phạm vi p-main.
+  locked/u-locked: LOCKED, không có phiên hoạt động.
+  Quyền hệ thống không thay thế quyền dự án. Reviewer khác submitter kể cả khi một người có nhiều vai trò.
+
+6. BỘ DỮ LIỆU CƠ SỞ (MINIMAL)
+Các giá trị sau là mẫu cố định để triển khai. Các quan hệ đều dùng ID; không copy object User vào mỗi Task.
+
+6.1. users
+[
+  {
+    "id": "u-admin",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-01T02:00:00.000Z",
+    "username": "admin",
+    "displayName": "Quản trị hệ thống",
+    "email": "admin@example.test",
+    "unitId": "unit-product",
+    "systemRole": "ADMIN",
+    "status": "ACTIVE"
+  },
+  {
+    "id": "u-pm",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-01T02:00:00.000Z",
+    "username": "minh",
+    "displayName": "Nguyễn Minh",
+    "email": "minh@example.test",
+    "unitId": "unit-product",
+    "systemRole": "MANAGER",
+    "status": "ACTIVE"
+  },
+  {
+    "id": "u-lan",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-01T02:00:00.000Z",
+    "username": "lan",
+    "displayName": "Trần Lan",
+    "email": "lan@example.test",
+    "unitId": "unit-product",
+    "systemRole": "EMPLOYEE",
+    "status": "ACTIVE"
+  },
+  {
+    "id": "u-huy",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-01T02:00:00.000Z",
+    "username": "huy",
+    "displayName": "Nguyễn Huy",
+    "email": "huy@example.test",
+    "unitId": "unit-product",
+    "systemRole": "EMPLOYEE",
+    "status": "ACTIVE"
+  },
+  {
+    "id": "u-other",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-01T02:00:00.000Z",
+    "username": "other",
+    "displayName": "Người dùng dự án khác",
+    "email": "other@example.test",
+    "unitId": "unit-tech",
+    "systemRole": "MANAGER",
+    "status": "ACTIVE"
+  },
+  {
+    "id": "u-locked",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-01T02:00:00.000Z",
+    "username": "locked",
+    "displayName": "Tài khoản đã khóa",
+    "email": "locked@example.test",
+    "unitId": "unit-product",
+    "systemRole": "EMPLOYEE",
+    "status": "LOCKED"
+  }
+]
+
+6.2. units
+[
+  {
+    "id": "unit-product",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-01T02:00:00.000Z",
+    "name": "Phòng sản phẩm",
+    "parentId": null,
+    "managerId": "u-pm",
+    "status": "ACTIVE"
+  },
+  {
+    "id": "unit-tech",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-01T02:00:00.000Z",
+    "name": "Phòng kỹ thuật",
+    "parentId": null,
+    "managerId": "u-other",
+    "status": "ACTIVE"
+  }
+]
+
+6.3. teams
+[
+  {
+    "id": "team-main",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-01T02:00:00.000Z",
+    "name": "Nhóm phát triển",
+    "unitId": "unit-product",
+    "memberIds": [
+      "u-lan",
+      "u-huy"
+    ],
+    "status": "ACTIVE"
+  }
+]
+
+6.4. projects
+[
+  {
+    "id": "p-main",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-01T02:00:00.000Z",
+    "code": "MAIN",
+    "name": "Cổng quản lý nội bộ",
+    "objective": "Thống nhất quy trình công việc",
+    "unitId": "unit-product",
+    "ownerId": "u-pm",
+    "startDate": "2026-10-01",
+    "dueAt": "2026-11-30T10:00:00.000Z",
+    "status": "ACTIVE",
+    "completedAt": null,
+    "cancelledAt": null
+  },
+  {
+    "id": "p-other",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-01T02:00:00.000Z",
+    "code": "OTHER",
+    "name": "Dự án ngoài phạm vi",
+    "objective": "Kiểm tra giới hạn truy cập",
+    "unitId": "unit-tech",
+    "ownerId": "u-other",
+    "startDate": "2026-10-01",
+    "dueAt": "2026-12-30T10:00:00.000Z",
+    "status": "ACTIVE",
+    "completedAt": null,
+    "cancelledAt": null
+  }
+]
+
+6.5. members
+[
+  {
+    "id": "m-pm",
+    "version": 1,
+    "projectId": "p-main",
+    "userId": "u-pm",
+    "projectRole": "OWNER",
+    "endedAt": null
+  },
+  {
+    "id": "m-lan",
+    "version": 1,
+    "projectId": "p-main",
+    "userId": "u-lan",
+    "projectRole": "MEMBER",
+    "endedAt": null
+  },
+  {
+    "id": "m-huy",
+    "version": 1,
+    "projectId": "p-main",
+    "userId": "u-huy",
+    "projectRole": "MEMBER",
+    "endedAt": null
+  },
+  {
+    "id": "m-other",
+    "version": 1,
+    "projectId": "p-other",
+    "userId": "u-other",
+    "projectRole": "OWNER",
+    "endedAt": null
+  },
+  {
+    "id": "m-pm-planned",
+    "version": 1,
+    "projectId": "p-planned",
+    "userId": "u-pm",
+    "projectRole": "OWNER",
+    "endedAt": null
+  }
+]
+
+6.6. tasks
+[
+  {
+    "id": "t-1",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-01T02:00:00.000Z",
+    "projectId": "p-main",
+    "title": "Công việc mới",
+    "description": "Dữ liệu minh họa cho phát triển FE",
+    "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
+    "priority": "NORMAL",
+    "dueAt": "2026-10-26T10:00:00.000Z",
+    "originalDueAt": "2026-10-26T10:00:00.000Z",
+    "estimatedMinutes": 480,
+    "originalEstimatedMinutes": 480,
+    "remainingMinutes": null,
+    "assigneeId": null,
+    "status": "NEW",
+    "statusChangedAt": "2026-10-01T02:00:00.000Z",
+    "firstStartedAt": null,
+    "completedAt": null,
+    "cancelledAt": null,
+    "actualMinutes": 0,
+    "latestSubmissionId": null,
+    "isOverdue": false
+  },
+  {
+    "id": "t-2",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-22T02:00:00.000Z",
+    "projectId": "p-main",
+    "title": "Kiểm tra phân quyền",
+    "description": "Dữ liệu minh họa cho phát triển FE",
+    "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
+    "priority": "NORMAL",
+    "dueAt": "2026-10-26T10:00:00.000Z",
+    "originalDueAt": "2026-10-26T10:00:00.000Z",
+    "estimatedMinutes": 480,
+    "originalEstimatedMinutes": 480,
+    "remainingMinutes": null,
+    "assigneeId": "u-lan",
+    "status": "TODO",
+    "statusChangedAt": "2026-10-22T02:00:00.000Z",
+    "firstStartedAt": null,
+    "completedAt": null,
+    "cancelledAt": null,
+    "actualMinutes": 0,
+    "latestSubmissionId": null,
+    "isOverdue": false
+  },
+  {
+    "id": "t-3",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-23T09:00:00.000Z",
+    "projectId": "p-main",
+    "title": "Thiết kế luồng giao việc",
+    "description": "Dữ liệu minh họa cho phát triển FE",
+    "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
+    "priority": "NORMAL",
+    "dueAt": "2026-10-26T10:00:00.000Z",
+    "originalDueAt": "2026-10-26T10:00:00.000Z",
+    "estimatedMinutes": 480,
+    "originalEstimatedMinutes": 480,
+    "remainingMinutes": 300,
+    "assigneeId": "u-lan",
+    "status": "IN_PROGRESS",
+    "statusChangedAt": "2026-10-22T02:00:00.000Z",
+    "firstStartedAt": "2026-10-22T02:00:00.000Z",
+    "completedAt": null,
+    "cancelledAt": null,
+    "actualMinutes": 180,
+    "latestSubmissionId": null,
+    "isOverdue": false
+  },
+  {
+    "id": "t-4",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-22T09:00:00.000Z",
+    "projectId": "p-main",
+    "title": "API báo cáo tuần",
+    "description": "Dữ liệu minh họa cho phát triển FE",
+    "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
+    "priority": "NORMAL",
+    "dueAt": "2026-10-22T10:00:00.000Z",
+    "originalDueAt": "2026-10-26T10:00:00.000Z",
+    "estimatedMinutes": 480,
+    "originalEstimatedMinutes": 480,
+    "remainingMinutes": null,
+    "assigneeId": "u-huy",
+    "status": "PENDING_REVIEW",
+    "statusChangedAt": "2026-10-22T09:00:00.000Z",
+    "firstStartedAt": "2026-10-22T02:00:00.000Z",
+    "completedAt": null,
+    "cancelledAt": null,
+    "actualMinutes": 120,
+    "latestSubmissionId": "s-pending",
+    "isOverdue": true
+  },
+  {
+    "id": "t-5",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-22T09:00:00.000Z",
+    "projectId": "p-main",
+    "title": "Chuẩn hóa biểu mẫu",
+    "description": "Dữ liệu minh họa cho phát triển FE",
+    "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
+    "priority": "NORMAL",
+    "dueAt": "2026-10-26T10:00:00.000Z",
+    "originalDueAt": "2026-10-26T10:00:00.000Z",
+    "estimatedMinutes": 480,
+    "originalEstimatedMinutes": 480,
+    "remainingMinutes": null,
+    "assigneeId": "u-lan",
+    "status": "COMPLETED",
+    "statusChangedAt": "2026-10-22T09:00:00.000Z",
+    "firstStartedAt": "2026-10-22T02:00:00.000Z",
+    "completedAt": "2026-10-22T09:00:00.000Z",
+    "cancelledAt": null,
+    "actualMinutes": 60,
+    "latestSubmissionId": "s-accepted",
+    "isOverdue": false
+  },
+  {
+    "id": "t-6",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-22T09:00:00.000Z",
+    "projectId": "p-main",
+    "title": "Phương án đã dừng",
+    "description": "Dữ liệu minh họa cho phát triển FE",
+    "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
+    "priority": "NORMAL",
+    "dueAt": "2026-10-26T10:00:00.000Z",
+    "originalDueAt": "2026-10-26T10:00:00.000Z",
+    "estimatedMinutes": 480,
+    "originalEstimatedMinutes": 480,
+    "remainingMinutes": null,
+    "assigneeId": "u-lan",
+    "status": "CANCELLED",
+    "statusChangedAt": "2026-10-22T09:00:00.000Z",
+    "firstStartedAt": null,
+    "completedAt": null,
+    "cancelledAt": "2026-10-22T09:00:00.000Z",
+    "actualMinutes": 0,
+    "latestSubmissionId": null,
+    "isOverdue": false
+  },
+  {
+    "id": "t-other",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-22T02:00:00.000Z",
+    "projectId": "p-other",
+    "title": "Công việc ngoài phạm vi",
+    "description": "Dữ liệu minh họa cho phát triển FE",
+    "acceptanceCriteria": "Đáp ứng các tình huống thành công và ngoại lệ",
+    "priority": "NORMAL",
+    "dueAt": "2026-10-26T10:00:00.000Z",
+    "originalDueAt": "2026-10-26T10:00:00.000Z",
+    "estimatedMinutes": 480,
+    "originalEstimatedMinutes": 480,
+    "remainingMinutes": null,
+    "assigneeId": "u-other",
+    "status": "TODO",
+    "statusChangedAt": "2026-10-22T02:00:00.000Z",
+    "firstStartedAt": null,
+    "completedAt": null,
+    "cancelledAt": null,
+    "actualMinutes": 0,
+    "latestSubmissionId": null,
+    "isOverdue": false
+  }
+]
+
+6.7. timeLogs
+[
+  {
+    "id": "tl-1",
+    "version": 1,
+    "createdAt": "2026-10-23T09:00:00.000Z",
+    "updatedAt": "2026-10-23T09:00:00.000Z",
+    "taskId": "t-3",
+    "userId": "u-lan",
+    "workDate": "2026-10-23",
+    "minutes": 180,
+    "description": "Thiết kế luồng thao tác",
+    "status": "ACTIVE",
+    "voidReason": null
+  },
+  {
+    "id": "tl-2",
+    "version": 1,
+    "createdAt": "2026-10-22T08:30:00.000Z",
+    "updatedAt": "2026-10-22T08:30:00.000Z",
+    "taskId": "t-4",
+    "userId": "u-huy",
+    "workDate": "2026-10-22",
+    "minutes": 120,
+    "description": "Xây dựng API báo cáo",
+    "status": "ACTIVE",
+    "voidReason": null
+  },
+  {
+    "id": "tl-3",
+    "version": 1,
+    "createdAt": "2026-10-22T07:30:00.000Z",
+    "updatedAt": "2026-10-22T07:30:00.000Z",
+    "taskId": "t-5",
+    "userId": "u-lan",
+    "workDate": "2026-10-22",
+    "minutes": 60,
+    "description": "Chuẩn hóa biểu mẫu",
+    "status": "ACTIVE",
+    "voidReason": null
+  }
+]
+
+6.8. submissions
+[
+  {
+    "id": "s-pending",
+    "version": 1,
+    "createdAt": "2026-10-22T09:00:00.000Z",
+    "updatedAt": "2026-10-22T09:00:00.000Z",
+    "taskId": "t-4",
+    "sequence": 1,
+    "submittedBy": "u-huy",
+    "submittedAt": "2026-10-22T09:00:00.000Z",
+    "summary": "Đã hoàn thiện API báo cáo",
+    "links": [],
+    "attachmentIds": [],
+    "dueAtSnapshot": "2026-10-22T10:00:00.000Z",
+    "actualMinutesSnapshot": 120,
+    "status": "PENDING",
+    "reviewedBy": null,
+    "reviewedAt": null,
+    "reviewComment": null,
+    "requestedChanges": null
+  },
+  {
+    "id": "s-accepted",
+    "version": 1,
+    "createdAt": "2026-10-22T08:00:00.000Z",
+    "updatedAt": "2026-10-22T09:00:00.000Z",
+    "taskId": "t-5",
+    "sequence": 1,
+    "submittedBy": "u-lan",
+    "submittedAt": "2026-10-22T08:00:00.000Z",
+    "summary": "Đã chuẩn hóa biểu mẫu",
+    "links": [],
+    "attachmentIds": [],
+    "dueAtSnapshot": "2026-10-26T10:00:00.000Z",
+    "actualMinutesSnapshot": 60,
+    "status": "ACCEPTED",
+    "reviewedBy": "u-pm",
+    "reviewedAt": "2026-10-22T09:00:00.000Z",
+    "reviewComment": "Đạt yêu cầu",
+    "requestedChanges": null
+  }
+]
+
+6.9. alerts
+[
+  {
+    "id": "alert-1",
+    "version": 1,
+    "createdAt": "2026-10-01T02:00:00.000Z",
+    "updatedAt": "2026-10-01T02:00:00.000Z",
+    "projectId": "p-main",
+    "taskId": "t-4",
+    "type": "BOTTLENECK",
+    "severity": "HIGH",
+    "status": "UNREAD",
+    "conditionActive": true,
+    "evidence": [
+      "Kết quả đang chờ nghiệm thu"
+    ],
+    "dataAsOf": "2026-10-23T10:00:00.000Z",
+    "methodVersion": "rules-v1",
+    "resolutionNote": null,
+    "handledBy": null,
+    "handledAt": null
+  }
+]
+
+6.10. assignments
+[
+  {
+    "id": "as-0",
+    "taskId": "t-2",
+    "userId": "u-lan",
+    "startedAt": "2026-10-22T02:00:00.000Z",
+    "endedAt": null,
+    "reason": null
+  },
+  {
+    "id": "as-1",
+    "taskId": "t-3",
+    "userId": "u-lan",
+    "startedAt": "2026-10-01T02:00:00.000Z",
+    "endedAt": null,
+    "reason": null
+  },
+  {
+    "id": "as-2",
+    "taskId": "t-4",
+    "userId": "u-huy",
+    "startedAt": "2026-10-01T02:00:00.000Z",
+    "endedAt": null,
+    "reason": null
+  },
+  {
+    "id": "as-3",
+    "taskId": "t-5",
+    "userId": "u-lan",
+    "startedAt": "2026-10-01T02:00:00.000Z",
+    "endedAt": "2026-10-22T09:00:00.000Z",
+    "reason": null
+  },
+  {
+    "id": "as-4",
+    "taskId": "t-6",
+    "userId": "u-lan",
+    "startedAt": "2026-10-01T02:00:00.000Z",
+    "endedAt": "2026-10-22T09:00:00.000Z",
+    "reason": null
+  },
+  {
+    "id": "as-5",
+    "taskId": "t-other",
+    "userId": "u-other",
+    "startedAt": "2026-10-22T02:00:00.000Z",
+    "endedAt": null,
+    "reason": null
+  }
+]
+
+7. SCENARIO FULL CHO MÀN S01-S43 (LLM CHI TIẾT Ở MỤC 12–16)
+FULL kế thừa MINIMAL và bổ sung các bản ghi sau; Codex tạo đủ DTO fields theo từ điển, không trả object thiếu trường.
+
+- Report r-draft: tác giả u-lan, project p-main, DAILY 2026-10-23; DRAFT; achievements/nextPlan có nội dung mẫu; selectedTaskIds=[t-3]; preview lấy tl-1 (180 phút), task t-3. DRAFT có snapshot=null và submittedAt=null, không bỏ hai field này khỏi DTO.
+- Report r-submitted: tác giả u-lan, p-main, DAILY 2026-10-22; SUBMITTED; snapshot task t-5, tổng 60 phút từ tl-3, dataAsOf và submittedAt 2026-10-22T10:00:00.000Z. Sửa dữ liệu task/log sau đó không đổi snapshot này.
+- Attachment a-flow: task t-4, uploadedBy u-huy, filename flow.pdf, MIME application/pdf, READY; bổ sung vào attachmentIds của s-pending. FileStore có byte PDF mẫu hợp lệ.
+- Attachment a-criteria: task t-3, uploadedBy u-lan, filename criteria.pdf, READY; tệp có thể được chọn ở S24 khi nộp.
+- Audit t-3: tạo -> phân công u-lan -> bắt đầu -> ghi tl-1; actor và at đúng thứ tự. S28 có lịch sử đọc được.
+- Audit t-4: điều chỉnh hạn từ 26/10 về 22/10 lúc 2026-10-22T03:00:00.000Z bởi u-pm, có changeReason; nộp lúc 09:00 giữ dueAtSnapshot của hạn mới.
+- Project history p-main: tạo -> thêm thành viên -> activate; cung cấp qua listProjectHistory.
+- Job mẫu trong FULL lấy từ analysisJobs mới; scenario llm-running dùng job cho an-risk-t4-001. Scope/type lấy từ snapshot, không nhận từ body cũ.
+- Scenario llm-failed dùng typed error PROVIDER_TIMEOUT; không còn errorCode/resultPath ở AnalysisJobDTO.
+- Analytics: dashboard/risks/workload/bottlenecks/summary tính từ fixture và metadata; ít nhất một mục nguy cơ, một điểm nghẽn, một workload thiếu capacity để kiểm tra null. Không nhét dự báo ngẫu nhiên vào từng lần GET.
+- Thêm project p-planned với owner/member hợp lệ để xem biến thể triển khai; các project đã kết thúc dùng scenario closed riêng, không đổi p-main trong default FULL.
+
+MINIMAL là căn cứ model dễ đối chiếu; FULL là mặc định để Codex kiểm tra tất cả màn. EMPTY không dùng thay FULL cho các màn chưa được triển khai.
+
+8. CÁC SCENARIO BẮT BUỘC
+- empty: list trả items=[], total=0; không đổi detail 404 thành entity rỗng.
+- slow: chậm khoảng 1,5 giây; xem loading và pending.
+- server-error: 503 ErrorDTO phẳng; giữ form nếu là mutation.
+- rate-limit: 429 ErrorDTO phẳng; không vòng retry vô hạn.
+- invalid-response: 200 nhưng sai một trường bắt buộc; phải thành ContractError, không vào cache.
+- forbidden: dùng admin không membership hoặc other để nhận 403, không lộ dữ liệu p-main.
+- expired-session: token không tồn tại, 401; auth adapter chỉ refresh single-flight một lần.
+- stale-version: đọc version 1, sửa bản ghi lên 2, gửi If-Match 1 -> 412; state không đổi.
+- duplicate-submit: cùng key/cùng payload -> cùng kết quả, không sinh thêm; key cũ khác payload ->409.
+- pending-review: t-4 khóa sửa/giao/giờ/hủy; reviewer khác u-huy mới được xét.
+- closed: task COMPLETED/CANCELLED và project COMPLETED/CANCELLED chỉ đọc.
+- zero-time-report: preview 0 phút; submit thiếu zeroTimeReason ->422; có lý do mới tiếp tục nếu các điều kiện còn lại hợp lệ.
+- no-capacity: workload capacity/utilization=null, hiển thị chưa đủ dữ liệu.
+- day-boundary: đổi mock clock để kiểm tra UTC/Việt Nam, thứ Hai/Chủ nhật và deadline đúng bằng giờ server.
+- upload-invalid: loại/dung lượng sai hoặc chưa READY; chặn nộp, giữ thông tin đã nhập.
+
+9. QUY TẮC THAY ĐỔI MODEL
+- NEW ->TODO qua assignTask, TODO ->IN_PROGRESS qua startTask, IN_PROGRESS ->TODO qua pauseTask có reason.
+- Bàn giao khi IN_PROGRESS theo D06 đề xuất: trở về TODO, kết thúc assignment cũ, mở assignment mới, giữ firstStartedAt và giờ người trước.
+- actualMinutes = tổng timeLogs ACTIVE theo task; dashboard giờ của từng người lấy timeLogs.userId, không gán lại giờ lịch sử cho assignee mới.
+- Update time log/VOID giữ lịch sử, có reason và version; tổng mọi công việc <=1440 phút/người/ngày.
+- Nộp: tạo Submission sequence mới, chụp dueAtSnapshot/actualMinutesSnapshot, task PENDING_REVIEW.
+- Chấp nhận: Submission ACCEPTED, task COMPLETED, completedAt; kết thúc assignment hiện tại.
+- Yêu cầu sửa: Submission REVISION_REQUESTED, task IN_PROGRESS; giữ lần nộp cũ và lý do/nội dung cần sửa.
+- Báo cáo: lưu DRAFT được thiếu nội dung; submit tính lại từ log nguồn, giữ snapshot bất biến, không tạo giờ công mới.
+- Thay deadline/estimate sau giao cần changeReason; originalDueAt/originalEstimatedMinutes giữ nguyên.
+- Chỉ đổi Task.statusChangedAt khi status đổi; updatedAt có thể đổi bởi chỉnh nội dung/giờ/phân công.
+- Alert update chỉ thay trạng thái xử lý/note/người xử lý, không thay evidence hay Task.status.
+- AI chỉ trả phân tích/đề xuất, không tự đổi Task/assignment/deadline.
+
+10. THỨ TỰ HANDLER SAU KHI CODEX TRIỂN KHAI
+Parse path/query/body -> lấy phiên -> kiểm tra phạm vi/quyền -> kiểm tra If-Match/idempotency -> kiểm tra trạng thái và invariant -> thay model đồng bộ -> thêm audit -> validate response -> trả JSON DTO trực tiếp.
+GET không làm thay đổi nghiệp vụ hoặc tiến trình job. Scheduler/clock điều khiển mô phỏng job nền; không dùng số lần poll để chuyển state.
+
+11. RESET VÀ ĐỐI CHIẾU
+Mỗi test bắt đầu bằng reset scenario đã chọn; không phụ thuộc test trước. Reload có thể reset state theo chính sách development; không dùng localStorage làm database nghiệp vụ. Browser/Node không tự chia sẻ state; nếu mock SSR, dùng bộ Node hoặc mock API server nhất quán theo rules/MSW_AND_INTEGRATION.md.
+Mọi field request và field server thay đổi của 79 operation được liệt kê ở api/API_CATALOG.md; mọi field DTO/nested object ở api/DTO_MODELS.md. Phải cập nhật đồng thời tài liệu, schema, fixture và handler khi đổi contract.
+
+
+12. MOCK STORE CHO LLM CÓ SẴN
+
+12.1 analysisSnapshots: array<AnalysisSnapshotModel>
+  Các field public theo Analytics.AnalysisSnapshotDTO: id, analysisId, sourceRevision, analysisType, title, subject, scope, dataAsOf, createdAt, expiresAt, calculationVersion, quality, metrics, context, series, evidence.
+  Snapshot bất biến. Giá trị/công thức do BE/mock rule tính; evidence đã lọc quyền. Không thêm score hoặc xác suất do LLM viết.
+
+12.2 analysisReadIndex / analysisRefs
+  Map(normalized scope + subject + sourceRevision + visibility fingerprint) -> AnalysisRefDTO.
+  Giữ ID ổn định theo read model. Kiểm tra quyền mỗi lần đọc; không cho người biết ID đọc snapshot ngoài quyền.
+  Mỗi KPI/row nguy cơ/row nhân viên/điểm nghẽn/highlight trả analysisRef tương ứng để mở S43.
+
+12.3 llmExplanations: array<LlmExplanationModel>
+  Theo LlmExplanationDTO: id, analysisId, snapshotId, locale, generatedAt, modelDisplayName, promptVersion, summary, findings, recommendations, limitations.
+  Lời mẫu cố định mô phỏng đầu ra LLM; MSW không gọi provider. Mỗi metricIds/evidenceIds phải tồn tại trong snapshot của lời đó.
+
+12.4 explanationStateByAnalysisId / freshnessByAnalysisId
+  State wrapper là dữ liệu có thể đổi: status, activeJobId, error, lastSuccess; freshness CURRENT/OUTDATED/latestAnalysisId; generation allowed/blockedReason.
+  Không sửa metrics của snapshot khi trạng thái AI đổi. lastSuccess được giữ nếu cùng snapshot và regenerate lỗi.
+
+12.5 analysisJobs
+  Public DTO và phần nội bộ theo mục 4.2. Idempotency dùng viewer+operation+key+fingerprint; coalesce theo scope/snapshot/prompt/model/locale.
+  REUSE_OR_CREATE trả job/kết quả đã có nếu hợp lệ; REGENERATE từ click rõ ràng. Không sinh job vô hạn do StrictMode/refocus/GET.
+
+12.6 mockLlmConfig
+  available=true, modelDisplayName=LLM cấu hình sẵn, promptVersion=analysis-vi-v1, configVersion=llm-adapter-v1.
+  Chỉ là cấu hình mẫu; không có key/provider URL thật. available=false tạo scenario LLM_NOT_CONFIGURED.
+
+12.7 Phép chiếu nhãn
+  PersonRef lấy từ users: id/displayName. EntityLabel lấy từ units/projects: id/name. ID phải khớp field gốc. Tên hiển thị không trở thành field FE được sửa qua Task/Report/Submission API.
+  Sau mutation đổi tên/đơn vị/phân công, handler dựng lại response và query bị ảnh hưởng. Snapshot phân tích/báo cáo đã chốt vẫn giữ bối cảnh đã chụp; nhãn tác giả hiện tại nằm ngoài snapshot không viết lại nội dung lịch sử.
+
+13. FIXTURE PHÂN TÍCH ĐẦY ĐỦ (5 LOẠI)
+JSON sau là mô tả dữ liệu mẫu, không phải implementation. Giá trị số đối chiếu được với bộ MINIMAL/FULL ở mục 6–7. Thời điểm dataAsOf là 17:00; mock clock 17:05 và lời AI tạo 17:01.
+
+{
+  "mockClock": "2026-10-23T10:05:00.000Z",
+  "analysisSnapshots": [
+    {
+      "id": "snap-risk-t4-001",
+      "analysisId": "an-risk-t4-001",
+      "sourceRevision": "p-main-src-20261023-v1",
+      "analysisType": "RISK",
+      "title": "API báo cáo tuần",
+      "subject": {
+        "kind": "TASK",
+        "taskId": "t-4"
+      },
+      "scope": {
+        "projectId": "p-main",
+        "from": "2026-10-01",
+        "to": "2026-10-23"
+      },
+      "dataAsOf": "2026-10-23T10:00:00.000Z",
+      "createdAt": "2026-10-23T10:00:00.000Z",
+      "expiresAt": "2026-10-30T10:00:00.000Z",
+      "calculationVersion": "business-rules-v2",
+      "quality": {
+        "status": "SUFFICIENT",
+        "missingFields": [],
+        "scopeLimited": false
+      },
+      "metrics": [
+        {
+          "id": "m-overdue",
+          "code": "OVERDUE_MINUTES",
+          "label": "Thời gian quá hạn",
+          "value": 1440,
+          "unit": "MINUTE",
+          "basis": "CURRENT",
+          "formula": "Thời điểm dữ liệu trừ hạn hoàn thành của công việc còn mở.",
+          "evidenceIds": [
+            "e-task"
+          ],
+          "missingFields": []
+        },
+        {
+          "id": "m-wait",
+          "code": "REVIEW_WAIT_MINUTES",
+          "label": "Chờ nghiệm thu",
+          "value": 1500,
+          "unit": "MINUTE",
+          "basis": "CURRENT",
+          "formula": "Thời điểm dữ liệu trừ thời điểm nộp kết quả đang chờ.",
+          "evidenceIds": [
+            "e-submission"
+          ],
+          "missingFields": []
+        },
+        {
+          "id": "m-actual",
+          "code": "ACTUAL_MINUTES",
+          "label": "Giờ công đã ghi",
+          "value": 120,
+          "unit": "MINUTE",
+          "basis": "CURRENT",
+          "formula": "Tổng số phút của các nhật ký còn hiệu lực.",
+          "evidenceIds": [
+            "e-log"
+          ],
+          "missingFields": []
+        },
+        {
+          "id": "m-revisions",
+          "code": "REVISION_COUNT",
+          "label": "Số lần yêu cầu sửa",
+          "value": 0,
+          "unit": "COUNT",
+          "basis": "CURRENT",
+          "formula": "Đếm các lần đã được yêu cầu chỉnh sửa.",
+          "evidenceIds": [
+            "e-submission"
+          ],
+          "missingFields": []
+        }
+      ],
+      "context": [
+        {
+          "key": "assignee",
+          "label": "Người thực hiện",
+          "value": "Nguyễn Huy",
+          "valueType": "TEXT"
+        },
+        {
+          "key": "status",
+          "label": "Trạng thái",
+          "value": "Chờ nghiệm thu",
+          "valueType": "TEXT"
+        },
+        {
+          "key": "dueAt",
+          "label": "Hạn hoàn thành",
+          "value": "2026-10-22T10:00:00.000Z",
+          "valueType": "UTC"
+        },
+        {
+          "key": "submittedAt",
+          "label": "Nộp kết quả",
+          "value": "2026-10-22T09:00:00.000Z",
+          "valueType": "UTC"
+        }
+      ],
+      "series": [],
+      "evidence": [
+        {
+          "id": "e-task",
+          "sourceType": "TASK",
+          "sourceId": "t-4",
+          "label": "Hạn hoàn thành 22/10/2026, 17:00",
+          "observedAt": "2026-10-23T10:00:00.000Z",
+          "action": {
+            "target": "TASK_DETAIL",
+            "taskId": "t-4",
+            "submissionId": null,
+            "reportId": null
+          }
+        },
+        {
+          "id": "e-submission",
+          "sourceType": "SUBMISSION",
+          "sourceId": "s-pending",
+          "label": "Huy nộp lần 1 lúc 22/10, 16:00; đang chờ nghiệm thu.",
+          "observedAt": "2026-10-22T09:00:00.000Z",
+          "action": {
+            "target": "SUBMISSION_REVIEW",
+            "taskId": "t-4",
+            "submissionId": "s-pending",
+            "reportId": null
+          }
+        },
+        {
+          "id": "e-log",
+          "sourceType": "TIME_LOG",
+          "sourceId": "tl-2",
+          "label": "Nhật ký hợp lệ 120 phút ngày 22/10/2026.",
+          "observedAt": "2026-10-22T08:30:00.000Z",
+          "action": {
+            "target": "TASK_DETAIL",
+            "taskId": "t-4",
+            "submissionId": null,
+            "reportId": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "snap-workload-lan-001",
+      "analysisId": "an-workload-lan-001",
+      "sourceRevision": "p-main-src-20261023-v1",
+      "analysisType": "WORKLOAD",
+      "title": "Khối lượng của Trần Lan",
+      "subject": {
+        "kind": "PERSON",
+        "userId": "u-lan"
+      },
+      "scope": {
+        "projectId": "p-main",
+        "from": "2026-10-01",
+        "to": "2026-10-23"
+      },
+      "dataAsOf": "2026-10-23T10:00:00.000Z",
+      "createdAt": "2026-10-23T10:00:00.000Z",
+      "expiresAt": "2026-10-30T10:00:00.000Z",
+      "calculationVersion": "business-rules-v2",
+      "quality": {
+        "status": "PARTIAL",
+        "missingFields": [
+          "remainingMinutes:t-2",
+          "capacityCalendar:u-lan"
+        ],
+        "scopeLimited": false
+      },
+      "metrics": [
+        {
+          "id": "m-open",
+          "code": "OPEN_TASKS",
+          "label": "Công việc đang nhận",
+          "value": 2,
+          "unit": "TASK",
+          "basis": "CURRENT",
+          "formula": "Số TODO/IN_PROGRESS hiện giao cho Lan.",
+          "evidenceIds": [
+            "e-task2",
+            "e-task3"
+          ],
+          "missingFields": []
+        },
+        {
+          "id": "m-estimate",
+          "code": "CURRENT_ESTIMATE",
+          "label": "Dự kiến hiện tại",
+          "value": 960,
+          "unit": "MINUTE",
+          "basis": "CURRENT",
+          "formula": "480 + 480 phút của hai công việc mở.",
+          "evidenceIds": [
+            "e-task2",
+            "e-task3"
+          ],
+          "missingFields": []
+        },
+        {
+          "id": "m-remaining",
+          "code": "REMAINING",
+          "label": "Tổng thời gian còn lại",
+          "value": null,
+          "unit": "MINUTE",
+          "basis": "CURRENT",
+          "formula": "Chỉ cộng tổng khi mọi việc trong phạm vi đã được cập nhật thời gian còn lại.",
+          "evidenceIds": [
+            "e-task2",
+            "e-task3"
+          ],
+          "missingFields": [
+            "remainingMinutes:t-2"
+          ]
+        },
+        {
+          "id": "m-capacity",
+          "code": "CAPACITY",
+          "label": "Thời gian khả dụng",
+          "value": null,
+          "unit": "MINUTE",
+          "basis": "PERIOD",
+          "formula": "Lịch làm việc trừ nghỉ và nghĩa vụ đã dành trong cùng kỳ.",
+          "evidenceIds": [],
+          "missingFields": [
+            "capacityCalendar:u-lan"
+          ]
+        }
+      ],
+      "context": [
+        {
+          "key": "person",
+          "label": "Nhân viên",
+          "value": "Trần Lan",
+          "valueType": "TEXT"
+        },
+        {
+          "key": "unit",
+          "label": "Đơn vị",
+          "value": "Phòng sản phẩm",
+          "valueType": "TEXT"
+        }
+      ],
+      "series": [],
+      "evidence": [
+        {
+          "id": "e-task2",
+          "sourceType": "TASK",
+          "sourceId": "t-2",
+          "label": "Kiểm tra phân quyền: dự kiến 480 phút, chưa cập nhật còn lại.",
+          "observedAt": "2026-10-23T10:00:00.000Z",
+          "action": {
+            "target": "TASK_DETAIL",
+            "taskId": "t-2",
+            "submissionId": null,
+            "reportId": null
+          }
+        },
+        {
+          "id": "e-task3",
+          "sourceType": "TASK",
+          "sourceId": "t-3",
+          "label": "Thiết kế luồng giao việc: dự kiến 480 phút, còn lại 300 phút.",
+          "observedAt": "2026-10-23T10:00:00.000Z",
+          "action": {
+            "target": "TASK_DETAIL",
+            "taskId": "t-3",
+            "submissionId": null,
+            "reportId": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "snap-bottleneck-t4-001",
+      "analysisId": "an-bottleneck-t4-001",
+      "sourceRevision": "p-main-src-20261023-v1",
+      "analysisType": "BOTTLENECK",
+      "title": "Điểm chờ tại khâu nghiệm thu",
+      "subject": {
+        "kind": "TASK",
+        "taskId": "t-4"
+      },
+      "scope": {
+        "projectId": "p-main",
+        "from": "2026-10-01",
+        "to": "2026-10-23"
+      },
+      "dataAsOf": "2026-10-23T10:00:00.000Z",
+      "createdAt": "2026-10-23T10:00:00.000Z",
+      "expiresAt": "2026-10-30T10:00:00.000Z",
+      "calculationVersion": "business-rules-v2",
+      "quality": {
+        "status": "SUFFICIENT",
+        "missingFields": [],
+        "scopeLimited": false
+      },
+      "metrics": [
+        {
+          "id": "m-stage",
+          "code": "STAGE_MINUTES",
+          "label": "Đã chờ nghiệm thu",
+          "value": 1500,
+          "unit": "MINUTE",
+          "basis": "CURRENT",
+          "formula": "Thời điểm dữ liệu trừ thời điểm gần nhất chuyển sang chờ nghiệm thu.",
+          "evidenceIds": [
+            "e-stage"
+          ],
+          "missingFields": []
+        },
+        {
+          "id": "m-limit",
+          "code": "THRESHOLD_MINUTES",
+          "label": "Ngưỡng theo dõi",
+          "value": 1440,
+          "unit": "MINUTE",
+          "basis": "CURRENT",
+          "formula": "Ngưỡng thử nghiệm được BE cấu hình: 24 giờ liên tục.",
+          "evidenceIds": [
+            "e-rule"
+          ],
+          "missingFields": []
+        },
+        {
+          "id": "m-excess",
+          "code": "EXCESS_MINUTES",
+          "label": "Vượt ngưỡng",
+          "value": 60,
+          "unit": "MINUTE",
+          "basis": "CURRENT",
+          "formula": "max(0, 1500 − 1440).",
+          "evidenceIds": [
+            "e-stage",
+            "e-rule"
+          ],
+          "missingFields": []
+        },
+        {
+          "id": "m-revisions",
+          "code": "REVISION_COUNT",
+          "label": "Vòng yêu cầu sửa",
+          "value": 0,
+          "unit": "COUNT",
+          "basis": "CURRENT",
+          "formula": "Đếm các quyết định yêu cầu sửa đã ghi.",
+          "evidenceIds": [
+            "e-stage"
+          ],
+          "missingFields": []
+        }
+      ],
+      "context": [
+        {
+          "key": "stage",
+          "label": "Công đoạn",
+          "value": "Chờ nghiệm thu",
+          "valueType": "TEXT"
+        },
+        {
+          "key": "calendar",
+          "label": "Cách tính thời gian",
+          "value": "Liên tục, gồm cả ngoài giờ làm việc",
+          "valueType": "TEXT"
+        }
+      ],
+      "series": [],
+      "evidence": [
+        {
+          "id": "e-stage",
+          "sourceType": "SUBMISSION",
+          "sourceId": "s-pending",
+          "label": "Lần nộp 1 đang chờ từ 22/10, 16:00.",
+          "observedAt": "2026-10-22T09:00:00.000Z",
+          "action": {
+            "target": "SUBMISSION_REVIEW",
+            "taskId": "t-4",
+            "submissionId": "s-pending",
+            "reportId": null
+          }
+        },
+        {
+          "id": "e-rule",
+          "sourceType": "AGGREGATE",
+          "sourceId": null,
+          "label": "Ngưỡng minh họa 24 giờ liên tục; không phải giờ công.",
+          "observedAt": null,
+          "action": null
+        }
+      ]
+    },
+    {
+      "id": "snap-summary-main-001",
+      "analysisId": "an-summary-main-001",
+      "sourceRevision": "p-main-src-20261023-v1",
+      "analysisType": "SUMMARY",
+      "title": "Tổng quan dự án Cổng quản lý nội bộ",
+      "subject": {
+        "kind": "PROJECT",
+        "projectId": "p-main"
+      },
+      "scope": {
+        "projectId": "p-main",
+        "from": "2026-10-01",
+        "to": "2026-10-23"
+      },
+      "dataAsOf": "2026-10-23T10:00:00.000Z",
+      "createdAt": "2026-10-23T10:00:00.000Z",
+      "expiresAt": "2026-10-30T10:00:00.000Z",
+      "calculationVersion": "business-rules-v2",
+      "quality": {
+        "status": "PARTIAL",
+        "missingFields": [
+          "capacityCalendar"
+        ],
+        "scopeLimited": false
+      },
+      "metrics": [
+        {
+          "id": "m-valid",
+          "code": "K01",
+          "label": "Công việc được tính",
+          "value": 5,
+          "unit": "TASK",
+          "basis": "CURRENT",
+          "formula": "6 công việc − 1 đã hủy.",
+          "evidenceIds": [
+            "e-tasks"
+          ],
+          "missingFields": []
+        },
+        {
+          "id": "m-completed",
+          "code": "K02_CURRENT",
+          "label": "Đã hoàn thành",
+          "value": 1,
+          "unit": "TASK",
+          "basis": "CURRENT",
+          "formula": "Số công việc COMPLETED tại dataAsOf.",
+          "evidenceIds": [
+            "e-tasks"
+          ],
+          "missingFields": []
+        },
+        {
+          "id": "m-completion",
+          "code": "K03",
+          "label": "Tỷ lệ hoàn thành",
+          "value": 20,
+          "unit": "PERCENT",
+          "basis": "CURRENT",
+          "formula": "1 / 5 × 100.",
+          "evidenceIds": [
+            "e-tasks"
+          ],
+          "missingFields": []
+        },
+        {
+          "id": "m-overdue",
+          "code": "K04",
+          "label": "Công việc quá hạn",
+          "value": 1,
+          "unit": "TASK",
+          "basis": "CURRENT",
+          "formula": "Việc mở và dataAsOf > dueAt.",
+          "evidenceIds": [
+            "e-tasks"
+          ],
+          "missingFields": []
+        },
+        {
+          "id": "m-hours",
+          "code": "K06",
+          "label": "Giờ công trong kỳ",
+          "value": 6,
+          "unit": "HOUR",
+          "basis": "PERIOD",
+          "formula": "(180 + 120 + 60) / 60.",
+          "evidenceIds": [
+            "e-logs"
+          ],
+          "missingFields": []
+        },
+        {
+          "id": "m-pending",
+          "code": "PENDING_REVIEW_COUNT",
+          "label": "Chờ nghiệm thu",
+          "value": 1,
+          "unit": "TASK",
+          "basis": "CURRENT",
+          "formula": "Giá trị từ dữ liệu nguồn đã lọc quyền.",
+          "evidenceIds": [
+            "e-tasks"
+          ],
+          "missingFields": []
+        }
+      ],
+      "context": [
+        {
+          "key": "project",
+          "label": "Dự án",
+          "value": "Cổng quản lý nội bộ",
+          "valueType": "TEXT"
+        }
+      ],
+      "series": [],
+      "evidence": [
+        {
+          "id": "e-tasks",
+          "sourceType": "AGGREGATE",
+          "sourceId": null,
+          "label": "6 công việc: mỗi trạng thái có 1; t-4 chờ nghiệm thu quá hạn.",
+          "observedAt": "2026-10-23T10:00:00.000Z",
+          "action": null
+        },
+        {
+          "id": "e-logs",
+          "sourceType": "AGGREGATE",
+          "sourceId": null,
+          "label": "3 nhật ký ACTIVE: 180, 120 và 60 phút trong kỳ.",
+          "observedAt": "2026-10-23T10:00:00.000Z",
+          "action": null
+        }
+      ]
+    },
+    {
+      "id": "snap-metric-k06-001",
+      "analysisId": "an-metric-k06-001",
+      "sourceRevision": "p-main-src-20261023-v1",
+      "analysisType": "METRIC",
+      "title": "Chi tiết giờ công trong kỳ",
+      "subject": {
+        "kind": "METRIC",
+        "metricCode": "K06"
+      },
+      "scope": {
+        "projectId": "p-main",
+        "from": "2026-10-01",
+        "to": "2026-10-23"
+      },
+      "dataAsOf": "2026-10-23T10:00:00.000Z",
+      "createdAt": "2026-10-23T10:00:00.000Z",
+      "expiresAt": "2026-10-30T10:00:00.000Z",
+      "calculationVersion": "business-rules-v2",
+      "quality": {
+        "status": "SUFFICIENT",
+        "missingFields": [],
+        "scopeLimited": false
+      },
+      "metrics": [
+        {
+          "id": "m-hours",
+          "code": "K06",
+          "label": "Tổng giờ công",
+          "value": 6,
+          "unit": "HOUR",
+          "basis": "PERIOD",
+          "formula": "Tổng phút nhật ký ACTIVE / 60.",
+          "evidenceIds": [
+            "e-tl1",
+            "e-tl2",
+            "e-tl3"
+          ],
+          "missingFields": []
+        },
+        {
+          "id": "m-minutes",
+          "code": "ACTUAL_MINUTES",
+          "label": "Phút đã ghi",
+          "value": 360,
+          "unit": "MINUTE",
+          "basis": "PERIOD",
+          "formula": "180 + 120 + 60.",
+          "evidenceIds": [
+            "e-tl1",
+            "e-tl2",
+            "e-tl3"
+          ],
+          "missingFields": []
+        },
+        {
+          "id": "m-logs",
+          "code": "LOG_COUNT",
+          "label": "Nhật ký hợp lệ",
+          "value": 3,
+          "unit": "COUNT",
+          "basis": "PERIOD",
+          "formula": "Đếm 3 nhật ký ACTIVE.",
+          "evidenceIds": [
+            "e-tl1",
+            "e-tl2",
+            "e-tl3"
+          ],
+          "missingFields": []
+        },
+        {
+          "id": "m-people",
+          "code": "PEOPLE_COUNT",
+          "label": "Người đã ghi giờ",
+          "value": 2,
+          "unit": "COUNT",
+          "basis": "PERIOD",
+          "formula": "Đếm những người khác nhau đã ghi nhật ký.",
+          "evidenceIds": [
+            "e-tl1",
+            "e-tl2",
+            "e-tl3"
+          ],
+          "missingFields": []
+        }
+      ],
+      "context": [
+        {
+          "key": "period",
+          "label": "Kỳ dữ liệu",
+          "value": "01/10–23/10/2026",
+          "valueType": "TEXT"
+        },
+        {
+          "key": "basis",
+          "label": "Nguồn tính",
+          "value": "Nhật ký còn hiệu lực, theo người ghi",
+          "valueType": "TEXT"
+        }
+      ],
+      "series": [
+        {
+          "id": "s-hours",
+          "label": "Giờ công theo ngày có nhật ký",
+          "unit": "HOUR",
+          "points": [
+            {
+              "date": "2026-10-22",
+              "value": 3
+            },
+            {
+              "date": "2026-10-23",
+              "value": 3
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "e-tl1",
+          "sourceType": "TIME_LOG",
+          "sourceId": "tl-1",
+          "label": "Lan: 180 phút ngày 23/10.",
+          "observedAt": "2026-10-23T09:00:00.000Z",
+          "action": {
+            "target": "TASK_DETAIL",
+            "taskId": "t-3",
+            "submissionId": null,
+            "reportId": null
+          }
+        },
+        {
+          "id": "e-tl2",
+          "sourceType": "TIME_LOG",
+          "sourceId": "tl-2",
+          "label": "Huy: 120 phút ngày 22/10.",
+          "observedAt": "2026-10-22T08:30:00.000Z",
+          "action": {
+            "target": "TASK_DETAIL",
+            "taskId": "t-4",
+            "submissionId": null,
+            "reportId": null
+          }
+        },
+        {
+          "id": "e-tl3",
+          "sourceType": "TIME_LOG",
+          "sourceId": "tl-3",
+          "label": "Lan: 60 phút ngày 22/10.",
+          "observedAt": "2026-10-22T07:30:00.000Z",
+          "action": {
+            "target": "TASK_DETAIL",
+            "taskId": "t-5",
+            "submissionId": null,
+            "reportId": null
+          }
+        }
+      ]
+    }
+  ],
+  "llmExplanations": [
+    {
+      "id": "exp-risk-t4-001",
+      "analysisId": "an-risk-t4-001",
+      "snapshotId": "snap-risk-t4-001",
+      "locale": "vi-VN",
+      "generatedAt": "2026-10-23T10:01:00.000Z",
+      "modelDisplayName": "LLM cấu hình sẵn",
+      "promptVersion": "analysis-vi-v1",
+      "summary": "Kết quả đã nộp đúng hạn; điểm cần chú ý hiện tại là thời gian chờ nghiệm thu.",
+      "findings": [
+        {
+          "id": "f-1",
+          "title": "Đã nộp trước hạn",
+          "text": "Huy đã nộp trước hạn một giờ. Công việc hiện vẫn chờ xét kết quả nên đã quá hạn theo thời điểm dữ liệu.",
+          "metricIds": [
+            "m-overdue",
+            "m-wait"
+          ],
+          "evidenceIds": [
+            "e-task",
+            "e-submission"
+          ]
+        },
+        {
+          "id": "f-2",
+          "title": "Ưu tiên xử lý hàng chờ",
+          "text": "Thời gian chờ nghiệm thu là 25 giờ. Cần xem xét kết quả và phản hồi để tránh kéo dài khâu chốt công việc.",
+          "metricIds": [
+            "m-wait"
+          ],
+          "evidenceIds": [
+            "e-submission"
+          ]
+        }
+      ],
+      "recommendations": [
+        {
+          "id": "r-1",
+          "title": "Xem kết quả đang chờ",
+          "text": "Người có quyền nghiệm thu đối chiếu tiêu chí với lần nộp mới nhất.",
+          "priority": "HIGH",
+          "evidenceIds": [
+            "e-submission"
+          ],
+          "action": {
+            "target": "SUBMISSION_REVIEW",
+            "taskId": "t-4",
+            "submissionId": "s-pending",
+            "reportId": null
+          }
+        }
+      ],
+      "limitations": [
+        "Chưa có lịch làm việc để đổi thời gian chờ thành giờ làm việc. Không kết luận năng lực cá nhân từ thời gian chờ."
+      ]
+    },
+    {
+      "id": "exp-workload-lan-001",
+      "analysisId": "an-workload-lan-001",
+      "snapshotId": "snap-workload-lan-001",
+      "locale": "vi-VN",
+      "generatedAt": "2026-10-23T10:01:00.000Z",
+      "modelDisplayName": "LLM cấu hình sẵn",
+      "promptVersion": "analysis-vi-v1",
+      "summary": "Lan đang nhận hai công việc; dữ liệu hiện chưa đủ để kết luận có quá tải.",
+      "findings": [
+        {
+          "id": "f-1",
+          "title": "Cần cập nhật phần việc còn lại",
+          "text": "Một trong hai công việc chưa có thời gian còn lại; tổng dự kiến hiện tại không thay thế tổng còn lại.",
+          "metricIds": [
+            "m-open",
+            "m-estimate",
+            "m-remaining"
+          ],
+          "evidenceIds": [
+            "e-task2",
+            "e-task3"
+          ]
+        },
+        {
+          "id": "f-2",
+          "title": "Chưa có mẫu số khả dụng",
+          "text": "Chưa có lịch khả dụng trong kỳ nên chưa tính tỷ lệ tải hoặc kết luận vượt sức chứa.",
+          "metricIds": [
+            "m-capacity"
+          ],
+          "evidenceIds": [
+            "e-task2",
+            "e-task3"
+          ]
+        }
+      ],
+      "recommendations": [
+        {
+          "id": "r-1",
+          "title": "Cập nhật ước lượng còn lại",
+          "text": "Rà soát công việc Kiểm tra phân quyền trước khi đánh giá phân bổ.",
+          "priority": "NORMAL",
+          "evidenceIds": [
+            "e-task2"
+          ],
+          "action": {
+            "target": "TASK_DETAIL",
+            "taskId": "t-2",
+            "submissionId": null,
+            "reportId": null
+          }
+        }
+      ],
+      "limitations": [
+        "Chưa có ước lượng còn lại của việc Kiểm tra phân quyền và lịch khả dụng của Lan. Không suy còn lại bằng dự kiến trừ giờ đã làm."
+      ]
+    },
+    {
+      "id": "exp-bottleneck-t4-001",
+      "analysisId": "an-bottleneck-t4-001",
+      "snapshotId": "snap-bottleneck-t4-001",
+      "locale": "vi-VN",
+      "generatedAt": "2026-10-23T10:01:00.000Z",
+      "modelDisplayName": "LLM cấu hình sẵn",
+      "promptVersion": "analysis-vi-v1",
+      "summary": "Khâu chờ nghiệm thu đang vượt ngưỡng theo dõi minh họa; nên ưu tiên đối chiếu kết quả đã nộp.",
+      "findings": [
+        {
+          "id": "f-1",
+          "title": "Chờ lâu hơn ngưỡng",
+          "text": "Thời gian ở bước chờ là 25 giờ liên tục, cao hơn ngưỡng theo dõi 24 giờ một giờ.",
+          "metricIds": [
+            "m-stage",
+            "m-limit",
+            "m-excess"
+          ],
+          "evidenceIds": [
+            "e-stage",
+            "e-rule"
+          ]
+        }
+      ],
+      "recommendations": [
+        {
+          "id": "r-1",
+          "title": "Kiểm tra hàng chờ xét kết quả",
+          "text": "Đối chiếu lần nộp và phân công người phản hồi trong thẩm quyền.",
+          "priority": "HIGH",
+          "evidenceIds": [
+            "e-stage"
+          ],
+          "action": {
+            "target": "REVIEW_QUEUE",
+            "taskId": null,
+            "submissionId": null,
+            "reportId": null
+          }
+        }
+      ],
+      "limitations": [
+        "Ngưỡng 24 giờ là giá trị thử nghiệm cần BE cấu hình. Thời gian liên tục không phải giờ công."
+      ]
+    },
+    {
+      "id": "exp-summary-main-001",
+      "analysisId": "an-summary-main-001",
+      "snapshotId": "snap-summary-main-001",
+      "locale": "vi-VN",
+      "generatedAt": "2026-10-23T10:01:00.000Z",
+      "modelDisplayName": "LLM cấu hình sẵn",
+      "promptVersion": "analysis-vi-v1",
+      "summary": "Dự án có một công việc hoàn thành trong năm việc được tính; khâu nghiệm thu là điểm nên xem trước.",
+      "findings": [
+        {
+          "id": "f-1",
+          "title": "Tiến độ hiện tại",
+          "text": "Tỷ lệ hoàn thành hiện là 20%. Một công việc quá hạn đang nằm ở bước chờ nghiệm thu.",
+          "metricIds": [
+            "m-completion",
+            "m-overdue",
+            "m-pending"
+          ],
+          "evidenceIds": [
+            "e-tasks"
+          ]
+        },
+        {
+          "id": "f-2",
+          "title": "Giờ công có nguồn đối chiếu",
+          "text": "Trong kỳ có 6 giờ công hợp lệ từ ba nhật ký; số giờ không được cộng thêm từ báo cáo.",
+          "metricIds": [
+            "m-hours"
+          ],
+          "evidenceIds": [
+            "e-logs"
+          ]
+        }
+      ],
+      "recommendations": [
+        {
+          "id": "r-1",
+          "title": "Ưu tiên xem kết quả chờ",
+          "text": "Xử lý hàng chờ trước khi điều chỉnh kế hoạch hoặc người thực hiện.",
+          "priority": "HIGH",
+          "evidenceIds": [
+            "e-tasks"
+          ],
+          "action": {
+            "target": "REVIEW_QUEUE",
+            "taskId": null,
+            "submissionId": null,
+            "reportId": null
+          }
+        }
+      ],
+      "limitations": [
+        "Thiếu lịch khả dụng nên chưa kết luận tải nhân sự. Quy mô dữ liệu mẫu nhỏ, không dùng để dự báo xác suất trễ."
+      ]
+    },
+    {
+      "id": "exp-metric-k06-001",
+      "analysisId": "an-metric-k06-001",
+      "snapshotId": "snap-metric-k06-001",
+      "locale": "vi-VN",
+      "generatedAt": "2026-10-23T10:01:00.000Z",
+      "modelDisplayName": "LLM cấu hình sẵn",
+      "promptVersion": "analysis-vi-v1",
+      "summary": "Sáu giờ công trong kỳ được đối chiếu với ba nhật ký hợp lệ của hai người.",
+      "findings": [
+        {
+          "id": "f-1",
+          "title": "Phân bổ theo người ghi",
+          "text": "Lan ghi tổng 240 phút và Huy ghi 120 phút. Giờ lịch sử vẫn thuộc người đã ghi kể cả sau bàn giao công việc.",
+          "metricIds": [
+            "m-hours",
+            "m-minutes",
+            "m-logs",
+            "m-people"
+          ],
+          "evidenceIds": [
+            "e-tl1",
+            "e-tl2",
+            "e-tl3"
+          ]
+        }
+      ],
+      "recommendations": [
+        {
+          "id": "r-1",
+          "title": "Mở công việc để xem nhật ký",
+          "text": "Kiểm tra nhật ký nguồn khi cần giải thích số giờ đã ghi.",
+          "priority": "NORMAL",
+          "evidenceIds": [
+            "e-tl1"
+          ],
+          "action": {
+            "target": "TASK_DETAIL",
+            "taskId": "t-3",
+            "submissionId": null,
+            "reportId": null
+          }
+        }
+      ],
+      "limitations": [
+        "Giờ đã ghi không tự thể hiện mức độ hoàn thành hoặc năng lực. Chỉ thống kê các nhật ký còn hiệu lực trong phạm vi."
+      ]
+    }
+  ],
+  "analysisDetails": [
+    {
+      "snapshot": {
+        "id": "snap-risk-t4-001",
+        "analysisId": "an-risk-t4-001",
+        "sourceRevision": "p-main-src-20261023-v1",
+        "analysisType": "RISK",
+        "title": "API báo cáo tuần",
+        "subject": {
+          "kind": "TASK",
+          "taskId": "t-4"
+        },
+        "scope": {
+          "projectId": "p-main",
+          "from": "2026-10-01",
+          "to": "2026-10-23"
+        },
+        "dataAsOf": "2026-10-23T10:00:00.000Z",
+        "createdAt": "2026-10-23T10:00:00.000Z",
+        "expiresAt": "2026-10-30T10:00:00.000Z",
+        "calculationVersion": "business-rules-v2",
+        "quality": {
+          "status": "SUFFICIENT",
+          "missingFields": [],
+          "scopeLimited": false
+        },
+        "metrics": [
+          {
+            "id": "m-overdue",
+            "code": "OVERDUE_MINUTES",
+            "label": "Thời gian quá hạn",
+            "value": 1440,
+            "unit": "MINUTE",
+            "basis": "CURRENT",
+            "formula": "Thời điểm dữ liệu trừ hạn hoàn thành của công việc còn mở.",
+            "evidenceIds": [
+              "e-task"
+            ],
+            "missingFields": []
+          },
+          {
+            "id": "m-wait",
+            "code": "REVIEW_WAIT_MINUTES",
+            "label": "Chờ nghiệm thu",
+            "value": 1500,
+            "unit": "MINUTE",
+            "basis": "CURRENT",
+            "formula": "Thời điểm dữ liệu trừ thời điểm nộp kết quả đang chờ.",
+            "evidenceIds": [
+              "e-submission"
+            ],
+            "missingFields": []
+          },
+          {
+            "id": "m-actual",
+            "code": "ACTUAL_MINUTES",
+            "label": "Giờ công đã ghi",
+            "value": 120,
+            "unit": "MINUTE",
+            "basis": "CURRENT",
+            "formula": "Tổng số phút của các nhật ký còn hiệu lực.",
+            "evidenceIds": [
+              "e-log"
+            ],
+            "missingFields": []
+          },
+          {
+            "id": "m-revisions",
+            "code": "REVISION_COUNT",
+            "label": "Số lần yêu cầu sửa",
+            "value": 0,
+            "unit": "COUNT",
+            "basis": "CURRENT",
+            "formula": "Đếm các lần đã được yêu cầu chỉnh sửa.",
+            "evidenceIds": [
+              "e-submission"
+            ],
+            "missingFields": []
+          }
+        ],
+        "context": [
+          {
+            "key": "assignee",
+            "label": "Người thực hiện",
+            "value": "Nguyễn Huy",
+            "valueType": "TEXT"
+          },
+          {
+            "key": "status",
+            "label": "Trạng thái",
+            "value": "Chờ nghiệm thu",
+            "valueType": "TEXT"
+          },
+          {
+            "key": "dueAt",
+            "label": "Hạn hoàn thành",
+            "value": "2026-10-22T10:00:00.000Z",
+            "valueType": "UTC"
+          },
+          {
+            "key": "submittedAt",
+            "label": "Nộp kết quả",
+            "value": "2026-10-22T09:00:00.000Z",
+            "valueType": "UTC"
+          }
+        ],
+        "series": [],
+        "evidence": [
+          {
+            "id": "e-task",
+            "sourceType": "TASK",
+            "sourceId": "t-4",
+            "label": "Hạn hoàn thành 22/10/2026, 17:00",
+            "observedAt": "2026-10-23T10:00:00.000Z",
+            "action": {
+              "target": "TASK_DETAIL",
+              "taskId": "t-4",
+              "submissionId": null,
+              "reportId": null
+            }
+          },
+          {
+            "id": "e-submission",
+            "sourceType": "SUBMISSION",
+            "sourceId": "s-pending",
+            "label": "Huy nộp lần 1 lúc 22/10, 16:00; đang chờ nghiệm thu.",
+            "observedAt": "2026-10-22T09:00:00.000Z",
+            "action": {
+              "target": "SUBMISSION_REVIEW",
+              "taskId": "t-4",
+              "submissionId": "s-pending",
+              "reportId": null
+            }
+          },
+          {
+            "id": "e-log",
+            "sourceType": "TIME_LOG",
+            "sourceId": "tl-2",
+            "label": "Nhật ký hợp lệ 120 phút ngày 22/10/2026.",
+            "observedAt": "2026-10-22T08:30:00.000Z",
+            "action": {
+              "target": "TASK_DETAIL",
+              "taskId": "t-4",
+              "submissionId": null,
+              "reportId": null
+            }
+          }
+        ]
+      },
+      "freshness": {
+        "status": "CURRENT",
+        "checkedAt": "2026-10-23T10:05:00.000Z",
+        "latestAnalysisId": null
+      },
+      "explanation": {
+        "status": "READY",
+        "lastSuccess": {
+          "id": "exp-risk-t4-001",
+          "analysisId": "an-risk-t4-001",
+          "snapshotId": "snap-risk-t4-001",
+          "locale": "vi-VN",
+          "generatedAt": "2026-10-23T10:01:00.000Z",
+          "modelDisplayName": "LLM cấu hình sẵn",
+          "promptVersion": "analysis-vi-v1",
+          "summary": "Kết quả đã nộp đúng hạn; điểm cần chú ý hiện tại là thời gian chờ nghiệm thu.",
+          "findings": [
+            {
+              "id": "f-1",
+              "title": "Đã nộp trước hạn",
+              "text": "Huy đã nộp trước hạn một giờ. Công việc hiện vẫn chờ xét kết quả nên đã quá hạn theo thời điểm dữ liệu.",
+              "metricIds": [
+                "m-overdue",
+                "m-wait"
+              ],
+              "evidenceIds": [
+                "e-task",
+                "e-submission"
+              ]
+            },
+            {
+              "id": "f-2",
+              "title": "Ưu tiên xử lý hàng chờ",
+              "text": "Thời gian chờ nghiệm thu là 25 giờ. Cần xem xét kết quả và phản hồi để tránh kéo dài khâu chốt công việc.",
+              "metricIds": [
+                "m-wait"
+              ],
+              "evidenceIds": [
+                "e-submission"
+              ]
+            }
+          ],
+          "recommendations": [
+            {
+              "id": "r-1",
+              "title": "Xem kết quả đang chờ",
+              "text": "Người có quyền nghiệm thu đối chiếu tiêu chí với lần nộp mới nhất.",
+              "priority": "HIGH",
+              "evidenceIds": [
+                "e-submission"
+              ],
+              "action": {
+                "target": "SUBMISSION_REVIEW",
+                "taskId": "t-4",
+                "submissionId": "s-pending",
+                "reportId": null
+              }
+            }
+          ],
+          "limitations": [
+            "Chưa có lịch làm việc để đổi thời gian chờ thành giờ làm việc. Không kết luận năng lực cá nhân từ thời gian chờ."
+          ]
+        },
+        "activeJobId": null,
+        "error": null
+      },
+      "generation": {
+        "allowed": true,
+        "blockedReason": null,
+        "retryAfterSeconds": null
+      },
+      "systemSummary": "Công việc đang chờ nghiệm thu, quá hạn 24 giờ tại mốc dữ liệu. Kết quả được nộp trước hạn một giờ; đã ghi 120 phút.",
+      "feedback": {
+        "latest": null,
+        "canSubmit": false
+      }
+    },
+    {
+      "snapshot": {
+        "id": "snap-workload-lan-001",
+        "analysisId": "an-workload-lan-001",
+        "sourceRevision": "p-main-src-20261023-v1",
+        "analysisType": "WORKLOAD",
+        "title": "Khối lượng của Trần Lan",
+        "subject": {
+          "kind": "PERSON",
+          "userId": "u-lan"
+        },
+        "scope": {
+          "projectId": "p-main",
+          "from": "2026-10-01",
+          "to": "2026-10-23"
+        },
+        "dataAsOf": "2026-10-23T10:00:00.000Z",
+        "createdAt": "2026-10-23T10:00:00.000Z",
+        "expiresAt": "2026-10-30T10:00:00.000Z",
+        "calculationVersion": "business-rules-v2",
+        "quality": {
+          "status": "PARTIAL",
+          "missingFields": [
+            "remainingMinutes:t-2",
+            "capacityCalendar:u-lan"
+          ],
+          "scopeLimited": false
+        },
+        "metrics": [
+          {
+            "id": "m-open",
+            "code": "OPEN_TASKS",
+            "label": "Công việc đang nhận",
+            "value": 2,
+            "unit": "TASK",
+            "basis": "CURRENT",
+            "formula": "Số TODO/IN_PROGRESS hiện giao cho Lan.",
+            "evidenceIds": [
+              "e-task2",
+              "e-task3"
+            ],
+            "missingFields": []
+          },
+          {
+            "id": "m-estimate",
+            "code": "CURRENT_ESTIMATE",
+            "label": "Dự kiến hiện tại",
+            "value": 960,
+            "unit": "MINUTE",
+            "basis": "CURRENT",
+            "formula": "480 + 480 phút của hai công việc mở.",
+            "evidenceIds": [
+              "e-task2",
+              "e-task3"
+            ],
+            "missingFields": []
+          },
+          {
+            "id": "m-remaining",
+            "code": "REMAINING",
+            "label": "Tổng thời gian còn lại",
+            "value": null,
+            "unit": "MINUTE",
+            "basis": "CURRENT",
+            "formula": "Chỉ cộng tổng khi mọi việc trong phạm vi đã được cập nhật thời gian còn lại.",
+            "evidenceIds": [
+              "e-task2",
+              "e-task3"
+            ],
+            "missingFields": [
+              "remainingMinutes:t-2"
+            ]
+          },
+          {
+            "id": "m-capacity",
+            "code": "CAPACITY",
+            "label": "Thời gian khả dụng",
+            "value": null,
+            "unit": "MINUTE",
+            "basis": "PERIOD",
+            "formula": "Lịch làm việc trừ nghỉ và nghĩa vụ đã dành trong cùng kỳ.",
+            "evidenceIds": [],
+            "missingFields": [
+              "capacityCalendar:u-lan"
+            ]
+          }
+        ],
+        "context": [
+          {
+            "key": "person",
+            "label": "Nhân viên",
+            "value": "Trần Lan",
+            "valueType": "TEXT"
+          },
+          {
+            "key": "unit",
+            "label": "Đơn vị",
+            "value": "Phòng sản phẩm",
+            "valueType": "TEXT"
+          }
+        ],
+        "series": [],
+        "evidence": [
+          {
+            "id": "e-task2",
+            "sourceType": "TASK",
+            "sourceId": "t-2",
+            "label": "Kiểm tra phân quyền: dự kiến 480 phút, chưa cập nhật còn lại.",
+            "observedAt": "2026-10-23T10:00:00.000Z",
+            "action": {
+              "target": "TASK_DETAIL",
+              "taskId": "t-2",
+              "submissionId": null,
+              "reportId": null
+            }
+          },
+          {
+            "id": "e-task3",
+            "sourceType": "TASK",
+            "sourceId": "t-3",
+            "label": "Thiết kế luồng giao việc: dự kiến 480 phút, còn lại 300 phút.",
+            "observedAt": "2026-10-23T10:00:00.000Z",
+            "action": {
+              "target": "TASK_DETAIL",
+              "taskId": "t-3",
+              "submissionId": null,
+              "reportId": null
+            }
+          }
+        ]
+      },
+      "freshness": {
+        "status": "CURRENT",
+        "checkedAt": "2026-10-23T10:05:00.000Z",
+        "latestAnalysisId": null
+      },
+      "explanation": {
+        "status": "READY",
+        "lastSuccess": {
+          "id": "exp-workload-lan-001",
+          "analysisId": "an-workload-lan-001",
+          "snapshotId": "snap-workload-lan-001",
+          "locale": "vi-VN",
+          "generatedAt": "2026-10-23T10:01:00.000Z",
+          "modelDisplayName": "LLM cấu hình sẵn",
+          "promptVersion": "analysis-vi-v1",
+          "summary": "Lan đang nhận hai công việc; dữ liệu hiện chưa đủ để kết luận có quá tải.",
+          "findings": [
+            {
+              "id": "f-1",
+              "title": "Cần cập nhật phần việc còn lại",
+              "text": "Một trong hai công việc chưa có thời gian còn lại; tổng dự kiến hiện tại không thay thế tổng còn lại.",
+              "metricIds": [
+                "m-open",
+                "m-estimate",
+                "m-remaining"
+              ],
+              "evidenceIds": [
+                "e-task2",
+                "e-task3"
+              ]
+            },
+            {
+              "id": "f-2",
+              "title": "Chưa có mẫu số khả dụng",
+              "text": "Chưa có lịch khả dụng trong kỳ nên chưa tính tỷ lệ tải hoặc kết luận vượt sức chứa.",
+              "metricIds": [
+                "m-capacity"
+              ],
+              "evidenceIds": [
+                "e-task2",
+                "e-task3"
+              ]
+            }
+          ],
+          "recommendations": [
+            {
+              "id": "r-1",
+              "title": "Cập nhật ước lượng còn lại",
+              "text": "Rà soát công việc Kiểm tra phân quyền trước khi đánh giá phân bổ.",
+              "priority": "NORMAL",
+              "evidenceIds": [
+                "e-task2"
+              ],
+              "action": {
+                "target": "TASK_DETAIL",
+                "taskId": "t-2",
+                "submissionId": null,
+                "reportId": null
+              }
+            }
+          ],
+          "limitations": [
+            "Chưa có ước lượng còn lại của việc Kiểm tra phân quyền và lịch khả dụng của Lan. Không suy còn lại bằng dự kiến trừ giờ đã làm."
+          ]
+        },
+        "activeJobId": null,
+        "error": null
+      },
+      "generation": {
+        "allowed": true,
+        "blockedReason": null,
+        "retryAfterSeconds": null
+      },
+      "systemSummary": "Trần Lan đang nhận 2 công việc TODO/IN_PROGRESS, tổng dự kiến 960 phút. Chưa đủ thời gian còn lại và lịch khả dụng để tính tỷ lệ tải.",
+      "feedback": {
+        "latest": null,
+        "canSubmit": false
+      }
+    },
+    {
+      "snapshot": {
+        "id": "snap-bottleneck-t4-001",
+        "analysisId": "an-bottleneck-t4-001",
+        "sourceRevision": "p-main-src-20261023-v1",
+        "analysisType": "BOTTLENECK",
+        "title": "Điểm chờ tại khâu nghiệm thu",
+        "subject": {
+          "kind": "TASK",
+          "taskId": "t-4"
+        },
+        "scope": {
+          "projectId": "p-main",
+          "from": "2026-10-01",
+          "to": "2026-10-23"
+        },
+        "dataAsOf": "2026-10-23T10:00:00.000Z",
+        "createdAt": "2026-10-23T10:00:00.000Z",
+        "expiresAt": "2026-10-30T10:00:00.000Z",
+        "calculationVersion": "business-rules-v2",
+        "quality": {
+          "status": "SUFFICIENT",
+          "missingFields": [],
+          "scopeLimited": false
+        },
+        "metrics": [
+          {
+            "id": "m-stage",
+            "code": "STAGE_MINUTES",
+            "label": "Đã chờ nghiệm thu",
+            "value": 1500,
+            "unit": "MINUTE",
+            "basis": "CURRENT",
+            "formula": "Thời điểm dữ liệu trừ thời điểm gần nhất chuyển sang chờ nghiệm thu.",
+            "evidenceIds": [
+              "e-stage"
+            ],
+            "missingFields": []
+          },
+          {
+            "id": "m-limit",
+            "code": "THRESHOLD_MINUTES",
+            "label": "Ngưỡng theo dõi",
+            "value": 1440,
+            "unit": "MINUTE",
+            "basis": "CURRENT",
+            "formula": "Ngưỡng thử nghiệm được BE cấu hình: 24 giờ liên tục.",
+            "evidenceIds": [
+              "e-rule"
+            ],
+            "missingFields": []
+          },
+          {
+            "id": "m-excess",
+            "code": "EXCESS_MINUTES",
+            "label": "Vượt ngưỡng",
+            "value": 60,
+            "unit": "MINUTE",
+            "basis": "CURRENT",
+            "formula": "max(0, 1500 − 1440).",
+            "evidenceIds": [
+              "e-stage",
+              "e-rule"
+            ],
+            "missingFields": []
+          },
+          {
+            "id": "m-revisions",
+            "code": "REVISION_COUNT",
+            "label": "Vòng yêu cầu sửa",
+            "value": 0,
+            "unit": "COUNT",
+            "basis": "CURRENT",
+            "formula": "Đếm các quyết định yêu cầu sửa đã ghi.",
+            "evidenceIds": [
+              "e-stage"
+            ],
+            "missingFields": []
+          }
+        ],
+        "context": [
+          {
+            "key": "stage",
+            "label": "Công đoạn",
+            "value": "Chờ nghiệm thu",
+            "valueType": "TEXT"
+          },
+          {
+            "key": "calendar",
+            "label": "Cách tính thời gian",
+            "value": "Liên tục, gồm cả ngoài giờ làm việc",
+            "valueType": "TEXT"
+          }
+        ],
+        "series": [],
+        "evidence": [
+          {
+            "id": "e-stage",
+            "sourceType": "SUBMISSION",
+            "sourceId": "s-pending",
+            "label": "Lần nộp 1 đang chờ từ 22/10, 16:00.",
+            "observedAt": "2026-10-22T09:00:00.000Z",
+            "action": {
+              "target": "SUBMISSION_REVIEW",
+              "taskId": "t-4",
+              "submissionId": "s-pending",
+              "reportId": null
+            }
+          },
+          {
+            "id": "e-rule",
+            "sourceType": "AGGREGATE",
+            "sourceId": null,
+            "label": "Ngưỡng minh họa 24 giờ liên tục; không phải giờ công.",
+            "observedAt": null,
+            "action": null
+          }
+        ]
+      },
+      "freshness": {
+        "status": "CURRENT",
+        "checkedAt": "2026-10-23T10:05:00.000Z",
+        "latestAnalysisId": null
+      },
+      "explanation": {
+        "status": "READY",
+        "lastSuccess": {
+          "id": "exp-bottleneck-t4-001",
+          "analysisId": "an-bottleneck-t4-001",
+          "snapshotId": "snap-bottleneck-t4-001",
+          "locale": "vi-VN",
+          "generatedAt": "2026-10-23T10:01:00.000Z",
+          "modelDisplayName": "LLM cấu hình sẵn",
+          "promptVersion": "analysis-vi-v1",
+          "summary": "Khâu chờ nghiệm thu đang vượt ngưỡng theo dõi minh họa; nên ưu tiên đối chiếu kết quả đã nộp.",
+          "findings": [
+            {
+              "id": "f-1",
+              "title": "Chờ lâu hơn ngưỡng",
+              "text": "Thời gian ở bước chờ là 25 giờ liên tục, cao hơn ngưỡng theo dõi 24 giờ một giờ.",
+              "metricIds": [
+                "m-stage",
+                "m-limit",
+                "m-excess"
+              ],
+              "evidenceIds": [
+                "e-stage",
+                "e-rule"
+              ]
+            }
+          ],
+          "recommendations": [
+            {
+              "id": "r-1",
+              "title": "Kiểm tra hàng chờ xét kết quả",
+              "text": "Đối chiếu lần nộp và phân công người phản hồi trong thẩm quyền.",
+              "priority": "HIGH",
+              "evidenceIds": [
+                "e-stage"
+              ],
+              "action": {
+                "target": "REVIEW_QUEUE",
+                "taskId": null,
+                "submissionId": null,
+                "reportId": null
+              }
+            }
+          ],
+          "limitations": [
+            "Ngưỡng 24 giờ là giá trị thử nghiệm cần BE cấu hình. Thời gian liên tục không phải giờ công."
+          ]
+        },
+        "activeJobId": null,
+        "error": null
+      },
+      "generation": {
+        "allowed": true,
+        "blockedReason": null,
+        "retryAfterSeconds": null
+      },
+      "systemSummary": "Kết quả đang chờ nghiệm thu 1.500 phút liên tục, vượt ngưỡng thử nghiệm 1.440 phút là 60 phút; chưa có vòng yêu cầu sửa.",
+      "feedback": {
+        "latest": null,
+        "canSubmit": true
+      }
+    },
+    {
+      "snapshot": {
+        "id": "snap-summary-main-001",
+        "analysisId": "an-summary-main-001",
+        "sourceRevision": "p-main-src-20261023-v1",
+        "analysisType": "SUMMARY",
+        "title": "Tổng quan dự án Cổng quản lý nội bộ",
+        "subject": {
+          "kind": "PROJECT",
+          "projectId": "p-main"
+        },
+        "scope": {
+          "projectId": "p-main",
+          "from": "2026-10-01",
+          "to": "2026-10-23"
+        },
+        "dataAsOf": "2026-10-23T10:00:00.000Z",
+        "createdAt": "2026-10-23T10:00:00.000Z",
+        "expiresAt": "2026-10-30T10:00:00.000Z",
+        "calculationVersion": "business-rules-v2",
+        "quality": {
+          "status": "PARTIAL",
+          "missingFields": [
+            "capacityCalendar"
+          ],
+          "scopeLimited": false
+        },
+        "metrics": [
+          {
+            "id": "m-valid",
+            "code": "K01",
+            "label": "Công việc được tính",
+            "value": 5,
+            "unit": "TASK",
+            "basis": "CURRENT",
+            "formula": "6 công việc − 1 đã hủy.",
+            "evidenceIds": [
+              "e-tasks"
+            ],
+            "missingFields": []
+          },
+          {
+            "id": "m-completed",
+            "code": "K02_CURRENT",
+            "label": "Đã hoàn thành",
+            "value": 1,
+            "unit": "TASK",
+            "basis": "CURRENT",
+            "formula": "Số công việc COMPLETED tại dataAsOf.",
+            "evidenceIds": [
+              "e-tasks"
+            ],
+            "missingFields": []
+          },
+          {
+            "id": "m-completion",
+            "code": "K03",
+            "label": "Tỷ lệ hoàn thành",
+            "value": 20,
+            "unit": "PERCENT",
+            "basis": "CURRENT",
+            "formula": "1 / 5 × 100.",
+            "evidenceIds": [
+              "e-tasks"
+            ],
+            "missingFields": []
+          },
+          {
+            "id": "m-overdue",
+            "code": "K04",
+            "label": "Công việc quá hạn",
+            "value": 1,
+            "unit": "TASK",
+            "basis": "CURRENT",
+            "formula": "Việc mở và dataAsOf > dueAt.",
+            "evidenceIds": [
+              "e-tasks"
+            ],
+            "missingFields": []
+          },
+          {
+            "id": "m-hours",
+            "code": "K06",
+            "label": "Giờ công trong kỳ",
+            "value": 6,
+            "unit": "HOUR",
+            "basis": "PERIOD",
+            "formula": "(180 + 120 + 60) / 60.",
+            "evidenceIds": [
+              "e-logs"
+            ],
+            "missingFields": []
+          },
+          {
+            "id": "m-pending",
+            "code": "PENDING_REVIEW_COUNT",
+            "label": "Chờ nghiệm thu",
+            "value": 1,
+            "unit": "TASK",
+            "basis": "CURRENT",
+            "formula": "Giá trị từ dữ liệu nguồn đã lọc quyền.",
+            "evidenceIds": [
+              "e-tasks"
+            ],
+            "missingFields": []
+          }
+        ],
+        "context": [
+          {
+            "key": "project",
+            "label": "Dự án",
+            "value": "Cổng quản lý nội bộ",
+            "valueType": "TEXT"
+          }
+        ],
+        "series": [],
+        "evidence": [
+          {
+            "id": "e-tasks",
+            "sourceType": "AGGREGATE",
+            "sourceId": null,
+            "label": "6 công việc: mỗi trạng thái có 1; t-4 chờ nghiệm thu quá hạn.",
+            "observedAt": "2026-10-23T10:00:00.000Z",
+            "action": null
+          },
+          {
+            "id": "e-logs",
+            "sourceType": "AGGREGATE",
+            "sourceId": null,
+            "label": "3 nhật ký ACTIVE: 180, 120 và 60 phút trong kỳ.",
+            "observedAt": "2026-10-23T10:00:00.000Z",
+            "action": null
+          }
+        ]
+      },
+      "freshness": {
+        "status": "CURRENT",
+        "checkedAt": "2026-10-23T10:05:00.000Z",
+        "latestAnalysisId": null
+      },
+      "explanation": {
+        "status": "READY",
+        "lastSuccess": {
+          "id": "exp-summary-main-001",
+          "analysisId": "an-summary-main-001",
+          "snapshotId": "snap-summary-main-001",
+          "locale": "vi-VN",
+          "generatedAt": "2026-10-23T10:01:00.000Z",
+          "modelDisplayName": "LLM cấu hình sẵn",
+          "promptVersion": "analysis-vi-v1",
+          "summary": "Dự án có một công việc hoàn thành trong năm việc được tính; khâu nghiệm thu là điểm nên xem trước.",
+          "findings": [
+            {
+              "id": "f-1",
+              "title": "Tiến độ hiện tại",
+              "text": "Tỷ lệ hoàn thành hiện là 20%. Một công việc quá hạn đang nằm ở bước chờ nghiệm thu.",
+              "metricIds": [
+                "m-completion",
+                "m-overdue",
+                "m-pending"
+              ],
+              "evidenceIds": [
+                "e-tasks"
+              ]
+            },
+            {
+              "id": "f-2",
+              "title": "Giờ công có nguồn đối chiếu",
+              "text": "Trong kỳ có 6 giờ công hợp lệ từ ba nhật ký; số giờ không được cộng thêm từ báo cáo.",
+              "metricIds": [
+                "m-hours"
+              ],
+              "evidenceIds": [
+                "e-logs"
+              ]
+            }
+          ],
+          "recommendations": [
+            {
+              "id": "r-1",
+              "title": "Ưu tiên xem kết quả chờ",
+              "text": "Xử lý hàng chờ trước khi điều chỉnh kế hoạch hoặc người thực hiện.",
+              "priority": "HIGH",
+              "evidenceIds": [
+                "e-tasks"
+              ],
+              "action": {
+                "target": "REVIEW_QUEUE",
+                "taskId": null,
+                "submissionId": null,
+                "reportId": null
+              }
+            }
+          ],
+          "limitations": [
+            "Thiếu lịch khả dụng nên chưa kết luận tải nhân sự. Quy mô dữ liệu mẫu nhỏ, không dùng để dự báo xác suất trễ."
+          ]
+        },
+        "activeJobId": null,
+        "error": null
+      },
+      "generation": {
+        "allowed": true,
+        "blockedReason": null,
+        "retryAfterSeconds": null
+      },
+      "systemSummary": "Dự án có 5 công việc không hủy, 1 công việc hoàn thành (20%), 1 việc đang quá hạn và 360 phút giờ công trong kỳ.",
+      "feedback": {
+        "latest": null,
+        "canSubmit": false
+      }
+    },
+    {
+      "snapshot": {
+        "id": "snap-metric-k06-001",
+        "analysisId": "an-metric-k06-001",
+        "sourceRevision": "p-main-src-20261023-v1",
+        "analysisType": "METRIC",
+        "title": "Chi tiết giờ công trong kỳ",
+        "subject": {
+          "kind": "METRIC",
+          "metricCode": "K06"
+        },
+        "scope": {
+          "projectId": "p-main",
+          "from": "2026-10-01",
+          "to": "2026-10-23"
+        },
+        "dataAsOf": "2026-10-23T10:00:00.000Z",
+        "createdAt": "2026-10-23T10:00:00.000Z",
+        "expiresAt": "2026-10-30T10:00:00.000Z",
+        "calculationVersion": "business-rules-v2",
+        "quality": {
+          "status": "SUFFICIENT",
+          "missingFields": [],
+          "scopeLimited": false
+        },
+        "metrics": [
+          {
+            "id": "m-hours",
+            "code": "K06",
+            "label": "Tổng giờ công",
+            "value": 6,
+            "unit": "HOUR",
+            "basis": "PERIOD",
+            "formula": "Tổng phút nhật ký ACTIVE / 60.",
+            "evidenceIds": [
+              "e-tl1",
+              "e-tl2",
+              "e-tl3"
+            ],
+            "missingFields": []
+          },
+          {
+            "id": "m-minutes",
+            "code": "ACTUAL_MINUTES",
+            "label": "Phút đã ghi",
+            "value": 360,
+            "unit": "MINUTE",
+            "basis": "PERIOD",
+            "formula": "180 + 120 + 60.",
+            "evidenceIds": [
+              "e-tl1",
+              "e-tl2",
+              "e-tl3"
+            ],
+            "missingFields": []
+          },
+          {
+            "id": "m-logs",
+            "code": "LOG_COUNT",
+            "label": "Nhật ký hợp lệ",
+            "value": 3,
+            "unit": "COUNT",
+            "basis": "PERIOD",
+            "formula": "Đếm 3 nhật ký ACTIVE.",
+            "evidenceIds": [
+              "e-tl1",
+              "e-tl2",
+              "e-tl3"
+            ],
+            "missingFields": []
+          },
+          {
+            "id": "m-people",
+            "code": "PEOPLE_COUNT",
+            "label": "Người đã ghi giờ",
+            "value": 2,
+            "unit": "COUNT",
+            "basis": "PERIOD",
+            "formula": "Đếm những người khác nhau đã ghi nhật ký.",
+            "evidenceIds": [
+              "e-tl1",
+              "e-tl2",
+              "e-tl3"
+            ],
+            "missingFields": []
+          }
+        ],
+        "context": [
+          {
+            "key": "period",
+            "label": "Kỳ dữ liệu",
+            "value": "01/10–23/10/2026",
+            "valueType": "TEXT"
+          },
+          {
+            "key": "basis",
+            "label": "Nguồn tính",
+            "value": "Nhật ký còn hiệu lực, theo người ghi",
+            "valueType": "TEXT"
+          }
+        ],
+        "series": [
+          {
+            "id": "s-hours",
+            "label": "Giờ công theo ngày có nhật ký",
+            "unit": "HOUR",
+            "points": [
+              {
+                "date": "2026-10-22",
+                "value": 3
+              },
+              {
+                "date": "2026-10-23",
+                "value": 3
+              }
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e-tl1",
+            "sourceType": "TIME_LOG",
+            "sourceId": "tl-1",
+            "label": "Lan: 180 phút ngày 23/10.",
+            "observedAt": "2026-10-23T09:00:00.000Z",
+            "action": {
+              "target": "TASK_DETAIL",
+              "taskId": "t-3",
+              "submissionId": null,
+              "reportId": null
+            }
+          },
+          {
+            "id": "e-tl2",
+            "sourceType": "TIME_LOG",
+            "sourceId": "tl-2",
+            "label": "Huy: 120 phút ngày 22/10.",
+            "observedAt": "2026-10-22T08:30:00.000Z",
+            "action": {
+              "target": "TASK_DETAIL",
+              "taskId": "t-4",
+              "submissionId": null,
+              "reportId": null
+            }
+          },
+          {
+            "id": "e-tl3",
+            "sourceType": "TIME_LOG",
+            "sourceId": "tl-3",
+            "label": "Lan: 60 phút ngày 22/10.",
+            "observedAt": "2026-10-22T07:30:00.000Z",
+            "action": {
+              "target": "TASK_DETAIL",
+              "taskId": "t-5",
+              "submissionId": null,
+              "reportId": null
+            }
+          }
+        ]
+      },
+      "freshness": {
+        "status": "CURRENT",
+        "checkedAt": "2026-10-23T10:05:00.000Z",
+        "latestAnalysisId": null
+      },
+      "explanation": {
+        "status": "READY",
+        "lastSuccess": {
+          "id": "exp-metric-k06-001",
+          "analysisId": "an-metric-k06-001",
+          "snapshotId": "snap-metric-k06-001",
+          "locale": "vi-VN",
+          "generatedAt": "2026-10-23T10:01:00.000Z",
+          "modelDisplayName": "LLM cấu hình sẵn",
+          "promptVersion": "analysis-vi-v1",
+          "summary": "Sáu giờ công trong kỳ được đối chiếu với ba nhật ký hợp lệ của hai người.",
+          "findings": [
+            {
+              "id": "f-1",
+              "title": "Phân bổ theo người ghi",
+              "text": "Lan ghi tổng 240 phút và Huy ghi 120 phút. Giờ lịch sử vẫn thuộc người đã ghi kể cả sau bàn giao công việc.",
+              "metricIds": [
+                "m-hours",
+                "m-minutes",
+                "m-logs",
+                "m-people"
+              ],
+              "evidenceIds": [
+                "e-tl1",
+                "e-tl2",
+                "e-tl3"
+              ]
+            }
+          ],
+          "recommendations": [
+            {
+              "id": "r-1",
+              "title": "Mở công việc để xem nhật ký",
+              "text": "Kiểm tra nhật ký nguồn khi cần giải thích số giờ đã ghi.",
+              "priority": "NORMAL",
+              "evidenceIds": [
+                "e-tl1"
+              ],
+              "action": {
+                "target": "TASK_DETAIL",
+                "taskId": "t-3",
+                "submissionId": null,
+                "reportId": null
+              }
+            }
+          ],
+          "limitations": [
+            "Giờ đã ghi không tự thể hiện mức độ hoàn thành hoặc năng lực. Chỉ thống kê các nhật ký còn hiệu lực trong phạm vi."
+          ]
+        },
+        "activeJobId": null,
+        "error": null
+      },
+      "generation": {
+        "allowed": true,
+        "blockedReason": null,
+        "retryAfterSeconds": null
+      },
+      "systemSummary": "Tổng giờ công trong kỳ là 6 giờ, từ 360 phút của 3 nhật ký còn hiệu lực, do 2 người ghi.",
+      "feedback": {
+        "latest": null,
+        "canSubmit": false
+      }
+    }
+  ]
+}
+
+14. SCENARIO LLM VÀ ĐIỀU KIỆN CHUYỂN
+
+- llm-ready / FULL: 5 snapshot và lời tương ứng READY; click chi tiết dùng cache, không tạo lời mới.
+- llm-not-requested: status NOT_REQUESTED, lastSuccess/activeJobId/error=null, allowed=true; lần mở chủ động chỉ tạo một REUSE_OR_CREATE.
+- llm-queued: QUEUED, activeJobId có giá trị, lastSuccess=null; timer chuyển RUNNING sau mốc định trước.
+- llm-running: RUNNING, metrics đã có; timer chuyển SUCCEEDED rồi cập nhật explanation READY; GET không tự đổi job.
+- llm-failed: job FAILED, error code PROVIDER_TIMEOUT, retryable=true; explanation FAILED, lastSuccess=null. Chỉ click Thử lại mới tạo lượt mới.
+- llm-unavailable: config available=false; explanation UNAVAILABLE, generation.allowed=false, blockedReason=LLM_NOT_CONFIGURED. Số liệu vẫn trả 200.
+- llm-rate-limit: error PROVIDER_RATE_LIMIT + retryAfterSeconds=30; UI chờ đủ thời gian và không tự lặp mutation.
+- llm-output-invalid: output provider có citation không tồn tại hoặc claim số mâu thuẫn; BE/mock chặn thành FAILED/OUTPUT_INVALID. Không trả READY sai cho FE.
+- invalid-response: API JSON sai kiểu/thiếu field/không khớp snapshot; FE Zod báo ContractError. Đây khác lỗi provider đã được BE chuẩn hóa ở trên.
+- llm-partial: snapshot workload-lan còn thiếu remaining của t-2/capacity; lời nêu giới hạn, không kết luận tải >100%.
+- llm-insufficient: mọi measure không đủ nguồn có value=null, quality INSUFFICIENT, evidence=[]; explanation UNAVAILABLE, blockedReason=INSUFFICIENT_DATA, không tạo job. Không đổi null thành 0.
+- llm-regenerate-failed: READY -> RUNNING với lastSuccess giữ nguyên -> FAILED với lastSuccess cùng snapshot. UI giữ lời tốt trước và báo lượt mới lỗi.
+- llm-outdated: clone snapshot mới ID ...-002 sau sự kiện t-4 được nghiệm thu lúc 10:03Z; dataAsOf mới 10:05Z, trạng thái COMPLETED, quá hạn hiện tại=0, thời gian chờ đã chốt=1503 phút. Snapshot ...-001 vẫn giữ số cũ 1440/1500 và lời cũ. Wrapper cũ OUTDATED/latestAnalysisId mới; không tạo lại trên snapshot cũ.
+- llm-expired: clock sau expiresAt; get detail/create job trả 410 SNAPSHOT_EXPIRED và FE lấy ref mới từ tổng quan.
+- llm-late-result: đang xem analysisId B thì job A xong; chỉ cache A được cập nhật, B giữ đúng metrics/lời của B.
+- llm-permission-revoked: mất membership/quyền sau khi tạo; detail/job/explanation trả 403, cache FE bị loại; không lộ snapshot cũ.
+- llm-source-injection: mô tả nguồn chứa câu chỉ dẫn; fixture vẫn chỉ tạo phân tích từ metric/evidence hợp lệ, không sinh action ngoài enum hoặc ghi dữ liệu.
+
+15. KIỂM TRA THAM CHIẾU VÀ SỐ LIỆU
+- RISK t-4: due 22/10 17:00, nộp 22/10 16:00, dataAsOf 23/10 17:00 -> quá hạn 1440 phút, chờ 1500 phút, đã ghi 120 phút. Nộp đúng hạn, không gọi là nộp muộn.
+- WORKLOAD Lan: t-2+t-3 là 2 việc, tổng dự kiến 960 phút; còn lại tổng=null vì t-2 chưa cập nhật; capacity/utilization=null do thiếu lịch.
+- BOTTLENECK: 1500 − ngưỡng minh họa 1440 =60 phút vượt ngưỡng, theo giờ liên tục.
+- SUMMARY: 6 việc gồm 1 hủy ->5 được tính; 1 hoàn thành ->20%; 1 quá hạn chờ nghiệm thu; 3 log tổng 360 phút=6 giờ.
+- METRIC K06: 22/10 có 120+60=180 phút; 23/10 có 180 phút; 2 người, 3 log. Không cộng thời gian từ báo cáo hoặc trạng thái.
+- Mọi detail.snapshot.id = explanation.lastSuccess.snapshotId và analysisId khớp. Tập metricIds/evidenceIds là tập con đúng snapshot. Không đưa URL tự do từ LLM vào action.
+
+16. BỔ SUNG DỰ ÁN DỰ KIẾN CHO ẢNH S08
+{
+  "id": "p-planned",
+  "version": 1,
+  "createdAt": "2026-10-01T02:00:00.000Z",
+  "updatedAt": "2026-10-01T02:00:00.000Z",
+  "code": "PLAN",
+  "name": "Dự án kế tiếp",
+  "objective": "Chuẩn bị kế hoạch và thành viên trước khi triển khai.",
+  "unitId": "unit-product",
+  "ownerId": "u-pm",
+  "startDate": "2026-11-01",
+  "dueAt": "2026-12-31T10:00:00.000Z",
+  "status": "PLANNED",
+  "completedAt": null,
+  "cancelledAt": null
+}
+Thêm membership m-pm-planned cho u-pm, projectRole OWNER và đủ quyền dự án; các nhân viên khác chưa là thành viên nếu scenario không khai báo thêm.
+
+FULL bổ sung Audit t-6 cho lần hủy: actor u-pm, at=2026-10-22T09:00:00.000Z, reason=Không còn trong phạm vi mục tiêu dự án. Giữ lịch sử phân công và giờ đã ghi theo model.
+
+17. QUY TẮC ĐỦ REF CHO MỌI ĐIỂM CLICK
+- Mọi analysisRef được trả về từ list/dashboard/alert phải truy xuất được bằng GET detail cho đến expiresAt; không dùng ID ví dụ không có snapshot. Read model được BE/mock dựng hoặc đọc cache; đây không phải thay đổi dữ liệu nghiệp vụ hay một lượt LLM.
+- 16 KPI: tạo snapshot METRIC riêng theo metricCode và scope, value/unit/basis/denominator từ MetricDTO, công thức theo METRICS_K01_K16; chứng cứ là nguồn đóng góp hoặc aggregate đã lọc quyền. K13/K14 thiếu lịch giữ null và giới hạn, không chép số của K06.
+- Các row WORKLOAD ngoài Lan: Huy có 0 TODO/IN_PROGRESS, dự kiến 0, còn lại 0, 1 chờ xét, capacity/utilization=null; Minh có 0 việc đang nhận và capacity/utilization=null. Mỗi người có subject userId/ref riêng, lời mô phỏng lấy đúng số của người đó. Không reuse narrative của Lan.
+- WORKLOAD cho toàn dự án: 2 TODO/IN_PROGRESS, dự kiến 960 phút, còn lại tổng=null, capacity/utilization=null, 1 chờ xét; phân tích không kết luận quá tải.
+- Các task nguy cơ khác: dựng RISK snapshot theo task nguồn và quality, không chép thông số/lời của t-4 sang t-2/t-3. Nếu chưa đủ dữ liệu thì blockedReason/limitations đúng nguyên nhân.
+- Project comparison/overviewRef của p-main trỏ SUMMARY p-main; p-planned không có task thì số đếm 0 và tỷ lệ có mẫu số 0 là null, không dựng tiến độ giả.
+- Alert type BOTTLENECK của t-4 trỏ an-bottleneck-t4-001; các type khác map đúng analysisType và subject.
+- Với ref không thuộc 5 fixture minh họa đầy đủ, handler dựng snapshot deterministic theo công thức rồi đặt NOT_REQUESTED hoặc UNAVAILABLE/INSUFFICIENT_DATA. Khi mock job thành công, dùng lời fixture đúng loại/subject và số đã tính; không gọi provider thật hoặc lặp nguyên lời của một đối tượng khác.
+- Cả read index, snapshot và narrative cache đều gắn scope quyền; biết ID không đủ để đọc dữ liệu.
+
+
+19. BỔ SUNG SAU ĐỐI CHIẾU CHỨC NĂNG NGUỒN (TÀI LIỆU 0.4)
+
+19.1 analysisFeedback: array<AnalysisFeedbackModel>, ban đầu [].
+  Field: id, analysisId, snapshotId, verdict CONFIRMED/REJECTED, comment 1–2000 sau trim, actorId, createdAt. Model lưu ID; response dựng actor PersonRef.
+  Chỉ nhận BOTTLENECK còn CURRENT/chưa hết hạn, có ANALYTICS_VIEW và ALERTS_MANAGE. Không sửa phản hồi cũ; lần mới append, latest là bản mới nhất của chính viewer/snapshot.
+  Replay cùng key/payload trả cùng receipt; key trùng/payload khác trả 409. Không biến xác nhận nhận định thành chấp nhận kết quả công việc hoặc đóng cảnh báo.
+  Scenario: confirmed, rejected-with-comment, empty-comment-422, read-only-viewer-403, outdated-409, expired-410, permission-revoked-403, replay-one-record, later-feedback-keeps-history.
+
+19.2 Tổng hợp theo mẫu luôn sẵn sàng khi nguồn hợp lệ.
+  getAnalysisSummary.summaryText và getAnalysisDetail.systemSummary do rule/template của BE/mock tạo từ cùng snapshot, không do LLM.
+  Dùng nhãn “Tổng hợp theo số liệu”; vẫn có khi NOT_REQUESTED, RUNNING, FAILED, UNAVAILABLE hoặc OUTPUT_INVALID. Không đủ nguồn thì nêu rõ thiếu dữ liệu, không tự kết luận.
+  LLM summary/findings chỉ hiện ở vùng “AI phân tích”. Không dùng template để giả READY.
+
+19.3 Tổng hợp nguy cơ dự án và phạm vi nhân sự.
+  getDeadlineRisks.projects dựng ProjectRiskSummaryDTO cho từng dự án được phép xem. Đếm riêng overdue/atRisk/insufficient từ cùng tập task; mức dự án dùng ruleIds/evidence, không lấy phần trăm cảnh báo làm xác suất.
+  AnalysisRef của dòng dự án: analysisType=RISK, subject.kind=PROJECT. Chi tiết tổng hợp phải resolve được qua store snapshot/ref như các ref khác, không ghép lời của t-4 vào dự án.
+  AnalyticsQuery.teamId lọc người là thành viên nhóm hiện tại; không đồng nghĩa nhóm được xem toàn bộ dự án. Source snapshot ghi scope teamId đã lọc quyền, scopeLimited=true nếu thiếu tải ngoài phạm vi.
+  Dashboard nhiều dự án: p-main có 5 việc không hủy, 20%, 1 việc quá hạn, 360 phút; p-planned không có việc, completionRate=null, actualMinutes=0, overdueCount=0. Không đổi null thành 0%.
+
+19.4 NotificationDeliveryModel nội bộ mô phỏng QT-T33/QT-D06.
+  Model tạm hiện hành (mở rộng theo yêu cầu 03/11): id, eventId, recipientId, type, taskId, submissionId/alertId tùy loại, createdAt, readAt nullable, status PENDING/SENT/FAILED, attemptCount. Tham số retry kênh gửi ngoài thuộc BE thực, chưa mô phỏng lịch retry. Không trả recipientId/eventId/status/attemptCount hoặc credential/provider stack trong API thông báo.
+  Chỉ tạo sau commit giao việc/nộp/duyệt/yêu cầu sửa/đổi kế hoạch. Lỗi gửi giữ nghiệp vụ đã lưu; retry cùng eventId+recipientId không tạo lại task/submission/decision.
+  Cảnh báo dedupe theo project+subject+type+analysisWindow; vấn đề còn thì cập nhật evidence/dataAsOf và không phát thông báo trùng liên tục. Điều kiện hết đặt conditionActive=false, giữ quyết định xử lý/lịch sử.
+  Scheduler rule chạy độc lập GET/LLM. Người dùng đã yêu cầu chuông thông báo ngày 03/11: cho phép 3 API list/summary/mark read theo api/NOTIFICATIONS.md, vẫn không thêm trang inbox. Notification dùng sự kiện có thật, GET không tạo sự kiện; đánh dấu đọc không đổi trạng thái công việc.
+
+
+19.5 Bộ lọc có nguồn được phép.
+  listAnalyticsFilterOptions(kind, q, unitId, projectId, teamId, page, pageSize) đọc tập lựa chọn từ scope phiên, chỉ trả id/name. PERSON không trả email/credential/quyền. UNIT mặc định chỉ Phòng sản phẩm với persona Minh; PROJECT có p-main/p-planned trong quyền. TEAM trả nhóm hợp lệ; PERSON là giao của nhóm/dự án được phép khi chọn filter cha.
+  Phân trang/tìm kiếm chạy sau lọc quyền; tự thêm ID ngoài scope vào query vẫn bị từ chối ở API số liệu. Không dùng listUsers/listUnits/listTeams quản trị làm lookup analytics.
+  Dashboard.projectComparisons bổ sung projectName/actualMinutes để bảng không phải tự ghép tên hoặc suy giờ theo người nhận hiện tại.
+  Trend FULL: ngày 22/10 có 1 completedCount và 2 submissionCount (lần nộp t-4 và t-5); ngày 23/10 cả hai bằng 0 đã được xác nhận bởi fixture đầy đủ. Giờ công mỗi ngày là 180 phút. Không suy 0 từ ngày thiếu bucket.
+
+
+19.6 Tổng hợp đơn vị và phản hồi mẫu.
+  Subject UNIT {kind:UNIT,unitId} được dùng cho SUMMARY khi S33/S39 chọn một đơn vị và nhiều dự án. Mỗi số liệu/nguồn/phân tíchRef cùng scope đã lọc quyền; không dùng lời p-main để đại diện toàn đơn vị nếu còn dự án khác có dữ liệu.
+  Nếu query không có unitId/projectId, BE dùng đơn vị mặc định của phiên nếu có quyền; không có mặc định hợp lệ thì trả 422, không tự mở phạm vi toàn hệ thống. S39 giữ unit/project/kỳ từ nguồn; SUMMARY snapshot PROJECT hoặc UNIT phải trùng scope.
+  Trong FULL hiện tại, đơn vị gồm p-main và p-planned; dự án kế tiếp chưa có việc nên tổng 6 task/5 không hủy/1 hoàn thành/360 phút, tỷ lệ 20%. Summary đơn vị phải ghi hai dự án và một dự án chưa có việc, không gọi đó là snapshot p-main.
+  Scenario feedback-confirmed (không thuộc seed ban đầu): POST /analytics/details/an-bottleneck-t4-001/feedback body {"verdict":"CONFIRMED","comment":"Đã đối chiếu lần nộp; kết quả vẫn đang chờ nghiệm thu tại mốc dữ liệu."}.
+  Response JSON mẫu: {"id":"fb-bottleneck-001","analysisId":"an-bottleneck-t4-001","snapshotId":"snap-bottleneck-t4-001","verdict":"CONFIRMED","comment":"Đã đối chiếu lần nộp; kết quả vẫn đang chờ nghiệm thu tại mốc dữ liệu.","actorId":"u-pm","actor":{"id":"u-pm","displayName":"Nguyễn Minh"},"createdAt":"2026-10-23T10:05:00.000Z"}. DTO được trả trực tiếp. GET detail của viewer này có feedback.latest bằng receipt đó; viewer khác không được nhận phản hồi riêng của người trước như của mình.

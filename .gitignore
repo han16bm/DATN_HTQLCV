@@ -1,0 +1,62 @@
+# Dependencies and framework output
+node_modules/
+.next/
+out/
+dist/
+build/
+.turbo/
+.cache/
+*.tsbuildinfo
+next-env.d.ts
+
+# Tests and runtime logs
+coverage/
+test-results/
+playwright-report/
+# Local UI screenshots and review exports
+/artifacts/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files; retain only the example
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# .NET build output (BE/)
+bin/
+obj/
+*.user
+.vs/
+
+# AI coding assistant support files
+.claude/
+.cursor/
+.windsurf/
+.aider*
+
+# Local editor and operating system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.tmp
+*.swp
+
+# Cấu hình bootstrap dùng chung của BE (connection string, JWT signing key) — chỉ commit file .example
+BE/appsettings.Shared.json
+# Tệp upload lúc chạy (kể cả tệp mẫu do Tools/DataSeeder ghi ra) — dữ liệu runtime, không commit
+BE/Services/Tasks.Api/wwwroot/uploads/
+# Tệp người dùng tải lên khi lưu cục bộ (Storage:Provider Local/Auto chưa có Cloudinary)
+BE/Services/*/App_Data/
+
+# Playwright MCP snapshots/screenshots
+.playwright-mcp/

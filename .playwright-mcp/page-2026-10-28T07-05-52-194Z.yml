@@ -1,0 +1,86 @@
+- generic:
+  - generic [aria-hidden]:
+    - complementary:
+      - generic:
+        - link:
+          - /url: /workspace
+          - generic: Cổng công việc
+        - button
+      - generic:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph: Phong CNTT
+      - navigation:
+        - generic:
+          - button [expanded]:
+            - generic: Công việc
+          - generic:
+            - link:
+              - /url: /workspace
+              - generic: Tổng quan cá nhân
+            - link:
+              - /url: /projects
+              - generic: Dự án
+            - link:
+              - /url: /tasks
+              - generic: Công việc
+            - link:
+              - /url: /reviews
+              - generic: Chờ nghiệm thu
+            - link:
+              - /url: /reports
+              - generic: Báo cáo công việc
+        - generic:
+          - button [expanded]:
+            - generic: Theo dõi & phân tích
+          - generic:
+            - link:
+              - /url: /dashboard
+              - generic: Bảng tổng quan
+            - link:
+              - /url: /analytics/risks
+              - generic: Phân tích & AI
+            - link:
+              - /url: /alerts
+              - generic: Cảnh báo
+        - generic:
+          - button [expanded]:
+            - generic: Quản trị hệ thống
+          - generic:
+            - link:
+              - /url: /admin/users
+              - generic: Tài khoản người dùng
+            - link:
+              - /url: /admin/organization
+              - generic: Cơ cấu đơn vị
+            - link:
+              - /url: /admin/teams
+              - generic: Nhóm nhân sự
+      - generic:
+        - paragraph: Theo phạm vi được cấp quyền
+    - generic:
+      - banner:
+        - generic:
+          - generic: Không gian làm việc
+          - strong: Dự án
+        - generic:
+          - button [expanded]:
+            - generic [aria-hidden]: tv
+            - generic:
+              - text: Quan tri vien
+              - generic: Quản trị viên
+      - main:
+        - generic:
+          - alert:
+            - heading [level=2]: Bạn chưa được cấp quyền
+            - paragraph: Vai trò của bạn không được truy cập trang này.
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f25e9] [cursor=pointer]
+  - alert
+  - menu "Mở menu tài khoản" [active] [ref=f25e131]:
+    - generic [ref=f25e132]:
+      - text: Quan tri vien
+      - generic [ref=f25e133]: Phong CNTT
+    - separator [ref=f25e134]
+    - menuitem "Hồ sơ công khai" [ref=f25e135] [cursor=pointer]
+    - menuitem "Hồ sơ cá nhân" [ref=f25e139] [cursor=pointer]
+    - menuitem "Đăng xuất" [ref=f25e143] [cursor=pointer]

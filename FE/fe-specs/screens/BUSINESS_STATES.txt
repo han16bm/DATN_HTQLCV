@@ -1,0 +1,62 @@
+BUSINESS STATES – TRẠNG THÁI NGHIỆP VỤ VÀ CHUYỂN ĐỔI
+Tài liệu 0.4 · Contract đề xuất 0.3.0 · Nguồn: trang 8–13, 29–39.
+
+1. TASK
+NEW: chưa có người nhận. Quản lý có TASKS_MANAGE được sửa/giao/hủy; không bắt đầu/ghi giờ/nộp.
+TODO: có một người nhận hiện tại. Người nhận được bắt đầu; quản lý được sửa/bàn giao/hủy theo quyền.
+IN_PROGRESS: người nhận hiện tại được tạm dừng, ghi giờ, cập nhật còn lại, nộp kết quả. Quản lý được sửa/bàn giao/hủy theo quyền.
+PENDING_REVIEW: chỉ đọc và xem lần nộp/lịch sử; người có TASKS_REVIEW và khác người nộp xét lần mới nhất. Không sửa/giao/ghi giờ/sửa giờ/hủy.
+COMPLETED: chỉ đọc, do quyết định chấp nhận, không mở lại.
+CANCELLED: chỉ đọc, có lý do hủy, không mở lại.
+
+Các chuyển đổi hợp lệ:
+1. assignTask: NEW → TODO; mở assignment duy nhất, giữ audit.
+2. startTask: TODO → IN_PROGRESS; chỉ người nhận hiện tại, dự án ACTIVE.
+3. pauseTask: IN_PROGRESS → TODO; bắt buộc lý do; không tự tạo thời gian từ đồng hồ trạng thái.
+4. assignTask bàn giao: TODO giữ TODO; IN_PROGRESS → TODO theo D06 đề xuất, giữ firstStartedAt và giờ người trước.
+5. createSubmission: IN_PROGRESS → PENDING_REVIEW; summary bắt buộc, giờ hợp lệ, tệp đã READY, snapshot hạn/giờ và sequence mới.
+6. approveSubmission: PENDING_REVIEW → COMPLETED; Submission ACCEPTED, completedAt, kết thúc assignment; cùng giao dịch, khác người nộp.
+7. requestSubmissionRevision: PENDING_REVIEW → IN_PROGRESS; Submission REVISION_REQUESTED, bắt buộc reviewComment và requestedChanges; không tự đổi người/hạn.
+8. cancelTask: NEW/TODO/IN_PROGRESS → CANCELLED; TASKS_MANAGE, lý do. Không hủy khi chờ xét/đã đóng.
+
+isOverdue là cờ tính khi còn mở và serverTime > dueAt; đúng thời điểm hạn chưa quá hạn. Không thêm trạng thái OVERDUE.
+Nộp muộn so submittedAt với dueAtSnapshot; hoàn tất muộn so reviewedAt của lần chấp nhận với cùng dueAtSnapshot. Giờ chờ xét không cộng vào giờ công.
+Chỉ status đổi mới đổi statusChangedAt. Hạn/dự kiến gốc giữ nguyên; đổi sau giao có changeReason và before/after.
+
+2. PROJECT
+PLANNED: chuẩn bị kế hoạch/thành viên, không thực hiện task/giờ/nộp/báo cáo nghiệp vụ.
+activateProject: PLANNED → ACTIVE.
+ACTIVE: thực hiện nghiệp vụ theo quyền.
+completeProject: ACTIVE → COMPLETED nếu closure checks không còn việc mở, không còn kết quả chờ và đã xác nhận báo cáo cần gửi.
+cancelProject: PLANNED/ACTIVE → CANCELLED có lý do, đã xử lý có kiểm soát việc mở/kết quả/báo cáo liên quan; không cascade hủy pending review.
+COMPLETED/CANCELLED: chỉ tra cứu, không mở lại hoặc sửa nghiệp vụ. Luôn duy trì người phụ trách hoạt động trước khi kết thúc tư cách người cuối.
+
+3. SUBMISSION
+PENDING → ACCEPTED hoặc REVISION_REQUESTED, chỉ lần mới nhất của Task PENDING_REVIEW, tối đa một quyết định.
+Không sửa nội dung lần nộp đã có. Nộp lại tạo sequence mới, giữ quyết định cũ.
+Tệp tải lỗi/chưa READY không tạo submission hoặc chuyển trạng thái task. Link/tệp tùy chọn; summary bắt buộc.
+
+4. TIME LOG
+ACTIVE được cộng phút; VOID bị loại khỏi tổng nhưng giữ bản ghi/lý do/lịch sử.
+Chỉ người nhận hiện tại sửa/VOID nhật ký của mình khi Task IN_PROGRESS. Giờ người đã bàn giao vẫn thuộc người ghi.
+Ngày thuộc phân công, không trước bắt đầu đầu tiên, không tương lai; số phút nguyên dương, tổng mọi task ≤1.440 phút/người/ngày, kể cả lưu đồng thời.
+
+5. REPORT
+DRAFT: riêng tác giả; được thiếu nội dung, sửa/làm mới preview; không ai khác được xem nháp.
+submitReport: DRAFT → SUBMITTED; BE tính lại nguồn và chốt snapshot, achievements/nextPlan có nội dung; 0 phút cần zeroTimeReason.
+SUBMITTED: bất biến; việc/log thay đổi về sau không sửa bản đã gửi. Không có gửi lại để ghi đè snapshot.
+Một tác giả+dự án+DAILY/WEEKLY+kỳ có một báo cáo. Trùng trả existingReportId để mở bản có sẵn.
+Ngày/kỳ Việt Nam, tuần thứ Hai–Chủ nhật, khoảng đầu kỳ bao gồm/đầu kỳ sau loại trừ; không tạo kỳ bắt đầu tương lai.
+Daily/Weekly đều đọc nhật ký gốc, không cộng báo cáo thành giờ công hoặc cộng giờ hai lần.
+
+6. ALERT
+UNREAD, READ, IN_PROGRESS, RESOLVED, DISMISSED là trạng thái xử lý.
+updateAlert chỉ đặt READ/IN_PROGRESS/RESOLVED/DISMISSED theo quyền, note bắt buộc khi khác READ; BE giữ actor/time/audit/version.
+conditionActive tách riêng: scheduler đánh giá điều kiện còn/hết. Đóng hoặc bác cảnh báo không làm task hoàn thành hoặc xóa bằng chứng.
+Dedupe cùng đối tượng/loại/khoảng phân tích; cập nhật căn cứ khi vấn đề còn. Hết điều kiện giữ lịch sử và quyết định người xử lý.
+
+7. CONSISTENCY VÀ NOTIFICATION
+Mỗi command kiểm tra quyền/trạng thái/version tại lúc nhận. Thay đổi liên quan cùng thành công hoặc cùng không áp dụng.
+If-Match thiếu 428/cũ 412; Idempotency-Key replay cùng payload có một hiệu lực. Không PATCH trực tiếp Task.status để bỏ qua command.
+Thông báo chỉ phát sau commit; gửi lỗi không rollback nghiệp vụ và không tạo nghiệp vụ trùng. Mock outbox/scheduler ở MOCK_MODELS.txt mục 19.4.
+Khóa khẩn cấp thu hồi truy cập ngay; vẫn giữ lịch sử và chuyển xử lý tồn đọng cho quản lý. Handover thông thường thực hiện trước khóa/rút thành viên.

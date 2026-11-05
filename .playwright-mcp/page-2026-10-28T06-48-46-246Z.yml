@@ -1,0 +1,107 @@
+- generic:
+  - generic [aria-hidden]:
+    - complementary:
+      - generic:
+        - link:
+          - /url: /workspace
+          - generic: Cổng công việc
+        - button
+      - generic:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph: Phong CNTT
+      - navigation:
+        - generic:
+          - button [expanded]:
+            - generic: Công việc
+          - generic:
+            - link:
+              - /url: /workspace
+              - generic: Tổng quan cá nhân
+            - link:
+              - /url: /projects
+              - generic: Dự án
+            - link:
+              - /url: /tasks
+              - generic: Công việc
+            - link:
+              - /url: /reviews
+              - generic: Chờ nghiệm thu
+            - link:
+              - /url: /reports
+              - generic: Báo cáo công việc
+        - generic:
+          - button [expanded]:
+            - generic: Theo dõi & phân tích
+          - generic:
+            - link:
+              - /url: /dashboard
+              - generic: Bảng tổng quan
+            - link:
+              - /url: /analytics/risks
+              - generic: Phân tích & AI
+            - link:
+              - /url: /alerts
+              - generic: Cảnh báo
+      - generic:
+        - paragraph: Theo phạm vi được cấp quyền
+    - generic:
+      - banner:
+        - generic:
+          - generic: Không gian làm việc
+          - strong: Công việc
+        - generic:
+          - button [expanded]:
+            - generic [aria-hidden]: QL
+            - generic:
+              - text: Nguyen Quan Ly
+              - generic: Quản lý
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=1]: Kiểm thử upload minh chứng
+                - generic: Chờ nghiệm thu
+                - generic: Ưu tiên bình thường
+              - paragraph: Dự án thử nghiệm E2E
+          - generic:
+            - combobox
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=1]: Đối chiếu kết quả · Lần 1
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=2]: Tiêu chí nghiệm thu
+              - paragraph: Tải lên tệp minh chứng thành công.
+            - generic:
+              - generic:
+                - heading [level=2]: Kết quả đã nộp
+              - generic: Chờ xét
+              - paragraph: Nguyen Quan Ly · 11:18 28/10/26
+              - paragraph: Đã tải minh chứng kiểm thử upload.
+              - generic:
+                - generic:
+                  - term: Hạn tại lúc nộp
+                  - definition: 17:00 5/11/26
+                - generic:
+                  - term: Tình trạng nộp
+                  - definition: Nộp trong hạn
+                - generic:
+                  - term: Giờ công tại lúc nộp
+                  - definition: 0,5 giờ
+              - generic:
+                - button: Tải evidence.txt (60 B)
+          - paragraph: Bạn đang xem kết quả đã nộp.
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f6e9] [cursor=pointer]
+  - alert
+  - menu "Mở menu tài khoản" [active] [ref=f6e154]:
+    - generic [ref=f6e155]:
+      - text: Nguyen Quan Ly
+      - generic [ref=f6e156]: Phong CNTT
+    - separator [ref=f6e157]
+    - menuitem "Hồ sơ công khai" [ref=f6e158] [cursor=pointer]
+    - menuitem "Hồ sơ cá nhân" [ref=f6e162] [cursor=pointer]
+    - menuitem "Đăng xuất" [ref=f6e166] [cursor=pointer]

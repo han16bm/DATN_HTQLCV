@@ -1,0 +1,111 @@
+- generic [active] [ref=f5e1]:
+  - generic [ref=f5e45]:
+    - complementary "Thanh điều hướng" [ref=f5e46]:
+      - generic [ref=f5e47]:
+        - link "Cổng công việc" [ref=f5e48] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f5e54] [cursor=pointer]
+      - generic [ref=f5e57]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f5e58]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f5e63]:
+        - generic [ref=f5e64]:
+          - button "Công việc" [expanded] [ref=f5e65] [cursor=pointer]
+          - generic [ref=f5e69]:
+            - link "Tổng quan cá nhân" [ref=f5e70] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f5e75] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f5e79] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f5e84] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f5e89] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f5e94]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f5e95] [cursor=pointer]
+          - generic [ref=f5e99]:
+            - link "Bảng tổng quan" [ref=f5e100] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f5e107] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f5e111] [cursor=pointer]:
+              - /url: /alerts
+      - paragraph [ref=f5e117]: Theo phạm vi được cấp quyền
+    - generic [ref=f5e118]:
+      - banner [ref=f5e119]:
+        - generic [ref=f5e120]:
+          - generic [ref=f5e121]: Không gian làm việc
+          - strong [ref=f5e124]: Tổng quan
+        - generic [ref=f5e125]:
+          - status "Đang cập nhật dữ liệu" [ref=f5e126]
+          - button "Mở menu tài khoản" [ref=f5e127] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f5e128]: LH
+            - generic [ref=f5e129]:
+              - text: Tran Quan Ly Hai
+              - generic [ref=f5e130]: Quản lý
+      - main [ref=f5e133]:
+        - generic [ref=f5e134]:
+          - generic [ref=f5e135]:
+            - heading "Chào Hai," [level=1] [ref=f5e138]
+            - generic [ref=f5e139]:
+              - link "Mở bảng tổng quan" [ref=f5e140] [cursor=pointer]:
+                - /url: /dashboard
+              - link "Lập báo cáo" [ref=f5e141] [cursor=pointer]:
+                - /url: /reports/new
+          - region "Số liệu cá nhân" [ref=f5e142]:
+            - link "Dự án Xem dự án" [ref=f5e143] [cursor=pointer]:
+              - /url: /projects
+              - generic [ref=f5e144]: Dự án
+              - strong [ref=f5e145]
+              - generic [ref=f5e147]: Xem dự án
+            - link "Báo cáo nháp Tiếp tục báo cáo" [ref=f5e148] [cursor=pointer]:
+              - /url: /reports?status=DRAFT&authorId=84513f59992d438584aa0608d7505d1d
+              - generic [ref=f5e149]: Báo cáo nháp
+              - strong [ref=f5e150]
+              - generic [ref=f5e152]: Tiếp tục báo cáo
+            - link "Chờ nghiệm thu Mở hàng chờ" [ref=f5e153] [cursor=pointer]:
+              - /url: /reviews
+              - generic [ref=f5e154]: Chờ nghiệm thu
+              - strong [ref=f5e155]
+              - generic [ref=f5e157]: Mở hàng chờ
+            - link "Công việc quá hạn Xem công việc" [ref=f5e158] [cursor=pointer]:
+              - /url: /tasks?overdue=true&assigneeId=84513f59992d438584aa0608d7505d1d
+              - generic [ref=f5e159]: Công việc quá hạn
+              - strong [ref=f5e160]
+              - generic [ref=f5e162]: Xem công việc
+          - status "Đang tải dữ liệu" [ref=f5e163]
+          - generic [ref=f5e186]:
+            - heading "Công việc của tôi" [level=1] [ref=f5e189]
+            - button "Bảng trạng thái" [ref=f5e191] [cursor=pointer]
+          - generic [ref=f5e192]:
+            - generic [ref=f5e193]:
+              - text: Tìm công việc
+              - searchbox "Tìm công việc" [ref=f5e194]
+            - generic [ref=f5e195]:
+              - text: Dự án
+              - combobox "Dự án" [ref=f5e196]:
+                - option "Tất cả dự án" [selected]
+            - generic [ref=f5e197]:
+              - text: Trạng thái
+              - combobox "Trạng thái" [ref=f5e198]:
+                - option "Tất cả" [selected]
+                - option "Quá hạn"
+                - option "Mới tạo"
+                - option "Chờ thực hiện"
+                - option "Đang thực hiện"
+                - option "Chờ nghiệm thu"
+                - option "Hoàn thành"
+                - option "Đã hủy"
+            - generic [ref=f5e199]:
+              - text: Ưu tiên
+              - combobox "Ưu tiên" [ref=f5e200]:
+                - option "Tất cả" [selected]
+                - option "Thấp"
+                - option "Bình thường"
+                - option "Cao"
+                - option "Khẩn cấp"
+          - status "Đang tải dữ liệu" [ref=f5e201]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f5e40] [cursor=pointer]
+  - alert [ref=f5e44]

@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/Services/">
+    <Project Path="Services/Analytics.Api/Analytics.Api.csproj" />
+    <Project Path="Services/Identity.Api/Identity.Api.csproj" />
+    <Project Path="Services/Projects.Api/Projects.Api.csproj" />
+    <Project Path="Services/Tasks.Api/Tasks.Api.csproj" />
+  </Folder>
+  <Folder Name="/Shared/">
+    <Project Path="Shared/Shared.Commons/Shared.Commons.csproj" />
+    <Project Path="Shared/Shared.Configuration/Shared.Configuration.csproj" />
+    <Project Path="Shared/Shared.Entities/Shared.Entities.csproj" />
+  </Folder>
+  <Folder Name="/Tools/">
+    <Project Path="Tools/DataSeeder/DataSeeder.csproj" />
+  </Folder>
+  <Project Path="Gateway/Gateway.csproj" />
+</Solution>

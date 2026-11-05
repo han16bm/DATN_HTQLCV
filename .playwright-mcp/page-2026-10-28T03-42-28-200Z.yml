@@ -1,0 +1,84 @@
+- generic [ref=f30e1]:
+  - generic [ref=f30e13]:
+    - complementary "Thanh điều hướng" [ref=f30e14]:
+      - generic [ref=f30e15]:
+        - link "Cổng công việc" [ref=f30e16] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f30e22] [cursor=pointer]
+      - generic [ref=f30e25]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f30e26]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f30e31]:
+        - generic [ref=f30e32]:
+          - button "Công việc" [expanded] [ref=f30e33] [cursor=pointer]
+          - generic [ref=f30e37]:
+            - link "Tổng quan cá nhân" [ref=f30e38] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f30e43] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f30e47] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f30e52] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f30e57] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f30e62]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f30e63] [cursor=pointer]
+          - generic [ref=f30e67]:
+            - link "Bảng tổng quan" [ref=f30e68] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f30e75] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f30e79] [cursor=pointer]:
+              - /url: /alerts
+        - generic [ref=f30e84]:
+          - button "Quản trị hệ thống" [expanded] [ref=f30e85] [cursor=pointer]
+          - generic [ref=f30e89]:
+            - link "Tài khoản người dùng" [ref=f30e90] [cursor=pointer]:
+              - /url: /admin/users
+            - link "Cơ cấu đơn vị" [ref=f30e97] [cursor=pointer]:
+              - /url: /admin/organization
+            - link "Nhóm nhân sự" [ref=f30e103] [cursor=pointer]:
+              - /url: /admin/teams
+      - paragraph [ref=f30e110]: Theo phạm vi được cấp quyền
+    - generic [ref=f30e111]:
+      - banner [ref=f30e112]:
+        - generic [ref=f30e113]:
+          - generic [ref=f30e114]: Không gian làm việc
+          - strong [ref=f30e117]: Quản trị
+        - button "Mở menu tài khoản" [ref=f30e119] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f30e120]: tv
+          - generic [ref=f30e121]:
+            - text: Quan tri vien
+            - generic [ref=f30e122]: Quản trị viên
+      - main [ref=f30e125]:
+        - generic [ref=f30e126]:
+          - generic [ref=f30e127]:
+            - heading "Thêm đơn vị" [level=1] [ref=f30e130]
+            - link "Danh sách đơn vị" [ref=f30e132] [cursor=pointer]:
+              - /url: /admin/organization
+          - generic [ref=f30e133]:
+            - heading "Thông tin đơn vị" [level=2] [ref=f30e135]
+            - group [ref=f30e137]:
+              - generic [ref=f30e138]:
+                - generic [ref=f30e139]: Tên đơn vị *
+                - textbox "Tên đơn vị *" [active] [ref=f30e140]: Phòng QA
+              - generic [ref=f30e141]:
+                - generic [ref=f30e142]: Đơn vị cấp trên
+                - combobox "Đơn vị cấp trên" [ref=f30e143]:
+                  - option "Chọn đơn vị cấp trên"
+                  - option "Phong CNTT" [selected]
+              - generic [ref=f30e144]:
+                - generic [ref=f30e145]: Người quản lý
+                - combobox "Người quản lý" [ref=f30e146]:
+                  - option "Chọn người quản lý" [selected]
+                  - option "Tran Quan Ly Hai"
+                  - option "Nguyen Quan Ly"
+                  - option "Quan tri vien"
+              - generic [ref=f30e147]:
+                - link "Hủy" [ref=f30e148] [cursor=pointer]:
+                  - /url: /admin/organization
+                - button "Thêm đơn vị" [ref=f30e149] [cursor=pointer]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f30e9] [cursor=pointer]
+  - alert [ref=f30e150]

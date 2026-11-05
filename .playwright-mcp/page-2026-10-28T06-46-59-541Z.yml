@@ -1,0 +1,77 @@
+- generic [active] [ref=f2e1]:
+  - generic [ref=f2e13]:
+    - complementary "Thanh điều hướng" [ref=f2e14]:
+      - generic [ref=f2e15]:
+        - link "Cổng công việc" [ref=f2e16] [cursor=pointer]:
+          - /url: /workspace
+        - button "Thu gọn thanh điều hướng" [ref=f2e22] [cursor=pointer]
+      - generic [ref=f2e25]:
+        - text: KHÔNG GIAN LÀM VIỆC
+        - paragraph [ref=f2e26]: Phong CNTT
+      - navigation "Điều hướng chính" [ref=f2e31]:
+        - generic [ref=f2e32]:
+          - button "Công việc" [expanded] [ref=f2e33] [cursor=pointer]
+          - generic [ref=f2e37]:
+            - link "Tổng quan cá nhân" [ref=f2e38] [cursor=pointer]:
+              - /url: /workspace
+            - link "Dự án" [ref=f2e43] [cursor=pointer]:
+              - /url: /projects
+            - link "Công việc" [ref=f2e47] [cursor=pointer]:
+              - /url: /tasks
+            - link "Chờ nghiệm thu" [ref=f2e52] [cursor=pointer]:
+              - /url: /reviews
+            - link "Báo cáo công việc" [ref=f2e57] [cursor=pointer]:
+              - /url: /reports
+        - generic [ref=f2e62]:
+          - button "Theo dõi & phân tích" [expanded] [ref=f2e63] [cursor=pointer]
+          - generic [ref=f2e67]:
+            - link "Bảng tổng quan" [ref=f2e68] [cursor=pointer]:
+              - /url: /dashboard
+            - link "Phân tích & AI" [ref=f2e75] [cursor=pointer]:
+              - /url: /analytics/risks
+            - link "Cảnh báo" [ref=f2e79] [cursor=pointer]:
+              - /url: /alerts
+      - paragraph [ref=f2e85]: Theo phạm vi được cấp quyền
+    - generic [ref=f2e86]:
+      - banner [ref=f2e87]:
+        - generic [ref=f2e88]:
+          - generic [ref=f2e89]: Không gian làm việc
+          - strong [ref=f2e92]: Nghiệm thu
+        - button "Mở menu tài khoản" [ref=f2e95] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f2e96]: QL
+          - generic [ref=f2e97]:
+            - text: Nguyen Quan Ly
+            - generic [ref=f2e98]: Quản lý
+      - main [ref=f2e101]:
+        - generic [ref=f2e102]:
+          - heading "Kết quả chờ nghiệm thu" [level=1] [ref=f2e106]
+          - generic [ref=f2e108]:
+            - text: Dự án
+            - combobox "Dự án" [ref=f2e109]:
+              - option "Tất cả dự án có quyền xét" [selected]
+              - option "Dự án thử nghiệm E2E"
+          - generic [ref=f2e144]:
+            - table [ref=f2e146]:
+              - rowgroup [ref=f2e147]:
+                - row [ref=f2e148]:
+                  - columnheader "Công việc" [ref=f2e149]
+                  - columnheader "Lần nộp" [ref=f2e150]
+                  - columnheader "Người nộp" [ref=f2e151]
+                  - columnheader "Nộp lúc" [ref=f2e152]
+                  - columnheader "Hạn tại lúc nộp" [ref=f2e153]
+                  - columnheader "Hành động" [ref=f2e154]
+              - rowgroup [ref=f2e155]:
+                - row [ref=f2e156]:
+                  - cell "Kiểm thử upload minh chứng" [ref=f2e157]
+                  - cell "1" [ref=f2e158]
+                  - cell "Nguyen Quan Ly" [ref=f2e159]
+                  - cell "11:18 28/10/26" [ref=f2e160]
+                  - cell "17:00 5/11/26" [ref=f2e161]
+                  - cell [ref=f2e162]:
+                    - link "Xem lần nộp 1" [ref=f2e163] [cursor=pointer]:
+                      - /url: /tasks/c34d1b46fe77454280a46cae23a5ef9c/submissions/2b13e21bc4e640e1a25d135955e8d567
+                      - text: Chi tiết
+            - generic [ref=f2e164]: 1 kết quả
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f2e9] [cursor=pointer]
+  - alert [ref=f2e143]

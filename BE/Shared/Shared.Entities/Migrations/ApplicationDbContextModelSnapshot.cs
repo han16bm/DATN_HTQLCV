@@ -1348,6 +1348,36 @@ namespace Shared.Entities.Migrations
                             UpdatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
                             Value = "datn",
                             Version = 1
+                        },
+                        new
+                        {
+                            Id = "cfg-014",
+                            CreatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "STRING",
+                            Description = "Khóa API Claude. Lưu mã hóa trong SystemConfigs và không bao giờ trả giá trị thật về giao diện.",
+                            Group = "AI",
+                            IsActive = true,
+                            Key = "Analytics:Anthropic:ApiKey",
+                            Name = "Anthropic - API key",
+                            ServiceType = "Analytics.Api",
+                            UpdatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "",
+                            Version = 1
+                        },
+                        new
+                        {
+                            Id = "cfg-015",
+                            CreatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "STRING",
+                            Description = "Model ID được gọi bởi Analytics.Api. Chỉ thay đổi nếu model có quyền truy cập trên tài khoản Anthropic.",
+                            Group = "AI",
+                            IsActive = true,
+                            Key = "Analytics:Anthropic:Model",
+                            Name = "Anthropic - mô hình Claude",
+                            ServiceType = "Analytics.Api",
+                            UpdatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "claude-sonnet-4-5-20250929",
+                            Version = 1
                         });
                 });
 

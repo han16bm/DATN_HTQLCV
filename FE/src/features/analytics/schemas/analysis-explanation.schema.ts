@@ -33,6 +33,7 @@ export const llmExplanationSchema = z.object({
   findings: z.array(findingSchema),
   recommendations: z.array(recommendationSchema),
   limitations: z.array(z.string()),
+  promptVersion: z.string().max(100).optional(),
 });
 export const explanationStateSchema = z.object({
   status: z.enum([

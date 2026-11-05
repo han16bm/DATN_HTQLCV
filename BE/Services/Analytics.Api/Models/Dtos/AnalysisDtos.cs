@@ -66,7 +66,8 @@ public record ExplanationDto(
     string Summary,
     List<FindingDto> Findings,
     List<RecommendationDto> Recommendations,
-    List<string> Limitations);
+    List<string> Limitations,
+    string PromptVersion = "template-v1");
 
 /// <summary>Status: NOT_REQUESTED | QUEUED | RUNNING | READY | FAILED | UNAVAILABLE.</summary>
 public record ExplanationStateDto(string Status, ExplanationDto? LastSuccess, string? ActiveJobId, JobErrorDto? Error);

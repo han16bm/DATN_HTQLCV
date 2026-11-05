@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Services/">
     <Project Path="Services/Analytics.Api/Analytics.Api.csproj" />
+    <Project Path="Services/Analytics.Api.Tests/Analytics.Api.Tests.csproj" />
     <Project Path="Services/Identity.Api/Identity.Api.csproj" />
     <Project Path="Services/Projects.Api/Projects.Api.csproj" />
     <Project Path="Services/Tasks.Api/Tasks.Api.csproj" />

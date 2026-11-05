@@ -1,0 +1,200 @@
+using System.Net;
+using System.Text;
+using Analytics.Api.Models.Dtos;
+using Analytics.Api.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
+using Xunit;
+
+namespace Analytics.Api.Tests;
+
+public sealed class AnalysisExplanationGeneratorTests
+{
+    [Fact]
+    public async Task GenerateAsync_UsesServerSnapshotIdsAndOnlySendsMinimalAnalysisData()
+    {
+        string? capturedBody = null;
+        string? capturedApiKey = null;
+        var client = CreateClient(async (request, _) =>
+        {
+            capturedBody = await request.Content!.ReadAsStringAsync();
+            capturedApiKey = request.Headers.GetValues("x-api-key").Single();
+            return JsonResponse(ValidProviderResponse("""
+                {"summary":"Cần theo dõi tiến độ.","findings":[{"title":"Có việc trễ hạn","text":"Căn cứ cho thấy nguy cơ cần theo dõi.","metricIds":["m-overdue"],"evidenceIds":["e-task"]}],"recommendations":[{"title":"Rà soát công việc","text":"Mở chi tiết để kiểm tra.","evidenceIds":["e-task"]}],"limitations":[]}
+                """));
+        });
+        var generator = CreateGenerator(client, new Dictionary<string, string?>
+        {
+            ["Analytics:Anthropic:ApiKey"] = "test-api-key",
+            ["Analytics:Anthropic:Model"] = "claude-test-model"
+        });
+
+        var explanation = await generator.GenerateAsync(Snapshot(), CancellationToken.None);
+
+        Assert.Equal("analysis-server-id", explanation.AnalysisId);
+        Assert.Equal("snapshot-server-id", explanation.SnapshotId);
+        Assert.Equal("analytics-v1", explanation.PromptVersion);
+        Assert.Equal("Anthropic Claude (claude-test-model)", explanation.ModelDisplayName);
+        Assert.Equal("m-overdue", Assert.Single(Assert.Single(explanation.Findings).MetricIds));
+        Assert.Equal("TASK_DETAIL", Assert.Single(explanation.Recommendations).Action?.Target);
+        Assert.Equal("test-api-key", capturedApiKey);
+        var body = Assert.IsType<string>(capturedBody);
+        Assert.DoesNotContain("analysis-server-id", body);
+        Assert.DoesNotContain("task-secret-id", body);
+        Assert.DoesNotContain("person-private-id", body);
+        Assert.DoesNotContain("Sensitive project title", body);
+        Assert.DoesNotContain("task-action-id", body);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_UsesGeminiOpenAiCompatibleEndpointAndParsesItsResponse()
+    {
+        string? capturedBody = null;
+        var client = CreateClient(async (request, _) =>
+        {
+            Assert.Equal(
+                "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+                request.RequestUri?.ToString());
+            Assert.Equal("Bearer", request.Headers.Authorization?.Scheme);
+            Assert.Equal("test-gemini-key", request.Headers.Authorization?.Parameter);
+            capturedBody = await request.Content!.ReadAsStringAsync();
+            return JsonResponse("""
+                {"choices":[{"message":{"content":"{\"summary\":\"Cần theo dõi tiến độ.\",\"findings\":[{\"title\":\"Có việc trễ hạn\",\"text\":\"Căn cứ cho thấy nguy cơ cần theo dõi.\",\"metricIds\":[\"m-overdue\"],\"evidenceIds\":[\"e-task\"]}],\"recommendations\":[{\"title\":\"Rà soát công việc\",\"text\":\"Mở chi tiết để kiểm tra.\",\"evidenceIds\":[\"e-task\"]}],\"limitations\":[]}"},"finish_reason":"stop"}]}
+                """);
+        });
+        var generator = CreateGenerator(client, new Dictionary<string, string?>
+        {
+            ["Analytics:Provider"] = "Gemini",
+            ["Analytics:Gemini:ApiKey"] = "test-gemini-key",
+            ["Analytics:Gemini:Model"] = "gemini-test-model"
+        });
+
+        var explanation = await generator.GenerateAsync(Snapshot(), CancellationToken.None);
+
+        Assert.Equal("Google Gemini (gemini-test-model)", explanation.ModelDisplayName);
+        Assert.Equal("TASK_DETAIL", Assert.Single(explanation.Recommendations).Action?.Target);
+        var body = Assert.IsType<string>(capturedBody);
+        Assert.Contains("\"role\":\"system\"", body);
+        Assert.DoesNotContain("analysis-server-id", body);
+        Assert.DoesNotContain("task-secret-id", body);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_RejectsCitationsOutsideTheSnapshot()
+    {
+        var client = CreateClient((_, _) => Task.FromResult(JsonResponse(ValidProviderResponse("""
+            {"summary":"Cần theo dõi.","findings":[{"title":"Không có căn cứ","text":"Thông tin không thuộc snapshot.","metricIds":["m-forged"],"evidenceIds":[]}],"recommendations":[],"limitations":[]}
+            """))));
+        var generator = CreateGenerator(client, new Dictionary<string, string?>
+        {
+            ["Analytics:Anthropic:ApiKey"] = "test-api-key"
+        });
+
+        var exception = await Assert.ThrowsAsync<AnalysisGenerationException>(
+            () => generator.GenerateAsync(Snapshot(), CancellationToken.None));
+
+        Assert.Equal("OUTPUT_INVALID", exception.Code);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_RejectsNumericClaimsInNarrative()
+    {
+        var client = CreateClient((_, _) => Task.FromResult(JsonResponse(ValidProviderResponse("""
+            {"summary":"Tỷ lệ đạt 90%.","findings":[{"title":"Có việc trễ hạn","text":"Căn cứ cần theo dõi.","metricIds":["m-overdue"],"evidenceIds":[]}],"recommendations":[],"limitations":[]}
+            """))));
+        var generator = CreateGenerator(client, new Dictionary<string, string?>
+        {
+            ["Analytics:Anthropic:ApiKey"] = "test-api-key"
+        });
+
+        var exception = await Assert.ThrowsAsync<AnalysisGenerationException>(
+            () => generator.GenerateAsync(Snapshot(), CancellationToken.None));
+
+        Assert.Equal("OUTPUT_INVALID", exception.Code);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_FailsExplicitlyWhenApiKeyIsMissing()
+    {
+        var generator = CreateGenerator(CreateClient((_, _) =>
+            throw new InvalidOperationException("The provider must not be called.")), new Dictionary<string, string?>());
+
+        var exception = await Assert.ThrowsAsync<AnalysisGenerationException>(
+            () => generator.GenerateAsync(Snapshot(), CancellationToken.None));
+
+        Assert.Equal("LLM_NOT_CONFIGURED", exception.Code);
+    }
+
+    private static AnalysisSnapshotDto Snapshot()
+    {
+        return new AnalysisSnapshotDto(
+            "snapshot-server-id",
+            "analysis-server-id",
+            "RISK",
+            "Sensitive project title",
+            AnalysisSubjectDto.Person("person-private-id"),
+            new AnalysisScopeDto(new DateOnly(2026, 11, 1), new DateOnly(2026, 11, 5)),
+            DateTime.UtcNow,
+            new QualityDto("SUFFICIENT"),
+            [new MeasureDto("m-overdue", "Công việc quá hạn", 1, "TASK", "Số việc hiện quá hạn.")],
+            [],
+            [],
+            [new EvidenceDto("e-task", "Hạn hoàn thành đã qua", null,
+                new DomainActionDto("TASK_DETAIL", "task-secret-id", null, "task-action-id"))]);
+    }
+
+    private static AnalysisExplanationGenerator CreateGenerator(
+        HttpClient client,
+        Dictionary<string, string?> settings)
+    {
+        return new AnalysisExplanationGenerator(
+            new TestHttpClientFactory(client),
+            new ConfigurationBuilder().AddInMemoryCollection(settings).Build(),
+            NullLogger<AnalysisExplanationGenerator>.Instance);
+    }
+
+    private static HttpClient CreateClient(
+        Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send)
+    {
+        return new HttpClient(new TestMessageHandler(send));
+    }
+
+    private static HttpResponseMessage JsonResponse(string json)
+    {
+        return new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        };
+    }
+
+    private static string ValidProviderResponse(string text)
+    {
+        return System.Text.Json.JsonSerializer.Serialize(new
+        {
+            id = "msg-test",
+            type = "message",
+            role = "assistant",
+            model = "claude-test-model",
+            content = new[] { new { type = "text", text } },
+            stop_reason = "end_turn",
+            stop_sequence = (string?)null,
+            usage = new { input_tokens = 1, output_tokens = 1 }
+        });
+    }
+
+    private sealed class TestHttpClientFactory(HttpClient client) : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => client;
+    }
+
+    private sealed class TestMessageHandler(
+        Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            return send(request, cancellationToken);
+        }
+    }
+}

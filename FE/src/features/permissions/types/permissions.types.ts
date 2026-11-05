@@ -12,6 +12,10 @@ import type {
   permissionGroupSchema,
   updatePermissionGroupSchema,
 } from "../schemas/permission-group.schema";
+import type {
+  projectRolePolicySchema,
+  updateProjectRolePolicySchema,
+} from "../schemas/project-role-policy.schema";
 export type FeatureDto = z.output<typeof featureSchema>;
 export type UpdateFeatureInput = z.input<typeof updateFeatureSchema>;
 export type UpdateFeatureArgs = {
@@ -46,4 +50,14 @@ export type SetPermissionGroupStatusArgs = {
   payload: z.input<typeof reasonSchema>;
   version: number;
   active: boolean;
+};
+
+export type ProjectRolePolicyDto = z.output<typeof projectRolePolicySchema>;
+export type UpdateProjectRolePolicyInput = z.input<
+  typeof updateProjectRolePolicySchema
+>;
+export type UpdateProjectRolePolicyArgs = {
+  role: ProjectRolePolicyDto["role"];
+  payload: UpdateProjectRolePolicyInput;
+  version: number;
 };

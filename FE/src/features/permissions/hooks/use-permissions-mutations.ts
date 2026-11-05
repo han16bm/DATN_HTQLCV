@@ -14,6 +14,7 @@ import type {
   SetPermissionGroupStatusArgs,
   UpdateFeatureArgs,
   UpdatePermissionGroupArgs,
+  UpdateProjectRolePolicyArgs,
 } from "../types/permissions.types";
 
 // Đổi nhóm/mã quyền làm đổi quyền hiệu lực: tải lại danh mục, người dùng và phiên.
@@ -39,6 +40,28 @@ export function useUpdateFeatureMutation() {
     mutationFn: (input: UpdateFeatureArgs) =>
       run(input, (key) =>
         permissionsService.updateFeature(input.code, input.payload, {
+          version: input.version,
+          key,
+        }),
+      ),
+    onError: handleError,
+    onSuccess,
+  });
+}
+
+export function useUpdateProjectRolePolicyMutation() {
+  const viewerId = useSession().session?.user.id;
+  const handleError = useAccessErrorHandler();
+  const run = useIdempotentRequest();
+  const onSuccess = useInvalidatePermissions();
+  return useMutation({
+    mutationKey: [
+      ...permissionsKeys.viewer(viewerId),
+      "updateProjectRolePolicy",
+    ],
+    mutationFn: (input: UpdateProjectRolePolicyArgs) =>
+      run(input, (key) =>
+        permissionsService.updateProjectRolePolicy(input.role, input.payload, {
           version: input.version,
           key,
         }),

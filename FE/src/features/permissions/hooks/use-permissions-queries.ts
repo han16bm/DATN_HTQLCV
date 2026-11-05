@@ -22,6 +22,18 @@ export function useListFeaturesQuery() {
   return useQueryAccess(result, "permissions");
 }
 
+export function useListProjectRolePoliciesQuery() {
+  const viewerId = useSession().session?.user.id;
+  const result = useQuery({
+    queryKey: permissionsKeys.listProjectRolePolicies(viewerId),
+    queryFn: ({ signal }) =>
+      permissionsService.listProjectRolePolicies({ signal }),
+    enabled: Boolean(viewerId),
+    staleTime: 30000,
+  });
+  return useQueryAccess(result, "permissions");
+}
+
 export function useListPermissionGroupsQuery(
   query: PermissionGroupQuery = {},
   options: QueryOptions = {},

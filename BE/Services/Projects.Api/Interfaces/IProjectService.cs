@@ -12,6 +12,7 @@ public interface IProjectService
     Task<ProjectDto> CreateAsync(ProjectCreateRequest request);
     Task<ProjectDto> UpdateAsync(string projectId, ProjectPatchRequest request);
     Task<ProjectDto> ActivateAsync(string projectId);
+    Task<ProjectDto> TransferOwnerAsync(string projectId, TransferOwnerRequest request);
     Task<ClosureChecksDto> GetClosureChecksAsync(string projectId);
     Task<ProjectDto> CompleteAsync(string projectId);
     Task<ProjectDto> CancelAsync(string projectId, CancelProjectRequest request);

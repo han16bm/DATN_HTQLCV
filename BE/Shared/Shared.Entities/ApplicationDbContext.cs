@@ -32,6 +32,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<IpWhitelistEntry> IpWhitelistEntries => Set<IpWhitelistEntry>();
     public DbSet<IpAccessLog> IpAccessLogs => Set<IpAccessLog>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<ProjectRolePolicy> ProjectRolePolicies => Set<ProjectRolePolicy>();
+    public DbSet<AnalysisSnapshot> AnalysisSnapshots => Set<AnalysisSnapshot>();
+    public DbSet<AnalysisJob> AnalysisJobs => Set<AnalysisJob>();
+    public DbSet<AnalysisFeedback> AnalysisFeedback => Set<AnalysisFeedback>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -51,6 +55,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.Property(x => x.GrantedFeatures).HasDefaultValueSql("'{}'::text[]");
             e.Property(x => x.RevokedFeatures).HasDefaultValueSql("'{}'::text[]");
             e.HasIndex(x => x.Username).IsUnique();
+            e.Property(x => x.AvatarUrl).HasMaxLength(1000);
+            e.Property(x => x.AvatarKey).HasMaxLength(500);
             e.HasOne(x => x.Unit).WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -158,6 +164,41 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasKey(x => x.Id);
             e.Property(x => x.Type).HasMaxLength(40);
             e.HasIndex(x => new { x.RecipientId, x.CreatedAt });
+        });
+
+        modelBuilder.Entity<ProjectRolePolicy>(e =>
+        {
+            e.HasKey(x => x.Role);
+            e.Property(x => x.Role).HasMaxLength(20);
+            e.Property(x => x.Permissions).HasDefaultValueSql("'{}'::text[]");
+        });
+
+        // Phân tích: bản chụp số liệu + job diễn giải + phản hồi (FE /analytics/details, /analytics/jobs).
+        modelBuilder.Entity<AnalysisSnapshot>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasMaxLength(100);
+            e.Property(x => x.SnapshotId).HasMaxLength(100);
+            e.Property(x => x.AnalysisType).HasMaxLength(20);
+            e.Property(x => x.SubjectKind).HasMaxLength(20);
+            e.Property(x => x.SubjectId).HasMaxLength(100);
+            e.Property(x => x.Title).HasMaxLength(255);
+            e.Property(x => x.ExplanationStatus).HasMaxLength(20);
+            e.Property(x => x.ProjectIds).HasDefaultValueSql("'{}'::text[]");
+            e.HasIndex(x => x.ExpiresAt);
+        });
+        modelBuilder.Entity<AnalysisJob>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Status).HasMaxLength(20);
+            e.HasIndex(x => x.AnalysisId);
+        });
+        modelBuilder.Entity<AnalysisFeedback>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Verdict).HasMaxLength(20);
+            e.Property(x => x.Comment).HasMaxLength(2000);
+            e.HasIndex(x => new { x.AnalysisId, x.CreatedAt });
         });
 
         modelBuilder.Entity<Alert>(e =>

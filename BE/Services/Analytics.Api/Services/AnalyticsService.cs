@@ -14,7 +14,7 @@ using Shared.Entities.Enums;
 
 namespace Analytics.Api.Services;
 
-public class AnalyticsService(ApplicationDbContext context, IHttpContextAccessor http) : IAnalyticsService
+public partial class AnalyticsService(ApplicationDbContext context, IHttpContextAccessor http, AnalysisSnapshotStore snapshots) : IAnalyticsService
 {
     // Dự án được xem (analyticsScope của mock); null = ANALYTICS_VIEW hệ thống, xem mọi dự án.
     private List<string>? _allowed;
@@ -219,7 +219,9 @@ public class AnalyticsService(ApplicationDbContext context, IHttpContextAccessor
             var projectMinutes = minutesByProject.TryGetValue(projectId, out var minutes) ? minutes : 0;
 
             projectComparisons.Add(new ProjectComparisonDto(
-                projectId, projectNonCancelled.Count, projectRate, projectOverdue, NewRef(), projectName, projectMinutes));
+                projectId, projectNonCancelled.Count, projectRate, projectOverdue,
+                snapshots.Ref(q, ProjectSummaryDraft(projectId, projectName, projectNonCancelled.Count, projectRate, projectOverdue, projectMinutes)),
+                projectName, projectMinutes));
         }
 
         var metadata = new AnalysisMetaDto(now, new QualityDto(k01Count == 0 ? "INSUFFICIENT" : "SUFFICIENT"));
@@ -227,7 +229,13 @@ public class AnalyticsService(ApplicationDbContext context, IHttpContextAccessor
         var submissionTimeliness = new SubmissionTimelinessDto(onTimeCount, lateCount, submissionsInPeriod.Count);
         var reporting = new ReportingDto(submittedDaily, submittedWeekly);
 
-        return new DashboardDto(metadata, k01Count, byStatus, metrics, timeVariance, submissionTimeliness, reporting, trend, projectComparisons, NewRef());
+        var scopeProjects = await ScopeProjectIdsAsync(q);
+        metrics = metrics.Select(m => m with { AnalysisRef = snapshots.Ref(q, MetricDraft(m, scopeProjects)) }).ToList();
+        var overviewRef = snapshots.Ref(q, OverviewDraft(q, metrics, trend, scopeProjects,
+            $"Đang theo dõi {k01Count} công việc trong {projectIds.Count} dự án, trong đó {currentCompletedCount} việc đã hoàn thành và {overdueOpenCount} việc đang quá hạn. Thời gian làm việc đã ghi nhận trong kỳ là {Math.Round(actualMinutesPeriod / 60m, 1)} giờ."));
+        await snapshots.FlushAsync();
+
+        return new DashboardDto(metadata, k01Count, byStatus, metrics, timeVariance, submissionTimeliness, reporting, trend, projectComparisons, overviewRef);
     }
 
     public async Task<RisksDto> GetRisksAsync(AnalyticsQuery q)
@@ -274,7 +282,7 @@ public class AnalyticsService(ApplicationDbContext context, IHttpContextAccessor
                 : null;
             var quality = new QualityDto(category == "INSUFFICIENT_DATA" ? "PARTIAL" : "SUFFICIENT");
 
-            items.Add(new RiskItemDto(t.Id, t.Title, assignee, category, evidence, quality, NewRef()));
+            items.Add(new RiskItemDto(t.Id, t.Title, assignee, category, evidence, quality, snapshots.Ref(q, RiskDraft(t, category, evidence, now))));
         }
 
         var itemsByTaskId = items.ToDictionary(i => i.TaskId);
@@ -290,10 +298,12 @@ public class AnalyticsService(ApplicationDbContext context, IHttpContextAccessor
             var riskLevel = overdue > 0 ? "HIGH" : atRisk > 0 ? "MEDIUM" : insufficient > 0 ? "UNKNOWN" : "LOW";
             var evidence = groupItems.SelectMany(i => i.Evidence).Take(5).ToList();
             var projectName = projects.TryGetValue(g.Key, out var project) ? project.Name : g.Key;
-            return new ProjectRiskSummaryDto(projectName, riskLevel, overdue, atRisk, insufficient, evidence, NewRef());
+            return new ProjectRiskSummaryDto(projectName, riskLevel, overdue, atRisk, insufficient, evidence,
+                snapshots.Ref(q, ProjectRiskDraft(g.Key, projectName, riskLevel, overdue, atRisk, insufficient, groupItems)));
         }).ToList();
 
         var metadata = new AnalysisMetaDto(now, new QualityDto(tasks.Count == 0 ? "INSUFFICIENT" : "SUFFICIENT"));
+        await snapshots.FlushAsync();
         return new RisksDto(metadata, items, projectSummaries);
     }
 
@@ -329,10 +339,11 @@ public class AnalyticsService(ApplicationDbContext context, IHttpContextAccessor
                     null, // CapacityMinutes: chưa có nguồn lịch làm việc/nghỉ phép.
                     null, // UtilizationRate: phụ thuộc CapacityMinutes, giữ null theo cùng lý do.
                     person,
-                    NewRef());
+                    snapshots.Ref(q, WorkloadDraft(person, g.ToList())));
             }).ToList();
 
         var metadata = new AnalysisMetaDto(now, new QualityDto(items.Count == 0 ? "INSUFFICIENT" : "SUFFICIENT"));
+        await snapshots.FlushAsync();
         return new WorkloadDto(metadata, items);
     }
 
@@ -372,10 +383,12 @@ public class AnalyticsService(ApplicationDbContext context, IHttpContextAccessor
                 ? new PersonRefDto(user.Id, user.DisplayName)
                 : null;
 
-            items.Add(new BottleneckItemDto(t.Id, t.Status.ToUpperSnake(), elapsedMinutes, revisionCount, "CONTINUOUS", evidence, t.Title, assignee, NewRef()));
+            items.Add(new BottleneckItemDto(t.Id, t.Status.ToUpperSnake(), elapsedMinutes, revisionCount, "CONTINUOUS", evidence, t.Title, assignee,
+                snapshots.Ref(q, BottleneckDraft(t, elapsedMinutes, revisionCount, evidence))));
         }
 
         var metadata = new AnalysisMetaDto(now, new QualityDto(items.Count == 0 ? "INSUFFICIENT" : "SUFFICIENT"));
+        await snapshots.FlushAsync();
         return new BottlenecksDto(metadata, items);
     }
 
@@ -445,8 +458,5 @@ public class AnalyticsService(ApplicationDbContext context, IHttpContextAccessor
         return users.OrderBy(u => u.DisplayName).Select(u => new EntityLabelDto(u.Id, u.DisplayName));
     }
 
-    private static AnalysisRefDto NewRef()
-    {
-        return new AnalysisRefDto(GuidGenerator.NewId());
-    }
+
 }

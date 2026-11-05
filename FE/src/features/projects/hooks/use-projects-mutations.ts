@@ -11,8 +11,10 @@ import { useAccessErrorHandler } from "@/lib/query/use-query-access";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { projectsKeys } from "../api/projects.keys";
 import { projectsService } from "../api/projects.service";
+import { usersKeys } from "@/features/users/api/users.keys";
 import {
   type ActivateProjectArgs,
+  type TransferProjectOwnerArgs,
   type CancelProjectArgs,
   type CompleteProjectArgs,
   type CreateProjectInput,
@@ -143,6 +145,34 @@ export function useCancelProjectMutation() {
         client.invalidateQueries({ queryKey: tasksKeys.viewer(viewerId) }),
         client.invalidateQueries({ queryKey: reportsKeys.viewer(viewerId) }),
         client.invalidateQueries({ queryKey: analyticsKeys.viewer(viewerId) }),
+      ]);
+    },
+  });
+}
+
+// Quản trị bàn giao thay chủ dự án (từ hộp thoại khóa tài khoản): tải lại dự án, người dùng và phiên.
+export function useTransferProjectOwnerMutation() {
+  const client = useQueryClient();
+  const viewerId = useSession().session?.user.id;
+  const handleError = useAccessErrorHandler();
+  const run = useIdempotentRequest();
+  return useMutation({
+    mutationKey: [...projectsKeys.viewer(viewerId), "transferProjectOwner"],
+    mutationFn: (input: TransferProjectOwnerArgs) =>
+      run(input, (key) =>
+        projectsService.transferProjectOwner(input.projectId, input.payload, {
+          version: input.version,
+          key,
+        }),
+      ),
+    onError: handleError,
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: projectsKeys.viewer(viewerId) }),
+        client.invalidateQueries({ queryKey: usersKeys.viewer(viewerId) }),
+        client.invalidateQueries({
+          queryKey: projectMembersKeys.viewer(viewerId),
+        }),
       ]);
     },
   });

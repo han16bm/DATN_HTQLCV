@@ -217,6 +217,13 @@ export const navigation: Record<Area, NavItem[]> = {
       group: "Phân quyền",
     },
     {
+      href: "/admin/project-roles",
+      label: "Vai trò dự án",
+      icon: ShieldCheck,
+      match: /^\/admin\/project-roles(?:\/|$)/,
+      group: "Phân quyền",
+    },
+    {
       href: "/admin/features",
       label: "Danh mục chức năng",
       icon: ListTree,

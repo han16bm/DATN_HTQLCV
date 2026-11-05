@@ -3,7 +3,13 @@ import {
   ipWhitelistEntrySchema,
   ipWhitelistSchema,
   updateIpWhitelistEntrySchema,
+  allowIpAccessLogResultSchema,
+  allowIpAccessLogSchema,
+  dismissIpAccessLogSchema,
+  ipAccessLogQuerySchema,
+  ipAccessLogSchema,
 } from "@/features/ip-whitelist/schemas/ip-whitelist.schema";
+import { page } from "@/lib/validation/common.schema";
 import {
   createSettingSchema,
   settingQuerySchema,
@@ -93,6 +99,76 @@ export const settingHandlers = [
         request,
         ipWhitelistDb.getIpWhitelist(viewer),
         ipWhitelistSchema,
+      );
+    }),
+  ),
+  http.get(
+    "*/api/ip-access-logs",
+    mockHandler(({ request }) => {
+      const viewer = authenticatedUser(request);
+      const query = parseQuery(request, ipAccessLogQuerySchema);
+      return mockJson(
+        request,
+        ipWhitelistDb.listIpAccessLogs(viewer, query),
+        page(ipAccessLogSchema),
+      );
+    }),
+  ),
+  http.post(
+    "*/api/ip-access-logs/:logId/allow",
+    mockHandler(async ({ request, params }) => {
+      const viewer = authenticatedUser(request);
+      const logId = idSchema.parse(params.logId);
+      const payload = allowIpAccessLogSchema.parse(await request.json());
+      return mockCommand(
+        request,
+        {
+          ...command,
+          operation: "allowIpAccessLog",
+          viewer,
+          params: { logId },
+          payload,
+        },
+        () =>
+          mockJson(
+            request,
+            ipWhitelistDb.allowIpAccessLog(
+              viewer,
+              logId,
+              payload,
+              request.headers.get("If-Match"),
+            ),
+            allowIpAccessLogResultSchema,
+          ),
+      );
+    }),
+  ),
+  http.post(
+    "*/api/ip-access-logs/:logId/dismiss",
+    mockHandler(async ({ request, params }) => {
+      const viewer = authenticatedUser(request);
+      const logId = idSchema.parse(params.logId);
+      const payload = dismissIpAccessLogSchema.parse(await request.json());
+      return mockCommand(
+        request,
+        {
+          ...command,
+          operation: "dismissIpAccessLog",
+          viewer,
+          params: { logId },
+          payload,
+        },
+        () =>
+          mockJson(
+            request,
+            ipWhitelistDb.dismissIpAccessLog(
+              viewer,
+              logId,
+              payload,
+              request.headers.get("If-Match"),
+            ),
+            ipAccessLogSchema,
+          ),
       );
     }),
   ),

@@ -5,6 +5,8 @@ import { z } from "zod";
 export const userProjectSchema = z.object({
   membershipId: z.string(),
   project: z.object({ id: z.string(), name: z.string() }),
+  // Version của dự án, để bàn giao thay chủ dự án (If-Match) ngay từ hộp thoại khóa tài khoản.
+  projectVersion: z.number().int().safe().positive(),
   projectStatus: z.enum(["PLANNED", "ACTIVE", "COMPLETED", "CANCELLED"]),
   projectRole: z.enum(["OWNER", "MANAGER", "MEMBER"]),
   isOwner: z.boolean(),

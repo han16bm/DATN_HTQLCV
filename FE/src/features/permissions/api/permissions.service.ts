@@ -8,6 +8,7 @@ import {
 import { z } from "zod";
 import { featureSchema } from "../schemas/feature.schema";
 import { permissionGroupSchema } from "../schemas/permission-group.schema";
+import { projectRolePolicySchema } from "../schemas/project-role-policy.schema";
 import type {
   CreatePermissionGroupInput,
   FeatureDto,
@@ -18,6 +19,8 @@ import type {
   SetPermissionGroupStatusArgs,
   UpdateFeatureInput,
   UpdatePermissionGroupInput,
+  ProjectRolePolicyDto,
+  UpdateProjectRolePolicyInput,
 } from "../types/permissions.types";
 
 export const permissionsService = {
@@ -38,6 +41,28 @@ export const permissionsService = {
       `/features/${encodeURIComponent(code)}`,
       payload,
       { ...options, schema: featureSchema },
+    );
+    return response.data;
+  },
+
+  // Ma trận quyền theo vai trò dự án (ADMIN_MODULES §11): OWNER cố định, MANAGER/MEMBER chỉnh được.
+  async listProjectRolePolicies(options: RequestOptions = {}) {
+    const response = await apiClient.get<ProjectRolePolicyDto[]>(
+      "/project-role-policies",
+      { ...options, schema: z.array(projectRolePolicySchema) },
+    );
+    return response.data;
+  },
+
+  async updateProjectRolePolicy(
+    role: ProjectRolePolicyDto["role"],
+    payload: UpdateProjectRolePolicyInput,
+    options: VersionOptions,
+  ) {
+    const response = await apiClient.patch<ProjectRolePolicyDto>(
+      `/project-role-policies/${encodeURIComponent(role)}`,
+      payload,
+      { ...options, schema: projectRolePolicySchema },
     );
     return response.data;
   },

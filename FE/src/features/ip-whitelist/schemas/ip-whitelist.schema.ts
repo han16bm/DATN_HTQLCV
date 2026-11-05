@@ -1,4 +1,8 @@
-import { reasonSchema, refSchema } from "@/lib/validation/common.schema";
+import {
+  listQuerySchema,
+  reasonSchema,
+  refSchema,
+} from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 
@@ -43,3 +47,46 @@ export const updateIpWhitelistEntrySchema = z
     reason: reasonSchema.shape.reason.optional(),
   })
   .strict();
+
+// Nhật ký IP bị chặn (BE IpAccessLogs): gom theo IP + phạm vi, quản trị cho phép (thêm vào whitelist) hoặc bỏ qua.
+export const ipAccessLogStatusSchema = z.enum([
+  "PENDING",
+  "ALLOWED",
+  "DISMISSED",
+]);
+export const ipAccessLogSchema = z.object({
+  id: idSchema,
+  version: z.number().int().safe().positive(),
+  ip: z.string().min(1),
+  scope: z.enum(["ADMIN", "SYSTEM"]),
+  firstSeenAt: z.iso.datetime(),
+  lastSeenAt: z.iso.datetime(),
+  hitCount: z.number().int().safe().min(0),
+  blockedCount: z.number().int().safe().min(0),
+  lastUser: refSchema.nullable(),
+  lastUsername: z.string().nullable(),
+  lastPath: z.string(),
+  status: ipAccessLogStatusSchema,
+  resolvedBy: refSchema.nullable(),
+  resolvedAt: z.iso.datetime().nullable(),
+  resolveNote: z.string().nullable(),
+});
+export const ipAccessLogQuerySchema = listQuerySchema
+  .pick({ page: true, pageSize: true, q: true })
+  .extend({
+    status: ipAccessLogStatusSchema.optional(),
+    scope: z.enum(["ADMIN", "SYSTEM"]).optional(),
+  })
+  .strict();
+export const allowIpAccessLogSchema = z
+  .object({
+    cidr: cidrSchema.optional(),
+    description,
+    reason: reasonSchema.shape.reason,
+  })
+  .strict();
+export const dismissIpAccessLogSchema = reasonSchema;
+export const allowIpAccessLogResultSchema = z.object({
+  log: ipAccessLogSchema,
+  entry: ipWhitelistEntrySchema,
+});

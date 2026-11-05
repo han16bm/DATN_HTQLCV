@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Shared.Commons.Exceptions;
+using Shared.Commons.Storage;
 using Shared.Commons.Utils;
 using Shared.Entities;
 using Shared.Entities.Entities;
@@ -10,7 +11,7 @@ using Tasks.Api.Models.Dtos;
 
 namespace Tasks.Api.Services;
 
-public class AttachmentService(ApplicationDbContext db, IWebHostEnvironment env, IHttpContextAccessor http) : BaseService(db, http), IAttachmentService
+public class AttachmentService(ApplicationDbContext db, IFileStorage storage, IHttpContextAccessor http) : BaseService(db, http), IAttachmentService
 {
     private static readonly string[] AllowedMimeTypes = ["application/pdf", "image/png", "image/jpeg", "text/plain",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
@@ -31,13 +32,18 @@ public class AttachmentService(ApplicationDbContext db, IWebHostEnvironment env,
         if (!AllowedMimeTypes.Contains(file.ContentType))
             throw new ValidationException("Loại tệp không được hỗ trợ.");
 
-        // shortcut: lưu đĩa cục bộ wwwroot/uploads cho bản base; sản phẩm thật cần chuyển sang blob storage.
-        var uploadsDir = Path.Combine(env.ContentRootPath, "wwwroot", "uploads");
-        Directory.CreateDirectory(uploadsDir);
+        // Chặn tệp khai sai loại (ví dụ HTML đổi đuôi .png): chữ ký đầu tệp phải khớp MIME.
+        await using (var probe = file.OpenReadStream())
+        {
+            if (!FileSignatures.Matches(file.ContentType, await FileSignatures.ReadHeaderAsync(probe)))
+                throw new ValidationException("Nội dung tệp không khớp loại tệp đã chọn.", ["file"]);
+        }
+
+        // Minh chứng là dữ liệu nội bộ: lưu Private (Cloudinary private/raw hoặc đĩa cục bộ), chỉ tải qua BE sau kiểm quyền.
+        StoredFile stored;
+        await using (var content = file.OpenReadStream())
+            stored = await storage.SaveAsync(content, file.FileName, file.ContentType, "evidence", StoredFileAccess.Private);
         var id = GuidGenerator.NewId();
-        var storagePath = Path.Combine(uploadsDir, id);
-        await using (var stream = File.Create(storagePath))
-            await file.CopyToAsync(stream);
 
         var now = DateTime.UtcNow;
         var entity = new Attachment
@@ -51,7 +57,7 @@ public class AttachmentService(ApplicationDbContext db, IWebHostEnvironment env,
             Filename = file.FileName,
             MimeType = file.ContentType,
             SizeBytes = file.Length,
-            StoragePath = storagePath,
+            StoragePath = stored.Key,
             Status = AttachmentStatus.Ready
         };
 
@@ -72,9 +78,9 @@ public class AttachmentService(ApplicationDbContext db, IWebHostEnvironment env,
     {
         var a = await Db.Attachments.AsNoTracking().FirstOrDefaultAsync(x => x.Id == attachmentId) ?? throw new NotFoundException("Không tìm thấy tệp.");
         await EnsureAccessAsync(a, actorId);
-        if (!File.Exists(a.StoragePath))
-            throw new NotFoundException("Tệp không còn trên hệ thống lưu trữ.");
-        return (File.OpenRead(a.StoragePath), a.MimeType, a.Filename);
+        var content = await storage.OpenReadAsync(a.StoragePath)
+            ?? throw new NotFoundException("Tệp không còn trên hệ thống lưu trữ.");
+        return (content, a.MimeType, a.Filename);
     }
 
     // Chỉ người tải lên hoặc người thấy được công việc chứa tệp mới được xem/tải minh chứng.

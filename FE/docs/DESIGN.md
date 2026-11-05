@@ -52,7 +52,7 @@ Be Vietnam Pro (400/500/600/700), tự host bằng next/font, phục vụ nhãn 
 | Báo cáo | `/reports`, `/reports/new`, `/reports/[reportId]`, `/reports/[reportId]/edit` | Danh sách chung; vùng viết/đọc chính + kỳ/số liệu nguồn phụ; snapshot giữ nguyên |
 | Phân tích | `/dashboard`, `/analytics/risks`, `/analytics/workload`, `/analytics/bottlenecks`, `/analytics/summary`, `/analytics/details/[analysisId]`, `/analytics/jobs/[jobId]` | KPI thành một dải; chart 2/3, căn cứ và nhận định cạnh nhau; bảng và thiếu/lỗi/quality theo response |
 | Cảnh báo | `/alerts`, `/alerts/[alertId]` | Bảng; bằng chứng ở chính, lịch sử/hướng xử lý ở phụ |
-| Quản trị | `/admin/users`, `/admin/users/new`, `/admin/users/[userId]`, `/admin/organization`, `/admin/organization/new`, `/admin/organization/[unitId]`, `/admin/teams`, `/admin/teams/new`, `/admin/teams/[teamId]` | Danh sách → chi tiết → mở form; control/form/khối dữ liệu thống nhất, không tự mở chỉnh sửa |
+| Quản trị | `/admin/users`, `/admin/users/new`, `/admin/users/[userId]`, `/admin/organization`, `/admin/organization/new`, `/admin/organization/[unitId]`, `/admin/teams`, `/admin/teams/new`, `/admin/teams/[teamId]`, `/admin/permission-groups`, `/admin/project-roles`, `/admin/features`, `/admin/audit-logs`, `/admin/jobs`, `/admin/settings`, `/admin/ip-whitelist` | Danh sách → chi tiết → mở form; control/form/khối dữ liệu thống nhất, không tự mở chỉnh sửa |
 
 ## Bố cục chi tiết dự án
 

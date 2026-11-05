@@ -45,6 +45,15 @@ public record ProjectPatchRequest
     public string ChangeReason { get; init; } = null!;
 }
 
+public record TransferOwnerRequest
+{
+    [Required(ErrorMessage = "Vui lòng chọn người nhận bàn giao."), MaxLength(100)]
+    public string NewOwnerId { get; init; } = null!;
+
+    [Required(ErrorMessage = "Vui lòng nhập thông tin bắt buộc"), MaxLength(2000)]
+    public string Reason { get; init; } = null!;
+}
+
 public record CancelProjectRequest
 {
     [Required, MaxLength(2000)]

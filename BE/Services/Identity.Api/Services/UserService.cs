@@ -56,7 +56,7 @@ public class UserService(ApplicationDbContext context, IHttpContextAccessor http
         var user = await context.Users.Include(u => u.Unit).AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId)
             ?? throw new NotFoundException("Không tìm thấy tài khoản.");
         var groups = await LoadActiveGroupsAsync(context, [user.Id]);
-        return new ProfileDto(user.Id, user.DisplayName, null, user.Email, user.Unit?.Name ?? string.Empty,
+        return new ProfileDto(user.Id, user.DisplayName, user.AvatarUrl, user.Email, user.Unit?.Name ?? string.Empty,
             groups.GetValueOrDefault(user.Id, []).Select(g => g.Label).ToList());
     }
 
@@ -122,11 +122,30 @@ public class UserService(ApplicationDbContext context, IHttpContextAccessor http
         CheckVersion(user.Version, ifMatchVersion);
 
         await EnsureNotLastSysAdminAsync(user);
+        if (user.Id == CurrentUserId())
+            throw new ForbiddenException("Không được tự khóa tài khoản.") { Code = "SELF_LOCK" };
+        if (user.Status == UserStatus.Locked)
+            throw new BusinessRuleException("Tài khoản đã được khóa.") { Code = "ALREADY_LOCKED" };
 
         // Khóa thường yêu cầu bàn giao trước ở tầng nghiệp vụ Tasks/Projects — base này chỉ chặn khi không phải EMERGENCY và còn vai trò quản lý đơn vị.
         if (!string.Equals(request.Mode, "EMERGENCY", StringComparison.OrdinalIgnoreCase)
             && await context.Units.AnyAsync(u => u.ManagerId == userId && u.Status == OrgStatus.Active))
             throw new BusinessRuleException("Tài khoản còn phụ trách đơn vị — cần bàn giao trước khi khóa thường, hoặc dùng khóa khẩn cấp.");
+        // Như mock (HANDOVER_REQUIRED): chủ dự án đang mở hoặc người còn việc chưa xong phải bàn giao trước khi khóa thường.
+        if (!string.Equals(request.Mode, "EMERGENCY", StringComparison.OrdinalIgnoreCase))
+        {
+            var owned = await context.Projects.AsNoTracking()
+                .Where(p => p.OwnerId == userId && (p.Status == ProjectStatus.Planned || p.Status == ProjectStatus.Active))
+                .OrderBy(p => p.Name).Select(p => new { p.Id, p.Name }).ToListAsync();
+            var openTasks = await context.Tasks.AsNoTracking()
+                .CountAsync(t => t.AssigneeId == userId && t.Status != WorkTaskStatus.Completed && t.Status != WorkTaskStatus.Cancelled);
+            if (owned.Count > 0 || openTasks > 0)
+                throw new BusinessRuleException("Cần bàn giao công việc và trách nhiệm dự án trước khi khóa thông thường.")
+                {
+                    Code = "HANDOVER_REQUIRED",
+                    Details = new { projects = owned, openTaskCount = openTasks }
+                };
+        }
 
         user.Status = UserStatus.Locked;
         user.LockedAt = DateTime.UtcNow;
@@ -194,7 +213,7 @@ public class UserService(ApplicationDbContext context, IHttpContextAccessor http
         return rows
             .OrderBy(x => x.m.EndedAt is not null).ThenByDescending(x => x.m.EndedAt).ThenBy(x => x.p.Name)
             .Select(x => new UserProjectDto(
-                x.m.Id, new EntityLabelDto(x.p.Id, x.p.Name), x.p.Status.ToString().ToUpperInvariant(),
+                x.m.Id, new EntityLabelDto(x.p.Id, x.p.Name), x.p.Version, x.p.Status.ToString().ToUpperInvariant(),
                 x.m.ProjectRole.ToString().ToUpperInvariant(), x.p.OwnerId == userId,
                 x.m.EndedAt is null ? access.PermissionsIn(x.p.Id) : [], x.m.CreatedAt, x.m.EndedAt))
             .ToList();
@@ -274,7 +293,7 @@ public class UserService(ApplicationDbContext context, IHttpContextAccessor http
     public static UserDto ToDto(User u, Dictionary<string, List<RefDto>> groups, Dictionary<string, string>? names)
     {
         return new(
-            u.Id, u.Version, u.CreatedAt, u.UpdatedAt, u.Username, u.DisplayName, u.Email, null, u.UnitId,
+            u.Id, u.Version, u.CreatedAt, u.UpdatedAt, u.Username, u.DisplayName, u.Email, u.AvatarUrl, u.UnitId,
             u.IsSysAdmin, groups.GetValueOrDefault(u.Id, []), u.Status.ToString().ToUpperInvariant(),
             new EntityLabelDto(u.UnitId, u.Unit?.Name ?? string.Empty),
             names is null ? null : PersonRef(u.CreatedBy, names),

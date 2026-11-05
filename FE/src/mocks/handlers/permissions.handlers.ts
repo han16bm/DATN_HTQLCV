@@ -10,6 +10,10 @@ import {
   permissionGroupSchema,
   updatePermissionGroupSchema,
 } from "@/features/permissions/schemas/permission-group.schema";
+import {
+  projectRolePolicySchema,
+  updateProjectRolePolicySchema,
+} from "@/features/permissions/schemas/project-role-policy.schema";
 import { page, reasonSchema } from "@/lib/validation/common.schema";
 import { emptySchema, idSchema } from "@/lib/validation/request.schema";
 import { http } from "msw";
@@ -28,6 +32,47 @@ const command = {
   action: "PERMISSIONS_MANAGE" as const,
 };
 export const permissionHandlers = [
+  http.get(
+    "*/api/project-role-policies",
+    mockHandler(({ request }) => {
+      const viewer = authenticatedUser(request);
+      parseQuery(request, emptySchema);
+      return mockJson(
+        request,
+        permissionsDb.listProjectRolePolicies(viewer),
+        z.array(projectRolePolicySchema),
+      );
+    }),
+  ),
+  http.patch(
+    "*/api/project-role-policies/:role",
+    mockHandler(async ({ request, params }) => {
+      const viewer = authenticatedUser(request);
+      const role = projectRolePolicySchema.shape.role.parse(params.role);
+      const payload = updateProjectRolePolicySchema.parse(await request.json());
+      return mockCommand(
+        request,
+        {
+          ...command,
+          operation: "updateProjectRolePolicy",
+          viewer,
+          params: { role },
+          payload,
+        },
+        () =>
+          mockJson(
+            request,
+            permissionsDb.updateProjectRolePolicy(
+              viewer,
+              role,
+              payload,
+              request.headers.get("If-Match"),
+            ),
+            projectRolePolicySchema,
+          ),
+      );
+    }),
+  ),
   http.get(
     "*/api/features",
     mockHandler(({ request }) => {

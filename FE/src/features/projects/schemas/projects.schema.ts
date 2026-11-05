@@ -82,3 +82,8 @@ export const projectRowSchema = z.object(projectSchema.shape).pick({
   owner: true,
   unit: true,
 });
+
+// Quản trị bàn giao thay chủ dự án (offboarding): sysadmin hoặc USERS_MANAGE, người nhận là Leader/PM cùng đơn vị.
+export const transferProjectOwnerSchema = z
+  .object({ newOwnerId: idSchema, reason: reasonSchema.shape.reason })
+  .strict();

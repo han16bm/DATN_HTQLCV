@@ -8,7 +8,9 @@ public static class ServiceRegistrationExtensions
     public static IServiceCollection AddDependencyInjection(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddHttpContextAccessor();
+        services.AddScoped<AnalysisSnapshotStore>();
         services.AddScoped<IAnalyticsService, AnalyticsService>();
+        services.AddScoped<IAnalysisService, AnalysisService>();
         services.AddScoped<IAlertService, AlertService>();
 
         services.Configure<AlertGenerationOptions>(configuration.GetSection("AlertGeneration"));

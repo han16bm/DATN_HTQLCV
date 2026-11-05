@@ -76,7 +76,7 @@ const routes: { path: RegExp; allow: (session: Session) => boolean }[] = [
     allow: (session) => hasPermission(session, "ORGANIZATION_MANAGE"),
   },
   {
-    path: /^\/admin\/(?:permission-groups|features)(?:\/|$)/,
+    path: /^\/admin\/(?:permission-groups|features|project-roles)(?:\/|$)/,
     allow: (session) => hasPermission(session, "PERMISSIONS_MANAGE"),
   },
   {

@@ -13,13 +13,16 @@ namespace Shared.Entities.Authorization;
 /// </summary>
 public sealed class ProjectAccess
 {
-    // Khớp permissionPolicy.project của FE mock.
-    public static readonly IReadOnlyDictionary<ProjectRole, string[]> ByRole = new Dictionary<ProjectRole, string[]>
+    // Mặc định khớp permissionPolicy.project của FE mock; MANAGER/MEMBER chỉnh được qua bảng ProjectRolePolicies.
+    public static readonly IReadOnlyDictionary<ProjectRole, string[]> DefaultMatrix = new Dictionary<ProjectRole, string[]>
     {
         [ProjectRole.Owner] = Managing,
         [ProjectRole.Manager] = Managing,
         [ProjectRole.Member] = [],
     };
+
+    /// <summary>Mã quyền theo dự án (thứ tự hiển thị).</summary>
+    public static string[] ProjectCodes => Managing;
 
     private static string[] Managing =>
     [
@@ -48,6 +51,7 @@ public sealed class ProjectAccess
         var user = await context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
         var system = user is null ? [] : await PermissionEvaluator.GetEffectivePermissionsAsync(context, user);
         var manages = system.Contains(PermissionFeatures.ProjectCreate);
+        var matrix = await MatrixAsync(context);
         var memberships = await context.ProjectMemberships.AsNoTracking()
             .Where(m => m.UserId == userId && m.EndedAt == null)
             .Select(m => new { m.ProjectId, m.ProjectRole })
@@ -57,9 +61,20 @@ public sealed class ProjectAccess
             .ToDictionary(g => g.Key, g =>
             {
                 var role = g.Min(m => m.ProjectRole); // Owner < Manager < Member
-                return (role, role == ProjectRole.Member || manages ? ByRole[role] : []);
+                return (role, role == ProjectRole.Member || manages ? matrix[role] : []);
             });
         return new ProjectAccess(userId, system, projects);
+    }
+
+    /// <summary>Ma trận hiệu lực: OWNER cố định đủ quyền, MANAGER/MEMBER lấy từ ProjectRolePolicies nếu đã chỉnh.</summary>
+    public static async Task<IReadOnlyDictionary<ProjectRole, string[]>> MatrixAsync(ApplicationDbContext context)
+    {
+        var rows = await context.ProjectRolePolicies.AsNoTracking().ToListAsync();
+        var matrix = new Dictionary<ProjectRole, string[]>(DefaultMatrix);
+        foreach (var row in rows)
+            if (Enum.TryParse<ProjectRole>(row.Role, true, out var role) && role != ProjectRole.Owner)
+                matrix[role] = ProjectCodes.Where(row.Permissions.Contains).ToArray();
+        return matrix;
     }
 
     public bool IsMember(string projectId) => _projects.ContainsKey(projectId);

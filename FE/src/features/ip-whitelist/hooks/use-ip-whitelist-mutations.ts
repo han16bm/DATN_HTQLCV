@@ -7,6 +7,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ipWhitelistKeys } from "../api/ip-whitelist.keys";
 import { ipWhitelistService } from "../api/ip-whitelist.service";
 import type {
+  AllowIpAccessLogInput,
+  DismissIpAccessLogInput,
+  ResolveIpAccessLogArgs,
   CreateIpWhitelistEntryInput,
   DeleteIpWhitelistEntryArgs,
   UpdateIpWhitelistEntryArgs,
@@ -65,6 +68,44 @@ export function useDeleteIpWhitelistEntryMutation() {
     mutationFn: (input: DeleteIpWhitelistEntryArgs) =>
       run(input, (key) =>
         ipWhitelistService.deleteIpWhitelistEntry(input.entryId, {
+          version: input.version,
+          key,
+        }),
+      ),
+    onError: handleError,
+    onSuccess,
+  });
+}
+
+export function useAllowIpAccessLogMutation() {
+  const viewerId = useSession().session?.user.id;
+  const handleError = useAccessErrorHandler();
+  const run = useIdempotentRequest();
+  const onSuccess = useInvalidateWhitelist();
+  return useMutation({
+    mutationKey: [...ipWhitelistKeys.viewer(viewerId), "allowIpAccessLog"],
+    mutationFn: (input: ResolveIpAccessLogArgs<AllowIpAccessLogInput>) =>
+      run(input, (key) =>
+        ipWhitelistService.allowIpAccessLog(input.logId, input.payload, {
+          version: input.version,
+          key,
+        }),
+      ),
+    onError: handleError,
+    onSuccess,
+  });
+}
+
+export function useDismissIpAccessLogMutation() {
+  const viewerId = useSession().session?.user.id;
+  const handleError = useAccessErrorHandler();
+  const run = useIdempotentRequest();
+  const onSuccess = useInvalidateWhitelist();
+  return useMutation({
+    mutationKey: [...ipWhitelistKeys.viewer(viewerId), "dismissIpAccessLog"],
+    mutationFn: (input: ResolveIpAccessLogArgs<DismissIpAccessLogInput>) =>
+      run(input, (key) =>
+        ipWhitelistService.dismissIpAccessLog(input.logId, input.payload, {
           version: input.version,
           key,
         }),

@@ -8,6 +8,7 @@ import type {
   projectQuerySchema,
   projectRowSchema,
   projectSchema,
+  transferProjectOwnerSchema,
   updateProjectSchema,
 } from "../schemas/projects.schema";
 export type ProjectDto = z.output<typeof projectSchema>;
@@ -30,6 +31,14 @@ export type CancelProjectInput = z.input<typeof reasonSchema>;
 export type CancelProjectArgs = {
   projectId: string;
   payload: CancelProjectInput;
+  version: number;
+};
+export type TransferProjectOwnerInput = z.input<
+  typeof transferProjectOwnerSchema
+>;
+export type TransferProjectOwnerArgs = {
+  projectId: string;
+  payload: TransferProjectOwnerInput;
   version: number;
 };
 export type ProjectHistoryQuery = z.input<typeof projectHistoryQuerySchema>;

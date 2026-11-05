@@ -1,6 +1,7 @@
 "use client";
 import { cn } from "@/lib/cn";
 import { DataTable } from "@/components/patterns/data-table";
+import { IpAccessLogsPanel } from "./ip-access-logs-panel";
 import { StatusLozenge } from "@/components/ui/lozenge";
 import { Button } from "@/components/ui/button";
 
@@ -238,6 +239,7 @@ export function IpWhitelistPage() {
           <DeleteEntry entry={deleting} onDone={dialog.close} />
         </HashDialog>
       )}
+      <IpAccessLogsPanel />
     </>
   );
 }

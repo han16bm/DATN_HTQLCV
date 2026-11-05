@@ -5,6 +5,8 @@ export const permissionsKeys = {
     ["permissions", viewerId ?? "anonymous"] as const,
   listFeatures: (viewerId: ViewerId) =>
     [...permissionsKeys.viewer(viewerId), "listFeatures"] as const,
+  listProjectRolePolicies: (viewerId: ViewerId) =>
+    [...permissionsKeys.viewer(viewerId), "listProjectRolePolicies"] as const,
   listPermissionGroups: (viewerId: ViewerId, query: PermissionGroupQuery) =>
     [
       ...permissionsKeys.viewer(viewerId),

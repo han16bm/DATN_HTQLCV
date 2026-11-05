@@ -55,13 +55,18 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+// Dev: mọi origin (FE :3000 gọi gateway :5000). Môi trường khác: chỉ origin trong Cors:AllowedOrigins.
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Default", policy =>
-        policy.SetIsOriginAllowed(_ => builder.Environment.IsDevelopment())
+        policy.SetIsOriginAllowed(origin => builder.Environment.IsDevelopment()
+                || allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
             .AllowAnyHeader()
             .AllowAnyMethod()
-            .AllowCredentials());
+            .AllowCredentials()
+            // FE đọc tên tệp tải về từ Content-Disposition; header không expose thì trình duyệt giấu khi khác origin.
+            .WithExposedHeaders("Content-Disposition", "ETag"));
 });
 
 builder.Services

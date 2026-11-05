@@ -1,5 +1,6 @@
 using Identity.Api.Interfaces;
 using Identity.Api.Services;
+using Shared.Commons.Storage;
 
 namespace Identity.Api.Extensions;
 
@@ -22,6 +23,10 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<ISystemConfigService, SystemConfigService>();
         services.AddScoped<IIpWhitelistService, IpWhitelistService>();
         services.AddScoped<IIpAccessLogService, IpAccessLogService>();
+        services.AddScoped<IProfileService, ProfileService>();
+        services.AddScoped<ProjectRolePolicyService>();
+        // Ảnh đại diện: Cloudinary khi đủ Storage:Cloudinary, ngược lại đĩa cục bộ (App_Data/storage/avatars).
+        services.AddFileStorage(configuration);
 
         return services;
     }

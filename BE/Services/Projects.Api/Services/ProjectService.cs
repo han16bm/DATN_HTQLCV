@@ -114,32 +114,7 @@ public class ProjectService(ApplicationDbContext context, IHttpContextAccessor h
             // Thứ bậc trong dự án: chỉ chủ dự án hiện tại bàn giao; MANAGER có PROJECT_MANAGE vẫn không tự nhận dự án.
             if (project.OwnerId != CurrentUserId)
                 throw new ForbiddenException("Chỉ chủ dự án hiện tại được bàn giao dự án.");
-            await RequireOwnerCandidateAsync(newOwnerId, project.UnitId);
-
-            // Chủ cũ còn tư cách thì ở lại dự án với vai trò quản lý (như mock).
-            var oldOwnerMembership = await Context.ProjectMemberships
-                .FirstOrDefaultAsync(m => m.ProjectId == projectId && m.UserId == project.OwnerId && m.EndedAt == null);
-            if (oldOwnerMembership is not null)
-                oldOwnerMembership.ProjectRole = ProjectRole.Manager;
-
-            var newOwnerMembership = await Context.ProjectMemberships
-                .FirstOrDefaultAsync(m => m.ProjectId == projectId && m.UserId == newOwnerId && m.EndedAt == null);
-            if (newOwnerMembership is not null)
-                newOwnerMembership.ProjectRole = ProjectRole.Owner;
-            else
-                Context.ProjectMemberships.Add(new ProjectMembership
-                {
-                    Id = GuidGenerator.NewId(),
-                    Version = 1,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    ProjectId = projectId,
-                    UserId = newOwnerId,
-                    ProjectRole = ProjectRole.Owner,
-                    EndedAt = null
-                });
-
-            project.OwnerId = newOwnerId;
+            await HandOverAsync(project, newOwnerId);
         }
 
         if (request.Name is { } name) project.Name = name.Trim();
@@ -237,6 +212,63 @@ public class ProjectService(ApplicationDbContext context, IHttpContextAccessor h
             actors.TryGetValue(a.ActorId, out var actor) ? new PersonRefDto(actor.Id, actor.DisplayName) : new PersonRefDto(a.ActorId, a.ActorId),
             a.Action, a.At, ParseJson(a.BeforeJson), ParseJson(a.AfterJson), a.Reason)).ToList();
         return new PagedResult<AuditDto> { Items = dtos, Page = paged.Page, PageSize = paged.PageSize, Total = paged.Total };
+    }
+
+    /// <summary>
+    /// Quản trị bàn giao thay khi chủ dự án nghỉ việc/bị khóa (ADMIN_MODULES §11): sysadmin hoặc USERS_MANAGE.
+    /// Cùng điều kiện người nhận như bàn giao thường; chủ cũ (nếu còn là thành viên) ở lại với vai trò quản lý.
+    /// </summary>
+    public async Task<ProjectDto> TransferOwnerAsync(string projectId, TransferOwnerRequest request)
+    {
+        var actor = await Context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == CurrentUserId);
+        var access = await AccessAsync();
+        if (actor is null || (!actor.IsSysAdmin && !access.SystemPermissions.Contains(PermissionFeatures.UsersManage)))
+            throw new ForbiddenException("Chỉ quản trị tài khoản được bàn giao dự án thay chủ dự án.");
+        var project = await Context.Projects.FirstOrDefaultAsync(p => p.Id == projectId)
+            ?? throw new NotFoundException("Không tìm thấy dự án.");
+        CheckIfMatch(project.Version);
+        if (project.Status is ProjectStatus.Completed or ProjectStatus.Cancelled)
+            throw new BusinessRuleException("Dự án đã đóng, không cần bàn giao.");
+        if (request.NewOwnerId == project.OwnerId)
+            throw new UnprocessableRuleException("Người nhận đang là chủ dự án.") { Code = "INVALID_OWNER" };
+
+        var before = Snapshot(project);
+        await HandOverAsync(project, request.NewOwnerId);
+        project.Version++;
+        project.UpdatedAt = DateTime.UtcNow;
+        await WriteAuditLogAsync(project.Id, "TRANSFER_OWNER", before, Snapshot(project), request.Reason);
+        await Context.SaveChangesAsync();
+        return await MapAsync(project);
+    }
+
+    private async Task HandOverAsync(Project project, string newOwnerId)
+    {
+        await RequireOwnerCandidateAsync(newOwnerId, project.UnitId);
+
+        // Chủ cũ còn tư cách thì ở lại dự án với vai trò quản lý (như mock).
+        var oldOwnerMembership = await Context.ProjectMemberships
+            .FirstOrDefaultAsync(m => m.ProjectId == project.Id && m.UserId == project.OwnerId && m.EndedAt == null);
+        if (oldOwnerMembership is not null)
+            oldOwnerMembership.ProjectRole = ProjectRole.Manager;
+
+        var newOwnerMembership = await Context.ProjectMemberships
+            .FirstOrDefaultAsync(m => m.ProjectId == project.Id && m.UserId == newOwnerId && m.EndedAt == null);
+        if (newOwnerMembership is not null)
+            newOwnerMembership.ProjectRole = ProjectRole.Owner;
+        else
+            Context.ProjectMemberships.Add(new ProjectMembership
+            {
+                Id = GuidGenerator.NewId(),
+                Version = 1,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                ProjectId = project.Id,
+                UserId = newOwnerId,
+                ProjectRole = ProjectRole.Owner,
+                EndedAt = null
+            });
+
+        project.OwnerId = newOwnerId;
     }
 
     // Người phụ trách: Leader/PM (PROJECT_CREATE) đang hoạt động trong đúng đơn vị của dự án (validateProjectPlan của mock).

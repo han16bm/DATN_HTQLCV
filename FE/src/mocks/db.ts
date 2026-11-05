@@ -413,11 +413,49 @@ function createDatabase() {
   const users = z.array(userModel).parse(seed.users);
   const attachments = z.array(attachmentModel).parse(seed.attachments);
   return {
+    // Ma trận vai trò dự án chỉnh được (MANAGER/MEMBER); OWNER cố định đủ quyền.
+    rolePolicies: Object.fromEntries(
+      (["MANAGER", "MEMBER"] as const).map((role) => [
+        role,
+        {
+          permissions: [...accessPolicy.project[role]],
+          version: 1,
+          updatedAt: null as string | null,
+          updatedBy: null as string | null,
+        },
+      ]),
+    ) as Record<
+      "MANAGER" | "MEMBER",
+      {
+        permissions: Permission[];
+        version: number;
+        updatedAt: string | null;
+        updatedBy: string | null;
+      }
+    >,
     users,
     features: z.array(featureModel).parse(seed.features),
     permissionGroups: z.array(groupModel).parse(seed.permissionGroups),
     settings: z.array(settingModel).parse(seed.settings),
     ipWhitelist: z.array(ipEntryModel).parse(seed.ipWhitelist),
+    // Truy cập bị chặn bởi whitelist (như BE IpAccessLogs), gom theo IP + phạm vi.
+    ipAccessLogs: [] as {
+      id: string;
+      version: number;
+      ip: string;
+      scope: "ADMIN" | "SYSTEM";
+      firstSeenAt: string;
+      lastSeenAt: string;
+      hitCount: number;
+      blockedCount: number;
+      lastUserId: string | null;
+      lastUsername: string | null;
+      lastPath: string;
+      status: "PENDING" | "ALLOWED" | "DISMISSED";
+      resolvedBy: string | null;
+      resolvedAt: string | null;
+      resolveNote: string | null;
+    }[],
     backgroundJobs: z.array(jobModel).parse(seed.backgroundJobs),
     jobRuns: z.array(jobRunModel).parse(seed.jobRuns),
     units: z.array(unitModel).parse(seed.units),
@@ -568,7 +606,9 @@ function projectPermissions(user: User, projectId: string): Permission[] {
       !systemPermissions(user).includes("PROJECT_CREATE"))
   )
     return [];
-  return accessPolicy.project[member.projectRole];
+  return member.projectRole === "OWNER"
+    ? accessPolicy.project.OWNER
+    : db.rolePolicies[member.projectRole].permissions;
 }
 // ANALYTICS_VIEW ở phạm vi hệ thống cho xem mọi dự án; các quyền khác theo dự án.
 const readsEveryProject = (user: User) =>
@@ -1095,7 +1135,8 @@ function requireAdmin(user: User, ...actions: Permission[]) {
       "FORBIDDEN",
       "Bạn chưa được cấp quyền quản trị này.",
     );
-  if (whitelistEnabled() && !ipAllowed(db.ipWhitelist))
+  if (whitelistEnabled() && !ipAllowed(db.ipWhitelist)) {
+    recordBlockedIp(user);
     throw new ApiError(
       403,
       "IP_NOT_ALLOWED",
@@ -1103,6 +1144,37 @@ function requireAdmin(user: User, ...actions: Permission[]) {
       [],
       { ip: currentIp() },
     );
+  }
+}
+function recordBlockedIp(user: User) {
+  const ip = currentIp();
+  let log = db.ipAccessLogs.find(
+    (l) => l.ip === ip && l.scope === "ADMIN" && l.status === "PENDING",
+  );
+  if (!log) {
+    log = {
+      ...entity(),
+      ip,
+      scope: "ADMIN",
+      firstSeenAt: now(),
+      lastSeenAt: now(),
+      hitCount: 0,
+      blockedCount: 0,
+      lastUserId: null,
+      lastUsername: null,
+      lastPath: "/api/admin",
+      status: "PENDING",
+      resolvedBy: null,
+      resolvedAt: null,
+      resolveNote: null,
+    };
+    db.ipAccessLogs.push(log);
+  }
+  log.hitCount++;
+  log.blockedCount++;
+  log.lastSeenAt = now();
+  log.lastUserId = user.id;
+  log.lastUsername = user.username;
 }
 // Chống tự khóa: thay đổi không được làm IP hiện tại mất quyền vào khu quản trị.
 function protectCurrentIp(
@@ -1719,6 +1791,7 @@ export const usersDb = {
         return {
           membershipId: m.id,
           project: { id: project.id, name: project.name },
+          projectVersion: project.version,
           projectStatus: project.status,
           projectRole: m.projectRole,
           isOwner: project.ownerId === user.id,
@@ -1838,7 +1911,63 @@ const featureDTO = (feature: (typeof db.features)[number]): FeatureDto => ({
   ...feature,
   updatedBy: stampRef(feature.updatedBy),
 });
+const projectPermissionOrder: Permission[] = [
+  "PROJECT_MANAGE",
+  "MEMBERS_MANAGE",
+  "TASKS_MANAGE",
+  "TASKS_REVIEW",
+  "ANALYTICS_VIEW",
+  "ALERTS_MANAGE",
+];
+function rolePolicyDTO(role: "OWNER" | "MANAGER" | "MEMBER") {
+  const row = role === "OWNER" ? null : db.rolePolicies[role];
+  return {
+    role,
+    permissions: row ? row.permissions : accessPolicy.project.OWNER,
+    editable: role !== "OWNER",
+    version: row?.version ?? 1,
+    updatedAt: row?.updatedAt ?? null,
+    updatedBy: row?.updatedBy ? stampRef(row.updatedBy) : null,
+  };
+}
 export const permissionsDb = {
+  listProjectRolePolicies(viewer: User) {
+    requireAdmin(viewer, "PERMISSIONS_MANAGE", "USERS_MANAGE");
+    return (["OWNER", "MANAGER", "MEMBER"] as const).map(rolePolicyDTO);
+  },
+  updateProjectRolePolicy(
+    viewer: User,
+    role: "OWNER" | "MANAGER" | "MEMBER",
+    body: { permissions: Permission[]; reason: string },
+    expectedVersion: string | null,
+  ) {
+    requireAdmin(viewer, "PERMISSIONS_MANAGE");
+    if (role === "OWNER")
+      throw new ApiError(
+        422,
+        "ROLE_LOCKED",
+        "Chủ dự án luôn có đủ quyền trong dự án của mình.",
+      );
+    const row = db.rolePolicies[role];
+    requireVersion(expectedVersion, row);
+    const before = { permissions: row.permissions };
+    row.permissions = projectPermissionOrder.filter((code) =>
+      body.permissions.includes(code),
+    );
+    row.version++;
+    row.updatedAt = now();
+    row.updatedBy = viewer.id;
+    audit(
+      viewer.id,
+      "ProjectRolePolicy",
+      role,
+      "Cập nhật quyền vai trò dự án",
+      before,
+      { permissions: row.permissions },
+      body.reason,
+    );
+    return rolePolicyDTO(role);
+  },
   listFeatures(viewer: User): FeatureDto[] {
     requireAdmin(viewer, "PERMISSIONS_MANAGE");
     return db.features
@@ -2365,6 +2494,21 @@ const ipEntryDTO = (
   ...item,
   ...stampRefs(item),
 });
+const ipLogDTO = ({
+  lastUserId,
+  resolvedBy,
+  ...log
+}: (typeof db.ipAccessLogs)[number]) => ({
+  ...log,
+  lastUser: lastUserId ? stampRef(lastUserId) : null,
+  resolvedBy: resolvedBy ? stampRef(resolvedBy) : null,
+});
+function requireIpLog(id: string) {
+  const log = db.ipAccessLogs.find((l) => l.id === id);
+  if (!log)
+    throw new ApiError(404, "NOT_FOUND", "Không tìm thấy nhật ký truy cập.");
+  return log;
+}
 function requireIpEntry(id: string) {
   const item = db.ipWhitelist.find((e) => e.id === id);
   if (!item) throw new ApiError(404, "NOT_FOUND", "Không tìm thấy địa chỉ IP.");
@@ -2383,6 +2527,77 @@ export const ipWhitelistDb = {
       currentIp: currentIp(),
       entries: db.ipWhitelist.map(ipEntryDTO),
     };
+  },
+  listIpAccessLogs(
+    viewer: User,
+    query: { page?: number; pageSize?: number; q?: string; status?: string; scope?: string },
+  ) {
+    requireAdmin(viewer, "SETTINGS_MANAGE");
+    const q = query.q?.toLowerCase();
+    return paginate(
+      db.ipAccessLogs
+        .filter(
+          (l) =>
+            (!query.status || l.status === query.status) &&
+            (!query.scope || l.scope === query.scope) &&
+            (!q ||
+              l.ip.includes(q) ||
+              (l.lastUsername ?? "").toLowerCase().includes(q)),
+        )
+        .toSorted((a, b) => b.lastSeenAt.localeCompare(a.lastSeenAt))
+        .map(ipLogDTO),
+      query,
+    );
+  },
+  allowIpAccessLog(
+    viewer: User,
+    logId: string,
+    body: { cidr?: string; description?: string | null; reason: string },
+    expectedVersion: string | null,
+  ) {
+    requireAdmin(viewer, "SETTINGS_MANAGE");
+    const log = requireIpLog(logId);
+    requireVersion(expectedVersion, log);
+    if (log.status === "ALLOWED")
+      throw new ApiError(409, "CONFLICT", "IP này đã được cho phép.");
+    const cidr = body.cidr?.trim() || log.ip;
+    if (!ipMatches(log.ip, cidr.includes("/") ? cidr : `${cidr}/32`))
+      throw new ApiError(
+        422,
+        "VALIDATION",
+        `Địa chỉ IP/CIDR phải hợp lệ và bao gồm IP ${log.ip}.`,
+        [{ path: ["cidr"], message: `Phải bao gồm IP ${log.ip}.` }],
+      );
+    log.status = "ALLOWED";
+    log.resolvedBy = viewer.id;
+    log.resolvedAt = now();
+    log.resolveNote = body.reason;
+    log.version++;
+    const entry = ipWhitelistDb.createIpWhitelistEntry(viewer, {
+      cidr,
+      description:
+        body.description ??
+        `Cho phép từ nhật ký truy cập${log.lastUsername ? ` · ${log.lastUsername}` : ""}`,
+    });
+    return { log: ipLogDTO(log), entry };
+  },
+  dismissIpAccessLog(
+    viewer: User,
+    logId: string,
+    body: { reason: string },
+    expectedVersion: string | null,
+  ) {
+    requireAdmin(viewer, "SETTINGS_MANAGE");
+    const log = requireIpLog(logId);
+    requireVersion(expectedVersion, log);
+    if (log.status !== "PENDING")
+      throw new ApiError(409, "CONFLICT", "Nhật ký này đã được xử lý.");
+    log.status = "DISMISSED";
+    log.resolvedBy = viewer.id;
+    log.resolvedAt = now();
+    log.resolveNote = body.reason;
+    log.version++;
+    return ipLogDTO(log);
   },
   createIpWhitelistEntry(viewer: User, body: CreateIpWhitelistEntryInput) {
     requireAdmin(viewer, "SETTINGS_MANAGE");
@@ -2698,6 +2913,67 @@ export const projectsDb = {
       before,
       patch,
       changeReason,
+    );
+    return projectDTO(project);
+  },
+  // Quản trị bàn giao thay chủ dự án khi nghỉ việc/khóa (sysadmin hoặc USERS_MANAGE), như BE TransferOwnerAsync.
+  transferProjectOwner(
+    viewer: User,
+    projectId: string,
+    body: { newOwnerId: string; reason: string },
+    expectedVersion: string | null,
+  ) {
+    if (!viewer.isSysAdmin && !can(viewer, "USERS_MANAGE"))
+      throw new ApiError(
+        403,
+        "FORBIDDEN",
+        "Chỉ quản trị tài khoản được bàn giao dự án thay chủ dự án.",
+      );
+    const project = db.projects.find((p) => p.id === projectId);
+    if (!project)
+      throw new ApiError(404, "NOT_FOUND", "Không tìm thấy dự án.");
+    requireVersion(expectedVersion, project);
+    if (["COMPLETED", "CANCELLED"].includes(project.status))
+      throw new ApiError(
+        409,
+        "CONFLICT",
+        "Dự án đã đóng, không cần bàn giao.",
+      );
+    if (body.newOwnerId === project.ownerId)
+      throw new ApiError(422, "INVALID_OWNER", "Người nhận đang là chủ dự án.");
+    const owner = requireUser(body.newOwnerId);
+    if (
+      owner.status !== "ACTIVE" ||
+      owner.unitId !== project.unitId ||
+      !can(owner, "PROJECT_CREATE")
+    )
+      throw new ApiError(
+        422,
+        "INVALID_OWNER",
+        "Người phụ trách phải là Leader/PM đang hoạt động trong đơn vị.",
+      );
+    const before = { ownerId: project.ownerId };
+    const previous = db.members.find(
+      (m) =>
+        m.projectId === project.id &&
+        m.userId === project.ownerId &&
+        !m.endedAt,
+    );
+    if (previous) {
+      previous.projectRole = "MANAGER";
+      touch(previous);
+    }
+    ensureOwner(project.id, owner.id);
+    project.ownerId = owner.id;
+    touch(project);
+    audit(
+      viewer.id,
+      "PROJECT",
+      project.id,
+      "Bàn giao chủ dự án",
+      before,
+      { ownerId: owner.id },
+      body.reason,
     );
     return projectDTO(project);
   },

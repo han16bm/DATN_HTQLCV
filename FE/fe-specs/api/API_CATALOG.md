@@ -12,6 +12,8 @@ LLM có sẵn chạy qua adapter BE. Số liệu do BE tính. GET tổng quan/da
 
 Bổ sung theo yêu cầu tiếp tục ngày 03/11/2026: **86 endpoint HTTP**. Chuông cá nhân gọi API thông báo của mock BE, không thêm trang inbox hoặc quyền quản trị mới. Hợp đồng mới và các quy tắc nhận/đọc ở [NOTIFICATIONS.md](NOTIFICATIONS.md); backend thật cần triển khai ba endpoint này.
 
+> Ghi chú BE thật (05/11/2026): mọi operation dưới đây đã có endpoint ở BE. Phân tích (`/analytics/summary`, `/analytics/details/:id`, `/analytics/jobs`, feedback) lưu bản chụp số liệu có Id tất định theo nội dung (`AnalysisSnapshots`), diễn giải sinh theo quy tắc từ số liệu của bản chụp (job kết thúc ngay, trả 200). Kiểm hợp đồng với BE đang chạy: `npm run test:live`.
+
 | Operation | Method và path | HTTP | Cách gọi | Màn |
 |---|---|---|---|---|
 | listNotifications | `GET /api/notifications` | 200 | useQuery khi mở chuông | Header |
@@ -51,6 +53,7 @@ Bổ sung theo yêu cầu tiếp tục ngày 03/11/2026: **86 endpoint HTTP**. C
 | [getProjectClosureChecks](#getprojectclosurechecks) | `GET /api/projects/:projectId/closure-checks` | 200 | useQuery | S14 |
 | [completeProject](#completeproject) | `POST /api/projects/:projectId/complete` | 200 | useMutation | S14 |
 | [cancelProject](#cancelproject) | `POST /api/projects/:projectId/cancel` | 200 | useMutation | S14 |
+| transferProjectOwner | `POST /api/projects/:projectId/transfer-owner` | 200 | useMutation, If-Match, `{newOwnerId, reason}`; sysadmin/USERS_MANAGE | Người dùng / Khóa tài khoản (bàn giao) |
 | [listProjectHistory](#listprojecthistory) | `GET /api/projects/:projectId/history` | 200 | useQuery | S10 |
 | [listProjectMembers](#listprojectmembers) | `GET /api/projects/:projectId/members` | 200 | useQuery | S12 |
 | [addProjectMember](#addprojectmember) | `POST /api/projects/:projectId/members` | 201 | useMutation | S12 |
@@ -116,6 +119,11 @@ Hợp đồng chi tiết (DTO, quyền, lỗi `BUSINESS_RULE`/`IP_NOT_ALLOWED`) 
 | activatePermissionGroup | `POST /api/permission-groups/:groupId/activate` | useMutation | Nhóm quyền |
 | listUserProjects | `GET /api/users/:userId/projects` | useQuery | Người dùng / Dự án (vai trò ở từng dự án, ADMIN_MODULES §11) |
 | revokeUserSessions | `POST /api/users/:userId/revoke-sessions` | useMutation, idempotency, `{reason}`, không If-Match; chính mình → 422 | Người dùng / Truy cập |
+| listProjectRolePolicies | `GET /api/project-role-policies` | useQuery; PERMISSIONS_MANAGE hoặc USERS_MANAGE | Phân quyền / Vai trò dự án |
+| updateProjectRolePolicy | `PATCH /api/project-role-policies/:role` | useMutation, If-Match, `{permissions, reason}`; OWNER → 422 ROLE_LOCKED | Phân quyền / Vai trò dự án |
+| listIpAccessLogs | `GET /api/ip-access-logs` | useQuery `{status?, scope?, q?, page, pageSize}` | Danh sách IP / Nhật ký IP bị chặn |
+| allowIpAccessLog | `POST /api/ip-access-logs/:logId/allow` | useMutation, If-Match, `{cidr?, description?, reason}` → `{log, entry}` | Danh sách IP / Nhật ký IP bị chặn |
+| dismissIpAccessLog | `POST /api/ip-access-logs/:logId/dismiss` | useMutation, If-Match, `{reason}` | Danh sách IP / Nhật ký IP bị chặn |
 | getUserPermissions | `GET /api/users/:userId/permissions` | useQuery | Người dùng / Phân quyền |
 | updateUserPermissions | `PUT /api/users/:userId/permissions` | useMutation | Người dùng / Phân quyền |
 | listAuditLogs | `GET /api/audit-logs` | useQuery | Nhật ký hệ thống, Tổng quan |

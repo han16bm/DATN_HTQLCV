@@ -19,6 +19,11 @@ public class User : ICreateStamped, IUpdateStamped
     public string UnitId { get; set; } = null!;
     public UserStatus Status { get; set; }
 
+    /// <summary>URL tuyệt đối của ảnh đại diện: CDN Cloudinary, hoặc gateway /api/avatars/{name} khi lưu cục bộ.</summary>
+    public string? AvatarUrl { get; set; }
+    /// <summary>Khoá lưu trữ của ảnh hiện tại (IFileStorage), dùng để xoá ảnh cũ khi thay.</summary>
+    public string? AvatarKey { get; set; }
+
     public bool IsSysAdmin { get; set; }
     public List<string> GrantedFeatures { get; set; } = [];
     public List<string> RevokedFeatures { get; set; } = [];

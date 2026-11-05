@@ -5,6 +5,7 @@ import {
   projectQuerySchema,
   projectRowSchema,
   projectSchema,
+  transferProjectOwnerSchema,
   updateProjectSchema,
 } from "@/features/projects/schemas/projects.schema";
 import {
@@ -211,6 +212,37 @@ export const projectHandlers = [
             200,
           );
         },
+      );
+    }),
+  ),
+  http.post(
+    "*/api/projects/:projectId/transfer-owner",
+    mockHandler(async ({ request, params }) => {
+      const viewer = authenticatedUser(request);
+      const projectId = idSchema.parse(params.projectId);
+      const payload = transferProjectOwnerSchema.parse(await request.json());
+      return mockCommand(
+        request,
+        {
+          operation: "transferProjectOwner",
+          feature: "projects",
+          viewer,
+          action: "USERS_MANAGE",
+          params: { projectId },
+          payload,
+        },
+        async () =>
+          mockJson(
+            request,
+            projectsDb.transferProjectOwner(
+              viewer,
+              projectId,
+              payload,
+              request.headers.get("If-Match"),
+            ),
+            projectSchema,
+            200,
+          ),
       );
     }),
   ),

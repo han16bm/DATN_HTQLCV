@@ -16,7 +16,7 @@ builder.AddCentralConfiguration(ConfigCatalog.TasksApi);
 builder.Host.UseSerilog((context, config) => config.ReadFrom.Configuration(context.Configuration).WriteTo.Console());
 
 builder.Services.AddEntityServices(builder.Configuration);
-builder.Services.AddDependencyInjection();
+builder.Services.AddDependencyInjection(builder.Configuration);
 builder.Services.AddCorsConfiguration(builder.Environment);
 builder.Services.AddScoped<LogExceptionFilter>();
 
@@ -104,7 +104,7 @@ app.UseForwardedHeaders();
 app.UseCors(CorsConfigurationExtensions.PolicyName);
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseStaticFiles();
+// Không UseStaticFiles: minh chứng cũ nằm ở wwwroot/uploads, chỉ được tải qua API có kiểm quyền.
 app.UseSerilogRequestLogging();
 app.MapControllers();
 

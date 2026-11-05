@@ -13,6 +13,7 @@ import {
 import type {
   CancelProjectInput,
   CreateProjectInput,
+  TransferProjectOwnerInput,
   GetProjectClosureChecksResult,
   ProjectDto,
   ProjectHistoryList,
@@ -97,6 +98,19 @@ export const projectsService = {
   ) {
     const response = await apiClient.post<ProjectDto>(
       `/projects/${encodeURIComponent(projectId)}/cancel`,
+      payload,
+      { ...options, schema: projectSchema },
+    );
+    return response.data;
+  },
+
+  async transferProjectOwner(
+    projectId: string,
+    payload: TransferProjectOwnerInput,
+    options: VersionOptions,
+  ) {
+    const response = await apiClient.post<ProjectDto>(
+      `/projects/${encodeURIComponent(projectId)}/transfer-owner`,
       payload,
       { ...options, schema: projectSchema },
     );

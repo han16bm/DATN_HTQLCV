@@ -32,6 +32,7 @@ import type {
   ResetUserPasswordInput,
   UserDto,
 } from "../types/users.types";
+import { UserHandoverPanel } from "./user-handover-panel";
 
 export function UserCommands({
   user,
@@ -107,10 +108,13 @@ export function UserCommands({
         </p>
       )}
       {mode === "lock" && !isLocked && (
-        <p className="mt-4 text-xs text-fg-subtle">
-          Khóa thông thường yêu cầu bàn giao việc mở. Khóa khẩn cấp thu hồi truy
-          cập ngay.
-        </p>
+        <>
+          <p className="mt-4 text-xs text-fg-subtle">
+            Khóa thông thường yêu cầu bàn giao việc mở. Khóa khẩn cấp thu hồi
+            truy cập ngay.
+          </p>
+          <UserHandoverPanel user={user} />
+        </>
       )}
       {mode === "sessions" && (
         <>

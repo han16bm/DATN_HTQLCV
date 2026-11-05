@@ -3,8 +3,6 @@ import { ChevronDown } from "lucide-react";
 import type { ComponentProps } from "react";
 import { controlClass, type ControlSize } from "./input";
 
-// Select gốc của trình duyệt (đọc tốt bằng bàn phím và trên di động) với mũi tên
-// riêng, xoay lên khi danh sách đang mở. `fit` co theo nội dung, dùng ở thanh lọc.
 export function Select({
   fit = false,
   size = "default",
@@ -19,7 +17,7 @@ export function Select({
     <span
       className={cn(
         "relative min-w-0",
-        fit ? "inline-flex max-md:flex max-md:w-full" : "flex w-full",
+        fit ? "inline-flex max-w-full @max-[40rem]/filters:flex @max-[40rem]/filters:w-full" : "flex w-full",
       )}
     >
       <select
@@ -28,7 +26,7 @@ export function Select({
           controlClass(size),
           "peer cursor-pointer appearance-none pr-8",
           fit
-            ? "w-auto max-w-60 min-w-24 field-sizing-content max-md:w-full max-md:max-w-none"
+            ? "w-auto max-w-60 min-w-[min(6rem,100%)] field-sizing-content @max-[40rem]/filters:w-full @max-[40rem]/filters:max-w-none"
             : "w-full",
           className,
         )}

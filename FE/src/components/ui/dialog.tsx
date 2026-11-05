@@ -5,8 +5,6 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useId, type ReactNode } from "react";
 import { ModalHeader, modalClass, overlayClass } from "./overlay";
 
-// Hộp thoại mở bằng hash trên URL hiện tại nên giữ ngữ cảnh trang; đóng lúc còn
-// dữ liệu chưa lưu thì hỏi lại.
 export function HashDialog({
   name,
   title,
@@ -38,7 +36,7 @@ export function HashDialog({
           className={overlayClass(returnTo ? "confirm" : "dialog")}
         />
         <Dialog.Content
-          className={modalClass("md", returnTo ? "confirm" : "dialog")}
+          className={modalClass("lg", returnTo ? "confirm" : "dialog")}
           aria-describedby={description ? descriptionId : undefined}
         >
           <ModalHeader title={title} closeLabel="Đóng biểu mẫu" />

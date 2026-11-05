@@ -2,9 +2,6 @@
 import { cn } from "@/lib/cn";
 import { useId } from "react";
 
-// Công tắc bật/tắt có hiệu lực ngay (không cần nút lưu), gọn một dòng: tên bên trái,
-// công tắc bên phải. Mô tả không chiếm chỗ: hiện khi rê chuột (title) và được đọc bằng
-// trình đọc màn hình. Bấm vào chữ cũng bật/tắt như bấm công tắc.
 export function Switch({
   label,
   hint,

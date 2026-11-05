@@ -29,7 +29,6 @@ export function useGetAttachmentQuery(attachmentId: string) {
   return useQueryAccess(result, "attachments");
 }
 
-// Nội dung tệp để xem trước; chỉ tải khi người dùng mở khung xem.
 export function useGetAttachmentContentQuery(
   attachmentId: string,
   enabled: boolean,
@@ -46,7 +45,6 @@ export function useGetAttachmentContentQuery(
   return useQueryAccess(result, "attachments");
 }
 
-// Thông tin nhiều tệp một lượt (cùng khóa với từng tệp nên dùng chung bộ nhớ đệm).
 export function useGetAttachmentsQuery(attachmentIds: string[]) {
   const viewerId = useSession().session?.user.id;
   return useQueries({

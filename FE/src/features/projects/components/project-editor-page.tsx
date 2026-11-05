@@ -12,7 +12,6 @@ import { ProjectForm } from "./project-form";
 
 export function ProjectEditorPage({ projectId }: { projectId?: string }) {
   const { session } = useSession();
-  // Tạo dự án là quyền hệ thống; sửa kế hoạch là quyền của đúng dự án.
   const allowed = projectId
     ? hasPermission(session, "PROJECT_MANAGE", projectId)
     : hasPermission(session, "PROJECT_CREATE");

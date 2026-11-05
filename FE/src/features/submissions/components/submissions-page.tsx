@@ -9,8 +9,6 @@ import { dateTime } from "@/lib/format";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { useListSubmissionsQuery } from "../hooks/use-submissions-queries";
 
-// Dùng cùng bảng cho trang riêng và vùng kết quả trong chi tiết công việc.
-// Ở trang công việc, người thực hiện đã có ở cột phụ nên không lặp lại trong bảng.
 export function SubmissionsPage({
   taskId,
   onDetail,

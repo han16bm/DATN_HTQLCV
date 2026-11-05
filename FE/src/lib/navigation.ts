@@ -32,8 +32,6 @@ export type NavChild = {
   icon: LucideIcon;
   active: boolean;
 };
-// Mục có mục con hiện thành menu thả xuống ngay trên nút của nó (như Jira); mục con
-// suy ra từ trang đang mở để giữ phạm vi lọc khi chuyển giữa các mục.
 export type NavContext = {
   userId: string;
   seesOthers: boolean;
@@ -45,7 +43,6 @@ export type NavItem = {
   label: string;
   icon: LucideIcon;
   match: RegExp;
-  // Tiêu đề nhóm trong sidebar khu quản trị; mục đầu nhóm mang tiêu đề.
   group?: string;
   placement?: "sidebar" | "header";
   children?: (context: NavContext) => NavChild[];
@@ -58,7 +55,6 @@ const analyticsPaths = [
   "/analytics/bottlenecks",
   "/analytics/summary",
 ];
-// Các màn phân tích dùng chung phạm vi lọc trên URL; cảnh báo là mục riêng cho mọi nhân viên.
 function analyticsChildren({ pathname, search }: NavContext): NavChild[] {
   const scope =
     analyticsPaths.includes(pathname) && search.size ? `?${search}` : "";
@@ -75,8 +71,6 @@ function analyticsChildren({ pathname, search }: NavContext): NavChild[] {
   }));
 }
 
-// Lối tắt lọc của danh sách công việc: giữ dự án, tìm kiếm và chế độ xem đang chọn,
-// bỏ trang; chọn lại mục đang bật thì tắt bộ lọc đó.
 function taskChildren({
   userId,
   seesOthers,
@@ -130,7 +124,6 @@ function taskChildren({
   ];
 }
 
-// Hai khu vực có menu riêng; quyền mở từng mục do canVisit (lib/auth/access).
 export const navigation: Record<Area, NavItem[]> = {
   workspace: [
     {
@@ -166,7 +159,6 @@ export const navigation: Record<Area, NavItem[]> = {
       match: /^\/reports(?:\/|$)/,
     },
     {
-      // Thông báo cá nhân về công việc: mở cho mọi nhân viên, BE lọc theo người nhận.
       href: "/alerts",
       label: "Cảnh báo",
       icon: Bell,
@@ -264,8 +256,6 @@ export const navigation: Record<Area, NavItem[]> = {
 const areaOf = (pathname: string): Area =>
   /^\/admin(?:\/|$)/.test(pathname) ? "admin" : "workspace";
 
-// Các trang danh sách ghi nhớ URL gần nhất (bộ lọc, chế độ xem, trang) để các
-// trang con quay lại đúng trạng thái đang xem.
 const lists = new Set([
   "/workspace",
   "/projects",
@@ -289,7 +279,6 @@ export const listRoute = (path: string) =>
 
 export type PageSearch = Record<string, string | string[] | undefined>;
 
-// Liên kết cũ của dự án trở về trang chi tiết, giữ đúng bộ lọc của từng vùng.
 export function projectUrl(
   projectId: string,
   search: PageSearch = {},
@@ -317,8 +306,6 @@ export function projectUrl(
   return `/projects/${encodeURIComponent(projectId)}${query.size ? `?${query}` : ""}${section ? `#${section}` : ""}`;
 }
 
-// Dự án đang xem để bộ chọn dự án hiển thị: ID trong /projects/:id, hoặc dự án
-// cha của công việc đang mở (tên công việc đã đăng ký kèm projectId).
 export function currentProjectId(
   pathname: string,
   entity: (kind: string, id: string) => { parentId?: string } | undefined,
@@ -329,7 +316,6 @@ export function currentProjectId(
   return task ? entity("task", d(task[1]))?.parentId : undefined;
 }
 
-// Đích sau đăng nhập chỉ nhận đường dẫn trong ứng dụng, tránh chuyển hướng ra ngoài.
 export function safeNext(value: string | null) {
   return value &&
     value.startsWith("/") &&
@@ -356,14 +342,9 @@ const pending = "…";
 const isAppPath = (url: string | null): url is string =>
   Boolean(url && url.startsWith("/") && !url.startsWith("//"));
 
-// Breadcrumb và đích "Quay lại" suy ra từ URL. Đích luôn là trang cha trong
-// ứng dụng nên mở trực tiếp hoặc ở tab mới vẫn có chỗ quay về; riêng trang
-// không có cha cố định thì dùng trang trước nếu có.
 export function trailFor(ctx: TrailContext): Trail | null {
   const trail = buildTrail(ctx);
   if (!trail) return null;
-  // Trang con của một danh sách quay về đúng danh sách người dùng vừa rời, kể cả
-  // khi khác cha trực tiếp (như công việc cá nhân), cùng bộ lọc và phân trang.
   const { previous, pathname } = ctx;
   if (!isAppPath(previous)) return trail;
   const from = previous.split(/[?#]/)[0];
@@ -392,7 +373,6 @@ function buildTrail(ctx: TrailContext): Trail | null {
   };
   const projectLabel = (id: string) =>
     ctx.entity("project", id)?.label ?? pending;
-  // Công việc của dự án nằm trong khu dự án; chưa biết dự án thì dùng danh sách chung.
   const tasks = (projectId?: string) =>
     projectId
       ? list(`/projects/${e(projectId)}`).split("#")[0] + "#tasks"

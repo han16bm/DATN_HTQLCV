@@ -23,18 +23,14 @@ type FieldProps = {
   width?: "short" | "medium" | "long" | "full";
 };
 
-// Số cột (trên lưới 12 cột của Form) theo bề rộng của chính biểu mẫu, không theo
-// màn hình: hộp thoại hẹp cũng tự xếp một cột.
 const columns = {
   short:
-    "col-span-12 @min-[420px]/form:col-span-6 @min-[600px]/form:col-span-4",
-  medium: "col-span-12 @min-[420px]/form:col-span-6",
-  long: "col-span-12 @min-[600px]/form:col-span-8",
+    "col-span-12 @min-[26.25rem]/form:col-span-6 @min-[37.5rem]/form:col-span-4",
+  medium: "col-span-12 @min-[26.25rem]/form:col-span-6",
+  long: "col-span-12 @min-[37.5rem]/form:col-span-8",
   full: "col-span-12",
 };
 
-// Nhãn thật ở trên ô; lỗi ngay dưới ô và thay chỗ của gợi ý, kèm biểu tượng để
-// không chỉ dựa vào màu.
 export function Field({
   label,
   error,
@@ -108,7 +104,6 @@ function errorMessage(error: unknown): string | undefined {
   if (!error || typeof error !== "object") return;
   if ("message" in error && typeof error.message === "string")
     return error.message;
-  // Zod can attach an array item's error to links[0] or attachments[0].
   for (const [key, value] of Object.entries(error)) {
     if (key !== "root" && !/^\d+$/.test(key)) continue;
     const message = errorMessage(value);

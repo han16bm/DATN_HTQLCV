@@ -13,21 +13,18 @@ import { useUI } from "@/stores/ui-store";
 import * as Dialog from "@radix-ui/react-dialog";
 import { PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { Suspense, useEffect, useRef, type ReactNode } from "react";
+import { Suspense, ViewTransition, useEffect, useRef, type ReactNode } from "react";
 import { BreadcrumbTrail } from "./breadcrumb-trail";
 import { DirtyNavigationGuard } from "./dirty-navigation-guard";
 import { NavigationTracker } from "./navigation-tracker";
 import { SideNav } from "./side-nav";
 import { TopBar } from "./top-bar";
 
-// Phiên hết hạn hoặc bị thu hồi: về đăng nhập và nhớ trang đang mở để quay lại.
 function loginUrl() {
   const next = location.pathname + location.search;
   return `/login?next=${encodeURIComponent(next)}&expired=1`;
 }
 
-// Khung dùng chung của khu làm việc và khu quản trị: cùng phiên, cùng quy tắc
-// quyền; chỉ khác menu. Trang chỉ được mount khi canVisit cho phép.
 export function AppShell({
   area,
   children,
@@ -43,15 +40,12 @@ export function AppShell({
   const setSidebar = useUI((s) => s.setSidebar);
   const toggleSidebar = useUI((s) => s.toggleSidebar);
   const leaving = useRef(false);
-  // Cả hai khu đều có sidebar (chức năng chung hoặc các mục quản trị) trừ khi người
-  // dùng chọn ẩn trong Cài đặt giao diện; mục quản lý bổ sung nằm ở header.
   const hidden = usePreferences((s) => s.hideSidebar);
   const showSidebar = usePreferences((s) => s.set);
   const sidebar = !hidden;
   useEffect(() => {
     if (!loading && !session && !leaving.current) router.replace(loginUrl());
   }, [loading, session, router]);
-  // Đổi trang thì đóng menu di động, kể cả khi điều hướng không đi qua menu.
   useEffect(() => {
     setSidebar(false);
   }, [pathname, setSidebar]);
@@ -62,7 +56,6 @@ export function AppShell({
     window.addEventListener("resize", close);
     return () => window.removeEventListener("resize", close);
   }, [setSidebar]);
-  // Ctrl+[ thu gọn/mở rộng sidebar như Jira.
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
       if (
@@ -134,7 +127,6 @@ export function AppShell({
             <Suspense>
               <SideNav area={area} session={session} collapsed={collapsed} />
             </Suspense>
-            {/* Nút thu gọn ở chân sidebar như các app thường có; Ctrl+[ cũng đổi. */}
             <div
               className={cn(
                 "mt-2 flex border-t border-line pt-2",
@@ -161,7 +153,7 @@ export function AppShell({
           <Dialog.Overlay className="fixed inset-0 z-60 bg-overlay md:hidden" />
           <Dialog.Content
             aria-describedby={undefined}
-            className="nav-surface fixed inset-y-0 left-0 z-61 flex w-[min(300px,86vw)] flex-col px-2 pt-2 pb-2 shadow-overlay outline-none md:hidden motion-safe:animate-[drawer-in_180ms_ease-out]"
+            className="nav-surface fixed inset-y-0 left-0 z-61 flex w-[min(18.75rem,86vw)] flex-col px-2 pt-2 pb-2 shadow-overlay outline-none md:hidden motion-safe:animate-[drawer-in_180ms_ease-out]"
           >
             <div className="mb-2 flex items-center justify-between pl-2.5">
               <Dialog.Title className="m-0 text-sm font-semibold text-fg">
@@ -202,9 +194,11 @@ export function AppShell({
                 <Suspense>
                   <BreadcrumbTrail />
                 </Suspense>
-                <div className="@container/page min-w-0 wrap-anywhere">
-                  {children}
-                </div>
+                <ViewTransition key={pathname} name="page-content" share="auto" enter="auto" default="none">
+                  <div className="@container/page min-w-0 wrap-anywhere">
+                    {children}
+                  </div>
+                </ViewTransition>
               </>
             ) : (
               <div className="@container/page min-w-0 wrap-anywhere">

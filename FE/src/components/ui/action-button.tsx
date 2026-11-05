@@ -1,27 +1,28 @@
 "use client";
 import { useState, type ReactNode } from "react";
-import { Button } from "./button";
+import { Button, type ButtonSize } from "./button";
 import { Spinner } from "./loading";
 
-// Nút chạy một thao tác bất đồng bộ: khóa nút, hiện vòng quay và nhãn đang xử lý,
-// báo lỗi ngay dưới nút nếu thất bại.
 export function ActionButton({
   children,
   onAction,
   primary = false,
+  size = "md",
   pendingLabel = "Đang xử lý…",
 }: {
   children: ReactNode;
   onAction: () => Promise<unknown>;
   primary?: boolean;
+  size?: ButtonSize;
   pendingLabel?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   return (
-    <div className="inline-flex flex-col items-start gap-1">
+    <div className="inline-flex w-fit min-w-0 max-w-full flex-none flex-col items-start gap-1">
       <Button
         variant={primary ? "primary" : "secondary"}
+        size={size}
         disabled={busy}
         aria-busy={busy}
         onClick={async () => {

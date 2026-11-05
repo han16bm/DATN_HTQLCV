@@ -18,8 +18,6 @@ import { navigation } from "@/lib/navigation";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-// Tổng quan khu quản trị ghép từ các API sẵn có; mỗi khối chỉ mount khi có quyền
-// tương ứng nên không gửi request bị từ chối.
 export function AdminOverview() {
   const { session } = useSession();
   const can = (permission: Parameters<typeof hasPermission>[1]) =>

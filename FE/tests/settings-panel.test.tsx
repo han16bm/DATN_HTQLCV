@@ -40,7 +40,7 @@ const fontValue = (panel: ReturnType<typeof within>) =>
 const checked = (panel: ReturnType<typeof within>, name: string) =>
   panel.getByRole("radio", { name }).getAttribute("aria-checked");
 
-it("opens as a narrow named drawer with the settings the app really supports", async () => {
+it("opens a named drawer with the settings the app really supports", async () => {
   show();
   const panel = await open();
   expect(
@@ -60,14 +60,13 @@ it("opens as a narrow named drawer with the settings the app really supports", a
   expect(checked(panel, "Mặc định")).toBe("true");
   expect(checked(panel, "Xanh dương")).toBe("true");
   expect(checked(panel, "Xanh nhạt")).toBe("true");
-  // Ngăn kéo trượt từ cạnh phải, chỉ khai báo một chiều rộng (không có class đè nhau).
-  const drawer = screen.getByRole("dialog");
-  expect(drawer.className).toContain("right-0");
-  expect(drawer.className).toContain("w-[min(256px,100vw)]");
-  expect(drawer.className).not.toContain("420px");
+  expect(screen.getByRole("dialog", { name: "Cài đặt giao diện" })).toBeTruthy();
 });
 
-it("applies each choice to the page at once and remembers it in this browser", async () => {
+it.each([
+  { scale: "large", size: "112.5%" },
+  { scale: "xlarge", size: "125%" },
+])("applies $scale text and the other choices at once and remembers them", async ({ scale, size }) => {
   show();
   const panel = await open();
   const user = userEvent.setup();
@@ -80,7 +79,7 @@ it("applies each choice to the page at once and remembers it in this browser", a
   );
   await user.selectOptions(
     panel.getByRole("combobox", { name: "Cỡ chữ" }),
-    "Lớn",
+    scale,
   );
   await user.click(panel.getByRole("switch", { name: "Bảng gọn" }));
   await user.click(panel.getByRole("switch", { name: "Thu gọn thanh bên" }));
@@ -90,7 +89,7 @@ it("applies each choice to the page at once and remembers it in this browser", a
   expect(root.dataset.mode).toBe("light");
   expect(root.dataset.font).toBe("inter");
   expect(root.dataset.density).toBe("compact");
-  expect(root.style.fontSize).toBe("112.5%");
+  expect(root.style.fontSize).toBe(size);
   expect(useUI.getState().sidebarCollapsed).toBe(true);
   expect(checked(panel, "Xanh navy")).toBe("true");
   expect(checked(panel, "Xám")).toBe("true");
@@ -99,14 +98,14 @@ it("applies each choice to the page at once and remembers it in this browser", a
   expect(
     (panel.getByRole("combobox", { name: "Cỡ chữ" }) as HTMLSelectElement)
       .value,
-  ).toBe("large");
+  ).toBe(scale);
   const saved = JSON.parse(localStorage.getItem(preferencesKey)!);
   expect(saved.state).toEqual({
     theme: "navy",
     mode: "light",
     page: "gray",
     font: "inter",
-    fontScale: "large",
+    fontScale: scale,
     density: "compact",
     hideSidebar: false,
   });

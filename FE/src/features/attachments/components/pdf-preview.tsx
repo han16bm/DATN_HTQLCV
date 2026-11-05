@@ -13,7 +13,6 @@ import {
 } from "../hooks/use-attachments-queries";
 import { useDownloadAttachment } from "../hooks/use-download-attachment";
 
-// Địa chỉ tạm của tệp đã tải qua API (có xác thực); thu hồi khi đổi hoặc đóng.
 function useBlobUrl(blob: Blob | undefined) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -30,7 +29,6 @@ function useBlobUrl(blob: Blob | undefined) {
   return url;
 }
 
-// Khung xem trước một tệp PDF đính kèm; tệp khác PDF chỉ cho tải xuống.
 export function PdfPreview({
   attachmentId = "",
   picker,

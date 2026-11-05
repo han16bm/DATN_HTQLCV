@@ -3,7 +3,6 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   ModalHeader,
   modalClass,
-  slideDrawerClass,
 } from "@/components/ui/overlay";
 import { useUI } from "@/stores/ui-store";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -33,7 +32,6 @@ it("asks before discarding, focuses the safe choice first and resolves with the 
   expect(document.activeElement).toBe(
     screen.getByRole("button", { name: "Ở lại" }),
   );
-  // Bỏ thay đổi làm mất dữ liệu nên dùng nút Danger.
   expect(
     screen.getByRole("button", { name: "Bỏ thay đổi" }).className,
   ).toContain("bg-danger-bold");
@@ -77,9 +75,22 @@ it("names a dialog by its heading and closes it with a labelled button", async (
   expect(dialog.isConnected).toBe(false);
 });
 
-it("sizes modals within the viewport and keeps the drawer below the top bar", () => {
-  expect(modalClass("sm")).toContain("w-[min(440px,calc(100vw-32px))]");
-  expect(modalClass("md")).toContain("max-h-[90dvh]");
-  expect(modalClass("sm", "confirm")).toContain("z-91");
-  expect(slideDrawerClass("sm")).toContain("top-(--topbar-h)");
+it("returns keyboard focus to the opener after closing a dialog with Escape", async () => {
+  const user = userEvent.setup();
+  render(
+    <Dialog.Root>
+      <Dialog.Trigger>Mở biểu mẫu</Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Content className={modalClass("lg")} aria-describedby={undefined}>
+          <ModalHeader title="Chỉnh sửa thông tin" closeLabel="Đóng biểu mẫu" />
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>,
+  );
+  const trigger = screen.getByRole("button", { name: "Mở biểu mẫu" });
+  await user.click(trigger);
+  await screen.findByRole("dialog", { name: "Chỉnh sửa thông tin" });
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(document.activeElement).toBe(trigger);
 });

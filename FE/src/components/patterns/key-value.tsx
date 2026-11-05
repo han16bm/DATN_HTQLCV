@@ -1,8 +1,6 @@
 import { cn } from "@/lib/cn";
 import type { ReactNode } from "react";
 
-// Danh sách "nhãn: giá trị" gọn cho thông tin phụ (người thực hiện, hạn, giờ công…).
-// Nhãn cố định bên trái, giá trị xuống dòng khi dài; dt và dd luôn đi liền nhau.
 export function KeyValueList({
   children,
   className,
@@ -15,7 +13,7 @@ export function KeyValueList({
   return (
     <dl
       className={cn(
-        "m-0 grid text-sm",
+        "@container/metadata m-0 grid min-w-0 text-sm",
         compact ? "gap-y-2" : "gap-y-3",
         className,
       )}
@@ -33,7 +31,7 @@ export function KeyValue({
   children: ReactNode;
 }) {
   return (
-    <div className="grid grid-cols-[minmax(6rem,0.9fr)_minmax(0,1.1fr)] items-baseline gap-x-2">
+    <div className="grid min-w-0 items-baseline gap-x-2 @min-[15rem]/metadata:grid-cols-[minmax(6rem,0.9fr)_minmax(0,1.1fr)]">
       <dt className="text-xs leading-6 text-fg-subtle after:content-[':']">
         {label}
       </dt>

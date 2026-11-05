@@ -2,6 +2,7 @@ import { cn } from "@/lib/cn";
 import type { ComponentProps } from "react";
 
 type Variant = "primary" | "secondary" | "subtle" | "danger";
+export type ButtonSize = "sm" | "md";
 
 const variants: Record<Variant | "selected", string> = {
   primary:
@@ -15,19 +16,24 @@ const variants: Record<Variant | "selected", string> = {
     "border-transparent bg-selected-bg text-selected-fg hover:bg-info-bg",
 };
 
-// Lớp của nút, dùng chung cho Button và liên kết trông như nút (ButtonLink).
-export const buttonClass = (variant: Variant = "secondary", selected = false) =>
+export const buttonClass = (
+  variant: Variant = "secondary",
+  selected = false,
+  size: ButtonSize = "md",
+) =>
   cn(
-    "relative inline-flex h-(--control-h) items-center justify-center gap-1.5 rounded-full border px-4",
-    "text-sm font-semibold whitespace-nowrap transition-[background-color,border-color,color,scale] duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
+    "relative inline-flex min-w-0 max-w-full items-center justify-center gap-1.5 rounded-full border",
+    size === "sm"
+      ? "w-fit flex-none min-h-8 px-2 py-1 text-center text-xs font-medium whitespace-normal"
+      : "h-(--control-h) px-4 text-sm font-semibold whitespace-nowrap",
+    "transition-[background-color,border-color,color,scale] duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
     "disabled:cursor-not-allowed disabled:opacity-60 aria-disabled:cursor-wait pointer-coarse:min-h-11",
     variants[selected ? "selected" : variant],
   );
 
-// Thang nút theo mức nhấn: Primary (một nút mỗi khu vực), Secondary, Subtle, Danger.
-// `selected` là trạng thái chọn, `loading` thay nhãn bằng vòng quay và chặn bấm.
 export function Button({
   variant = "secondary",
+  size = "md",
   selected,
   loading,
   className,
@@ -37,6 +43,7 @@ export function Button({
   ...props
 }: ComponentProps<"button"> & {
   variant?: Variant;
+  size?: ButtonSize;
   selected?: boolean;
   loading?: boolean;
 }) {
@@ -48,12 +55,12 @@ export function Button({
       aria-busy={loading || undefined}
       aria-disabled={loading || undefined}
       onClick={loading ? undefined : onClick}
-      className={cn(buttonClass(variant, selected), className)}
+      className={cn(buttonClass(variant, selected, size), className)}
       {...props}
     >
       <span
         className={cn(
-          "inline-flex items-center gap-1.5",
+          "inline-flex min-w-0 items-center gap-1.5 [&_svg]:shrink-0",
           loading && "invisible",
         )}
       >

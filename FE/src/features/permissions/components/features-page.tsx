@@ -25,7 +25,6 @@ import { useListFeaturesQuery } from "../hooks/use-permissions-queries";
 import type { FeatureDto } from "../types/permissions.types";
 import { FeatureName, featureTree } from "./feature-tree";
 
-// BE từ chối tắt PERMISSIONS_MANAGE (422) vì không ai bật lại được qua giao diện.
 const locked = (feature: FeatureDto) =>
   feature.code === "PERMISSIONS_MANAGE" && feature.isActive;
 const lockedReason =
@@ -140,11 +139,11 @@ export function FeaturesPage() {
                 className="m-0 grid min-w-0 grid-cols-12 items-start gap-4 border-0 p-0"
                 disabled
               >
-                <div className="col-span-12 min-w-0 @min-[420px]/form:col-span-6">
+                <div className="col-span-12 min-w-0 @min-[26.25rem]/form:col-span-6">
                   <label htmlFor="feature-code">Mã quyền</label>
                   <Input id="feature-code" value={selected.code} readOnly />
                 </div>
-                <div className="col-span-12 min-w-0 @min-[420px]/form:col-span-6">
+                <div className="col-span-12 min-w-0 @min-[26.25rem]/form:col-span-6">
                   <label htmlFor="feature-parent">Nhóm</label>
                   <Input
                     id="feature-parent"
@@ -164,7 +163,7 @@ export function FeaturesPage() {
                     value={selected.description ?? ""}
                   />
                 </div>
-                <div className="col-span-12 min-w-0 @min-[420px]/form:col-span-6">
+                <div className="col-span-12 min-w-0 @min-[26.25rem]/form:col-span-6">
                   <label htmlFor="feature-path">Đường dẫn</label>
                   <Input
                     id="feature-path"

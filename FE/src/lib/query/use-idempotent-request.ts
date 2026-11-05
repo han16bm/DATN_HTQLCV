@@ -3,7 +3,6 @@
 import { fingerprint } from "@/lib/crypto/fingerprint";
 import { useRef } from "react";
 
-// Keep the key after failure so retrying the same content cannot apply it twice.
 export function useIdempotentRequest() {
   const attempt = useRef<{ fingerprint: string; key: string } | null>(null);
   return async function run<T>(

@@ -18,8 +18,6 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-// Nút "Tạo công việc": chỉ hiện khi người dùng quản lý ít nhất một dự án đang chạy.
-// Đang ở một dự án thì đi thẳng tới biểu mẫu; ở nơi khác thì chọn dự án trước.
 export function CreateTaskAction({ projectId }: { projectId?: string }) {
   const { session } = useSession();
   const router = useRouter();
@@ -49,6 +47,7 @@ export function CreateTaskAction({ projectId }: { projectId?: string }) {
     <>
       <Button
         variant="primary"
+        size="sm"
         onClick={() =>
           projectId && manageable.some((p) => p.id === projectId)
             ? router.push(`/projects/${projectId}/tasks/new`)

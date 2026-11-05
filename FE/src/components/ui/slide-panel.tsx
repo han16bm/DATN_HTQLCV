@@ -5,10 +5,6 @@ import { useRef, type ReactNode } from "react";
 import { IconButton } from "./icon-button";
 import { overlayClass, slideDrawerClass } from "./overlay";
 
-// Ngăn kéo trượt từ cạnh phải để xem phần phụ của một trang (nhật ký, lịch sử, chi tiết)
-// mà không rời trang. Tiêu đề cố định có đường kẻ dưới, thân cuộn riêng trên nền trang để
-// các thẻ trắng bên trong nổi lên như ở trang chính. Nội dung chỉ dựng khi mở nên dữ liệu
-// chỉ tải khi cần. `size="lg"` cho bảng nhiều cột.
 export function SlidePanel({
   id,
   open,

@@ -10,8 +10,6 @@ import { ProfileCard } from "./profile-card";
 
 type Child = { href: string; label: string };
 
-// Sidebar: thẻ người dùng và chức năng chung cho mọi role.
-// Drawer mobile có cả chức năng bổ sung của Manager theo quyền hiện có.
 export function SideNav({
   area,
   session,
@@ -40,7 +38,6 @@ export function SideNav({
         ]
       : [];
   });
-  // Thẻ người dùng nằm ngoài vùng cuộn để tràn sát hai mép sidebar.
   return (
     <>
       <ProfileCard user={session.user} collapsed={collapsed} />

@@ -27,7 +27,6 @@ import { CreateTaskAction } from "./create-task-action";
 
 type View = "all" | "overdue" | "doing" | "upcoming" | "waiting";
 
-// Mỗi việc thuộc đúng một nhóm theo thứ tự ưu tiên: quá hạn, đang làm, chờ duyệt, sắp tới.
 function groupOf(task: TaskRow): Exclude<View, "all"> {
   if (task.isOverdue) return "overdue";
   if (task.status === "IN_PROGRESS") return "doing";
@@ -54,8 +53,6 @@ function actionsOf(task: TaskRow) {
   return [];
 }
 
-// Thao tác nhanh của một việc gom trong menu thả xuống, giống menu thao tác ở danh
-// sách thành viên; luôn có "Xem chi tiết" ở cuối.
 function TaskMenu({ task }: { task: TaskRow }) {
   const quick = actionsOf(task);
   return (
@@ -82,8 +79,6 @@ function TaskMenu({ task }: { task: TaskRow }) {
   );
 }
 
-// "Hôm nay": việc của tôi trong một bảng, xếp theo mức cần làm ngay rồi theo hạn; chip
-// phía trên chỉ lọc bảng. Cột phải gom những gì đang chờ tôi xử lý ngoài danh sách việc.
 export function TodayPage() {
   const { session } = useSession();
   const userId = session?.user.id ?? "";
@@ -281,7 +276,7 @@ export function TodayPage() {
             <div
               role="group"
               aria-label="Lọc theo mức cần làm"
-              className="grid grid-cols-2 gap-2 @min-[560px]/page:grid-cols-5"
+              className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,7rem),1fr))] gap-2"
             >
               {chips.map((chip) => (
                 <button

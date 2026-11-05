@@ -150,7 +150,6 @@ export function useCancelProjectMutation() {
   });
 }
 
-// Quản trị bàn giao thay chủ dự án (từ hộp thoại khóa tài khoản): tải lại dự án, người dùng và phiên.
 export function useTransferProjectOwnerMutation() {
   const client = useQueryClient();
   const viewerId = useSession().session?.user.id;

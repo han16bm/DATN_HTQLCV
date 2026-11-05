@@ -10,7 +10,6 @@ import type { FieldValues, Path, UseFormReturn } from "react-hook-form";
 import { FormError } from "./form-error";
 import type { CompareField } from "./form.types";
 
-// Shared form chrome only. Each feature owns useForm, its schema and its fields.
 export type FormProps<
   Input extends FieldValues,
   Output extends FieldValues = Input,
@@ -23,13 +22,10 @@ export type FormProps<
   submitDisabled?: boolean;
   submitActions?: ReactNode;
   cancel?: ReactNode;
-  // Chân hành động canh phải (mặc định) hoặc canh trái, không kẻ viền, cho biểu
-  // mẫu một cột như hồ sơ cá nhân.
   actions?: "end" | "start";
   compareFields?: CompareField[];
   onConflictReload?: () => Promise<Record<string, unknown>>;
   onConflictAccept?: () => void;
-  // Chế độ Xem của dialog: mọi trường disable, không có nút gửi.
   readOnly?: boolean;
 };
 
@@ -76,14 +72,12 @@ export function Form<Input extends FieldValues, Output extends FieldValues>({
             type: "server",
             message: field.message,
           });
-      // Lỗi đã hiện đủ dưới từng trường thì không lặp lại ở cuối form.
       const shown =
         fields.length > 0 && fields.every((field) => field.path[0] in values);
       setError(shown ? null : failure);
     }
   }
 
-  // Biểu mẫu không kéo giãn quá rộng: 760px (gọn) hoặc 960px.
   return (
     <form
       className={cn(

@@ -151,7 +151,6 @@ describe("breadcrumb trail", () => {
       trailFor(context("/tasks/t-1", { entity: entities, previous: filtered }))!
         .back,
     ).toBe(filtered);
-    // Trang con trong cùng thực thể luôn về trang cha, không về "trang trước".
     expect(
       trailFor(
         context("/tasks/t-1/history", {

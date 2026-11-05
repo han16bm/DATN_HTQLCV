@@ -23,8 +23,6 @@ const tones: Record<Tone, { box: string; icon: typeof Info }> = {
   },
 };
 
-// Thông báo trong trang: biểu tượng + tiêu đề ngắn + nội dung + hành động tiếp theo.
-// Màu theo ý nghĩa nhưng luôn kèm biểu tượng và chữ. Lỗi dùng role="alert".
 export function Notice({
   tone = "info",
   title,

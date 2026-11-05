@@ -9,26 +9,23 @@ import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import { type ComponentProps, type ReactNode } from "react";
 
 type Sort = "ascending" | "descending" | "none";
-// Cột có onSort hiện nút sắp xếp; chỉ dùng khi API thực sự sắp xếp theo cột đó.
 type Column = string | { label: string; sort?: Sort; onSort?: () => void };
 
-// Bề rộng tối thiểu theo số cột; dưới mức này bảng cuộn ngang trong vùng riêng.
 const minWidth: Record<number, string> = {
-  1: "min-w-[280px]",
-  2: "min-w-[400px]",
-  3: "min-w-[400px]",
-  4: "min-w-[600px]",
-  7: "min-w-[1080px]",
-  8: "min-w-[1080px]",
+  1: "min-w-70",
+  2: "min-w-100",
+  3: "min-w-100",
+  4: "min-w-150",
+  7: "min-w-270",
+  8: "min-w-270",
 };
 
-// Bảng ít cột không kéo giãn hết bề rộng để ô không bị thừa khoảng trắng.
 const maxWidth: Record<number, string> = {
-  1: "max-w-[560px]",
-  2: "max-w-[560px]",
-  3: "max-w-[760px]",
-  4: "max-w-[960px]",
-  5: "max-w-[1120px]",
+  1: "max-w-140",
+  2: "max-w-140",
+  3: "max-w-190",
+  4: "max-w-240",
+  5: "max-w-280",
 };
 
 const SortIcon = {
@@ -37,9 +34,6 @@ const SortIcon = {
   none: ChevronsUpDown,
 };
 
-// Bảng dữ liệu: tiêu đề và hành động nằm ngoài thẻ, dữ liệu và chân bảng trong thẻ.
-// Bốn trạng thái: đang tải (khung xương khi chưa có hàng, mờ 20% kèm vòng quay khi
-// làm mới), lỗi (kèm thử lại), rỗng, và không có kết quả theo bộ lọc.
 export function DataTable({
   headers,
   rows,
@@ -60,7 +54,6 @@ export function DataTable({
   headers: Column[];
   rows: ReactNode[][];
   actions?: boolean;
-  // Vừa cột nội dung; màn hẹp chuyển từng hàng thành nhóm có nhãn, không ép cuộn ngang.
   fit?: boolean;
   title?: string;
   headerActions?: ReactNode;
@@ -70,10 +63,8 @@ export function DataTable({
   loading?: boolean;
   error?: Error | null;
   onRetry?: () => Promise<unknown>;
-  // Rỗng vì bộ lọc: hiện "Không có kết quả phù hợp" kèm Xóa bộ lọc nếu có.
   filtered?: boolean;
   onClearFilters?: () => void;
-  // Khung rỗng tùy biến, ví dụ lời nhắc kèm nút tạo mục đầu tiên.
   empty?: ReactNode;
 }) {
   const columns = headers.length;
@@ -84,7 +75,7 @@ export function DataTable({
     <section
       data-columns={columns}
       className={cn(
-        "@container/table mb-4 w-full max-w-full min-w-0 self-start",
+        "@container/table mb-4 w-full min-w-0 self-start",
         maxWidth[columns],
       )}
     >
@@ -126,7 +117,7 @@ export function DataTable({
                 "w-full table-fixed border-collapse text-left transition-opacity motion-reduce:transition-none",
                 fit
                   ? "min-w-0 @max-[42rem]/table:block"
-                  : (minWidth[columns] ?? "min-w-[760px]"),
+                  : (minWidth[columns] ?? "min-w-190"),
                 refreshing && "opacity-20",
               )}
             >
@@ -140,7 +131,6 @@ export function DataTable({
                 </colgroup>
               )}
               <thead className={fit ? "@max-[42rem]/table:sr-only" : undefined}>
-                {/* Header bảng tô màu điều hướng, chữ trắng (chuẩn chung các phần mềm quản trị). */}
                 <tr className="nav-surface">
                   {headers.map((header, i) => {
                     const column =
@@ -154,7 +144,7 @@ export function DataTable({
                           column.onSort ? (column.sort ?? "none") : undefined
                         }
                         className={cn(
-                          "h-11 py-2 text-sm font-semibold text-fg",
+                          "h-8 py-1.5 text-sm leading-5 font-semibold break-words text-fg",
                           fit ? "px-2" : "px-3",
                           actions && i === columns - 1
                             ? "text-center"
@@ -166,10 +156,10 @@ export function DataTable({
                             data-ui
                             type="button"
                             onClick={column.onSort}
-                            className="-mx-1 inline-flex items-center gap-1 rounded-sm px-1 font-semibold hover:bg-hover hover:text-fg"
+                            className="-mx-1 inline-flex max-w-full items-center gap-1 rounded-sm px-1 text-left font-semibold hover:bg-hover hover:text-fg pointer-coarse:min-h-11"
                           >
                             {column.label}
-                            <Icon className="size-3.5" aria-hidden="true" />
+                            <Icon className="size-3.5 shrink-0" aria-hidden="true" />
                           </button>
                         ) : (
                           column.label

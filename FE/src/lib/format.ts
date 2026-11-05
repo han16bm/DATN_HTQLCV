@@ -70,7 +70,6 @@ const labels: Record<string, string> = {
   ORGANIZATION_MANAGE: "Quản lý tổ chức",
 };
 export const label = (value: string) => labels[value] ?? value;
-// Nhãn quyền của tài khoản: Sysadmin và tên các nhóm quyền đang hoạt động.
 export const accessText = (user: {
   isSysAdmin: boolean;
   groups: { label: string }[];
@@ -79,7 +78,6 @@ export const accessText = (user: {
     ...(user.isSysAdmin ? ["Sysadmin"] : []),
     ...user.groups.map((g) => g.label),
   ].join(", ") || "Chưa thuộc nhóm quyền";
-// Loại đối tượng của nhật ký hệ thống (EntityType BE và mã mock); lạ thì giữ nguyên.
 const entityTypes: Record<string, string> = {
   WorkTask: "Công việc",
   TASK: "Công việc",
@@ -115,7 +113,6 @@ export const dateTime = (value: string | null | undefined) =>
         timeZone: "Asia/Ho_Chi_Minh",
       }).format(new Date(value))
     : "—";
-// dd/MM/yyyy HH:mm theo giờ Việt Nam, dùng cho dấu vết tạo/sửa (ADMIN_MODULES 8.4).
 const stampFormat = new Intl.DateTimeFormat("vi-VN", {
   day: "2-digit",
   month: "2-digit",

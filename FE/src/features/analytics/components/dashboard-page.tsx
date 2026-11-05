@@ -34,8 +34,6 @@ const basisText = (metric: MetricDto) =>
     metric.denominator !== null ? ` · Tổng ${number(metric.denominator)}` : ""
   }`;
 
-// Chỉ số chính: nhãn và lối vào phân tích chi tiết cùng một hàng, số lớn ở giữa, cơ
-// sở tính nhỏ bên dưới.
 function MetricCard({ metric }: { metric: MetricDto }) {
   return (
     <article
@@ -96,7 +94,7 @@ export function DashboardPage() {
               return m ? <MetricCard key={m.code} metric={m} /> : null;
             })}
           </MetricStrip>
-          <div className="mb-5 grid items-start gap-5 @min-[900px]/page:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          <div className="mb-5 grid items-start gap-5 @min-[56.25rem]/page:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
             <Panel title="Công việc theo trạng thái">
               <div
                 className="h-60 w-full"
@@ -115,7 +113,7 @@ export function DashboardPage() {
                     <CartesianGrid horizontal={false} stroke={chartGrid} />
                     <XAxis
                       type="number"
-                      fontSize={12}
+                      fontSize="0.75rem"
                       allowDecimals={false}
                       axisLine={false}
                       tickLine={false}
@@ -123,9 +121,9 @@ export function DashboardPage() {
                     <YAxis
                       type="category"
                       dataKey="name"
-                      fontSize={12}
+                      fontSize="0.75rem"
                       interval={0}
-                      width={116}
+                      width="auto"
                       axisLine={false}
                       tickLine={false}
                     />
@@ -173,9 +171,9 @@ export function DashboardPage() {
                       <XAxis
                         dataKey="date"
                         tickFormatter={(d) => String(d).slice(5)}
-                        fontSize={12}
+                        fontSize="0.75rem"
                       />
-                      <YAxis allowDecimals={false} fontSize={12} />
+                      <YAxis allowDecimals={false} fontSize="0.75rem" width="auto" />
                       <Tooltip />
                       <Legend />
                       <Line
@@ -229,7 +227,7 @@ export function DashboardPage() {
               <AnalysisLink key="analysis" value={p.analysisRef} />,
             ])}
           />
-          <div className="grid items-start gap-5 @min-[900px]/page:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          <div className="grid items-start gap-5 @min-[56.25rem]/page:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
             <Panel title="Giờ công và ước lượng">
               <KeyValueList>
                 <KeyValue label="Giờ công thực tế">
@@ -263,7 +261,7 @@ export function DashboardPage() {
               </p>
             </Panel>
             <Panel title="Chỉ số bổ sung">
-              <dl className="m-0 grid gap-x-6 @min-[700px]/page:grid-cols-2">
+              <dl className="m-0 grid gap-x-6 @min-[43.75rem]/page:grid-cols-2">
                 {query.data.metrics
                   .filter((m) => !["K03", "K04", "K06", "K12"].includes(m.code))
                   .map((m) => (

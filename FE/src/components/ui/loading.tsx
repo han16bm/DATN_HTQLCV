@@ -23,7 +23,6 @@ export function Skeleton({ className = "" }: { className?: string }) {
   );
 }
 
-// Khung xương đúng hình dạng vùng đang tải; trình đọc màn hình chỉ nghe một trạng thái.
 export function PageSkeleton({
   variant = "detail",
 }: {
@@ -58,8 +57,8 @@ export function PageSkeleton({
           className={cn(
             "grid gap-3",
             variant === "cards"
-              ? "grid-cols-[repeat(auto-fill,minmax(220px,1fr))]"
-              : "grid-cols-[repeat(auto-fit,minmax(280px,1fr))]",
+              ? "grid-cols-[repeat(auto-fill,minmax(min(100%,13.75rem),1fr))]"
+              : "grid-cols-[repeat(auto-fit,minmax(min(100%,17.5rem),1fr))]",
           )}
         >
           {Array.from({ length: variant === "cards" ? 4 : 2 }, (_, index) => (

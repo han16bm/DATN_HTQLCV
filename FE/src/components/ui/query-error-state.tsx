@@ -11,7 +11,6 @@ export function QueryErrorState({
   retry?: () => Promise<unknown>;
 }) {
   const status = error instanceof ApiError ? error.status : 0;
-  // Khu quản trị bật IP whitelist: lỗi quyền riêng, kèm IP nếu BE gửi trong details.
   const ipBlocked =
     error instanceof ApiError && error.code === "IP_NOT_ALLOWED";
   const details = ipBlocked ? error.details : undefined;

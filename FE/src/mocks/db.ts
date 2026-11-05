@@ -221,8 +221,6 @@ import type {
 } from "@/features/users/schemas/user-form.schema";
 import seed from "./data.json";
 
-// Dữ liệu và kiểu lưu trữ.
-// Dấu vết tạo/sửa lưu ID người thao tác hoặc "SYSTEM"; DTO đổi thành {id,label}.
 const stampModel = {
   createdBy: z.string().nullable(),
   updatedBy: z.string().nullable(),
@@ -241,7 +239,6 @@ const userModel = z
   .extend({
     ...stampModel,
     avatarId: idSchema.nullable().default(null),
-    // Cộng/trừ quyền riêng cho một người (MOREPOWER/DOWPOWER của DVCLT).
     grantedFeatures: z.array(featureCodeSchema).default([]),
     revokedFeatures: z.array(featureCodeSchema).default([]),
   });
@@ -398,7 +395,6 @@ export type User = z.output<typeof userModel>;
 type Report = z.output<typeof reportModel>;
 type Analysis = z.output<typeof analysisModel>;
 
-// DB trong bộ nhớ: khởi tạo, reset và quyền.
 const policy = seed.uploadPolicy;
 const baseClock = seed.clock;
 let clock = baseClock;
@@ -418,7 +414,6 @@ function createDatabase() {
   const users = z.array(userModel).parse(seed.users);
   const attachments = z.array(attachmentModel).parse(seed.attachments);
   return {
-    // Ma trận vai trò dự án chỉnh được (MANAGER/MEMBER); OWNER cố định đủ quyền.
     rolePolicies: Object.fromEntries(
       (["MANAGER", "MEMBER"] as const).map((role) => [
         role,
@@ -443,7 +438,6 @@ function createDatabase() {
     permissionGroups: z.array(groupModel).parse(seed.permissionGroups),
     settings: z.array(settingModel).parse(seed.settings),
     ipWhitelist: z.array(ipEntryModel).parse(seed.ipWhitelist),
-    // Truy cập bị chặn bởi whitelist (như BE IpAccessLogs), gom theo IP + phạm vi.
     ipAccessLogs: [] as {
       id: string;
       version: number;
@@ -529,7 +523,6 @@ export function resetDatabase(date?: string) {
   db = createDatabase();
   if (!date) return;
 
-  // Mốc mẫu xác định case còn hạn; không xét theo ngày máy vì seed có thể đã cũ.
   const deadline = new Date(`${today()}T00:00:00.000Z`);
   deadline.setUTCDate(deadline.getUTCDate() + seed.taskPolicy.dueInDays);
   const day = deadline.toISOString().slice(0, 10);
@@ -554,8 +547,6 @@ export function setClock(value: string) {
   if (next !== clock) db.revision++;
   clock = next;
 }
-// Người thao tác của lệnh đang chạy (đặt trong withMockTransaction); ngoài lệnh
-// (timer, job) là SYSTEM, giống AuditStampInterceptor của BE (ADMIN_MODULES 8.2).
 let stampActor = "SYSTEM";
 const stamp = () => ({ createdBy: stampActor, updatedBy: stampActor });
 const created = () => ({ createdAt: now(), updatedAt: now(), ...stamp() });
@@ -578,10 +569,6 @@ function touch(v: {
   if ("updatedBy" in v) v.updatedBy = stampActor;
   db.revision++;
 }
-// Quyền hiệu lực (ADMIN_MODULES 1.2, backend thật trả trong session): sysadmin
-// có mọi mã đang bật; người khác = (nhóm Active + cộng riêng) - thu hồi, chỉ giữ
-// mã đang bật. Dự án tính từ vai trò đang hoạt động. Mọi kiểm tra bên dưới dùng
-// chung hai hàm này.
 function effectiveFeatures(user: User): string[] {
   const active = db.features.filter((f) => !f.isGroup && f.isActive);
   if (user.isSysAdmin) return active.map((f) => f.code);
@@ -604,7 +591,6 @@ function projectPermissions(user: User, projectId: string): Permission[] {
   const member = db.members.find(
     (m) => m.projectId === projectId && m.userId === user.id && !m.endedAt,
   );
-  // Vai trò quản lý trong dự án chỉ có hiệu lực khi có PROJECT_CREATE hiệu lực.
   if (
     !member ||
     (member.projectRole !== "MEMBER" &&
@@ -615,7 +601,6 @@ function projectPermissions(user: User, projectId: string): Permission[] {
     ? accessPolicy.project.OWNER
     : db.rolePolicies[member.projectRole].permissions;
 }
-// ANALYTICS_VIEW ở phạm vi hệ thống cho xem mọi dự án; các quyền khác theo dự án.
 const readsEveryProject = (user: User) =>
   systemPermissions(user).includes("ANALYTICS_VIEW");
 function can(user: User, action: Permission, projectId?: string) {
@@ -679,7 +664,6 @@ function notify(
   });
 }
 
-// Dữ liệu trả về cho giao diện.
 const stampRef = (id: string | null) => (id ? actorRef(id) : null);
 const stampRefs = (v: {
   createdBy: string | null;
@@ -705,7 +689,6 @@ const unitRef = (id: string) => ({
   id,
   name: db.units.find((unit) => unit.id === id)?.name ?? "",
 });
-// Nhóm quyền đang hoạt động mà người dùng thuộc về.
 const userGroups = (user: User) =>
   db.permissionGroups
     .filter((g) => g.status === "ACTIVE" && g.memberIds.includes(user.id))
@@ -974,7 +957,6 @@ function auditDTO(item: Audit): AuditDto {
   };
 }
 
-// Phân trang và phiên bản cập nhật.
 function paginate<T>(items: T[], query: { page?: number; pageSize?: number }) {
   const page = query.page ?? 1;
   const pageSize = query.pageSize ?? 20;
@@ -998,7 +980,6 @@ function requireVersion(
     );
 }
 
-// Đăng nhập và phiên.
 export function sessionUser(accessToken: string | undefined): User {
   const userId = accessToken ? db.sessions.get(accessToken) : undefined;
   const user = db.users.find((u) => u.id === userId);
@@ -1148,13 +1129,11 @@ export const authDb = {
   },
 };
 
-// Khu quản trị: quyền theo mã và IP whitelist (ADMIN_MODULES 1.5, 5.3).
 const currentIp = () => seed.currentIp;
 function ipv4(value: string) {
   const parts = value.split(".").map(Number);
   return parts.reduce((sum, part) => sum * 256 + part, 0);
 }
-// shortcut: IPv6 chỉ so khớp đúng địa chỉ (bỏ /128), đủ cho mock; BE dùng thư viện CIDR.
 function ipMatches(ip: string, cidr: string) {
   const [network, bits] = cidr.split("/");
   if (ip.includes(":") || network.includes(":"))
@@ -1164,7 +1143,6 @@ function ipMatches(ip: string, cidr: string) {
   return Math.floor(ipv4(ip) / block) === Math.floor(ipv4(network) / block);
 }
 const whitelistKey = "Security:AdminIpWhitelistEnabled";
-// Dòng theo service (Identity.Api) ghi đè dòng Global.
 const whitelistSetting = () =>
   ["Identity.Api", "Global"]
     .map((service) =>
@@ -1177,7 +1155,6 @@ const whitelistSetting = () =>
 const whitelistEnabled = () => whitelistSetting()?.value === "true";
 const ipAllowed = (entries: { cidr: string; isActive: boolean }[]) =>
   entries.some((entry) => entry.isActive && ipMatches(currentIp(), entry.cidr));
-// Có ít nhất một trong các quyền (lookup chéo giữa màn admin, ADMIN_MODULES 7.1).
 function requireAdmin(user: User, ...actions: Permission[]) {
   if (!actions.some((action) => can(user, action)))
     throw new ApiError(
@@ -1226,7 +1203,6 @@ function recordBlockedIp(user: User) {
   log.lastUserId = user.id;
   log.lastUsername = user.username;
 }
-// Chống tự khóa: thay đổi không được làm IP hiện tại mất quyền vào khu quản trị.
 function protectCurrentIp(
   enabled: boolean,
   entries: { cidr: string; isActive: boolean }[],
@@ -1239,7 +1215,6 @@ function protectCurrentIp(
     );
 }
 
-// Đơn vị và nhóm.
 function requireUnit(id: string) {
   const unit = db.units.find((u) => u.id === id);
   if (!unit)
@@ -1312,7 +1287,6 @@ function protectLastAdmin(user: User) {
       "Cần duy trì ít nhất một tài khoản quản trị tối cao đang hoạt động.",
     );
 }
-// Chống leo thang quyền: người không phải sysadmin chỉ cấp được mã mình đang có.
 function requireGrantable(actor: User, codes: string[]) {
   if (actor.isSysAdmin) return;
   const own = effectiveFeatures(actor);
@@ -1340,7 +1314,6 @@ function requireGroup(id: string) {
     throw new ApiError(404, "NOT_FOUND", "Không tìm thấy nhóm quyền.");
   return group;
 }
-// Gán lại tư cách thành viên của một người trong các nhóm quyền.
 function setUserGroups(user: User, groupIds: string[]) {
   for (const group of db.permissionGroups) {
     const member = group.memberIds.includes(user.id);
@@ -1567,7 +1540,6 @@ export const organizationDb = {
   },
 };
 
-// Người dùng.
 function unique(username: string, email: string, except?: string) {
   if (db.users.some((u) => u.id !== except && u.username === username))
     throw new ApiError(
@@ -1836,7 +1808,6 @@ export const usersDb = {
     );
     return { ok: true as const };
   },
-  // Đang tham gia trước (theo tên dự án), đã kết thúc sau (mới kết thúc trước).
   listUserProjects(viewer: User, userId: string) {
     requireAdmin(viewer, "USERS_MANAGE", "PERMISSIONS_MANAGE");
     const user = requireUser(userId);
@@ -1936,7 +1907,6 @@ export const usersDb = {
   },
 };
 
-// Phân quyền: danh mục chức năng và nhóm quyền (ADMIN_MODULES 1).
 const groupDTO = (
   group: (typeof db.permissionGroups)[number],
 ): PermissionGroupDto => ({
@@ -2045,7 +2015,6 @@ export const permissionsDb = {
         "BUSINESS_RULE",
         "Chỉ bật/tắt được mã quyền, không phải node nhóm.",
       );
-    // Tắt mã này rút quyền cả sysadmin, không ai bật lại được qua giao diện.
     if (feature.code === "PERMISSIONS_MANAGE" && !body.isActive)
       throw new ApiError(
         422,
@@ -2213,7 +2182,6 @@ export const permissionsDb = {
   },
 };
 
-// Nhật ký hệ thống (ADMIN_MODULES 2).
 const actorRef = (id: string) => ({
   id,
   label:
@@ -2265,7 +2233,6 @@ export const auditLogsDb = {
   },
 };
 
-// Job nền (ADMIN_MODULES 3); mock chạy đồng bộ, không có vòng lặp tick.
 function requireJob(code: string) {
   const job = db.backgroundJobs.find((j) => j.code === code);
   if (!job) throw new ApiError(404, "NOT_FOUND", "Không tìm thấy job nền.");
@@ -2329,7 +2296,6 @@ export const jobsDb = {
     const job = requireJob(code);
     if (job.lastStatus === "RUNNING")
       throw new ApiError(409, "CONFLICT", "Job đang chạy.");
-    // Job ghi dấu vết là SYSTEM kể cả khi chạy thủ công.
     const summary = asSystem(evaluateAlertRules);
     const run = {
       id: crypto.randomUUID(),
@@ -2343,7 +2309,6 @@ export const jobsDb = {
       error: null,
     };
     db.jobRuns.push(run);
-    // Giữ tối đa 200 lần chạy gần nhất cho mỗi job.
     const runs = db.jobRuns.filter((r) => r.jobCode === job.code);
     if (runs.length > 200)
       db.jobRuns = db.jobRuns.filter((r) => !runs.slice(0, -200).includes(r));
@@ -2371,7 +2336,6 @@ export const jobsDb = {
   },
 };
 
-// Cấu hình tập trung (ADMIN_MODULES 4): known/min/max/allowedValues tính từ catalog.
 const configCatalog = z
   .record(
     z.string(),
@@ -2543,7 +2507,6 @@ export const settingsDb = {
   },
 };
 
-// IP whitelist khu quản trị (ADMIN_MODULES 5).
 const ipEntryDTO = (
   item: (typeof db.ipWhitelist)[number],
 ): IpWhitelistEntryDto => ({
@@ -2743,7 +2706,6 @@ export const ipWhitelistDb = {
   },
 };
 
-// Dự án.
 function projectEditable(project: (typeof db.projects)[number]) {
   if (!["PLANNED", "ACTIVE"].includes(project.status))
     throw new ApiError(
@@ -2946,7 +2908,6 @@ export const projectsDb = {
       dueAt: project.dueAt,
     };
     if (patch.ownerId && patch.ownerId !== project.ownerId) {
-      // Thứ bậc trong dự án: chỉ chủ dự án hiện tại được bàn giao.
       if (viewer.id !== project.ownerId)
         throw new ApiError(
           403,
@@ -2978,7 +2939,6 @@ export const projectsDb = {
     );
     return projectDTO(project);
   },
-  // Quản trị bàn giao thay chủ dự án khi nghỉ việc/khóa (sysadmin hoặc USERS_MANAGE), như BE TransferOwnerAsync.
   transferProjectOwner(
     viewer: User,
     projectId: string,
@@ -3135,7 +3095,6 @@ export const projectsDb = {
   },
 };
 
-// Thành viên dự án.
 function membership(projectId: string, id: string) {
   const value = db.members.find(
     (m) => m.projectId === projectId && m.id === id,
@@ -3303,7 +3262,6 @@ export const projectMembersDb = {
   },
 };
 
-// Công việc.
 function requireTask(user: User, id: string) {
   const task = db.tasks.find((t) => t.id === id);
   if (!task) throw new ApiError(404, "NOT_FOUND", "Không tìm thấy công việc.");
@@ -3599,7 +3557,6 @@ export const tasksDb = {
   },
 };
 
-// Nhật ký thời gian.
 function validateLog(
   userId: string,
   taskId: string,
@@ -3770,7 +3727,6 @@ export const timeLogsDb = {
   },
 };
 
-// Kết quả và nghiệm thu.
 function submissionFor(
   user: User,
   taskId: string,
@@ -3966,7 +3922,6 @@ export const submissionsDb = {
   },
 };
 
-// Báo cáo.
 function activeProject(actor: User, id: string) {
   const project = requireProject(actor, id);
   if (!inProject(actor, id))
@@ -4207,7 +4162,6 @@ export const reportsDb = {
   },
 };
 
-// Tệp đính kèm.
 function attachmentFor(viewer: User, id: string) {
   const item = db.attachments.find((a) => a.id === id);
   if (!item)
@@ -4283,7 +4237,6 @@ export const attachmentsDb = {
   },
 };
 
-// Phân tích: phạm vi và số liệu.
 type Scope = AnalyticsQuery;
 const quality = (missingFields: string[] = []): Quality => ({
   status: missingFields.length ? "PARTIAL" : "SUFFICIENT",
@@ -4380,7 +4333,6 @@ function meta(missing: string[] = []): AnalysisMetaDto {
   };
 }
 
-// Snapshot phân tích và căn cứ.
 function snapshotRef(
   u: User,
   scope: Scope,
@@ -4566,7 +4518,6 @@ function taskAnalysis(
   );
 }
 
-// Dashboard.
 function dashboard(u: User, query: AnalyticsQuery): DashboardDto {
   const { scope, tasks, projects, cohort, people } = analyticsScope(u, query);
   const valid = tasks.filter((t) => t.status !== "CANCELLED");
@@ -4890,7 +4841,6 @@ function dashboard(u: User, query: AnalyticsQuery): DashboardDto {
   };
 }
 
-// Nguy cơ trễ hạn.
 function risks(u: User, query: AnalyticsQuery): RisksDto {
   const { scope, tasks, projects } = analyticsScope(u, query);
   const items = tasks
@@ -4974,7 +4924,6 @@ function risks(u: User, query: AnalyticsQuery): RisksDto {
   };
 }
 
-// Khối lượng công việc.
 function workload(u: User, query: AnalyticsQuery): WorkloadDto {
   const { scope, tasks, projects, people } = analyticsScope(u, query);
   const ids = [
@@ -5053,7 +5002,6 @@ function workload(u: User, query: AnalyticsQuery): WorkloadDto {
   };
 }
 
-// Điểm nghẽn.
 function bottlenecks(u: User, query: AnalyticsQuery): BottlenecksDto {
   const { scope, tasks } = analyticsScope(u, query);
   return {
@@ -5092,7 +5040,6 @@ function bottlenecks(u: User, query: AnalyticsQuery): BottlenecksDto {
   };
 }
 
-// Tổng hợp phân tích.
 function summary(u: User, query: AnalyticsQuery): SummaryDto {
   const dash = dashboard(u, query);
   const b = bottlenecks(u, query);
@@ -5110,7 +5057,6 @@ function summary(u: User, query: AnalyticsQuery): SummaryDto {
   };
 }
 
-// Job diễn giải và phản hồi.
 function analysisProjectIds(id: string) {
   const detail = db.details.get(id);
   return (
@@ -5354,7 +5300,6 @@ function feedback(actor: User, id: string, body: FeedbackInput) {
   return item;
 }
 
-// Cảnh báo.
 function alertRow(a: (typeof db.alerts)[number]): AlertRow {
   return {
     id: a.id,
@@ -5449,10 +5394,7 @@ export function evaluateAlertRules() {
 function scheduleAlertRules() {
   schedule(() => asSystem(evaluateAlertRules), 50);
 }
-// Giống AlertService (BE): người nhận = người được giao task + Owner/Manager dự án;
-// ANALYTICS_VIEW hệ thống xem tất cả, chỉ sysadmin xử lý thay người nhận.
 function alertRecipient(u: User, a: (typeof db.alerts)[number]) {
-  // Người nhận: người được giao việc hoặc người có ALERTS_MANAGE trong dự án (ADMIN_MODULES §11.6).
   return (
     projectPermissions(u, a.projectId).includes("ALERTS_MANAGE") ||
     db.tasks.some((t) => t.id === a.taskId && t.assigneeId === u.id)
@@ -5528,7 +5470,6 @@ export const alertsDb = {
   },
 };
 
-// API phân tích.
 export const analyticsDb = {
   getDashboard: dashboard,
   getDeadlineRisks: risks,
@@ -5614,7 +5555,6 @@ export const analyticsDb = {
   },
 };
 
-// Kiểm tra quyền khi gửi lại yêu cầu.
 const notificationText: Record<NotificationType, string> = {
   TASK_ASSIGNED: "Bạn được giao công việc",
   TASK_UPDATED: "Kế hoạch công việc đã thay đổi",
@@ -5748,7 +5688,6 @@ export function authorizeReplay(
     );
 }
 
-// Hàng đợi cập nhật và rollback.
 let queue = Promise.resolve();
 export async function withMockTransaction<T>(
   execute: (commit: () => void) => Promise<T>,

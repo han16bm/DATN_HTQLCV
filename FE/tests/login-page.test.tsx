@@ -51,7 +51,6 @@ it("shows only the product name, the two fields and one primary action", () => {
   expect(screen.getByLabelText("Tên đăng nhập")).toBeTruthy();
   expect(screen.getByLabelText("Mật khẩu")).toBeTruthy();
   expect(screen.getAllByRole("button")).toHaveLength(1);
-  // Không có tranh minh họa hay lời giới thiệu thay cho biểu mẫu.
   expect(screen.queryByRole("img")).toBeNull();
   expect(screen.getByRole("main")).toBeTruthy();
 });

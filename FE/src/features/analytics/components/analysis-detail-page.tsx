@@ -114,7 +114,7 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
           )}
         </Notice>
       )}
-      <div className="grid items-start gap-5 @min-[900px]/page:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <div className="grid items-start gap-5 @min-[56.25rem]/page:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <AnalysisSources snapshot={snapshot} />
         <div className="grid min-w-0 gap-5">
           <Panel

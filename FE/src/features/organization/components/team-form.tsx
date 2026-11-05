@@ -29,7 +29,6 @@ import { createTeamSchema, updateTeamSchema } from "../schemas/team.schema";
 import type { TeamDto, UnitRow } from "../types/organization.types";
 import { TeamMembersForm } from "./team-members-form";
 
-// Một form cho Thêm/Xem/Sửa nhóm; Xem/Sửa có tab Thông tin và Thành viên.
 export function TeamForm({
   mode,
   team,

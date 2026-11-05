@@ -27,7 +27,6 @@ import {
 import { createUnitSchema, updateUnitSchema } from "../schemas/unit.schema";
 import type { UnitDto, UnitRow } from "../types/organization.types";
 
-// Một form cho Thêm/Xem/Sửa đơn vị; chế độ Xem disable mọi trường.
 export function UnitForm({
   mode,
   unit,
@@ -74,7 +73,6 @@ export function UnitForm({
   const parents = units
     .filter((value) => value.id !== unit?.id && value.status === "ACTIVE")
     .map((value) => ({ value: value.id, label: value.name }));
-  // Có ID nhưng thiếu nhãn (tài khoản đã khóa, ngoài lookup) thì không coi là trống.
   const missingManager =
     unit?.managerId && !users.some((u) => u.value === unit.managerId);
   if (closing && unit)

@@ -23,18 +23,32 @@ Người dùng nội bộ cần nhận ra việc phải xử lý trước, đọ
 
 ## Hệ thống dùng chung
 
-Be Vietnam Pro (400/500/600/700), tự host bằng next/font, phục vụ nhãn tiếng Việt và bảng dữ liệu. H1 24px, heading khối 16px, nội dung/control 14px, metadata 12px. Xanh biển giữ từ ngữ cảnh người dùng, màu theo design system BHXH: điều hướng #0077b4 (blue-600), hành động #0074b0, nền #f6f9fb, bề mặt trắng, chữ #15222b; trạng thái dùng cặp nền/chữ của chip DS (vàng giữ chữ #7a4b00 cho đủ 4,5:1). Header 64px, sidebar 280/80px; nút và ô nhập 38px (cả thanh lọc và biểu mẫu), hàng bảng 44px (gọn 36px); vùng cảm ứng tối thiểu 44px. Chuẩn chung với các phần mềm quản trị gần đây của nhóm và quy tắc chống AI slop ở CLAUDE.md: nút, badge, segmented và liên kết nhỏ bo tròn hẳn (pill); ô nhập bo 8px; thẻ, bảng, panel vuông vức 4px; hộp thoại 8px. Header bảng tô màu điều hướng chữ trắng, hàng chẵn nền nhạt, hover tô màu chọn. Bề mặt tách bằng viền, không bóng nổi; chỉ menu/hộp thoại có một bóng ngắn. Không gradient trang trí. Dấu * bắt buộc màu đỏ. Nút có hiệu ứng nhấn thu nhỏ 3% và chuyển màu 150ms ease-out; tắt khi giảm chuyển động.
+Be Vietnam Pro (400/500/600/700), tự host bằng next/font, phục vụ nhãn tiếng Việt và bảng dữ liệu. H1 24px, heading khối 16px, nội dung/control 14px, metadata 12px. Xanh biển giữ từ ngữ cảnh người dùng, màu theo design system BHXH: điều hướng #0077b4 (blue-600), hành động #0074b0, nền #f6f9fb, bề mặt trắng, chữ #15222b; trạng thái dùng cặp nền/chữ của chip DS (vàng giữ chữ #7a4b00 cho đủ 4,5:1). Header 64px, sidebar 280/80px; nút và ô nhập mặc định 38px, riêng thanh lọc bảng 32px/chữ 12px; hàng bảng 44px (gọn 36px); vùng cảm ứng tối thiểu 44px. Chuẩn chung với các phần mềm quản trị gần đây của nhóm và quy tắc chống AI slop ở CLAUDE.md: nút, badge, segmented và liên kết nhỏ bo tròn hẳn (pill); ô nhập bo 8px; thẻ, bảng, panel vuông vức 4px; hộp thoại 8px. Header bảng tô màu điều hướng chữ trắng, hàng chẵn nền nhạt, hover tô màu chọn. Bề mặt tách bằng viền, không bóng nổi; chỉ menu/hộp thoại có một bóng ngắn. Không gradient trang trí. Dấu * bắt buộc màu đỏ. Nút có hiệu ứng nhấn thu nhỏ 3% và chuyển màu 150ms ease-out; tắt khi giảm chuyển động.
 
 | Thành phần | Vai trò trong bản mới |
 |---|---|
-| PageHeader / Panel | Tên và hành động chính trước; heading khối ở ngoài bề mặt dữ liệu; `compact` cho cột phụ/ngăn kéo với heading 14px và đệm 12px |
-| FilterBar / SegmentedControl | Thanh tìm/lọc cách 8px; ô tìm kiếm co giãn, tối đa 16rem; hai icon List/Columns3 bên phải cao bằng control, có tooltip/tên truy cập và trạng thái aria-pressed; không ép nhóm công cụ chiếm cả hàng |
+| PageHeader / Panel | PageHeader compact dùng chung cho chi tiết dự án/công việc: tên 20px, trạng thái cách 4px; Panel compact cho ngăn kéo, compact subtle cho cột phụ công việc (nền nhạt/viền nhẹ, đệm 10px) |
+| FilterBar / SegmentedControl | Giữ chiều ngang cũ: search tối đa 16rem, select fit 6–15rem, control cách 8px; thu gọn chiều dọc/cỡ chữ trong FilterBar: 32px/12px, nhãn cách ô 2px; icon List/Columns3 cao bằng control; dưới 40rem vẫn xuống hàng/co giãn |
 | DataTable / Pagination | Header, hàng, actions và footer đồng nhất; bảng rộng cuộn trong vùng riêng; refetch tại bảng |
 | SplitLayout / KeyValue | Luồng chính trước, cột phụ 300px; xuống một cột theo chiều rộng nội dung; nhãn và giá trị rõ ràng |
 | Form / Field / Input | Nhóm nội dung trước kế hoạch; lưới theo chiều rộng form, lỗi cạnh field; giữ draft/dirty/412 |
 | MetricStrip / Metric | Một dải dữ liệu gọn thay nhiều thẻ rời; không tính thêm chỉ số để trang trí |
 | HistoryTable / PDF | Lịch sử chọn sự kiện mở drawer; bảng các lần nộp mở nội dung/tài liệu trong drawer, có chọn tệp và khung rỗng |
 | ProfileHeader / hồ sơ | Nhận diện và thông tin cá nhân chung một thẻ; đổi ảnh/mật khẩu ở cột phải, email chỉ đọc; công khai chỉ nhận diện và email |
+
+## Responsive và cỡ chữ
+
+- Các kích thước px mô tả ở trên là tại cỡ chữ 100%. Header/sidebar/control/hàng bảng dùng rem, nên khi chọn 112,5% hoặc 125% thì khung và chữ tăng cùng nhau. Breakpoint của form, chi tiết, hồ sơ và phân tích cũng dùng rem; các cột phụ chuyển xuống dưới khi không còn đủ chỗ đọc.
+- Header bảng có màu giảm từ 44px xuống tối thiểu 32px (2rem), đệm dọc 6px; nhãn dài được xuống dòng, không khóa chiều cao hoặc cắt chữ. Hàng dữ liệu giữ 44px/36px ở cỡ mặc định và tăng theo chữ. Bảng fit chuyển dạng dưới 42rem, bảng nhiều cột cuộn trong vùng riêng.
+- Bộ lọc giữ chiều ngang trước khi thu gọn: search co giãn tối đa 16rem, select fit 6–15rem, đệm ngang cũ, khoảng cách giữa control 8px. Dưới 40rem của container filters, search chiếm cả hàng và filter/công cụ co giãn/wrap. Thu gọn theo chiều dọc và chữ bằng utility compact-filters: --control-h 2rem, --text-sm 0.75rem, line-height 1rem; nhãn cách ô 2px. Các giá trị này chỉ nằm trong FilterBar nên form vẫn giữ kích thước cũ, control cảm ứng vẫn tối thiểu 44px. Nhóm nút ở tiêu đề và chân phân trang được wrap. Header quản lý chừa chỗ cho chuông/cài đặt/avatar và cuộn các mục khi thiếu chiều ngang.
+- KPI/skeleton dùng auto-fit với min(100%,...), tránh tràn ở vùng hẹp. Metadata dưới 15rem chuyển nhãn–giá trị thành hai dòng. Tên dài ở đầu hồ sơ được ngắt từ. Ngăn kéo, popover và hộp thoại tăng theo chữ nhưng vẫn giới hạn bởi viewport; không có hai class chiều rộng tranh nhau ở hộp cắt ảnh. Trục biểu đồ tăng chữ theo rem, trục dọc tự đo nhãn.
+
+## Chuyển trang và mật độ thao tác
+
+- Nội dung trang dùng React ViewTransition với một tên chung page-content, đổi key theo pathname để crossfade giữa trang cũ/mới trong 160ms. Header/sidebar giữ nguyên; đổi bộ lọc, phân trang và hash không kích hoạt remount của vùng nội dung. Không thêm thời gian chờ hoặc khóa điều hướng bằng JavaScript; giữ Link/prefetch, dirty guard và dữ liệu tải theo từng vùng. Tắt chuyển động khi người dùng yêu cầu; trình duyệt không hỗ trợ dùng điều hướng thường.
+- Các nút tạo việc, lịch sử dự án, triển khai và thao tác công việc/nghiệm thu ở header thu gọn theo chiều ngang: rộng vừa nhãn, đệm mỗi bên 8px, khoảng cách giữa nút 6px, không kéo giãn theo hàng. Nhóm căn phải, giới hạn 100% vùng chứa và wrap khi thiếu chỗ; nhãn dài cũng được xuống dòng. Giữ chiều cao/cỡ chữ hiện hành và vùng chạm ít nhất 44px, không giảm thêm để làm nút hẹp đi. Giữ nhãn và hành vi, không thêm điều hướng phụ.
+- Cột phải chi tiết công việc và thành viên dự án giữ nguyên bố cục. Nền sunken/60, viền line/60, đệm 10px và dòng danh sách cách 8px tạo vùng hỗ trợ dịu hơn thay các thẻ trắng nổi riêng. Tiêu đề 14px vẫn ở ngoài khung; thông tin và quyền thao tác không thay đổi.
+- Xóa comment giải thích trong mã FE; chỉ giữ chỉ thị bắt buộc của trình biên dịch/test và mã thư viện tự sinh. Quy tắc triển khai nằm trong Markdown.
 
 ## Phạm vi route
 
@@ -56,7 +70,7 @@ Be Vietnam Pro (400/500/600/700), tự host bằng next/font, phục vụ nhãn 
 
 ## Bố cục chi tiết dự án
 
-- Header nhận diện dự án, trạng thái, Tạo công việc, Lịch sử dự án và menu chỉnh sửa/kết thúc theo quyền. Không còn thanh mục con Tổng quan/Công việc/Thành viên/Lịch sử.
+- Header dùng chung PageHeader compact với chi tiết công việc: tên 20px/28px, icon dự án nhỏ 28px, mã/đơn vị và trạng thái ở một dòng phụ cách tên 4px; lề dưới 12px. Tạo công việc, Lịch sử dự án và menu chỉnh sửa/kết thúc vẫn theo quyền, gọn ở bên phải và wrap khi hẹp. Không còn thanh mục con Tổng quan/Công việc/Thành viên/Lịch sử.
 - Đầu trang là một vùng nền nhạt: mục tiêu cùng người phụ trách/ngày bắt đầu/hạn ở trái, biểu đồ tiến độ và trạng thái ở phải. Nguồn tiến độ giữ độc lập với bộ lọc danh sách, có nhắc phạm vi khi dữ liệu vượt 100 mục như trước.
 - Phần Công việc dùng TaskListPage: lọc, danh sách/bảng trạng thái, phân trang và mở task thật qua HTTP. Từ 1100px chiều rộng nội dung, công việc ở cột trái co giãn, thành viên ở cột phải 240px, cách nhau 20px và dóng đầu vùng; màn hẹp xếp dọc. Bảng công việc giảm đệm ngang từ 12 xuống 8px, bỏ bề rộng tối thiểu 1080px, chia cột theo nội dung; tên dài cắt gọn và có tooltip. Dưới 42rem chiều rộng bảng, từng hàng xếp thành nhóm hai cột có nhãn để đọc đủ dữ liệu mà không cuộn ngang. Bảng trạng thái giữ hành vi cuộn các cột hiện có.
 - Thành viên bên ngoài chỉ hiện tối đa 5 avatar/tên, không có bộ lọc, vai trò hay menu quản lý. Dùng chung query/cache 100 mục vốn phục vụ bộ lọc người thực hiện. Nút Chi tiết mở ngăn kéo `#members` rộng tối đa 480px, bảng đầy đủ mới tải khi mở. Trong ngăn kéo vẫn có tìm kiếm, phân trang và thêm/sửa vai trò/bàn giao/kết thúc theo quyền; bảng chỉ có hai cột người và vai trò kèm tình trạng tham gia, menu nằm trong ô tên. Form mở trên ngăn kéo; đóng hoặc lưu form trở về `#members`, Escape đóng ngăn kéo và trả focus về Chi tiết.
@@ -79,17 +93,28 @@ Kiểm tra tên đăng nhập chỉ đọc (04/11/2026): 140 test HTTP/luồng m
 
 ## Bố cục chi tiết công việc
 
-- Tên và hành động chính ở đầu; nhãn Trạng thái, Ưu tiên và Tiến độ cùng một hàng khi đủ rộng, có dấu hai chấm. Bỏ thanh tiến trình chiếm riêng một khối.
+- Header dùng cùng PageHeader compact như dự án: tên 20px/28px, nhãn Trạng thái, Ưu tiên và Tiến độ ở dòng dưới cách 4px, lề dưới 12px; bỏ padding trên riêng của công việc. Nhãn có dấu hai chấm, cách nhau 12px và tự xuống hàng khi cần. Tên dài vẫn đầy đủ; các nút ở phải giữ bề rộng vừa nội dung và wrap theo màn hình/cỡ chữ. Không có thanh tiến trình chiếm riêng một khối.
 - Nội dung công việc và tiêu chí nghiệm thu dùng chung một nền nhạt, chia bằng đường phân cách. Khi cột chính rộng từ 600px, hai phần nằm cạnh nhau và cùng chạm đáy nhờ grid stretch theo nội dung dài hơn; màn hẹp xếp dọc. Mỗi phần đệm 16px, tiêu đề 14px, không đặt chiều cao cố định hay cắt nội dung.
 - Bảng Các lần nộp kết quả nằm ngay dưới, gồm lần nộp, thời điểm, kết quả xét và Chi tiết. Dùng chung DataTable/pagination, 5 hàng mỗi trang, mặc định mới nhất trước. Bấm tiêu đề Lần nộp đổi thứ tự và về trang đầu; cả thứ tự và trang được giữ trong URL.
 - Chi tiết từng hàng mở ngăn kéo từ phải, rộng tối đa 800px và vừa màn hình hẹp. Trong đó có nội dung đã nộp, liên kết, tài liệu xem trước/chọn tệp/tải xuống, kết quả nghiệm thu và thông tin tại lúc nộp. Chỉ tải chi tiết và tệp sau khi mở; đóng thu hồi URL blob và trả focus về hàng đã chọn. Lần nộp thiếu tài liệu vẫn có khung báo cáo rỗng; chưa nộp lần nào thì bảng hiện trạng thái rỗng.
-- Cột phụ chia ba nhóm riêng, cách nhau 20px: phân công/thời hạn, giờ công, hoạt động gần đây. Tiêu đề ở ngoài; nội dung dùng `Panel compact` và `KeyValueList compact`, thống nhất dòng nhãn–giá trị, khoảng đệm 12px và cách hàng 8px. Nhật ký/lịch sử mở ngăn kéo riêng; nút quyết định nghiệm thu giữ bên phải tên công việc và mở biểu mẫu trực tiếp.
+- Cột phụ chia ba nhóm riêng, cách nhau 20px: phân công/thời hạn, giờ công, hoạt động gần đây. Tiêu đề ở ngoài; nội dung dùng `Panel compact subtle` và `KeyValueList compact`, nền nhạt/viền nhẹ, khoảng đệm 10px và cách hàng 8px. Nhật ký/lịch sử mở ngăn kéo riêng; nút quyết định nghiệm thu cỡ sm giữ bên phải tên công việc và mở biểu mẫu trực tiếp.
 - Ngăn kéo nhật ký/lịch sử/lần nộp/thay đổi dùng chung `SlidePanel`: header gọn cố định, khoảng đệm nhất quán 16px, một vùng cuộn ở thân. Thay đổi dùng cỡ 420px; bảng/PDF giữ 800px để đủ chỗ đọc. Các khối trong ngăn kéo dùng Panel compact; khung PDF rỗng gọn hơn và vẫn hiển thị. Đóng ngăn kéo thay đổi lồng trong lịch sử giữ lại lịch sử và trả focus đúng hàng.
 - Ngăn kéo cài đặt giữ cỡ 256px, header/footer cố định; bảng màu trên thiết bị cảm ứng dùng 4 cột với vùng bấm 44px để vừa chiều rộng. Menu điều hướng di động giữ vùng cuộn riêng đã có.
 
 ## Phạm vi QA
 
 Không thay endpoint/DTO/policy/seed để phục vụ trình bày. Dùng test HTTP và luồng màn hình hiện có. Kiểm tra trực quan chỉ qua Edge đang mở; kết nối điều khiển hiện chưa hoạt động. Kết quả cuối được ghi ở đây, không tạo lại các tài liệu lịch sử riêng.
+
+Thu gọn chữ/chiều dọc thanh lọc (05/11/2026): hoàn tác phần thu hẹp chiều ngang, khôi phục search tối đa 16rem, select fit 6–15rem, đệm ngang và breakpoint cũ. Trong FilterBar, control cao 32px/chữ 12px, nhãn cách ô 2px; form ngoài thanh lọc giữ kích thước cũ. 113 test thanh lọc/control/luồng màn hình đạt; typecheck, lint, production build và git diff --check đạt. Kiểm tra CSS production có utility scoped compact-filters và biến điều khiển mặc định vẫn 2.375rem. Chưa xác nhận trực quan trên Edge.
+
+
+Đồng bộ header chi tiết (05/11/2026): ProjectShell/TaskShell cùng dùng PageHeader compact, tên 20px và dòng trạng thái/thông tin cách 4px; bỏ header dự án riêng và padding trên của công việc. Giữ dữ liệu/nhãn/quyền/thao tác, tên dài và các nhóm đều được wrap. 139 test bố cục, luồng màn hình và điều hướng đạt; typecheck, lint, production build và git diff --check đạt. Chưa xác nhận trực quan trên Edge.
+
+Thu gọn chiều ngang nút header (05/11/2026): nút và wrapper ActionButton rộng vừa nội dung, không grow; đệm mỗi bên 8px, nhóm nút cách 6px, max-width 100% và wrap khi hẹp/tăng chữ. Giữ chiều cao/cỡ chữ hiện tại. 54 test liên quan dự án/công việc/nghiệm thu/điều hướng đạt; typecheck, lint, production build và git diff --check đạt. Chưa kiểm tra trực quan trên Edge.
+
+Thu gọn thao tác/cột phụ, chuyển cảnh và bỏ comment (05/11/2026): 362/362 test ở 23 file đạt; typecheck, lint, production build và git diff --check đạt. Bỏ 498 comment giải thích trong 157 file; kiểm tra JavaScript do TypeScript phát sinh trước/sau bước bỏ comment giống nhau, CSS vẫn parse hợp lệ, quét lại không còn comment giải thích. Giữ 11 chỉ thị môi trường test và file tự sinh của thư viện. Kiểm tra CSS production có chuyển cảnh page-content 0.16s cùng quy tắc reduced motion; React 19.3.1 hiện có hỗ trợ ViewTransition nên không thêm thư viện hoặc đổi dependency. Luồng quyền, form, nghiệm thu, filter/hash và ngăn kéo tiếp tục đạt test; chưa xác nhận chuyển cảnh/bố cục trực quan trên Edge do giới hạn kết nối đã ghi bên dưới.
+
+Responsive khi tăng chữ và thu gọn tiêu đề bảng (05/11/2026): 362/362 test ở 23 file đạt; typecheck, lint, production build và git diff --check đạt. Bổ sung ca áp/lưu cỡ chữ 125%, giữ các ca bàn phím, focus, lọc, sort/phân trang, form và ngăn kéo. Bỏ kiểm tra so khớp class px cũ; kiểm tra CSS production có token rem, container query và các giới hạn kích thước mới. Chưa xác nhận trực quan viewport/zoom: browser host không hoạt động, kiểm tra native Edge bị Computer Use dừng vì không xác minh chắc chắn được URL; không dùng trình duyệt khác hoặc Playwright/CDP.
 
 Kiểm tra sau khi gom chi tiết dự án (04/11/2026): 316/316 test ở 22 file đạt; typecheck, lint và production build đạt. Các test xác nhận nội dung dự án trên cùng trang, lọc/phân trang của từng vùng độc lập, chuyển URL cũ và quay lại giữ ngữ cảnh, lịch sử chỉ tải khi mở, nút tạo không tải danh sách dự án thừa, cùng các luồng quyền/HTTP/form/412/PDF/ngăn kéo hiện có. git diff --check sạch. Không thay endpoint, DTO hay dữ liệu mock cho bố cục mới.
 

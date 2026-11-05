@@ -8,8 +8,6 @@ import { DomainActionLink } from "./analysis-links";
 const proseClass = "m-0 text-sm leading-relaxed whitespace-pre-wrap text-fg";
 const titleClass = "m-0 text-sm font-semibold text-fg";
 
-// Lời diễn giải của AI: tóm tắt, từng nhận định kèm căn cứ tham chiếu về số liệu,
-// rồi đề xuất và lưu ý. Nội dung dài chia khối để dễ đọc, không đổ thành một đoạn.
 export function AnalysisExplanation({
   snapshot,
   value,

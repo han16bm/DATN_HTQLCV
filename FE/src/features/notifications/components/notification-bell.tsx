@@ -98,7 +98,7 @@ export function NotificationBell() {
           sideOffset={8}
           collisionPadding={8}
           aria-label="Thông báo"
-          className="z-60 w-[min(400px,calc(100vw-16px))] overflow-hidden rounded-xl border border-line bg-surface shadow-overlay outline-none"
+          className="z-60 w-[min(25rem,calc(100vw-1rem))] overflow-hidden rounded-xl border border-line bg-surface shadow-overlay outline-none"
         >
           <header className="flex items-center justify-between border-b border-line px-3 py-2">
             <h2 className="m-0 text-heading-sm font-semibold text-fg">

@@ -54,7 +54,6 @@ import { FeatureChecklist } from "./feature-tree";
 type Reload = () => Promise<{ data?: PermissionGroupDto }>;
 type Tab = "info" | "features" | "members";
 
-// Dialog Thêm/Xem/Sửa nhóm quyền, tab Thông tin / Quyền / Thành viên.
 export function PermissionGroupDialog() {
   const dialog = useEntityDialog();
   if (!dialog.mode) return null;
@@ -68,7 +67,6 @@ function GroupDialogBody() {
   const [statusOpen, setStatusOpen] = useState(false);
   const query = useGetPermissionGroupQuery(dialog.id);
   const features = useListFeaturesQuery();
-  // Giới hạn lookup 100 tài khoản; thành viên hiện có luôn được thêm vào lựa chọn.
   const users = useListUsersQuery({ pageSize: 100 });
   const group = query.data;
   const failed = [query, features, users].find((item) => item.isError);
@@ -348,7 +346,7 @@ function GroupInfoForm({ group, readOnly, reload, cancel, onSaved }: TabProps) {
         onSaved();
       }}
     >
-      <div className="col-span-12 min-w-0 @min-[420px]/form:col-span-6 @min-[600px]/form:col-span-4">
+      <div className="col-span-12 min-w-0 @min-[26.25rem]/form:col-span-6 @min-[37.5rem]/form:col-span-4">
         <label htmlFor={`code-${group.id}`}>Mã nhóm</label>
         <Input id={`code-${group.id}`} value={group.code} disabled readOnly />
         <p className="text-xs text-fg-subtle">

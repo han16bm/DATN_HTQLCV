@@ -14,9 +14,6 @@ import { AccountMenu } from "./account-menu";
 import { MainNav } from "./main-nav";
 import { ProjectSwitcher } from "./project-switcher";
 
-// Header giữ bộ chọn dự án, chức năng quản lý bổ sung và menu tài khoản.
-// Chức năng chung nằm ở sidebar; màn hẹp gom menu vào drawer. Thu gọn sidebar làm ở
-// Cài đặt giao diện (và Ctrl+[), nên header chỉ còn nút hiện lại khi sidebar đang ẩn.
 export function TopBar({
   area,
   session,
@@ -62,17 +59,13 @@ export function TopBar({
           </span>
         </>
       ) : (
-        // Hẹp vừa đủ để không chạm menu quản lý, vốn dóng theo lề trang bên dưới.
         <div className="flex min-w-0 md:max-w-44">
           <ProjectSwitcher />
         </div>
       )}
-      {/* Menu quản lý dóng thẳng với chữ đầu trang: cùng lề trái sidebar, độ rộng tối
-          đa và khoảng đệm của <main> (app-shell). Lớp này không nhận chuột, chỉ menu
-          bên trong nhận. */}
       <div className="pointer-events-none absolute inset-0 hidden md:block md:pl-(--sidebar-w)">
         <div className="mx-auto h-full max-w-(--content-data) px-6 lg:px-8">
-          <div className="pointer-events-auto -ml-2.5 h-full w-fit max-w-full lg:-ml-3">
+          <div className="pointer-events-auto -ml-2.5 h-full min-w-0 max-w-[calc(100%-10rem)] lg:-ml-3">
             <Suspense>
               <MainNav area={area} session={session} />
             </Suspense>

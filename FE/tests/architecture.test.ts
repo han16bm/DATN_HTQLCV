@@ -81,7 +81,6 @@ describe("Feature organization and HTTP boundaries", () => {
         });
       })
       .sort();
-    // Avatar images are loaded by the browser through their response URL.
     expect([...services, "GET /api/avatars/:avatarId"].sort()).toEqual(
       expected,
     );

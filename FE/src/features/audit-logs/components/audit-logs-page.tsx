@@ -28,7 +28,6 @@ import {
 } from "../hooks/use-audit-logs-queries";
 import type { AuditLogDto } from "../types/audit-logs.types";
 
-// Ngày chọn trên form là ngày Việt Nam; API nhận mốc thời gian ISO.
 const dayStart = (day: string) =>
   day ? new Date(`${day}T00:00:00+07:00`).toISOString() : undefined;
 const dayEnd = (day: string) =>
@@ -47,7 +46,6 @@ export function AuditLogsPage() {
     to: dayEnd(filter.get("to")),
   });
   const types = useListEntityTypesQuery();
-  // Danh sách người thao tác cần USERS_MANAGE; thiếu quyền thì ẩn bộ lọc này.
   const users = useListUsersQuery(
     { pageSize: 100 },
     { enabled: hasPermission(session, "USERS_MANAGE") },
@@ -214,7 +212,6 @@ function text(value: Json | undefined) {
   return String(value);
 }
 
-// So sánh trước/sau theo từng field; field thay đổi được tô nổi.
 function FieldDiff({ before, after }: { before: Json; after: Json }) {
   const previous = fieldsOf(before);
   const next = fieldsOf(after);

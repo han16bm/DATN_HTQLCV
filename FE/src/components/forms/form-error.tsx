@@ -6,8 +6,6 @@ import { CircleAlert } from "lucide-react";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import type { CompareField } from "./form.types";
 
-// Lỗi gửi biểu mẫu: giữ nguyên dữ liệu người dùng đã nhập; khi xung đột phiên bản
-// (412) cho tải bản mới để đối chiếu rồi mới tiếp tục sửa.
 export function FormError({
   error,
   setError,

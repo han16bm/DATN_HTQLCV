@@ -4,8 +4,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 export type DialogMode = "create" | "view" | "edit";
 const modes: readonly string[] = ["create", "view", "edit"];
 
-// Trạng thái dialog Thêm/Xem/Sửa nằm trên URL (?dialog=…&id=…) để F5, Back và
-// chia sẻ link mở đúng bản ghi (ADMIN_MODULES 9). Giữ nguyên bộ lọc/trang khác.
 export function useEntityDialog() {
   const search = useSearchParams();
   const router = useRouter();
@@ -23,11 +21,9 @@ export function useEntityDialog() {
     return query ? `${pathname}?${query}` : pathname;
   };
   return {
-    // Thiếu id ở view/edit thì xem như đóng.
     mode: mode && mode !== "create" && !id ? null : mode,
     id,
     href,
-    // Mở là một bước lịch sử để Back đóng dialog; đổi chế độ/đóng thì thay thế.
     open: (next: DialogMode, nextId?: string) =>
       router.push(href(next, nextId), { scroll: false }),
     switchTo: (next: DialogMode, nextId?: string) =>

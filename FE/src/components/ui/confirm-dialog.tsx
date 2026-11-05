@@ -5,8 +5,6 @@ import { TriangleAlert } from "lucide-react";
 import { Button } from "./button";
 import { modalClass, overlayClass } from "./overlay";
 
-// Hỏi trước khi bỏ dữ liệu chưa lưu. Mặc định focus vào "Ở lại" (hành động an toàn);
-// "Bỏ thay đổi" là Danger vì làm mất dữ liệu.
 export function ConfirmDialog() {
   const pending = useUI((s) => s.confirmation);
   const answer = useUI((s) => s.answer);

@@ -28,7 +28,6 @@ import type {
   WorkloadDto,
 } from "../types/analytics.types";
 
-// Tổng hợp/phân tích chạy nhiều truy vấn gộp (DB ở xa) nên cho phép lâu hơn mặc định 15 giây.
 const slow = 45000;
 
 export const analyticsService = {

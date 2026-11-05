@@ -13,7 +13,6 @@ type Info = Pick<
   | "temporaryAddress"
 >;
 
-// Cùng cách đọc hồ sơ cho chính người dùng và màn quản trị.
 export function UserPersonalInfo({ user }: { user: Info }) {
   return (
     <div className="@container/personal-info grid min-w-0 gap-5">
@@ -21,7 +20,7 @@ export function UserPersonalInfo({ user }: { user: Info }) {
         <h3 className="m-0 mb-3 text-sm font-semibold text-fg">
           Thông tin cơ bản
         </h3>
-        <dl className="m-0 grid gap-x-6 gap-y-4 @min-[420px]/personal-info:grid-cols-2 [&_dt]:mb-1 [&_dt]:text-xs [&_dt]:text-fg-subtle [&_dd]:m-0 [&_dd]:text-sm [&_dd]:break-words">
+        <dl className="m-0 grid gap-x-6 gap-y-4 @min-[26.25rem]/personal-info:grid-cols-2 [&_dt]:mb-1 [&_dt]:text-xs [&_dt]:text-fg-subtle [&_dd]:m-0 [&_dd]:text-sm [&_dd]:break-words">
           <div>
             <dt>Họ tên</dt>
             <dd>{user.displayName}</dd>
@@ -51,7 +50,7 @@ export function UserPersonalInfo({ user }: { user: Info }) {
         <h3 className="m-0 mb-3 text-sm font-semibold text-fg">
           Thông tin liên hệ
         </h3>
-        <dl className="m-0 grid gap-x-6 gap-y-4 @min-[420px]/personal-info:grid-cols-2 [&_dt]:mb-1 [&_dt]:text-xs [&_dt]:text-fg-subtle [&_dd]:m-0 [&_dd]:text-sm [&_dd]:break-words [&_dd]:whitespace-pre-wrap">
+        <dl className="m-0 grid gap-x-6 gap-y-4 @min-[26.25rem]/personal-info:grid-cols-2 [&_dt]:mb-1 [&_dt]:text-xs [&_dt]:text-fg-subtle [&_dd]:m-0 [&_dd]:text-sm [&_dd]:break-words [&_dd]:whitespace-pre-wrap">
           <div>
             <dt>Email</dt>
             <dd>{user.email}</dd>

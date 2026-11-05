@@ -55,7 +55,7 @@ export function AvatarCropDialog({
         <Dialog.Content
           className={cn(
             modalClass("md"),
-            "flex h-[min(640px,calc(100dvh-32px))] w-[min(520px,calc(100vw-32px))] flex-col gap-4 *:shrink-0",
+            "flex h-[min(40rem,90dvh)] flex-col gap-4 *:shrink-0",
           )}
           aria-busy={busy}
         >
@@ -64,7 +64,7 @@ export function AvatarCropDialog({
             Kéo ảnh để chọn vị trí và thu phóng vùng cắt.
           </Dialog.Description>
           <div
-            className="relative min-h-40 flex-[1_0_180px] overflow-hidden rounded-lg bg-[#1b2c43]"
+            className="relative min-h-40 flex-[1_0_11.25rem] overflow-hidden rounded-lg bg-[#1b2c43]"
             inert={busy}
           >
             <Cropper
@@ -97,7 +97,7 @@ export function AvatarCropDialog({
             Thu phóng
             <input
               data-ui
-              className="flex-1 accent-action"
+              className="min-w-0 flex-1 accent-action"
               type="range"
               min={1}
               max={3}

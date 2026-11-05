@@ -60,7 +60,6 @@ export const alertSchema = z.object({
   methodVersion: z.string(),
   resolutionNote: z.string().nullable(),
   handler: personRefSchema.nullable(),
-  // BE tính: sysadmin hoặc người nhận (người được giao task, Owner/Manager dự án)
   canHandle: z.boolean(),
   handledAt: z.iso.datetime().nullable(),
   taskTitle: z.string().nullable(),

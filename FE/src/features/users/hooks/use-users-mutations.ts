@@ -196,7 +196,6 @@ export function useUpdateUserPermissionsMutation() {
   });
 }
 
-// Thu hồi mọi phiên đăng nhập của tài khoản (không khóa tài khoản).
 export function useRevokeUserSessionsMutation() {
   const client = useQueryClient();
   const viewerId = useSession().session?.user.id;

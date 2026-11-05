@@ -1,5 +1,3 @@
-// Logo Cổng công việc: ô xanh biển, lối vào hình vòm (cổng) bên trong
-// có dấu tích hoàn thành. Cùng hình dùng cho thanh trên, đăng nhập và favicon.
 function BrandMark({ size = 28 }: { size?: number }) {
   return (
     <svg

@@ -12,9 +12,6 @@ const tones: Record<Tone, string> = {
   danger: "bg-danger-bg text-danger-fg",
 };
 
-// Màu theo ý nghĩa, không theo tên trạng thái: neutral là nháp/chưa bắt đầu/ngừng,
-// info là đang diễn ra, success là hoàn tất/đủ, warning là cần xem lại, danger là
-// quá hạn/lỗi/mức cao. Giá trị lạ rơi về neutral; chữ luôn hiện kèm màu.
 const statusTones: Record<string, Tone> = {
   in_progress: "info",
   running: "info",

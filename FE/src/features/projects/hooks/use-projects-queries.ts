@@ -31,7 +31,6 @@ export function useListProjectsQuery(
   return useQueryAccess(result, "projects");
 }
 
-// Danh sách dự án tải dần theo trang cho bộ chọn dự án trên header.
 export function useInfiniteProjectsQuery(
   query: Omit<ProjectQuery, "page"> = {},
   options: QueryOptions = {},

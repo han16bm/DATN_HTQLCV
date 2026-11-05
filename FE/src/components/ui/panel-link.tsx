@@ -2,8 +2,6 @@ import { cn } from "@/lib/cn";
 import { ChevronRight } from "lucide-react";
 import type { ComponentProps } from "react";
 
-// Hành động phụ nằm ở tiêu đề một khối: chữ nhỏ kèm mũi tên, mở phần chi tiết của khối
-// (ngăn kéo) mà không tranh nút chính. Nút viền đầy đủ dành cho hành động chính.
 export function PanelLink({
   className,
   children,

@@ -2,14 +2,10 @@ import { stampDateTime } from "@/lib/format";
 
 type StampRef = { label: string } | null;
 
-// Tên người trong dấu vết tạo/sửa; null (chưa có lịch sử) hiển thị "Không rõ".
 export const stampLabel = (ref: StampRef) => ref?.label ?? "Không rõ";
-// Một dòng cho cột bảng: "Tên · dd/MM/yyyy HH:mm".
 export const stampText = (ref: StampRef, at?: string | null) =>
   at ? `${stampLabel(ref)} · ${stampDateTime(at)}` : stampLabel(ref);
 
-// Dấu vết tạo/sửa (ADMIN_MODULES 8.4). Chỉ in dòng có truyền người; mốc thời gian
-// in kèm khi DTO có.
 export function RecordStamp({
   createdBy,
   createdAt,

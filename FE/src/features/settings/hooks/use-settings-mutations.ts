@@ -19,7 +19,6 @@ function useInvalidateSettings() {
   return async () => {
     await Promise.all([
       client.invalidateQueries({ queryKey: settingsKeys.viewer(viewerId) }),
-      // Trạng thái bật/tắt whitelist đọc từ Security:AdminIpWhitelistEnabled.
       client.invalidateQueries({ queryKey: ipWhitelistKeys.viewer(viewerId) }),
       client.invalidateQueries({ queryKey: auditLogsKeys.viewer(viewerId) }),
     ]);

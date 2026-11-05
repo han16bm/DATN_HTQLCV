@@ -21,12 +21,10 @@ beforeEach(() => {
 });
 const login = (username = "minh") =>
   authService.login({ username, password: "Mock@12345" });
-// ANALYTICS_VIEW ở phạm vi hệ thống do backend cấp qua nhóm quyền, không theo role.
 const grantSystemAnalytics = (userId: string) =>
   db.permissionGroups
     .find((group) => group.id === "pg-analytics")!
     .memberIds.push(userId);
-// Tài khoản chỉ quản trị: bỏ cờ sysadmin và thu hồi ANALYTICS_VIEW của nhóm ADMINISTRATORS.
 const accountAdminOnly = () =>
   Object.assign(
     db.users.find((user) => user.id === "u-admin")!,
@@ -139,7 +137,6 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
         { key: "admin-report-denied" },
       ),
     ).rejects.toMatchObject({ status: 403 });
-    // Chỉ có ANALYTICS_VIEW (không sysadmin, không phải người nhận) thì xem được nhưng không xử lý được cảnh báo
     const adminUser = db.users.find((user) => user.id === "u-admin")!;
     adminUser.isSysAdmin = false;
     await expect(

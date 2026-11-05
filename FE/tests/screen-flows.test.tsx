@@ -126,16 +126,13 @@ afterEach(() => {
 });
 const login = (username: string) =>
   authService.login({ username, password: "Mock@12345" });
-// Dialog Thêm/Xem/Sửa của khu quản trị đọc trạng thái từ URL (ADMIN_MODULES 9).
 const at = (url: string) => history.replaceState(null, "", url);
 const lastNav = (fn: typeof nav.replace) =>
   new URL(fn.mock.calls.at(-1)![0] as string, location.origin);
-// ANALYTICS_VIEW cấp ở phạm vi hệ thống qua nhóm quyền của backend, không theo role.
 const grantSystemAnalytics = (userId: string) =>
   db.permissionGroups
     .find((group) => group.id === "pg-analytics")!
     .memberIds.push(userId);
-// Tài khoản chỉ quản trị: bỏ cờ sysadmin và thu hồi ANALYTICS_VIEW của nhóm ADMINISTRATORS.
 const accountAdminOnly = () =>
   Object.assign(
     db.users.find((user) => user.id === "u-admin")!,
@@ -144,7 +141,6 @@ const accountAdminOnly = () =>
       revokedFeatures: ["ANALYTICS_VIEW"],
     },
   );
-// JSDOM has no image decoder, layout or canvas; keep the cropper and HTTP real.
 function avatarBrowser() {
   const create = vi.fn(() => `blob:http://localhost/${crypto.randomUUID()}`);
   const revoke = vi.fn();
@@ -194,7 +190,6 @@ it("shows loading feedback before listing actual start dates from the task respo
     .getByRole("button", { name: "Mở menu tài khoản" })
     .closest("header")!;
   expect(within(header).queryByRole("status")).toBeNull();
-  // Tiêu đề cột hiện ngay cùng khung xương; dữ liệu chỉ có sau khi tải xong.
   await waitFor(() =>
     expect(
       screen.queryByRole("status", { name: "Đang tải dữ liệu" }),
@@ -402,7 +397,6 @@ it("keeps admin account information and access actions together without exposing
   });
   const email = await within(dialog).findByRole("textbox", { name: "Email *" });
   expect(email).toHaveProperty("value", "admin@example.test");
-  // Chế độ Xem: mọi trường disable trong fieldset.
   expect(email.closest("fieldset")).toHaveProperty("disabled", true);
   expect(screen.queryByText(/Mã tài khoản/)).toBeNull();
   expect(within(dialog).getByText(/Tạo bởi/)).toBeTruthy();
@@ -973,7 +967,6 @@ it.each(["lan", "minh"] as const)(
     expect(
       within(chips).getByRole("button", { name: /^Tất cả/ }).textContent,
     ).toContain(String(open.length));
-    // Chỉ một bảng, không chia theo trạng thái; mỗi việc một hàng.
     if (open.length === 0)
       expect(
         within(list).getByText("Bạn đã xử lý hết công việc đang mở"),
@@ -990,7 +983,6 @@ it.each(["lan", "minh"] as const)(
     for (const task of open) {
       const link = within(list).getByRole("link", { name: task.title });
       expect(link.getAttribute("href")).toBe(`/tasks/${task.id}`);
-      // Thao tác nhanh nằm trong menu thả xuống của hàng, không phải nút rải rác.
       const entry = quick.find(([status]) => status === task.status);
       await user.click(
         within(list).getByRole("button", { name: `Thao tác: ${task.title}` }),
@@ -1053,8 +1045,6 @@ it("narrows the day's work to one urgency group from the chips", async () => {
   show(<TodayPage />, session);
   const list = await screen.findByRole("region", { name: "Việc của tôi" });
   const user = userEvent.setup();
-  // Bảng chỉ có sau khi danh sách việc của tôi tải xong; lan có một việc đang làm
-  // và một việc sắp tới.
   const table = await within(list).findByRole("table");
   expect(within(table).getAllByRole("row")).toHaveLength(3);
   const chip = within(list).getByRole("button", { name: /^Đang thực hiện/ });
@@ -1114,7 +1104,6 @@ it("switches compact analytics sections while preserving the selected scope", as
     from: "2026-10-01",
     to: "2026-10-23",
   });
-  // Cảnh báo là mục riêng ở sidebar cho mọi nhân viên, không nằm trong menu Phân tích.
   expect(menu.queryByRole("menuitem", { name: "Cảnh báo" })).toBeNull();
 });
 it("opens collapsed analytics filters, clears dependent selections, resets and returns focus after Escape", async () => {
@@ -1385,7 +1374,6 @@ it("keeps account actions in the avatar menu and shows the signed-in profile", a
   const user = userEvent.setup();
   const main = screen.getByRole("navigation", { name: "Điều hướng chính" });
   expect(within(main).queryByText("Đăng xuất")).toBeNull();
-  // Quản trị không nằm trong menu làm việc.
   expect(within(main).queryByRole("button", { name: "Phân tích" })).toBeNull();
   expect(within(main).queryByRole("link", { name: "Tài khoản" })).toBeNull();
   const contact = await screen.findByRole("region", {
@@ -2957,7 +2945,6 @@ it("reuses an idempotency key after a failed request and releases it after succe
   );
   expect(keys).toHaveLength(2);
   expect(keys[0]).toBe(keys[1]);
-  // The same input is now a new attempt; the stale version must still be rejected.
   const save = await screen.findByRole("button", { name: "Lưu" });
   await waitFor(() => expect(save).toHaveProperty("disabled", false));
   await user.click(save);
@@ -3013,7 +3000,6 @@ it("opens analytics and review entries from the permissions in the session, not 
   const main = screen.getByRole("navigation", { name: "Điều hướng quản lý" });
   expect(within(main).getByRole("button", { name: "Phân tích" })).toBeTruthy();
   expect(within(main).getByRole("link", { name: "Nghiệm thu" })).toBeTruthy();
-  // Quản trị hệ thống không còn nằm trong menu làm việc.
   for (const name of ["Người dùng", "Đơn vị", "Team"])
     expect(within(main).queryByRole("link", { name })).toBeNull();
   cleanup();
@@ -3048,7 +3034,6 @@ it("shows only the administration entry the account is permitted to open", async
       "Tài khoản của bạn chưa được cấp quyền truy cập trang này.",
     ),
   ).toBeTruthy();
-  // Các mục quản trị nằm ở sidebar, không còn trên header.
   const sidebar = screen.getByRole("complementary", {
     name: "Thanh điều hướng",
   });
@@ -3064,7 +3049,6 @@ it("shows only the administration entry the account is permitted to open", async
     name: "Về không gian làm việc",
   });
   expect(back.getAttribute("href")).toBe("/workspace");
-  // Khu quản trị không có bộ chọn dự án.
   expect(screen.queryByRole("button", { name: /^Dự án:/ })).toBeNull();
 });
 
@@ -3152,8 +3136,6 @@ it.each([
         "/api/notifications/summary",
       ]);
       if (username !== "minh") {
-        // Không ai ngoài người nghiệm thu thấy Nghiệm thu; Phân tích chỉ có ở tài
-        // khoản có ANALYTICS_VIEW (accountAdminOnly đã thu hồi quyền này của Admin).
         expect(screen.queryByRole("link", { name: "Nghiệm thu" })).toBeNull();
         expect(screen.queryByRole("button", { name: "Phân tích" })).toBeNull();
       }
@@ -3188,7 +3170,6 @@ it("shows an API scope denial, clears old data and retains the error without ref
       (member) => member.userId === session.user.id,
     ))
       member.projectRole = "MEMBER";
-    // Cảnh báo không còn là tài nguyên chặn theo quyền (người không nhận được 404), nên giả lập 403 để giữ kiểm tra xử lý từ chối phạm vi
     const denial = "Bạn không có quyền xem dữ liệu này.";
     server.use(
       http.get("*/api/alerts/alert-1", () =>
@@ -3601,7 +3582,6 @@ it("lets an administrator open any project, task list and analytics as read-only
       name: "Cổng quản lý nội bộ",
     }),
   ).toBeTruthy();
-  // Chỉ xem: không có triển khai, chỉnh sửa kế hoạch hay kết thúc dự án.
   expect(screen.queryByRole("button", { name: "Triển khai dự án" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Cài đặt dự án" })).toBeNull();
   cleanup();

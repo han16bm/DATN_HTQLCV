@@ -27,7 +27,6 @@ export const passwordFormSchema = changePasswordSchema
     path: ["confirmPassword"],
     message: "Mật khẩu nhập lại không khớp.",
   });
-// BE trả token mới cho phiên đang thao tác (phiên khác bị thu hồi); mock chỉ trả {ok}.
 export const passwordResultSchema = z.object({
   ok: z.literal(true),
   accessToken: z.string().min(1).optional(),

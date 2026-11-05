@@ -4,11 +4,6 @@ import type { ComponentProps } from "react";
 
 export type ControlSize = "default" | "form" | "auto" | "compact";
 
-// Điều khiển cao 32px ở thanh công cụ, 36px ở biểu mẫu, tối thiểu 44px khi cảm ứng.
-// "compact" cao 32px như mặc định nhưng chữ nhỏ (12px), dùng khi giá trị chọn là nội dung
-// phụ trong khung hẹp (Cài đặt giao diện).
-// Viền đạt 3:1; ô chỉ
-// đọc đổi nền thay vì viền để không giống ô đang nhập.
 export const controlClass = (size: ControlSize = "default") =>
   cn(
     "min-w-0 rounded-md border border-line-input bg-surface px-3 text-fg transition-colors duration-150 motion-reduce:transition-none",
@@ -22,7 +17,6 @@ export const controlClass = (size: ControlSize = "default") =>
     "file:mr-3 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-selected-fg",
   );
 
-// Ô nhập một dòng. Nhãn luôn nằm ngoài (FilterField/Field); placeholder chỉ gợi ý.
 export function Input({
   size = "default",
   className,
@@ -37,7 +31,6 @@ export function Input({
   );
 }
 
-// Ô tìm kiếm có biểu tượng kính lúp; vai trò searchbox.
 export function SearchInput({
   className,
   ...props

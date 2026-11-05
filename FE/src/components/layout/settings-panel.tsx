@@ -43,9 +43,6 @@ function Section({
   );
 }
 
-// Hình thu nhỏ của khung ứng dụng theo từng chế độ (thanh trên + sidebar, nền trang, các
-// khối nội dung). Màu cố định theo chế độ để xem trước đúng dù đang ở chế độ nào; riêng
-// chế độ Mặc định lấy màu điều hướng của bộ màu đang chọn.
 const modeLook: Record<Mode, { bar: string; page: string; block: string }> = {
   default: {
     bar: "bg-(--theme-nav)",
@@ -84,11 +81,6 @@ function ModeThumbnail({ mode, checked }: { mode: Mode; checked: boolean }) {
   );
 }
 
-// Cài đặt giao diện của trình duyệt này, mở thành ngăn kéo hẹp trượt từ cạnh phải. Tiêu
-// đề màu một dòng, mỗi công tắc một dòng, màu chủ đạo là các ô tròn, chế độ Mặc định/Sáng/
-// Tối có hình xem trước, chân ngăn kéo có Tắt hết (chỉ phần bố cục) và Về ban đầu (mọi
-// thứ). Mọi lựa chọn áp ngay và lưu ở localStorage; công tắc thu gọn là chỗ duy nhất đổi
-// trạng thái thu gọn (cùng phím tắt Ctrl+[).
 export function SettingsPanel() {
   const {
     theme,
@@ -117,7 +109,7 @@ export function SettingsPanel() {
           className={cn(compactDrawerClass, "flex flex-col")}
           aria-describedby="settings-hint"
         >
-          <header className="nav-surface flex h-10 shrink-0 items-center justify-between bg-linear-to-br from-nav to-nav-hover pr-1 pl-4">
+          <header className="nav-surface flex min-h-10 shrink-0 items-center justify-between gap-2 bg-linear-to-br from-nav to-nav-hover pr-1 pl-4">
             <Dialog.Title className="m-0 text-base font-semibold">
               Cài đặt giao diện
             </Dialog.Title>
@@ -151,8 +143,8 @@ export function SettingsPanel() {
               />
             </Section>
             <Section>
-              <div className="grid grid-cols-[6rem_minmax(0,1fr)] gap-3 px-4">
-                <div className="grid gap-1.5">
+              <div className="grid grid-cols-[minmax(0,6rem)_minmax(0,1fr)] gap-3 px-4">
+                <div className="grid min-w-0 gap-1.5">
                   <label
                     htmlFor="settings-font-scale"
                     className="text-sm font-semibold text-fg"
@@ -174,14 +166,13 @@ export function SettingsPanel() {
                     ))}
                   </Select>
                 </div>
-                <div className="grid gap-1.5">
+                <div className="grid min-w-0 gap-1.5">
                   <label
                     htmlFor="settings-font"
                     className="text-sm font-semibold text-fg"
                   >
                     Phông chữ
                   </label>
-                  {/* Mỗi tùy chọn hiện bằng chính phông của nó để xem trước. */}
                   <Select
                     size="compact"
                     id="settings-font"
@@ -214,7 +205,6 @@ export function SettingsPanel() {
                 className="grid grid-cols-6 gap-2 px-4 pointer-coarse:grid-cols-4"
               >
                 {themes.map((item) => (
-                  // Ô màu mang data-theme của chính nó nên lấy được --theme-nav (tokens.css).
                   <button
                     key={item.value}
                     data-ui

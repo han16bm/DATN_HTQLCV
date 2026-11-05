@@ -99,7 +99,6 @@ function SubmissionInfo({ s }: { s: Submission }) {
   );
 }
 
-// Nội dung và tài liệu của lần nộp được chọn, chỉ dựng khi ngăn kéo mở.
 export function SubmissionPreview({
   taskId,
   submissionId,

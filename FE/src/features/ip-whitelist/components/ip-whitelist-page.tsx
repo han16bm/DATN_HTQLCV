@@ -244,7 +244,6 @@ export function IpWhitelistPage() {
   );
 }
 
-// Form chung Thêm/Xem/Sửa địa chỉ; lỗi 422 chống tự khóa hiện ngay tại form.
 const editSchema = updateIpWhitelistEntrySchema
   .pick({ cidr: true, description: true, reason: true })
   .required({ cidr: true });
@@ -334,7 +333,7 @@ function EntryForm({
           error={errors.cidr}
         />
         {mode !== "view" && (
-          <div className="col-span-12 min-w-0 @min-[420px]/form:col-span-6 @min-[600px]/form:col-span-4">
+          <div className="col-span-12 min-w-0 @min-[26.25rem]/form:col-span-6 @min-[37.5rem]/form:col-span-4">
             <span className="mb-1.5 block text-sm font-medium text-fg">
               IP hiện tại: {currentIp}
             </span>

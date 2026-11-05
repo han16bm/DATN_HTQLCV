@@ -32,7 +32,6 @@ export const userSchema = z
     avatarUrl: z.string().min(1).nullable(),
     unitId: idSchema,
     isSysAdmin: z.boolean(),
-    // Nhóm quyền đang hoạt động mà người dùng thuộc về.
     groups: z.array(refSchema),
     status: userStatusSchema,
     unit: entityLabelSchema,

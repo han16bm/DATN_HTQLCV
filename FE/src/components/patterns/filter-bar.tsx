@@ -1,8 +1,6 @@
 import { cn } from "@/lib/cn";
 import type { ReactNode } from "react";
 
-// Thanh công cụ của danh sách: tìm kiếm và bộ lọc xếp từ trái, công cụ phụ (xóa bộ
-// lọc, đổi chế độ xem) dồn về phải. Mỗi điều khiển có nhãn luôn hiện ở trên.
 export function FilterBar({
   label,
   tools,
@@ -13,10 +11,10 @@ export function FilterBar({
   children: ReactNode;
 }) {
   return (
-    <section aria-label={label} className="mb-4 flex flex-wrap items-end gap-2">
+    <section aria-label={label} className="@container/filters compact-filters mb-3 flex min-w-0 flex-wrap items-end gap-2">
       {children}
       {tools && (
-        <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
+        <div className="ml-auto flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
           {tools}
         </div>
       )}
@@ -24,7 +22,6 @@ export function FilterBar({
   );
 }
 
-// Nhãn bọc điều khiển nên bấm nhãn là focus vào ô, tên truy cập lấy từ nhãn.
 export function FilterField({
   label,
   search = false,
@@ -37,10 +34,10 @@ export function FilterField({
   return (
     <label
       className={cn(
-        "flex min-w-0 flex-col gap-1 text-xs font-medium text-fg-subtle",
+        "flex min-w-0 flex-col gap-0.5 text-xs font-medium text-fg-subtle",
         search
-          ? "max-md:basis-full md:min-w-32 md:max-w-64 md:flex-[1_1_8rem]"
-          : "max-md:flex-1 max-md:basis-[calc(50%-6px)]",
+          ? "max-w-[min(100%,16rem)] flex-[1_1_8rem] @max-[40rem]/filters:max-w-none @max-[40rem]/filters:basis-full"
+          : "max-w-full @max-[40rem]/filters:flex-[1_1_9rem]",
       )}
     >
       {label}

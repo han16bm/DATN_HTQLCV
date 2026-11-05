@@ -97,7 +97,6 @@ export const ipWhitelistService = {
     return response.data;
   },
 
-  // Không đọc thân phản hồi (BE có thể trả 204) nên không khai báo schema.
   async deleteIpWhitelistEntry(entryId: string, options: VersionOptions) {
     await apiClient.delete<unknown>(
       `/ip-whitelist/${encodeURIComponent(entryId)}`,

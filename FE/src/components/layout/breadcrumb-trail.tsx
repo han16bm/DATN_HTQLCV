@@ -6,7 +6,6 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Fragment } from "react";
 
-// Breadcrumb và nút Quay lại dùng chung cho mọi trang con, tính từ URL hiện tại.
 export function BreadcrumbTrail() {
   const pathname = usePathname();
   const search = useSearchParams();

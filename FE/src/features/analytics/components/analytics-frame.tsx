@@ -57,7 +57,7 @@ export function AnalyticsFrame({
             </Popover.Trigger>
             <Popover.Portal>
               <Popover.Content
-                className="z-70 w-[min(420px,calc(100vw-32px))] rounded-lg border border-line bg-surface p-3.5 shadow-overlay"
+                className="@container/analytics-filter z-70 w-[min(26.25rem,calc(100vw-2rem))] rounded-lg border border-line bg-surface p-3.5 shadow-overlay"
                 align="end"
                 sideOffset={8}
                 collisionPadding={16}
@@ -73,7 +73,7 @@ export function AnalyticsFrame({
                     </IconButton>
                   </Popover.Close>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 @min-[22rem]/analytics-filter:grid-cols-2">
                   <LookupFilter kind="UNIT" name="unitId" label="Đơn vị" />
                   <LookupFilter kind="PROJECT" name="projectId" label="Dự án" />
                   <FilterField label="Từ ngày">
@@ -96,7 +96,7 @@ export function AnalyticsFrame({
                     Bộ lọc khác
                   </summary>
                   <div className="mt-2" />
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3 @min-[22rem]/analytics-filter:grid-cols-2">
                     <LookupFilter kind="TEAM" name="teamId" label="Nhóm" />
                     <LookupFilter
                       kind="PERSON"

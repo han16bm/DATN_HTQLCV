@@ -22,7 +22,6 @@ import { UserPermissionsPanel } from "./user-permissions-panel";
 import { UserProjectsPanel } from "./user-projects-panel";
 import { UserProfileForm } from "./user-profile-form";
 
-// Dialog Thêm/Xem/Sửa tài khoản, tab Thông tin / Phân quyền / Dự án (ADMIN_MODULES 9, 11).
 export function UserDialog() {
   const dialog = useEntityDialog();
   if (!dialog.mode) return null;
@@ -42,10 +41,8 @@ function UserDialogBody() {
     ...(permissions
       ? [{ value: "permissions" as const, label: "Phân quyền" }]
       : []),
-    // GET /users/:id/projects mở cho USERS_MANAGE hoặc PERMISSIONS_MANAGE.
     { value: "projects" as const, label: "Dự án" },
   ];
-  // Chọn nhóm khi cấp tài khoản: GET /permission-groups mở cho USERS_MANAGE.
   const groups = useListPermissionGroupsQuery(
     { pageSize: 100, status: "ACTIVE" },
     { enabled: mode === "create" },

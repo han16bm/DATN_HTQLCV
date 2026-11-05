@@ -2,9 +2,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-// Tùy chọn giao diện của riêng trình duyệt này (không phải dữ liệu nghiệp vụ nên
-// không qua API): màu chủ đạo, chế độ sáng/tối, nền trang, phông chữ, cỡ chữ, mật độ
-// bảng và ẩn thanh bên. Màu của từng bộ chủ đạo chỉ khai ở tokens.css ([data-theme]).
 export const themes = [
   { value: "ocean", label: "Xanh dương" },
   { value: "navy", label: "Xanh navy" },
@@ -22,8 +19,6 @@ export const themes = [
   { value: "cyan", label: "Xanh lơ" },
   { value: "brown", label: "Nâu" },
 ] as const;
-// Mặc định: thanh điều hướng màu, nền sáng. Sáng: thanh điều hướng trắng. Tối: toàn bộ
-// nền, bề mặt và chữ đổi sang tối (luật [data-mode] ở tokens.css).
 export const modes = [
   { value: "default", label: "Mặc định" },
   { value: "light", label: "Sáng" },
@@ -35,8 +30,6 @@ export const pages = [
   { value: "white", label: "Trắng", color: "#ffffff" },
   { value: "sand", label: "Be nhạt", color: "#f6f4f0" },
 ] as const;
-// Phông chữ đều có bộ ký tự tiếng Việt đầy đủ; giá trị khớp tên biến --font-<giá trị>
-// khai báo ở app/layout.tsx và các luật :root[data-font] ở tokens.css.
 export const fonts = [
   { value: "be-vietnam", label: "Be Vietnam Pro" },
   { value: "inter", label: "Inter" },
@@ -77,9 +70,7 @@ export const preferencesKey = "datn.preferences";
 
 type PreferencesState = Preferences & {
   set: (patch: Partial<Preferences>) => void;
-  // Tắt hết: chỉ các tùy chọn bố cục (bảng gọn, ẩn thanh bên), giữ màu, chế độ, chữ.
   resetLayout: () => void;
-  // Về ban đầu: mọi tùy chọn giao diện.
   reset: () => void;
 };
 
@@ -119,9 +110,6 @@ export const usePreferences = create<PreferencesState>()(
   ),
 );
 
-// Đặt thuộc tính lên <html>: màu chủ đạo, chế độ, nền trang, phông chữ và mật độ qua data-*, cỡ chữ qua
-// font-size gốc (mọi cỡ chữ và khoảng cách tính theo rem nên tự co giãn theo). Giá trị
-// mặc định gỡ thuộc tính để quay về CSS gốc. Ẩn thanh bên do AppShell đọc từ store.
 export function applyPreferences(
   root: HTMLElement,
   { theme, mode, page, font, fontScale, density }: Preferences,
@@ -141,6 +129,4 @@ export function applyPreferences(
   else root.style.removeProperty("font-size");
 }
 
-// Chạy trước khi vẽ để không nháy màu mặc định rồi mới đổi; cùng giá trị với
-// applyPreferences, đọc thẳng từ localStorage. Lỗi đọc (chế độ riêng tư) thì bỏ qua.
 export const preferencesBootScript = `try{var s=JSON.parse(localStorage.getItem(${JSON.stringify(preferencesKey)})||"{}").state||{};var r=document.documentElement;var m={large:"112.5%",xlarge:"125%"};if(s.theme&&s.theme!=="ocean")r.dataset.theme=s.theme;if(s.mode==="light"||s.mode==="dark")r.dataset.mode=s.mode;if(s.page&&s.page!=="blue")r.dataset.page=s.page;if(s.font&&s.font!=="be-vietnam")r.dataset.font=s.font;if(s.density==="compact")r.dataset.density="compact";if(m[s.fontScale])r.style.fontSize=m[s.fontScale]}catch(e){}`;

@@ -22,7 +22,6 @@ const statusText = {
 } as const;
 const scopeText = { ADMIN: "Khu quản trị", SYSTEM: "Toàn hệ thống" } as const;
 
-// IP bị chặn khi whitelist bật: gom theo IP + phạm vi; cho phép = thêm vào danh sách, bỏ qua = đánh dấu đã xem.
 export function IpAccessLogsPanel() {
   const [status, setStatus] = useState<IpAccessLogDto["status"] | "">(
     "PENDING",

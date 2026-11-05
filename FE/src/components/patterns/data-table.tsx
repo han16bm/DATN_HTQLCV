@@ -140,7 +140,8 @@ export function DataTable({
                 </colgroup>
               )}
               <thead className={fit ? "@max-[42rem]/table:sr-only" : undefined}>
-                <tr>
+                {/* Header bảng tô màu điều hướng, chữ trắng (chuẩn chung các phần mềm quản trị). */}
+                <tr className="nav-surface">
                   {headers.map((header, i) => {
                     const column =
                       typeof header === "string" ? { label: header } : header;
@@ -153,7 +154,7 @@ export function DataTable({
                           column.onSort ? (column.sort ?? "none") : undefined
                         }
                         className={cn(
-                          "h-9 bg-sunken/60 py-2 text-xs font-medium text-fg-subtle",
+                          "h-11 py-2 text-sm font-semibold text-fg",
                           fit ? "px-2" : "px-3",
                           actions && i === columns - 1
                             ? "text-center"
@@ -207,7 +208,7 @@ export function DataTable({
                       <tr
                         key={i}
                         className={cn(
-                          "hover:bg-hover",
+                          "transition-colors duration-150 ease-out even:bg-sunken/50 hover:bg-selected-bg motion-reduce:transition-none",
                           fit &&
                             "@max-[42rem]/table:grid @max-[42rem]/table:grid-cols-2 @max-[42rem]/table:border-t @max-[42rem]/table:border-line/70 @max-[42rem]/table:p-2",
                         )}

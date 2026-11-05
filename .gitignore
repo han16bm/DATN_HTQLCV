@@ -60,3 +60,4 @@ BE/Services/*/App_Data/
 
 # Playwright MCP snapshots/screenshots
 .playwright-mcp/
+logs/

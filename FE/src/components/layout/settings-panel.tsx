@@ -49,10 +49,10 @@ function Section({
 const modeLook: Record<Mode, { bar: string; page: string; block: string }> = {
   default: {
     bar: "bg-(--theme-nav)",
-    page: "bg-[#f3f7fa]",
+    page: "bg-[#f6f9fb]",
     block: "bg-[#d6e0ea]",
   },
-  light: { bar: "bg-white", page: "bg-[#f3f7fa]", block: "bg-[#d6e0ea]" },
+  light: { bar: "bg-white", page: "bg-[#f6f9fb]", block: "bg-[#d6e0ea]" },
   dark: { bar: "bg-[#243241]", page: "bg-[#0d141c]", block: "bg-[#2c3b4a]" },
 };
 

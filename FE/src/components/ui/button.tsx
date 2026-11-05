@@ -18,8 +18,8 @@ const variants: Record<Variant | "selected", string> = {
 // Lớp của nút, dùng chung cho Button và liên kết trông như nút (ButtonLink).
 export const buttonClass = (variant: Variant = "secondary", selected = false) =>
   cn(
-    "relative inline-flex h-(--control-h) items-center justify-center gap-1.5 rounded-md border px-3",
-    "text-sm font-medium whitespace-nowrap transition-colors duration-150 motion-reduce:transition-none",
+    "relative inline-flex h-(--control-h) items-center justify-center gap-1.5 rounded-full border px-4",
+    "text-sm font-semibold whitespace-nowrap transition-[background-color,border-color,color,scale] duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
     "disabled:cursor-not-allowed disabled:opacity-60 aria-disabled:cursor-wait pointer-coarse:min-h-11",
     variants[selected ? "selected" : variant],
   );

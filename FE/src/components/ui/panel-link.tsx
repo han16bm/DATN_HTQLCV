@@ -15,7 +15,7 @@ export function PanelLink({
       data-ui
       type={type}
       className={cn(
-        "inline-flex h-7 shrink-0 items-center gap-0.5 rounded-md pr-1 pl-2 text-xs font-medium whitespace-nowrap text-selected-fg transition-colors hover:bg-selected-bg active:bg-pressed motion-reduce:transition-none pointer-coarse:min-h-11",
+        "inline-flex h-7 shrink-0 items-center gap-0.5 rounded-full pr-1.5 pl-2.5 text-xs font-medium whitespace-nowrap text-selected-fg transition-colors duration-150 ease-out hover:bg-selected-bg active:bg-pressed motion-reduce:transition-none pointer-coarse:min-h-11",
         className,
       )}
       {...props}

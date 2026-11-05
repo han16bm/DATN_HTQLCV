@@ -11,7 +11,7 @@ import type { Area } from "@/lib/navigation";
 import { usePreferences } from "@/stores/preferences-store";
 import { useUI } from "@/stores/ui-store";
 import * as Dialog from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useEffect, useRef, type ReactNode } from "react";
 import { BreadcrumbTrail } from "./breadcrumb-trail";
@@ -134,6 +134,27 @@ export function AppShell({
             <Suspense>
               <SideNav area={area} session={session} collapsed={collapsed} />
             </Suspense>
+            {/* Nút thu gọn ở chân sidebar như các app thường có; Ctrl+[ cũng đổi. */}
+            <div
+              className={cn(
+                "mt-2 flex border-t border-line pt-2",
+                collapsed ? "justify-center" : "justify-end",
+              )}
+            >
+              <IconButton
+                label={collapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên"}
+                title={`${collapsed ? "Mở rộng" : "Thu gọn"} thanh bên (Ctrl+[)`}
+                data-sidebar-toggle
+                aria-expanded={!collapsed}
+                onClick={toggleSidebar}
+              >
+                {collapsed ? (
+                  <PanelLeftOpen className="size-[18px]" aria-hidden="true" />
+                ) : (
+                  <PanelLeftClose className="size-[18px]" aria-hidden="true" />
+                )}
+              </IconButton>
+            </div>
           </aside>
         )}
         <Dialog.Portal>

@@ -14,7 +14,6 @@ import { analysisSchema } from "@/features/analytics/schemas/analysis-detail.sch
 import {
   explanationStateSchema,
   llmExplanationSchema,
-  recommendationSchema,
 } from "@/features/analytics/schemas/analysis-explanation.schema";
 import { jobErrorSchema } from "@/features/analytics/schemas/analysis-job.schema";
 import { qualitySchema } from "@/features/analytics/schemas/analysis-meta.schema";
@@ -344,13 +343,7 @@ const errorModel = z.object(jobErrorSchema.shape).extend({
     "INSUFFICIENT_DATA",
   ]),
 });
-const llmModel = z.object(llmExplanationSchema.shape).extend({
-  recommendations: z.array(
-    z
-      .object(recommendationSchema.shape)
-      .extend({ evidenceIds: z.array(idSchema) }),
-  ),
-});
+const llmModel = z.object(llmExplanationSchema.shape);
 const explanationModel = z
   .object(explanationStateSchema.shape)
   .extend({ error: errorModel.nullable(), lastSuccess: llmModel.nullable() });

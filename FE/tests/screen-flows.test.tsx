@@ -55,7 +55,7 @@ import {
   useListTasksQuery,
 } from "@/features/tasks/hooks/use-tasks-queries";
 import type { TaskQuery } from "@/features/tasks/types/tasks.types";
-import { dateTime } from "@/lib/format";
+import { dateTime, metricValue } from "@/lib/format";
 import { Session } from "@/lib/auth/session-context";
 import { db } from "@/mocks/db";
 import { resetMockState, server } from "@/mocks/node";
@@ -2562,6 +2562,83 @@ it("opens an analysis once under StrictMode, keeps metrics while waiting, then r
     server.events.removeListener("request:start", observe);
   }
 }, 10000);
+it("keeps the template summary apart from AI text, shows cited values and evidence, and marks a kept explanation after a failed rerun", async () => {
+  const session = await login("minh");
+  const risks = await analyticsService.getDeadlineRisks({
+    projectId: "p-main",
+    from: "2026-10-01",
+    to: "2026-10-23",
+  });
+  const id = risks.items[0]!.analysisRef.analysisId;
+  const stored = db.details.get(id)!;
+  const metric = stored.snapshot.metrics[0]!;
+  const evidence = stored.snapshot.evidence[0]!;
+  stored.explanation = {
+    status: "FAILED",
+    activeJobId: null,
+    error: {
+      code: "PROVIDER_UNAVAILABLE",
+      message: "Dịch vụ AI tạm thời không phản hồi.",
+      retryable: true,
+      retryAfterSeconds: null,
+    },
+    lastSuccess: {
+      analysisId: id,
+      snapshotId: stored.snapshot.id,
+      generatedAt: "2026-10-23T02:00:00.000Z",
+      modelDisplayName: "AI mô phỏng",
+      summary: "Tóm tắt do AI viết.",
+      findings: [
+        {
+          id: "finding-1",
+          title: "Nhận định về hạn",
+          text: "Công việc cần được theo dõi sát.",
+          metricIds: [metric.id],
+          evidenceIds: [evidence.id],
+        },
+      ],
+      recommendations: [
+        {
+          id: "recommendation-1",
+          title: "Rà soát kế hoạch",
+          text: "Trao đổi với người thực hiện.",
+          evidenceIds: [evidence.id],
+          action: null,
+        },
+      ],
+      limitations: ["Cần đối chiếu với báo cáo thực tế."],
+    },
+  };
+  show(<AnalysisDetailPage analysisId={id} />, session);
+  const template = await screen.findByRole("region", {
+    name: "Tổng hợp theo số liệu",
+  });
+  expect(within(template).getByText(stored.systemSummary)).toBeTruthy();
+  const ai = screen.getByRole("region", { name: "Nhận định và đề xuất AI" });
+  expect(within(ai).queryByText(stored.systemSummary)).toBeNull();
+  expect(
+    within(ai).getByText("Dịch vụ AI tạm thời không phản hồi."),
+  ).toBeTruthy();
+  expect(
+    within(ai).getByText(/Đang hiển thị lời diễn giải trước đó/),
+  ).toBeTruthy();
+  expect(
+    within(ai).getByText(/Lượt phân tích lại chưa thành công/),
+  ).toBeTruthy();
+  const chips = within(ai).getByRole("list", { name: "Chỉ số được trích dẫn" });
+  const chip = within(chips).getByRole("link");
+  expect(chip.getAttribute("href")).toBe(`#metric-${metric.id}`);
+  expect(chip.textContent).toContain(metric.label);
+  expect(chip.textContent).toContain(metricValue(metric.value, metric.unit));
+  const recommendation = within(ai)
+    .getByRole("heading", { name: "Rà soát kế hoạch" })
+    .closest("div")!;
+  expect(
+    within(recommendation)
+      .getByRole("link", { name: "Căn cứ 1" })
+      .getAttribute("href"),
+  ).toBe(`#evidence-${evidence.id}`);
+});
 it("preserves report input on validation failure and saves then submits a zero-hour report", async () => {
   const session = await login("lan");
   const draft = await reportsService.createReportDraft(

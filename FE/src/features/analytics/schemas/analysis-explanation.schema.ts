@@ -19,6 +19,7 @@ export const recommendationSchema = z.object({
   id: idSchema,
   title: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
   text: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(2000),
+  evidenceIds: z.array(idSchema),
   action: domainActionSchema.nullable(),
 });
 export const llmExplanationSchema = z.object({

@@ -68,6 +68,12 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
     return <QueryErrorState error={query.error} retry={query.refetch} />;
   if (!detail) return <PageSkeleton />;
   const { snapshot, explanation } = detail;
+  const lastSuccess = explanation.lastSuccess;
+  const running = ["QUEUED", "RUNNING"].includes(explanation.status);
+  const waiting =
+    running ||
+    create.isPending ||
+    (explanation.status === "NOT_REQUESTED" && detail.generation.allowed);
   return (
     <>
       <PageHeader
@@ -117,93 +123,112 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
       <div className="grid items-start gap-5 @min-[56.25rem]/page:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <AnalysisSources snapshot={snapshot} />
         <div className="grid min-w-0 gap-5">
+          <Panel title="Tổng hợp theo số liệu">
+            <p className="m-0 text-sm leading-relaxed whitespace-pre-wrap text-fg">
+              {detail.systemSummary}
+            </p>
+          </Panel>
           <Panel
             title="Nhận định và đề xuất AI"
             actions={
               <div className="flex items-center gap-2">
-                {explanation.lastSuccess && (
+                {lastSuccess && (
                   <span className="text-xs text-fg-subtle">
-                    {explanation.lastSuccess.modelDisplayName}
+                    {lastSuccess.modelDisplayName}
                   </span>
                 )}
                 <StatusLozenge value={explanation.status} />
               </div>
             }
           >
-            {startError && (
-              <QueryErrorState
-                error={startError}
-                retry={() => {
-                  setStartError(null);
-                  return create
-                    .mutateAsync({
-                      analysisId,
-                      generationMode: "REUSE_OR_CREATE",
-                    })
-                    .then((job) => setJobId(job.id))
-                    .catch(setStartError);
-                }}
-              />
-            )}
-            {create.isPending && (
-              <p
-                role="status"
-                className="m-0 inline-flex items-center gap-2 text-sm"
-              >
-                <Spinner />
-                Đang tiếp nhận yêu cầu diễn giải…
-              </p>
-            )}
-            {["QUEUED", "RUNNING"].includes(explanation.status) && (
-              <p
-                role="status"
-                className="m-0 inline-flex items-center gap-2 text-sm"
-              >
-                <Spinner />
-                Đang phân tích…
-              </p>
-            )}
-            {(detail.explanation.activeJobId ?? jobId) && (
-              <p>
-                <Link
-                  className="font-medium text-selected-fg underline-offset-2 hover:underline"
-                  href={`/analytics/jobs/${detail.explanation.activeJobId ?? jobId}`}
+            <div className="grid gap-3">
+              {startError && (
+                <QueryErrorState
+                  error={startError}
+                  retry={() => {
+                    setStartError(null);
+                    return create
+                      .mutateAsync({
+                        analysisId,
+                        generationMode: "REUSE_OR_CREATE",
+                      })
+                      .then((job) => setJobId(job.id))
+                      .catch(setStartError);
+                  }}
+                />
+              )}
+              {create.isPending && (
+                <p
+                  role="status"
+                  className="m-0 inline-flex items-center gap-2 text-sm"
                 >
-                  Xem tiến trình phân tích
-                </Link>
-              </p>
-            )}
-            {tracking.paused && (
-              <Notice
-                tone="warning"
-                actions={
-                  <Button onClick={tracking.resume}>Tiếp tục kiểm tra</Button>
-                }
-              >
-                Phân tích đang mất nhiều thời gian hơn dự kiến.
-              </Notice>
-            )}
-            {tracking.query.isError && (
-              <QueryErrorState
-                error={tracking.query.error}
-                retry={tracking.resume}
-              />
-            )}
-            {explanation.error && (
-              <Notice tone="danger">
-                {explanation.error.message}
-                {explanation.error.retryAfterSeconds
-                  ? ` Có thể thử lại sau ${explanation.error.retryAfterSeconds} giây.`
-                  : ""}
-              </Notice>
-            )}
-            <AnalysisExplanation
-              snapshot={snapshot}
-              value={explanation.lastSuccess}
-            />
-            {!explanation.lastSuccess && (
-              <p className="whitespace-pre-wrap">{detail.systemSummary}</p>
-            )}
+                  <Spinner />
+                  Đang tiếp nhận yêu cầu diễn giải…
+                </p>
+              )}
+              {running && (
+                <p
+                  role="status"
+                  className="m-0 inline-flex items-center gap-2 text-sm"
+                >
+                  <Spinner />
+                  {lastSuccess ? "Đang phân tích lại…" : "Đang phân tích…"}
+                </p>
+              )}
+              {(detail.explanation.activeJobId ?? jobId) && (
+                <p className="m-0">
+                  <Link
+                    className="font-medium text-selected-fg underline-offset-2 hover:underline"
+                    href={`/analytics/jobs/${detail.explanation.activeJobId ?? jobId}`}
+                  >
+                    Xem tiến trình phân tích
+                  </Link>
+                </p>
+              )}
+              {tracking.paused && (
+                <Notice
+                  tone="warning"
+                  actions={
+                    <Button onClick={tracking.resume}>Tiếp tục kiểm tra</Button>
+                  }
+                >
+                  Phân tích đang mất nhiều thời gian hơn dự kiến.
+                </Notice>
+              )}
+              {tracking.query.isError && (
+                <QueryErrorState
+                  error={tracking.query.error}
+                  retry={tracking.resume}
+                />
+              )}
+              {explanation.error && (
+                <Notice tone="danger">
+                  {explanation.error.message}
+                  {explanation.error.retryAfterSeconds
+                    ? ` Có thể thử lại sau ${explanation.error.retryAfterSeconds} giây.`
+                    : ""}
+                </Notice>
+              )}
+              {lastSuccess && (running || explanation.status === "FAILED") && (
+                <Notice tone="info" role="status">
+                  Đang hiển thị lời diễn giải trước đó, tạo lúc{" "}
+                  {dateTime(lastSuccess.generatedAt)}
+                  {explanation.status === "FAILED"
+                    ? ". Lượt phân tích lại chưa thành công."
+                    : ". Nội dung sẽ được thay khi lượt phân tích lại hoàn tất."}
+                </Notice>
+              )}
+              <AnalysisExplanation snapshot={snapshot} value={lastSuccess} />
+              {!lastSuccess &&
+                !waiting &&
+                !explanation.error &&
+                !startError && (
+                  <p className="m-0 text-sm text-fg-subtle">
+                    Chưa có lời diễn giải AI cho bản dữ liệu này. Phần Tổng hợp
+                    theo số liệu vẫn phản ánh đúng các chỉ số bên cạnh.
+                  </p>
+                )}
+            </div>
           </Panel>
           {snapshot.analysisType === "BOTTLENECK" && (
             <FeedbackPanel value={detail} />

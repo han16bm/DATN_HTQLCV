@@ -90,6 +90,59 @@ namespace Shared.Entities.Migrations
                     b.ToTable("Alerts");
                 });
 
+            modelBuilder.Entity("Shared.Entities.Entities.AnalysisExplanationRating", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("AnalysisId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("AnalysisType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExplanationGeneratedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Helpful")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ModelDisplayName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("PromptVersion")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ModelDisplayName", "PromptVersion");
+
+                    b.HasIndex("AnalysisId", "ActorId", "ExplanationGeneratedAt")
+                        .IsUnique();
+
+                    b.ToTable("AnalysisExplanationRatings");
+                });
+
             modelBuilder.Entity("Shared.Entities.Entities.AnalysisFeedback", b =>
                 {
                     b.Property<string>("Id")

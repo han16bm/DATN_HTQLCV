@@ -37,6 +37,7 @@ export const analysisSnapshotSchema = z.object({
   title: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
   scope: analyticsQuerySchema.pick({ from: true, to: true }).strip(),
   dataAsOf: z.iso.datetime(),
+  expiresAt: z.iso.datetime(),
   quality: qualitySchema,
   metrics: z.array(measureSchema),
   context: z.array(contextItemSchema),

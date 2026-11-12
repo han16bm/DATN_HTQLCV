@@ -170,6 +170,40 @@ public class AnalysisService(
         return new FeedbackDto(item.Verdict, item.Comment, await PersonAsync(item.ActorId), item.CreatedAt);
     }
 
+    // Mỗi người một đánh giá cho mỗi lời diễn giải (khóa theo thời điểm sinh); gửi lại thì đổi ý.
+    public async Task<ExplanationRatingDto> RateExplanationAsync(string analysisId, RateExplanationRequest request)
+    {
+        var (snapshot, _) = await RequireAsync(analysisId);
+        var explanation = LlmExplanation(snapshot)
+            ?? throw new AppException("Bản phân tích chưa có lời diễn giải AI để đánh giá.", ErrorCodes.Conflict)
+            { Code = "RATING_NOT_ALLOWED" };
+        var viewerId = ViewerId;
+        var generatedAt = RatingKey(explanation.GeneratedAt);
+        var now = DateTime.UtcNow;
+        var item = await context.AnalysisExplanationRatings.FirstOrDefaultAsync(r =>
+            r.AnalysisId == snapshot.Id && r.ActorId == viewerId && r.ExplanationGeneratedAt == generatedAt);
+        if (item is null)
+        {
+            item = new AnalysisExplanationRating
+            {
+                Id = GuidGenerator.NewId(),
+                AnalysisId = snapshot.Id,
+                AnalysisType = snapshot.AnalysisType,
+                ExplanationGeneratedAt = generatedAt,
+                ModelDisplayName = explanation.ModelDisplayName,
+                PromptVersion = explanation.PromptVersion,
+                ActorId = viewerId,
+                CreatedAt = now
+            };
+            context.AnalysisExplanationRatings.Add(item);
+        }
+
+        item.Helpful = request.Helpful!.Value;
+        item.UpdatedAt = now;
+        await context.SaveChangesAsync();
+        return new ExplanationRatingDto(item.Helpful, item.UpdatedAt);
+    }
+
     // Người xem phải có quyền phân tích ở mọi dự án trong phạm vi bản chụp (bản không gắn dự án: chỉ người xem toàn hệ thống).
     private async Task<(AnalysisSnapshot Snapshot, ProjectAccess Access)> RequireAsync(string analysisId)
     {
@@ -204,11 +238,21 @@ public class AnalysisService(
             .OrderByDescending(f => f.CreatedAt).FirstOrDefaultAsync();
         var hasData = !(payload.Metrics.Count > 0 && payload.Metrics.All(m => m.Value is null));
         var generation = await GenerationPolicyAsync(snapshot, outdated, hasData, error);
+        bool? myRating = null;
+        if (explanation is not null)
+        {
+            var viewerId = ViewerId;
+            var generatedAt = RatingKey(explanation.GeneratedAt);
+            myRating = await context.AnalysisExplanationRatings.AsNoTracking()
+                .Where(r => r.AnalysisId == snapshot.Id && r.ActorId == viewerId && r.ExplanationGeneratedAt == generatedAt)
+                .Select(r => (bool?)r.Helpful)
+                .FirstOrDefaultAsync();
+        }
 
         return new AnalysisDetailDto(
             new AnalysisSnapshotDto(snapshot.SnapshotId, snapshot.Id, snapshot.AnalysisType, snapshot.Title, payload.Subject,
                 new AnalysisScopeDto(scope.From, scope.To), snapshot.CreatedAt, payload.Quality, payload.Metrics, payload.Context,
-                payload.Series, payload.Evidence),
+                payload.Series, payload.Evidence, snapshot.ExpiresAt),
             new FreshnessDto(outdated ? "OUTDATED" : "CURRENT", outdated ? latest : null),
             new ExplanationStateDto(
                 isLegacyExplanation ? "NOT_REQUESTED" : snapshot.ExplanationStatus,
@@ -220,7 +264,8 @@ public class AnalysisService(
             new FeedbackStateDto(
                 feedback is null ? null : new FeedbackDto(feedback.Verdict, feedback.Comment, await PersonAsync(feedback.ActorId), feedback.CreatedAt),
                 !outdated && snapshot.AnalysisType == "BOTTLENECK"
-                    && snapshot.ProjectIds.All(p => access.Has(p, PermissionFeatures.AlertsManage))));
+                    && snapshot.ProjectIds.All(p => access.Has(p, PermissionFeatures.AlertsManage))),
+            new ExplanationRatingStateDto(myRating, explanation is not null));
     }
 
     // Thứ tự ưu tiên lý do chặn: bản cũ → thiếu dữ liệu → đang chạy → chưa cấu hình LLM → còn trong thời gian chờ sau 429.
@@ -309,6 +354,21 @@ public class AnalysisService(
 
     private static SnapshotPayload Payload(AnalysisSnapshot snapshot) =>
         JsonSerializer.Deserialize<SnapshotPayload>(snapshot.PayloadJson, Json)!;
+
+    private static ExplanationDto? LlmExplanation(AnalysisSnapshot snapshot)
+    {
+        if (snapshot.ExplanationJson is null)
+            return null;
+        var explanation = JsonSerializer.Deserialize<ExplanationDto>(snapshot.ExplanationJson, Json);
+        return explanation?.ModelDisplayName == "Diễn giải tự động theo quy tắc" ? null : explanation;
+    }
+
+    // PostgreSQL lưu timestamp tới micro giây: cắt cùng độ chính xác để tra lại đúng bản ghi.
+    private static DateTime RatingKey(DateTime generatedAt)
+    {
+        var utc = generatedAt.ToUniversalTime();
+        return new DateTime(utc.Ticks - utc.Ticks % 10, DateTimeKind.Utc);
+    }
 
     private static bool HasLlmExplanation(AnalysisSnapshot snapshot)
     {

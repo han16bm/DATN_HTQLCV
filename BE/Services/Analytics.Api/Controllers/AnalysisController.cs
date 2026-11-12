@@ -32,6 +32,12 @@ public class AnalysisController(ILogger<BaseApiController> logger, IAnalysisServ
         return StatusCode(StatusCodes.Status201Created, await service.CreateFeedbackAsync(analysisId, request));
     }
 
+    [HttpPut("details/{analysisId}/explanation-rating")]
+    public async Task<object> RateExplanation(string analysisId, [FromBody] RateExplanationRequest request)
+    {
+        return await service.RateExplanationAsync(analysisId, request);
+    }
+
     [HttpPost("jobs")]
     public async Task<IActionResult> CreateJob([FromBody] CreateAnalysisJobRequest request)
     {

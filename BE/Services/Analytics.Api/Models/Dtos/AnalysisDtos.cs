@@ -50,7 +50,8 @@ public record AnalysisSnapshotDto(
     List<MeasureDto> Metrics,
     List<ContextItemDto> Context,
     List<SeriesDto> Series,
-    List<EvidenceDto> Evidence);
+    List<EvidenceDto> Evidence,
+    DateTime? ExpiresAt = null);
 
 /// <summary>Code: LLM_NOT_CONFIGURED | PROVIDER_TIMEOUT | PROVIDER_RATE_LIMIT | PROVIDER_UNAVAILABLE | OUTPUT_INVALID | REFUSED | INSUFFICIENT_DATA | ACCESS_REVOKED | SNAPSHOT_EXPIRED; null với lỗi lưu trước khi có mã.</summary>
 public record JobErrorDto(string? Code, string Message, bool Retryable, int? RetryAfterSeconds);
@@ -82,13 +83,19 @@ public record FeedbackDto(string Verdict, string Comment, PersonRefDto Actor, Da
 
 public record FeedbackStateDto(FeedbackDto? Latest, bool CanSubmit);
 
+/// <summary>Đánh giá của chính người xem cho lời diễn giải AI hiện có; CanSubmit khi đã có lời diễn giải.</summary>
+public record ExplanationRatingStateDto(bool? Mine, bool CanSubmit);
+
+public record ExplanationRatingDto(bool Helpful, DateTime RatedAt);
+
 public record AnalysisDetailDto(
     AnalysisSnapshotDto Snapshot,
     FreshnessDto Freshness,
     ExplanationStateDto Explanation,
     GenerationPolicyDto Generation,
     string SystemSummary,
-    FeedbackStateDto Feedback);
+    FeedbackStateDto Feedback,
+    ExplanationRatingStateDto ExplanationRating);
 
 public record AnalysisJobDto(string Id, string AnalysisId, string Status, DateTime CreatedAt, DateTime? CompletedAt, int PollAfterMs, JobErrorDto? Error);
 
@@ -113,6 +120,12 @@ public record CreateAnalysisJobRequest
 
     [RegularExpression("^vi-VN$", ErrorMessage = "Ngôn ngữ chưa được hỗ trợ.")]
     public string? Locale { get; init; }
+}
+
+public record RateExplanationRequest
+{
+    [Required(ErrorMessage = "Vui lòng chọn đánh giá.")]
+    public bool? Helpful { get; init; }
 }
 
 public record CreateAnalysisFeedbackRequest

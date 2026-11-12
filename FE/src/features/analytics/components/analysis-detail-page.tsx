@@ -16,7 +16,9 @@ import { useCreateAnalysisJobMutation } from "../hooks/use-analytics-mutations";
 import { useGetAnalysisDetailQuery } from "../hooks/use-analytics-queries";
 import { AnalysisExplanation } from "./analysis-explanation";
 import { FeedbackPanel } from "./analysis-feedback-panel";
+import { ExplanationRating } from "./analysis-explanation-rating";
 import { AnalysisSources } from "./analysis-sources";
+import { AnalysisTechnicalInfo } from "./analysis-technical-info";
 const typeLabel: Record<string, string> = {
   RISK: "Nguy cơ trễ hạn",
   WORKLOAD: "Khối lượng công việc",
@@ -249,6 +251,7 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
                 </Notice>
               )}
               <AnalysisExplanation snapshot={snapshot} value={lastSuccess} />
+              <ExplanationRating value={detail} />
               {!lastSuccess &&
                 !waiting &&
                 !explanation.error &&
@@ -259,6 +262,7 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
                     theo số liệu vẫn phản ánh đúng các chỉ số bên cạnh.
                   </p>
                 )}
+              <AnalysisTechnicalInfo value={detail} />
             </div>
           </Panel>
           {snapshot.analysisType === "BOTTLENECK" && (

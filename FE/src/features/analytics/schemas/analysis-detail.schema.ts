@@ -3,6 +3,7 @@ import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 import { explanationStateSchema } from "./analysis-explanation.schema";
 import { feedbackSchema } from "./analysis-feedback.schema";
+import { explanationRatingStateSchema } from "./analysis-rating.schema";
 import { analysisSnapshotSchema } from "./analysis-snapshot.schema";
 const freshnessSchema = z.object({
   status: z.enum(["CURRENT", "OUTDATED"]),
@@ -36,5 +37,6 @@ export const analysisSchema = z
       latest: feedbackSchema.nullable(),
       canSubmit: z.boolean(),
     }),
+    explanationRating: explanationRatingStateSchema,
   })
   .superRefine(checkAnalysisDetail);

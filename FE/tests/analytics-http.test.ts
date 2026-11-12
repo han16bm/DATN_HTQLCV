@@ -410,6 +410,48 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
       ),
     ).rejects.toMatchObject({ status: 409 });
   });
+  it("rates only an existing explanation, keeps one changeable rating per viewer and resets it after regeneration", async () => {
+    await login();
+    const a = await analyticsService.getDashboard(scope);
+    const id = a.overviewRef.analysisId;
+    const before = await analyticsService.getAnalysisDetail(id);
+    expect(before.explanationRating).toEqual({ mine: null, canSubmit: false });
+    expect(Date.parse(before.snapshot.expiresAt)).toBeGreaterThan(
+      Date.parse(before.snapshot.dataAsOf),
+    );
+    await expect(
+      analyticsService.rateAnalysisExplanation(
+        id,
+        { helpful: true },
+        { key: "too-early" },
+      ),
+    ).rejects.toMatchObject({ status: 409 });
+    await analyticsService.createAnalysisJob(
+      { analysisId: id },
+      { key: "rate-job" },
+    );
+    await waitJob();
+    await analyticsService.rateAnalysisExplanation(
+      id,
+      { helpful: true },
+      { key: "rate-1" },
+    );
+    await analyticsService.rateAnalysisExplanation(
+      id,
+      { helpful: false },
+      { key: "rate-2" },
+    );
+    expect(db.ratings).toHaveLength(1);
+    expect(
+      (await analyticsService.getAnalysisDetail(id)).explanationRating,
+    ).toEqual({ mine: false, canSubmit: true });
+    expect(db.details.get(id)).not.toHaveProperty("explanationRating");
+    db.details.get(id)!.explanation.lastSuccess!.generatedAt =
+      "2026-10-24T00:00:00.000Z";
+    expect(
+      (await analyticsService.getAnalysisDetail(id)).explanationRating.mine,
+    ).toBeNull();
+  });
   it("denies old analysis/job access after project role loss and expires snapshots", async () => {
     await login();
     const a = await analyticsService.getDashboard(scope);

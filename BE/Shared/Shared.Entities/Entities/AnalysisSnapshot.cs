@@ -40,6 +40,24 @@ public class AnalysisJob
     public string? ErrorJson { get; set; }
 }
 
+/// <summary>
+/// Đánh giá hữu ích/không hữu ích của một người cho đúng một lời diễn giải AI (theo ExplanationGeneratedAt).
+/// Không xóa cùng bản chụp: giữ lâu dài để so sánh chất lượng theo model/promptVersion/loại phân tích.
+/// </summary>
+public class AnalysisExplanationRating
+{
+    public string Id { get; set; } = null!;
+    public string AnalysisId { get; set; } = null!;
+    public string AnalysisType { get; set; } = null!;
+    public DateTime ExplanationGeneratedAt { get; set; }
+    public string ModelDisplayName { get; set; } = null!;
+    public string PromptVersion { get; set; } = null!;
+    public string ActorId { get; set; } = null!;
+    public bool Helpful { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
 public class AnalysisFeedback
 {
     public string Id { get; set; } = null!;

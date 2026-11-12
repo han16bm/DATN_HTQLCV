@@ -14,6 +14,18 @@ import { useRouter } from "next/navigation";
 import { useAnalysisTracking } from "../hooks/use-analysis-tracking";
 import { useCreateAnalysisJobMutation } from "../hooks/use-analytics-mutations";
 import { useGetAnalysisDetailQuery } from "../hooks/use-analytics-queries";
+function duration(from: string, to: string | null) {
+  if (!to) return "Đang xử lý";
+  const seconds = Math.max(
+    0,
+    Math.round((Date.parse(to) - Date.parse(from)) / 1000),
+  );
+  const minutes = Math.floor(seconds / 60);
+  return minutes > 0
+    ? `${minutes} phút ${seconds % 60} giây`
+    : `${seconds} giây`;
+}
+
 export function AnalysisJobPage({ jobId }: { jobId: string }) {
   return <JobContent key={jobId} jobId={jobId} />;
 }
@@ -50,13 +62,25 @@ function JobContent({ jobId }: { jobId: string }) {
         <KeyValueList>
           <KeyValue label="Tiếp nhận lúc">{dateTime(job.createdAt)}</KeyValue>
           <KeyValue label="Kết thúc lúc">{dateTime(job.completedAt)}</KeyValue>
+          <KeyValue label="Thời gian xử lý">
+            {duration(job.createdAt, job.completedAt)}
+          </KeyValue>
           <KeyValue label="Kỳ và mốc dữ liệu">
             {detail.data?.snapshot.scope.from} –{" "}
             {detail.data?.snapshot.scope.to} ·{" "}
             {dateTime(detail.data?.snapshot.dataAsOf)}
           </KeyValue>
         </KeyValueList>
-        {job.error && <Notice tone="danger">{job.error.message}</Notice>}
+        {job.error && (
+          <Notice tone="danger">
+            {job.error.message}
+            {job.error.code && (
+              <span className="mt-1 block text-xs text-fg-subtle">
+                Mã lỗi: <code>{job.error.code}</code>
+              </span>
+            )}
+          </Notice>
+        )}
         {tracking.paused && (
           <Notice
             tone="warning"

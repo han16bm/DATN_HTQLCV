@@ -34,6 +34,7 @@ import type {
   DashboardDto,
   EvidenceDto,
   FeedbackDto,
+  ExplanationRatingInput,
   FeedbackInput,
   FilterOptionsQuery,
   JobDto,
@@ -363,9 +364,16 @@ type Measure = z.output<typeof measureModel>;
 type AnalysisError = z.output<typeof errorModel>;
 type Job = Omit<JobDto, "error"> & { error: AnalysisError | null };
 type Feedback = FeedbackDto & { analysisId: string };
+type Rating = {
+  analysisId: string;
+  actorId: string;
+  generatedAt: string;
+  helpful: boolean;
+  ratedAt: string;
+};
 const analysisModel = z
   .object(analysisSchema.shape)
-  .omit({ freshness: true, feedback: true })
+  .omit({ freshness: true, feedback: true, explanationRating: true })
   .extend({
     snapshot: snapshotModel,
     explanation: explanationModel,
@@ -480,6 +488,7 @@ function createDatabase() {
     snapshotProjects: new Map<string, string[]>(),
     jobs: new Map<string, Job>(),
     feedback: [] as Feedback[],
+    ratings: [] as Rating[],
     outbox: [] as {
       id: string;
       eventId: string;
@@ -5108,6 +5117,16 @@ function detailDTO(actor: User, id: string): AnalysisDto {
         s.analysisType === "BOTTLENECK" &&
         analysisProjectIds(id).every((p) => can(actor, "ALERTS_MANAGE", p)),
     },
+    explanationRating: {
+      mine:
+        db.ratings.find(
+          (r) =>
+            r.analysisId === id &&
+            r.actorId === actor.id &&
+            r.generatedAt === original.explanation.lastSuccess?.generatedAt,
+        )?.helpful ?? null,
+      canSubmit: original.explanation.lastSuccess !== null,
+    },
   };
   const blockedReason = outdated
     ? "SNAPSHOT_OUTDATED"
@@ -5285,6 +5304,37 @@ function createJob(
     }
   }, 1500);
   return job;
+}
+function rateExplanation(
+  actor: User,
+  id: string,
+  body: ExplanationRatingInput,
+) {
+  const generatedAt = requireAnalysis(actor, id).explanation.lastSuccess
+    ?.generatedAt;
+  if (!generatedAt)
+    throw new ApiError(
+      409,
+      "RATING_NOT_ALLOWED",
+      "Bản phân tích chưa có lời diễn giải AI để đánh giá.",
+    );
+  const existing = db.ratings.find(
+    (r) =>
+      r.analysisId === id &&
+      r.actorId === actor.id &&
+      r.generatedAt === generatedAt,
+  );
+  const item = existing ?? {
+    analysisId: id,
+    actorId: actor.id,
+    generatedAt,
+    helpful: body.helpful,
+    ratedAt: now(),
+  };
+  item.helpful = body.helpful;
+  item.ratedAt = now();
+  if (!existing) db.ratings.push(item);
+  return { helpful: item.helpful, ratedAt: item.ratedAt };
 }
 function feedback(actor: User, id: string, body: FeedbackInput) {
   const detail = detailDTO(actor, id);
@@ -5501,6 +5551,7 @@ export const analyticsDb = {
   },
   getAnalysisDetail: detailDTO,
   createAnalysisFeedback: feedback,
+  rateAnalysisExplanation: rateExplanation,
   listAnalyticsFilterOptions(viewer: User, query: FilterOptionsQuery) {
     const projects = db.projects.filter(
       (p) =>

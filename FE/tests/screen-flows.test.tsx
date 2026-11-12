@@ -17,6 +17,7 @@ import { TeamsPage } from "@/features/organization/components/teams-page";
 import { ProfilePage } from "@/features/auth/components/profile-page";
 import { analyticsService } from "@/features/analytics/api/analytics.service";
 import { AnalysisDetailPage } from "@/features/analytics/components/analysis-detail-page";
+import { AnalysisJobPage } from "@/features/analytics/components/analysis-job-page";
 import { RisksPage } from "@/features/analytics/components/risks-page";
 import { EvidenceUploader } from "@/features/attachments/components/evidence";
 import { authService } from "@/features/auth/api/auth.service";
@@ -2683,6 +2684,42 @@ it("does not request an explanation when the BE blocks generation, explains why 
     server.events.removeListener("request:start", observe);
   }
 });
+it("lets a viewer rate the explanation, shows technical info and the job processing time", async () => {
+  const session = await login("minh");
+  const dash = await analyticsService.getDashboard({
+    projectId: "p-main",
+    from: "2026-10-01",
+    to: "2026-10-23",
+  });
+  const id = dash.overviewRef.analysisId;
+  const job = await analyticsService.createAnalysisJob(
+    { analysisId: id },
+    { key: "screen-rate" },
+  );
+  await new Promise((resolve) => setTimeout(resolve, 1650));
+  const user = userEvent.setup();
+  show(<AnalysisDetailPage analysisId={id} />, session);
+  const group = await screen.findByRole("group", {
+    name: "Đánh giá lời diễn giải AI",
+  });
+  const helpful = within(group).getByRole("button", { name: "Hữu ích" });
+  expect(helpful.getAttribute("aria-pressed")).not.toBe("true");
+  await user.click(helpful);
+  await waitFor(() =>
+    expect(
+      within(group)
+        .getByRole("button", { name: "Hữu ích" })
+        .getAttribute("aria-pressed"),
+    ).toBe("true"),
+  );
+  expect(db.ratings).toMatchObject([{ analysisId: id, helpful: true }]);
+  expect(screen.getByText("Bản phân tích lưu đến")).toBeTruthy();
+  expect(screen.getByText("Phiên bản prompt")).toBeTruthy();
+  cleanup();
+  show(<AnalysisJobPage jobId={job.id} />, session);
+  await screen.findByText("Thời gian xử lý");
+  expect(screen.getByText(/^\d+ giây$/)).toBeTruthy();
+}, 10000);
 it("preserves report input on validation failure and saves then submits a zero-hour report", async () => {
   const session = await login("lan");
   const draft = await reportsService.createReportDraft(

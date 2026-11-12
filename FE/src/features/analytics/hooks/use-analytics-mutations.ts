@@ -8,6 +8,7 @@ import { analyticsKeys } from "../api/analytics.keys";
 import { analyticsService } from "../api/analytics.service";
 import {
   type CreateJobInput,
+  type ExplanationRatingArgs,
   type FeedbackArgs,
 } from "../types/analytics.types";
 
@@ -54,6 +55,30 @@ export function useCreateAnalysisFeedbackMutation() {
     onSuccess: async () => {
       await client.invalidateQueries({
         queryKey: analyticsKeys.viewer(viewerId),
+      });
+    },
+  });
+}
+
+export function useRateAnalysisExplanationMutation() {
+  const client = useQueryClient();
+  const viewerId = useSession().session?.user.id;
+  const handleError = useAccessErrorHandler();
+  const run = useIdempotentRequest();
+  return useMutation({
+    mutationKey: [...analyticsKeys.viewer(viewerId), "rateAnalysisExplanation"],
+    mutationFn: (input: ExplanationRatingArgs) =>
+      run(input, (key) =>
+        analyticsService.rateAnalysisExplanation(
+          input.analysisId,
+          input.payload,
+          { key },
+        ),
+      ),
+    onError: handleError,
+    onSuccess: async (_, input) => {
+      await client.invalidateQueries({
+        queryKey: analyticsKeys.getAnalysisDetail(viewerId, input.analysisId),
       });
     },
   });

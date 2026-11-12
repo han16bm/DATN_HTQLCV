@@ -102,7 +102,9 @@ public sealed class AnalysisJobProcessor(
                 payload.Series,
                 payload.Evidence);
 
-            var explanation = await generator.GenerateAsync(snapshotDto, cancellationToken);
+            var explanation = jobEntity.Provider is not null && jobEntity.Model is not null
+                ? await generator.GenerateAsync(snapshotDto, new LlmTarget(jobEntity.Provider, jobEntity.Model), cancellationToken)
+                : await generator.GenerateAsync(snapshotDto, cancellationToken);
             snapshot.ExplanationJson = JsonSerializer.Serialize(explanation, Json);
             snapshot.ExplanationStatus = "READY";
             snapshot.ExplanationErrorJson = null;

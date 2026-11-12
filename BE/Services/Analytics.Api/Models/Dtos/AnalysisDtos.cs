@@ -97,7 +97,8 @@ public record AnalysisDetailDto(
     FeedbackStateDto Feedback,
     ExplanationRatingStateDto ExplanationRating);
 
-public record AnalysisJobDto(string Id, string AnalysisId, string Status, DateTime CreatedAt, DateTime? CompletedAt, int PollAfterMs, JobErrorDto? Error);
+public record AnalysisJobDto(string Id, string AnalysisId, string Status, DateTime CreatedAt, DateTime? CompletedAt, int PollAfterMs, JobErrorDto? Error,
+    string? Model, string? PromptVersion);
 
 public record SummaryMetricDto(string Label, decimal? Value, string Unit, string Formula);
 

@@ -62,6 +62,10 @@ function JobContent({ jobId }: { jobId: string }) {
         <KeyValueList>
           <KeyValue label="Tiếp nhận lúc">{dateTime(job.createdAt)}</KeyValue>
           <KeyValue label="Kết thúc lúc">{dateTime(job.completedAt)}</KeyValue>
+          {job.model && <KeyValue label="Mô hình AI">{job.model}</KeyValue>}
+          {job.promptVersion && (
+            <KeyValue label="Phiên bản prompt">{job.promptVersion}</KeyValue>
+          )}
           <KeyValue label="Thời gian xử lý">
             {duration(job.createdAt, job.completedAt)}
           </KeyValue>

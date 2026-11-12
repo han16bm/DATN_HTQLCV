@@ -5176,6 +5176,8 @@ function createJob(
       completedAt: now(),
       pollAfterMs: 0,
       error: null,
+      model: "AI mô phỏng",
+      promptVersion: null,
     };
     db.jobs.set(job.id, job);
     return job;
@@ -5188,6 +5190,8 @@ function createJob(
     completedAt: null,
     pollAfterMs: 2000,
     error: null,
+    model: "AI mô phỏng",
+    promptVersion: null,
   };
   db.jobs.set(job.id, job);
   detail.explanation.status = "QUEUED";

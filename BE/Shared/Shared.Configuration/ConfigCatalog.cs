@@ -108,7 +108,7 @@ public static class ConfigCatalog
             DataTypeString, "", Secret: true),
         new(AnthropicModel, AnalyticsApi, "AI", "Anthropic - mô hình Claude",
             "Model ID được gọi bởi Analytics.Api. Chỉ thay đổi nếu model có quyền truy cập trên tài khoản Anthropic.",
-            DataTypeString, "claude-sonnet-4-5-20250929")
+            DataTypeString, "claude-opus-5-5")
     ];
 
     // Secret và cấu hình hạ tầng không bao giờ được nằm trong DB (khác UD_CAUHINH của DVCLT)

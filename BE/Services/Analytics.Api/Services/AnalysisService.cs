@@ -63,11 +63,15 @@ public class AnalysisService(
         if (!detail.Generation.Allowed)
             throw new BusinessRuleException("Không thể yêu cầu diễn giải cho bản dữ liệu này.") { Code = "GENERATION_BLOCKED" };
 
+        var target = AnalysisExplanationGenerator.TryResolveTarget(configuration);
         var job = new AnalysisJob
         {
             Id = GuidGenerator.NewId(),
             AnalysisId = snapshot.Id,
             Status = "QUEUED",
+            Provider = target?.Provider,
+            Model = target?.Model,
+            PromptVersion = AnalysisExplanationGenerator.PromptVersion,
             CreatedBy = ViewerId,
             CreatedAt = DateTime.UtcNow
         };
@@ -385,5 +389,7 @@ public class AnalysisService(
 
     private static AnalysisJobDto ToDto(AnalysisJob job) => new(job.Id, job.AnalysisId, job.Status, job.CreatedAt, job.CompletedAt,
         job.Status is "QUEUED" or "RUNNING" ? 2000 : 0,
-        job.ErrorJson is null ? null : JsonSerializer.Deserialize<JobErrorDto>(job.ErrorJson, Json));
+        job.ErrorJson is null ? null : JsonSerializer.Deserialize<JobErrorDto>(job.ErrorJson, Json),
+        job.Model,
+        job.PromptVersion);
 }

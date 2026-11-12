@@ -34,6 +34,10 @@ public class AnalysisJob
     public string Id { get; set; } = null!;
     public string AnalysisId { get; set; } = null!;
     public string Status { get; set; } = null!; // QUEUED | RUNNING | SUCCEEDED | FAILED
+    /// <summary>Provider/model/prompt cố định lúc tạo job; null với job tạo trước khi có cột này.</summary>
+    public string? Provider { get; set; }
+    public string? Model { get; set; }
+    public string? PromptVersion { get; set; }
     public string CreatedBy { get; set; } = null!;
     public DateTime CreatedAt { get; set; }
     public DateTime? CompletedAt { get; set; }

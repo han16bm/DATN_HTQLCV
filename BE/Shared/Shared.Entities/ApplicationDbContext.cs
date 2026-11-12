@@ -196,6 +196,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.Status).HasMaxLength(20);
+            e.Property(x => x.Provider).HasMaxLength(20);
+            e.Property(x => x.Model).HasMaxLength(120);
+            e.Property(x => x.PromptVersion).HasMaxLength(100);
             e.HasIndex(x => x.AnalysisId);
         });
         modelBuilder.Entity<AnalysisFeedback>(e =>

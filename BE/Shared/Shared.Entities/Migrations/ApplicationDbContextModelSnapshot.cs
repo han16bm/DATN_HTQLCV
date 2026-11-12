@@ -198,6 +198,18 @@ namespace Shared.Entities.Migrations
                     b.Property<string>("ErrorJson")
                         .HasColumnType("text");
 
+                    b.Property<string>("Model")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("PromptVersion")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Provider")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -1429,7 +1441,7 @@ namespace Shared.Entities.Migrations
                             Name = "Anthropic - mô hình Claude",
                             ServiceType = "Analytics.Api",
                             UpdatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "claude-sonnet-4-5-20250929",
+                            Value = "claude-opus-5-5",
                             Version = 1
                         });
                 });

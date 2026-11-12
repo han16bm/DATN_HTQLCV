@@ -9,7 +9,10 @@ Cập nhật 05/11/2026: MVP dùng adapter có thể chọn Anthropic Claude ho�
 Sau khi áp migration `AddAnthropicLlmConfigs`, cấu hình tại **Admin → Cấu hình tập trung → Analytics.Api → AI**:
 
 - `Analytics:Anthropic:ApiKey`: nhập khóa trong cấu hình secret (BE mã hóa khi lưu, không trả giá trị lại).
-- `Analytics:Anthropic:Model`: model ID được tài khoản Anthropic cấp quyền; mặc định `claude-sonnet-4-5-20250929`.
+- `Analytics:Anthropic:Model`: model ID được tài khoản Anthropic cấp quyền; mặc định `claude-opus-5-5` (12/11/2026, thay `claude-sonnet-4-5-20250929` ngừng hoạt động 30/11/2026 và không hỗ trợ structured output). Migration `PinAnalysisJobModelAndUpdateClaudeDefault` chỉ đổi giá trị trong `SystemConfigs` khi còn là mặc định cũ. Muốn rẻ hơn có thể đặt `claude-sonnet-5-5`.
+- `Analytics:StructuredOutput` (tùy chọn, mặc định `true`): gửi JSON Schema của đầu ra cho provider (`output_config.format` với Anthropic kèm `effort: medium`; `response_format: json_schema` với Gemini). Đặt `false` nếu model đang cấu hình không hỗ trợ; BE vẫn kiểm tra đầu ra như trước.
+- Với `claude-opus-5-5`, `claude-opus-5`, `claude-sonnet-5-5`, `claude-fable-5-1/5-2`, BE gửi `fallbacks: "default"` (beta `server-side-fallback-2026-07-01`): khi bị bộ phân loại an toàn từ chối, Anthropic tự chạy lại trên model dự phòng; tên model hiển thị lấy theo model thực sự trả lời.
+- Mỗi job lưu `Provider`/`Model`/`PromptVersion` lúc tạo và worker chạy đúng cấu hình đó (đổi cấu hình sau khi tạo không ảnh hưởng job đang chờ). `promptVersion` hiện là `analytics-v2`.
 
 Secret được giải mã bằng `CentralConfig:SecretKey` hoặc `Jwt:SigningKey` theo `ConfigSecretBox`; phải giữ nguyên khóa mã hóa giữa các lần chạy. Nếu chưa cấu hình key, giao diện giữ nguyên số liệu và báo trạng thái LLM chưa khả dụng. Chưa thực hiện kiểm thử gọi provider thật; các kiểm thử hiện dùng HTTP handler giả.
 

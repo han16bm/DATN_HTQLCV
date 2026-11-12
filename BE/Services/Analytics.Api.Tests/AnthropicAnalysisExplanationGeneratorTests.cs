@@ -33,7 +33,7 @@ public sealed class AnalysisExplanationGeneratorTests
 
         Assert.Equal("analysis-server-id", explanation.AnalysisId);
         Assert.Equal("snapshot-server-id", explanation.SnapshotId);
-        Assert.Equal("analytics-v1", explanation.PromptVersion);
+        Assert.Equal("analytics-v2", explanation.PromptVersion);
         Assert.Equal("Anthropic Claude (claude-test-model)", explanation.ModelDisplayName);
         Assert.Equal("m-overdue", Assert.Single(Assert.Single(explanation.Findings).MetricIds));
         Assert.Equal("TASK_DETAIL", Assert.Single(explanation.Recommendations).Action?.Target);
@@ -138,12 +138,12 @@ public sealed class AnalysisExplanationGeneratorTests
         Assert.Equal("Có việc trễ hạn cần theo dõi.", explanation.Summary);
         Assert.Equal(2, bodies.Count);
         using var retry = System.Text.Json.JsonDocument.Parse(bodies[1]);
-        var turns = retry.RootElement.GetProperty("messages").EnumerateArray()
-            .Select(turn => (Role: turn.GetProperty("role").GetString(), Content: turn.GetProperty("content").GetString()!))
-            .ToList();
-        Assert.Equal(["user", "assistant", "user"], turns.Select(turn => turn.Role));
-        Assert.Contains("Có 3 việc trễ hạn.", turns[1].Content);
-        Assert.Contains("chữ số", turns[2].Content);
+        var turn = Assert.Single(retry.RootElement.GetProperty("messages").EnumerateArray());
+        Assert.Equal("user", turn.GetProperty("role").GetString());
+        var content = turn.GetProperty("content").GetString()!;
+        Assert.Contains("Có 3 việc trễ hạn.", content);
+        Assert.Contains("chữ số", content);
+        Assert.Contains("m-overdue", content);
         Assert.DoesNotContain("analysis-server-id", bodies[1]);
     }
 
@@ -188,6 +188,127 @@ public sealed class AnalysisExplanationGeneratorTests
         Assert.Equal("PROVIDER_RATE_LIMIT", exception.Code);
         Assert.Equal(1, calls);
     }
+
+    [Fact]
+    public async Task GenerateAsync_RequestsStructuredOutputAndServerFallbackOnTheDefaultClaudeModel()
+    {
+        HttpRequestMessage? captured = null;
+        string? body = null;
+        var client = CreateClient(async (request, _) =>
+        {
+            captured = request;
+            body = await request.Content!.ReadAsStringAsync();
+            return JsonResponse(ValidProviderResponse(ValidOutput, model: "claude-opus-4-8"));
+        });
+        var generator = CreateGenerator(client, new Dictionary<string, string?>
+        {
+            ["Analytics:Anthropic:ApiKey"] = "test-api-key"
+        });
+
+        var explanation = await generator.GenerateAsync(Snapshot(), CancellationToken.None);
+
+        using var json = System.Text.Json.JsonDocument.Parse(body!);
+        Assert.Equal("claude-opus-5-5", json.RootElement.GetProperty("model").GetString());
+        var format = json.RootElement.GetProperty("output_config").GetProperty("format");
+        Assert.Equal("json_schema", format.GetProperty("type").GetString());
+        Assert.False(format.GetProperty("schema").GetProperty("additionalProperties").GetBoolean());
+        Assert.Equal("default", json.RootElement.GetProperty("fallbacks").GetString());
+        Assert.Contains("server-side-fallback-2026-07-01", captured!.Headers.GetValues("anthropic-beta"));
+        Assert.Equal("Anthropic Claude (claude-opus-4-8)", explanation.ModelDisplayName);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_UsesThePinnedTargetAndCanTurnStructuredOutputOff()
+    {
+        string? body = null;
+        var client = CreateClient(async (request, _) =>
+        {
+            body = await request.Content!.ReadAsStringAsync();
+            return JsonResponse(ValidProviderResponse(ValidOutput));
+        });
+        var generator = CreateGenerator(client, new Dictionary<string, string?>
+        {
+            ["Analytics:Anthropic:ApiKey"] = "test-api-key",
+            ["Analytics:Anthropic:Model"] = "claude-current-config",
+            ["Analytics:StructuredOutput"] = "false"
+        });
+
+        await generator.GenerateAsync(Snapshot(), new LlmTarget("Anthropic", "claude-pinned-model"), CancellationToken.None);
+
+        using var json = System.Text.Json.JsonDocument.Parse(body!);
+        Assert.Equal("claude-pinned-model", json.RootElement.GetProperty("model").GetString());
+        Assert.False(json.RootElement.TryGetProperty("output_config", out _));
+        Assert.False(json.RootElement.TryGetProperty("fallbacks", out _));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_SendsAJsonSchemaResponseFormatToGemini()
+    {
+        string? body = null;
+        var client = CreateClient(async (request, _) =>
+        {
+            body = await request.Content!.ReadAsStringAsync();
+            return JsonResponse(System.Text.Json.JsonSerializer.Serialize(new
+            {
+                model = "gemini-test-model",
+                choices = new[] { new { message = new { content = ValidOutput }, finish_reason = "stop" } }
+            }));
+        });
+        var generator = CreateGenerator(client, new Dictionary<string, string?>
+        {
+            ["Analytics:Provider"] = "Gemini",
+            ["Analytics:Gemini:ApiKey"] = "test-gemini-key"
+        });
+
+        await generator.GenerateAsync(Snapshot(), CancellationToken.None);
+
+        using var json = System.Text.Json.JsonDocument.Parse(body!);
+        var format = json.RootElement.GetProperty("response_format");
+        Assert.Equal("json_schema", format.GetProperty("type").GetString());
+        Assert.Equal("analysis_explanation", format.GetProperty("json_schema").GetProperty("name").GetString());
+        Assert.False(json.RootElement.TryGetProperty("fallbacks", out _));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_DoesNotRepairATruncatedResponse()
+    {
+        var calls = 0;
+        var client = CreateClient((_, _) =>
+        {
+            calls++;
+            return Task.FromResult(JsonResponse(ValidProviderResponse("{\"summary\":\"Cần", stopReason: "max_tokens")));
+        });
+        var generator = CreateGenerator(client, new Dictionary<string, string?>
+        {
+            ["Analytics:Anthropic:ApiKey"] = "test-api-key"
+        });
+
+        var exception = await Assert.ThrowsAsync<AnalysisGenerationException>(
+            () => generator.GenerateAsync(Snapshot(), CancellationToken.None));
+
+        Assert.Equal("OUTPUT_INVALID", exception.Code);
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_ReportsARefusalFromTheStopReason()
+    {
+        var client = CreateClient((_, _) =>
+            Task.FromResult(JsonResponse(ValidProviderResponse(ValidOutput, stopReason: "refusal"))));
+        var generator = CreateGenerator(client, new Dictionary<string, string?>
+        {
+            ["Analytics:Anthropic:ApiKey"] = "test-api-key"
+        });
+
+        var exception = await Assert.ThrowsAsync<AnalysisGenerationException>(
+            () => generator.GenerateAsync(Snapshot(), CancellationToken.None));
+
+        Assert.Equal("REFUSED", exception.Code);
+    }
+
+    private const string ValidOutput = """
+        {"summary":"Cần theo dõi tiến độ.","findings":[{"title":"Có việc trễ hạn","text":"Căn cứ cho thấy nguy cơ cần theo dõi.","metricIds":["m-overdue"],"evidenceIds":["e-task"]}],"recommendations":[{"title":"Rà soát công việc","text":"Mở chi tiết để kiểm tra.","evidenceIds":["e-task"]}],"limitations":[]}
+        """;
 
     [Fact]
     public async Task GenerateAsync_FailsExplicitlyWhenApiKeyIsMissing()
@@ -243,16 +364,16 @@ public sealed class AnalysisExplanationGeneratorTests
         };
     }
 
-    private static string ValidProviderResponse(string text)
+    private static string ValidProviderResponse(string text, string? model = null, string stopReason = "end_turn")
     {
         return System.Text.Json.JsonSerializer.Serialize(new
         {
             id = "msg-test",
             type = "message",
             role = "assistant",
-            model = "claude-test-model",
+            model,
             content = new[] { new { type = "text", text } },
-            stop_reason = "end_turn",
+            stop_reason = stopReason,
             stop_sequence = (string?)null,
             usage = new { input_tokens = 1, output_tokens = 1 }
         });

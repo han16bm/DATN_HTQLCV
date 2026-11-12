@@ -38,5 +38,7 @@ export const jobSchema = z
     completedAt: z.iso.datetime().nullable(),
     pollAfterMs: z.number().int().safe().min(0).max(10000),
     error: jobErrorSchema.nullable(),
+    model: z.string().max(120).nullable().default(null),
+    promptVersion: z.string().max(100).nullable().default(null),
   })
   .superRefine(checkJob);

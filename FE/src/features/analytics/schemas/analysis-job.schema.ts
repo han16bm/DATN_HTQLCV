@@ -12,6 +12,19 @@ export const createJobSchema = z
   })
   .strict();
 export const jobErrorSchema = z.object({
+  code: z
+    .enum([
+      "LLM_NOT_CONFIGURED",
+      "PROVIDER_TIMEOUT",
+      "PROVIDER_RATE_LIMIT",
+      "PROVIDER_UNAVAILABLE",
+      "OUTPUT_INVALID",
+      "REFUSED",
+      "INSUFFICIENT_DATA",
+      "ACCESS_REVOKED",
+      "SNAPSHOT_EXPIRED",
+    ])
+    .nullable(),
   message: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(1000),
   retryable: z.boolean(),
   retryAfterSeconds: z.number().int().safe().nullable(),

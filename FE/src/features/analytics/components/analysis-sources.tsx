@@ -70,7 +70,14 @@ export function AnalysisSources({
                 <CartesianGrid vertical={false} stroke="#dde2ea" />
                 <XAxis dataKey="date" fontSize="0.75rem" />
                 <YAxis fontSize="0.75rem" width="auto" />
-                <Tooltip />
+                <Tooltip
+                  formatter={(value) => [
+                    series.unit && typeof value === "number"
+                      ? metricValue(value, series.unit)
+                      : value,
+                    series.label,
+                  ]}
+                />
                 <Line
                   dataKey="value"
                   stroke="var(--color-action)"

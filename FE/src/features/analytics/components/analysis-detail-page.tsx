@@ -7,7 +7,7 @@ import { PageSkeleton, Spinner } from "@/components/ui/loading";
 import { PageHeader, Panel } from "@/components/ui/page";
 import { StatusLozenge } from "@/components/ui/lozenge";
 import { QueryErrorState } from "@/components/ui/query-error-state";
-import { dateTime } from "@/lib/format";
+import { dateTime, label } from "@/lib/format";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useCrumbLabel } from "@/lib/use-crumb-label";
@@ -23,6 +23,14 @@ const typeLabel: Record<string, string> = {
   BOTTLENECK: "Điểm nghẽn quy trình",
   SUMMARY: "Tổng hợp tiến độ",
   METRIC: "Chi tiết chỉ số",
+};
+
+const blockedLabel: Record<string, string> = {
+  SNAPSHOT_OUTDATED:
+    "Dữ liệu đã thay đổi nên không tạo diễn giải mới cho bản này; hãy mở dữ liệu mới để phân tích.",
+  INSUFFICIENT_DATA: "Chưa đủ dữ liệu để AI diễn giải bản phân tích này.",
+  LLM_NOT_CONFIGURED:
+    "Hệ thống chưa cấu hình dịch vụ AI. Số liệu và phần tổng hợp vẫn dùng được bình thường.",
 };
 
 export function AnalysisDetailPage({ analysisId }: { analysisId: string }) {
@@ -64,6 +72,13 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
     detail?.generation.allowed,
     create,
   ]);
+  const retryAfter = detail?.generation.retryAfterSeconds;
+  const { refetch } = query;
+  useEffect(() => {
+    if (!retryAfter) return;
+    const timer = setTimeout(() => void refetch(), retryAfter * 1000);
+    return () => clearTimeout(timer);
+  }, [retryAfter, refetch]);
   if (query.isError)
     return <QueryErrorState error={query.error} retry={query.refetch} />;
   if (!detail) return <PageSkeleton />;
@@ -74,6 +89,13 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
     running ||
     create.isPending ||
     (explanation.status === "NOT_REQUESTED" && detail.generation.allowed);
+  const { blockedReason } = detail.generation;
+  const blockedText =
+    blockedReason === "RATE_LIMITED"
+      ? `Dịch vụ AI đang giới hạn lượt gọi; có thể phân tích lại sau khoảng ${detail.generation.retryAfterSeconds ?? 0} giây.`
+      : blockedReason && blockedReason !== "ACTIVE_JOB"
+        ? blockedLabel[blockedReason]
+        : null;
   return (
     <>
       <PageHeader
@@ -104,6 +126,13 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
         <StatusLozenge value={snapshot.quality.status} /> ·{" "}
         <StatusLozenge value={detail.freshness.status} />
       </p>
+      {snapshot.quality.missingFields.length > 0 && (
+        <Notice tone="warning" className="mb-3">
+          Còn thiếu dữ liệu:{" "}
+          {snapshot.quality.missingFields.map((f) => label(f)).join(", ")}. Các
+          chỉ số liên quan được để trống, không tính là 0.
+        </Notice>
+      )}
       {detail.freshness.status === "OUTDATED" && (
         <Notice tone="warning" className="mb-3">
           Dữ liệu đã thay đổi sau lần phân tích này.
@@ -204,10 +233,11 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
               {explanation.error && (
                 <Notice tone="danger">
                   {explanation.error.message}
-                  {explanation.error.retryAfterSeconds
-                    ? ` Có thể thử lại sau ${explanation.error.retryAfterSeconds} giây.`
-                    : ""}
+                  {blockedReason === "RATE_LIMITED" && ` ${blockedText}`}
                 </Notice>
+              )}
+              {blockedText && !explanation.error && !lastSuccess && (
+                <p className="m-0 text-sm text-fg-subtle">{blockedText}</p>
               )}
               {lastSuccess && (running || explanation.status === "FAILED") && (
                 <Notice tone="info" role="status">
@@ -222,7 +252,8 @@ function AnalysisDetail({ analysisId }: { analysisId: string }) {
               {!lastSuccess &&
                 !waiting &&
                 !explanation.error &&
-                !startError && (
+                !startError &&
+                !blockedText && (
                   <p className="m-0 text-sm text-fg-subtle">
                     Chưa có lời diễn giải AI cho bản dữ liệu này. Phần Tổng hợp
                     theo số liệu vẫn phản ánh đúng các chỉ số bên cạnh.

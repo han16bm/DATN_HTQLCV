@@ -119,7 +119,7 @@ public sealed class AnalysisJobProcessor(
         AnalysisGenerationException exception,
         CancellationToken cancellationToken)
     {
-        var error = new JobErrorDto(exception.Message, exception.Retryable, exception.RetryAfterSeconds);
+        var error = new JobErrorDto(exception.Code, exception.Message, exception.Retryable, exception.RetryAfterSeconds);
         var errorJson = JsonSerializer.Serialize(error, Json);
         job.Status = "FAILED";
         job.CompletedAt = DateTime.UtcNow;

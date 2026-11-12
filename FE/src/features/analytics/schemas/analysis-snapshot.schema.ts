@@ -19,6 +19,10 @@ export const contextItemSchema = z.object({
 const analysisSeriesSchema = z.object({
   id: idSchema,
   label: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
+  unit: z
+    .enum(["TASK", "COUNT", "PERCENT", "MINUTE", "HOUR"])
+    .nullable()
+    .default(null),
   points: z.array(
     z.object({
       date: z.iso.date(),

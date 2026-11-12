@@ -10,6 +10,17 @@ const freshnessSchema = z.object({
 });
 const generationPolicySchema = z.object({
   allowed: z.boolean(),
+  blockedReason: z
+    .enum([
+      "SNAPSHOT_OUTDATED",
+      "INSUFFICIENT_DATA",
+      "LLM_NOT_CONFIGURED",
+      "ACTIVE_JOB",
+      "RATE_LIMITED",
+    ])
+    .nullable()
+    .default(null),
+  retryAfterSeconds: z.number().int().safe().min(0).nullable().default(null),
 });
 export const analysisSchema = z
   .object({

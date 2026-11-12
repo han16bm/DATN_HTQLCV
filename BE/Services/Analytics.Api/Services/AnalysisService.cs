@@ -18,7 +18,8 @@ public class AnalysisService(
     ApplicationDbContext context,
     IHttpContextAccessor http,
     IAnalyticsService analytics,
-    AnalysisSnapshotStore snapshots) : IAnalysisService
+    AnalysisSnapshotStore snapshots,
+    IConfiguration configuration) : IAnalysisService
 {
     private static readonly JsonSerializerOptions Json = AnalysisSnapshotStore.Json;
 
@@ -202,6 +203,7 @@ public class AnalysisService(
         var feedback = await context.AnalysisFeedback.AsNoTracking().Where(f => f.AnalysisId == snapshot.Id)
             .OrderByDescending(f => f.CreatedAt).FirstOrDefaultAsync();
         var hasData = !(payload.Metrics.Count > 0 && payload.Metrics.All(m => m.Value is null));
+        var generation = await GenerationPolicyAsync(snapshot, outdated, hasData, error);
 
         return new AnalysisDetailDto(
             new AnalysisSnapshotDto(snapshot.SnapshotId, snapshot.Id, snapshot.AnalysisType, snapshot.Title, payload.Subject,
@@ -213,12 +215,40 @@ public class AnalysisService(
                 explanation,
                 snapshot.ActiveJobId,
                 error),
-            new GenerationPolicyDto(hasData && !outdated),
+            generation,
             payload.SystemSummary,
             new FeedbackStateDto(
                 feedback is null ? null : new FeedbackDto(feedback.Verdict, feedback.Comment, await PersonAsync(feedback.ActorId), feedback.CreatedAt),
                 !outdated && snapshot.AnalysisType == "BOTTLENECK"
                     && snapshot.ProjectIds.All(p => access.Has(p, PermissionFeatures.AlertsManage))));
+    }
+
+    // Thứ tự ưu tiên lý do chặn: bản cũ → thiếu dữ liệu → đang chạy → chưa cấu hình LLM → còn trong thời gian chờ sau 429.
+    private async Task<GenerationPolicyDto> GenerationPolicyAsync(
+        AnalysisSnapshot snapshot, bool outdated, bool hasData, JobErrorDto? error)
+    {
+        if (outdated)
+            return new GenerationPolicyDto(false, "SNAPSHOT_OUTDATED", null);
+        if (!hasData)
+            return new GenerationPolicyDto(false, "INSUFFICIENT_DATA", null);
+        if (snapshot.ExplanationStatus is "QUEUED" or "RUNNING")
+            return new GenerationPolicyDto(false, "ACTIVE_JOB", null);
+        if (!AnalysisExplanationGenerator.IsConfigured(configuration))
+            return new GenerationPolicyDto(false, "LLM_NOT_CONFIGURED", null);
+        if (error is { Code: "PROVIDER_RATE_LIMIT", RetryAfterSeconds: > 0 })
+        {
+            var failedAt = await context.AnalysisJobs.AsNoTracking()
+                .Where(job => job.AnalysisId == snapshot.Id && job.Status == "FAILED")
+                .OrderByDescending(job => job.CompletedAt)
+                .Select(job => job.CompletedAt)
+                .FirstOrDefaultAsync();
+            var wait = failedAt is null
+                ? 0
+                : (int)Math.Ceiling((failedAt.Value.AddSeconds(error.RetryAfterSeconds!.Value) - DateTime.UtcNow).TotalSeconds);
+            if (wait > 0)
+                return new GenerationPolicyDto(false, "RATE_LIMITED", wait);
+        }
+        return new GenerationPolicyDto(true, null, null);
     }
 
     // Tính lại cùng phạm vi để biết bản đang xem còn là bản mới nhất của đối tượng không (null: đối tượng không còn trong kết quả).

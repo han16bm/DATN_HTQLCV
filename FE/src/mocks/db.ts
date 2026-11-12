@@ -5109,11 +5109,17 @@ function detailDTO(actor: User, id: string): AnalysisDto {
         analysisProjectIds(id).every((p) => can(actor, "ALERTS_MANAGE", p)),
     },
   };
+  const blockedReason = outdated
+    ? "SNAPSHOT_OUTDATED"
+    : value.explanation.activeJobId
+      ? "ACTIVE_JOB"
+      : original.generation.allowed
+        ? null
+        : (original.generation.blockedReason ?? "INSUFFICIENT_DATA");
   value.generation = {
-    allowed:
-      original.generation.allowed &&
-      !outdated &&
-      !value.explanation.activeJobId,
+    allowed: blockedReason === null,
+    blockedReason,
+    retryAfterSeconds: null,
   };
   return value;
 }
@@ -5204,7 +5210,12 @@ function createJob(
       target.explanation.status =
         code === "LLM_NOT_CONFIGURED" ? "UNAVAILABLE" : "FAILED";
       target.explanation.error = error;
-      if (code === "LLM_NOT_CONFIGURED") target.generation = { allowed: false };
+      if (code === "LLM_NOT_CONFIGURED")
+        target.generation = {
+          allowed: false,
+          blockedReason: "LLM_NOT_CONFIGURED",
+          retryAfterSeconds: null,
+        };
       return;
     }
     try {

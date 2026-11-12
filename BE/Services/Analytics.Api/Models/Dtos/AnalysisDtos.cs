@@ -10,7 +10,7 @@ public record ContextItemDto(string Key, string Label, string? Value, string Val
 
 public record SeriesPointDto(DateOnly Date, decimal? Value);
 
-public record SeriesDto(string Id, string Label, List<SeriesPointDto> Points);
+public record SeriesDto(string Id, string Label, string? Unit, List<SeriesPointDto> Points); // TASK|COUNT|PERCENT|MINUTE|HOUR
 
 /// <summary>Target: TASK_DETAIL | TASK_PLAN | TASK_ASSIGNMENT | SUBMISSION_REVIEW | REVIEW_QUEUE | REPORT_DETAIL.</summary>
 public record DomainActionDto(string Target, string? TaskId, string? SubmissionId, string? ReportId);
@@ -52,7 +52,8 @@ public record AnalysisSnapshotDto(
     List<SeriesDto> Series,
     List<EvidenceDto> Evidence);
 
-public record JobErrorDto(string Message, bool Retryable, int? RetryAfterSeconds);
+/// <summary>Code: LLM_NOT_CONFIGURED | PROVIDER_TIMEOUT | PROVIDER_RATE_LIMIT | PROVIDER_UNAVAILABLE | OUTPUT_INVALID | REFUSED | INSUFFICIENT_DATA | ACCESS_REVOKED | SNAPSHOT_EXPIRED; null với lỗi lưu trước khi có mã.</summary>
+public record JobErrorDto(string? Code, string Message, bool Retryable, int? RetryAfterSeconds);
 
 public record FindingDto(string Id, string Title, string Text, List<string> MetricIds, List<string> EvidenceIds);
 
@@ -74,7 +75,8 @@ public record ExplanationStateDto(string Status, ExplanationDto? LastSuccess, st
 
 public record FreshnessDto(string Status, string? LatestAnalysisId); // CURRENT | OUTDATED
 
-public record GenerationPolicyDto(bool Allowed);
+/// <summary>BlockedReason: SNAPSHOT_OUTDATED | INSUFFICIENT_DATA | LLM_NOT_CONFIGURED | ACTIVE_JOB | RATE_LIMITED.</summary>
+public record GenerationPolicyDto(bool Allowed, string? BlockedReason, int? RetryAfterSeconds);
 
 public record FeedbackDto(string Verdict, string Comment, PersonRefDto Actor, DateTime CreatedAt);
 

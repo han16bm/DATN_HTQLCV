@@ -20,6 +20,19 @@ public sealed class AnalysisExplanationGenerator(
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow
     };
 
+    /// <summary>Đủ provider + khóa API để thử gọi LLM; khóa sai vẫn chỉ phát hiện khi gọi thật.</summary>
+    public static bool IsConfigured(IConfiguration configuration)
+    {
+        var provider = configuration["Analytics:Provider"] ?? "Anthropic";
+        if (!string.Equals(provider, "Gemini", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(provider, "Anthropic", StringComparison.OrdinalIgnoreCase))
+            return false;
+        var key = string.Equals(provider, "Gemini", StringComparison.OrdinalIgnoreCase)
+            ? configuration["Analytics:Gemini:ApiKey"]
+            : configuration["Analytics:Anthropic:ApiKey"];
+        return !string.IsNullOrWhiteSpace(key);
+    }
+
     public async Task<ExplanationDto> GenerateAsync(
         AnalysisSnapshotDto snapshot,
         CancellationToken cancellationToken)

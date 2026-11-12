@@ -2639,6 +2639,50 @@ it("keeps the template summary apart from AI text, shows cited values and eviden
       .getAttribute("href"),
   ).toBe(`#evidence-${evidence.id}`);
 });
+it("does not request an explanation when the BE blocks generation, explains why and lists missing data", async () => {
+  const session = await login("minh");
+  const risks = await analyticsService.getDeadlineRisks({
+    projectId: "p-main",
+    from: "2026-10-01",
+    to: "2026-10-23",
+  });
+  const id = risks.items[0]!.analysisRef.analysisId;
+  const stored = db.details.get(id)!;
+  stored.generation = {
+    allowed: false,
+    blockedReason: "LLM_NOT_CONFIGURED",
+    retryAfterSeconds: null,
+  };
+  stored.snapshot.quality = {
+    ...stored.snapshot.quality,
+    status: "PARTIAL",
+    missingFields: ["workingCalendar"],
+  };
+  let posts = 0;
+  const observe = ({ request }: { request: Request }) => {
+    if (
+      request.method === "POST" &&
+      new URL(request.url).pathname === "/api/analytics/jobs"
+    )
+      posts++;
+  };
+  server.events.on("request:start", observe);
+  try {
+    show(<AnalysisDetailPage analysisId={id} />, session, true);
+    const ai = await screen.findByRole("region", {
+      name: "Nhận định và đề xuất AI",
+    });
+    expect(
+      within(ai).getByText(/Hệ thống chưa cấu hình dịch vụ AI/),
+    ).toBeTruthy();
+    expect(screen.getByText(/Còn thiếu dữ liệu: Lịch làm việc\./)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Phân tích lại" })).toBeNull();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(posts).toBe(0);
+  } finally {
+    server.events.removeListener("request:start", observe);
+  }
+});
 it("preserves report input on validation failure and saves then submits a zero-hour report", async () => {
   const session = await login("lan");
   const draft = await reportsService.createReportDraft(

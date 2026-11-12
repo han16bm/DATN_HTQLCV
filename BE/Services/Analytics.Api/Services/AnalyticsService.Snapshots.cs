@@ -92,8 +92,8 @@ public partial class AnalyticsService
             : AnalysisSubjectDto.Project(q.ProjectId);
         var series = new List<SeriesDto>
         {
-            new("s-completed", "Công việc hoàn thành theo ngày", trend.Select(p => new SeriesPointDto(p.Date, p.CompletedCount)).ToList()),
-            new("s-submissions", "Lần nộp kết quả theo ngày", trend.Select(p => new SeriesPointDto(p.Date, p.SubmissionCount)).ToList())
+            new("s-completed", "Công việc hoàn thành theo ngày", "TASK", trend.Select(p => new SeriesPointDto(p.Date, p.CompletedCount)).ToList()),
+            new("s-submissions", "Lần nộp kết quả theo ngày", "COUNT", trend.Select(p => new SeriesPointDto(p.Date, p.SubmissionCount)).ToList())
         };
         return new AnalysisDraft("SUMMARY", subject, "Tổng hợp tiến độ", metrics.Select(Measure).ToList(), [], summary, projects, series);
     }
@@ -124,7 +124,8 @@ public partial class AnalyticsService
         return new AnalysisDraft("RISK", AnalysisSubjectDto.Task(t.Id), $"Rủi ro trễ hạn: {t.Title}",
             [Measure("hours-to-due", "Số giờ còn đến hạn", hoursToDue, "HOUR",
                 "Số giờ từ lần cập nhật số liệu đến hạn hoàn thành; số âm nghĩa là đã quá hạn.")],
-            items, summary, [t.ProjectId], QualityStatus: category == "INSUFFICIENT_DATA" ? "PARTIAL" : "SUFFICIENT");
+            items, summary, [t.ProjectId], QualityStatus: category == "INSUFFICIENT_DATA" ? "PARTIAL" : "SUFFICIENT",
+            MissingFields: category == "INSUFFICIENT_DATA" ? ["Người thực hiện"] : null);
     }
 
     private static AnalysisDraft ProjectRiskDraft(string projectId, string name, string level, int overdue, int atRisk,

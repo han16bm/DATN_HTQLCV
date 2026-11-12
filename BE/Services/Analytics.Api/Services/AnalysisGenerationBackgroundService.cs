@@ -8,6 +8,16 @@ public sealed class AnalysisGenerationBackgroundService(
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<AnalysisJobProcessor>().RecoverInterruptedAsync(stoppingToken);
+        }
+        catch (Exception exception) when (!stoppingToken.IsCancellationRequested)
+        {
+            logger.LogError(exception, "Could not requeue interrupted analysis jobs.");
+        }
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try

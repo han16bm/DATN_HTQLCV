@@ -89,6 +89,8 @@ READY/FAILED/UNAVAILABLE/NOT_REQUESTED của lời phân tích khác với QUEUE
 
 Thời gian chờ provider và giới hạn retry được BE cấu hình. Đề xuất giai đoạn đầu: timeout 60 giây cho một lượt provider, tối đa một lượt sửa output có kiểm soát nếu chính sách cho phép; lỗi cấu hình/không đủ dữ liệu không retry. FE theo dõi tối đa 2 phút trong một lượt rồi cho Tiếp tục kiểm tra; không tự gán job FAILED.
 
+Đã triển khai (12/11/2026): adapter cho **đúng một lượt sửa** khi đầu ra đọc được nhưng vi phạm (sai JSON/cấu trúc, câu chữ có chữ số, trích Id không có trong snapshot, thiếu căn cứ, quá giới hạn): gửi lại lượt trả lời của model cùng lý do cụ thể, rồi kiểm tra lại như lần đầu; vẫn sai thì `OUTPUT_INVALID`. Lỗi timeout/kết nối/429/401/403/từ chối/cấu hình không gọi lại. Khi `Analytics.Api` khởi động, job còn `RUNNING` (tiến trình trước dừng giữa chừng) được đưa về `QUEUED` để chạy lại; giả định chỉ một instance xử lý job.
+
 Error DTO có code/message/retryable/retryAfterSeconds, không lộ provider stack/key/raw prompt. Mã lỗi gồm LLM_NOT_CONFIGURED, PROVIDER_TIMEOUT, PROVIDER_RATE_LIMIT, PROVIDER_UNAVAILABLE, OUTPUT_INVALID, REFUSED và INSUFFICIENT_DATA theo AnalysisErrorDTO. Giao diện thể hiện ngắn gọn nguyên nhân và hành động hợp lệ; số liệu luôn giữ nếu đã đọc thành công.
 
 ## Đầu vào LLM và dữ liệu không đáng tin

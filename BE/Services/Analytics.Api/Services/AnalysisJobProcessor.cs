@@ -14,6 +14,31 @@ public sealed class AnalysisJobProcessor(
 {
     private static readonly JsonSerializerOptions Json = AnalysisSnapshotStore.Json;
 
+    /// <summary>
+    /// Gọi một lần khi worker khởi động: job RUNNING lúc này là của tiến trình trước đã dừng đột ngột
+    /// (giả định chỉ một instance Analytics.Api xử lý job), nên đưa về hàng đợi để chạy lại.
+    /// </summary>
+    public async Task<int> RecoverInterruptedAsync(CancellationToken cancellationToken)
+    {
+        var jobIds = await context.AnalysisJobs
+            .Where(job => job.Status == "RUNNING")
+            .Select(job => job.Id)
+            .ToListAsync(cancellationToken);
+        if (jobIds.Count == 0)
+            return 0;
+
+        await context.AnalysisJobs
+            .Where(job => jobIds.Contains(job.Id))
+            .ExecuteUpdateAsync(update => update.SetProperty(job => job.Status, "QUEUED"), cancellationToken);
+        await context.AnalysisSnapshots
+            .Where(snapshot => snapshot.ActiveJobId != null && jobIds.Contains(snapshot.ActiveJobId)
+                && snapshot.ExplanationStatus == "RUNNING")
+            .ExecuteUpdateAsync(update => update.SetProperty(snapshot => snapshot.ExplanationStatus, "QUEUED"),
+                cancellationToken);
+        logger.LogWarning("Requeued {Count} analysis job(s) interrupted by a previous shutdown.", jobIds.Count);
+        return jobIds.Count;
+    }
+
     public async Task<bool> ProcessNextAsync(CancellationToken cancellationToken)
     {
         var jobId = await context.AnalysisJobs.AsNoTracking()

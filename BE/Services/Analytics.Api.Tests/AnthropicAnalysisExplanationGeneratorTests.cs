@@ -114,6 +114,82 @@ public sealed class AnalysisExplanationGeneratorTests
     }
 
     [Fact]
+    public async Task GenerateAsync_SendsTheViolationBackOnceAndAcceptsTheRepairedOutput()
+    {
+        var bodies = new List<string>();
+        var client = CreateClient(async (request, _) =>
+        {
+            bodies.Add(await request.Content!.ReadAsStringAsync());
+            return JsonResponse(ValidProviderResponse(bodies.Count == 1
+                ? """
+                  {"summary":"Có 3 việc trễ hạn.","findings":[{"title":"Có việc trễ hạn","text":"Cần theo dõi.","metricIds":["m-overdue"],"evidenceIds":[]}],"recommendations":[],"limitations":[]}
+                  """
+                : """
+                  {"summary":"Có việc trễ hạn cần theo dõi.","findings":[{"title":"Có việc trễ hạn","text":"Cần theo dõi.","metricIds":["m-overdue"],"evidenceIds":[]}],"recommendations":[],"limitations":[]}
+                  """));
+        });
+        var generator = CreateGenerator(client, new Dictionary<string, string?>
+        {
+            ["Analytics:Anthropic:ApiKey"] = "test-api-key"
+        });
+
+        var explanation = await generator.GenerateAsync(Snapshot(), CancellationToken.None);
+
+        Assert.Equal("Có việc trễ hạn cần theo dõi.", explanation.Summary);
+        Assert.Equal(2, bodies.Count);
+        using var retry = System.Text.Json.JsonDocument.Parse(bodies[1]);
+        var turns = retry.RootElement.GetProperty("messages").EnumerateArray()
+            .Select(turn => (Role: turn.GetProperty("role").GetString(), Content: turn.GetProperty("content").GetString()!))
+            .ToList();
+        Assert.Equal(["user", "assistant", "user"], turns.Select(turn => turn.Role));
+        Assert.Contains("Có 3 việc trễ hạn.", turns[1].Content);
+        Assert.Contains("chữ số", turns[2].Content);
+        Assert.DoesNotContain("analysis-server-id", bodies[1]);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_StopsAfterOneFailedRepair()
+    {
+        var calls = 0;
+        var client = CreateClient((_, _) =>
+        {
+            calls++;
+            return Task.FromResult(JsonResponse(ValidProviderResponse("not json")));
+        });
+        var generator = CreateGenerator(client, new Dictionary<string, string?>
+        {
+            ["Analytics:Anthropic:ApiKey"] = "test-api-key"
+        });
+
+        var exception = await Assert.ThrowsAsync<AnalysisGenerationException>(
+            () => generator.GenerateAsync(Snapshot(), CancellationToken.None));
+
+        Assert.Equal("OUTPUT_INVALID", exception.Code);
+        Assert.Equal(2, calls);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_DoesNotRepeatProviderFailures()
+    {
+        var calls = 0;
+        var client = CreateClient((_, _) =>
+        {
+            calls++;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.TooManyRequests));
+        });
+        var generator = CreateGenerator(client, new Dictionary<string, string?>
+        {
+            ["Analytics:Anthropic:ApiKey"] = "test-api-key"
+        });
+
+        var exception = await Assert.ThrowsAsync<AnalysisGenerationException>(
+            () => generator.GenerateAsync(Snapshot(), CancellationToken.None));
+
+        Assert.Equal("PROVIDER_RATE_LIMIT", exception.Code);
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
     public async Task GenerateAsync_FailsExplicitlyWhenApiKeyIsMissing()
     {
         var generator = CreateGenerator(CreateClient((_, _) =>

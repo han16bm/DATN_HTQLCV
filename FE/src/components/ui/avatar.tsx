@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useState, type ReactNode } from "react";
 import { toneOf } from "./project-tile";
 
-// Màu nhận diện ổn định theo tên; chữ đậm trên nền nhạt đạt tương phản AA.
 const tones = [
   "bg-[#e9effc] text-[#2f49ae]",
   "bg-[#f1ecfb] text-[#5b3fa8]",
@@ -16,7 +15,6 @@ const tones = [
   "bg-[#f6e9fa] text-[#7b2f9e]",
 ];
 
-// sm: thanh trên và danh sách; md: thẻ người dùng ở sidebar; lg: đầu hồ sơ.
 const sizes = {
   sm: { box: "size-7 text-xs", px: 28 },
   md: { box: "size-10 text-sm", px: 40 },

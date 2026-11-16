@@ -2,11 +2,6 @@ import { Avatar } from "@/components/ui/avatar";
 import type { SessionDto } from "@/features/auth/types/auth.types";
 import { cn } from "@/lib/cn";
 
-// Thẻ người dùng đầu sidebar, tràn hết chiều ngang và nằm ngay dưới header (đã có bộ
-// chọn dự án) trên các mục chức năng: ảnh bìa tối, hàng ảnh tròn viền + tên + email chữ
-// trắng căn giữa theo chiều dọc của thẻ. Chỉ để nhận diện nên không điều hướng. Sidebar
-// thu gọn chỉ còn ảnh. Màu cố định (trắng trên ảnh tối) vì ở chế độ Sáng chữ của sidebar
-// đổi sang tối.
 export function ProfileCard({
   user,
   collapsed = false,

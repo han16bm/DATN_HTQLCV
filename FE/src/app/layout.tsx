@@ -12,10 +12,6 @@ import { preferencesBootScript } from "@/stores/preferences-store";
 import "./globals.css";
 import { Providers } from "./providers";
 
-// Phông chữ có bộ ký tự tiếng Việt đầy đủ, tự host cùng ứng dụng. Người dùng chọn trong
-// Cài đặt giao diện (data-font, xem tokens.css). Mọi font đều khai báo @font-face nhưng
-// trình duyệt chỉ tải font đang dùng, nên các font phụ không preload. Tên biến phải
-// là --font-<giá trị trong preferences-store>.
 const beVietnam = Be_Vietnam_Pro({
   subsets: ["latin", "vietnamese"],
   weight: ["400", "500", "600", "700"],

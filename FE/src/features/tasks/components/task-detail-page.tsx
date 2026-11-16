@@ -39,8 +39,6 @@ import { remainingSchema } from "../schemas/task-form.schema";
 import type { TaskDto } from "../types/tasks.types";
 import { TaskHistoryTable } from "./task-history-page";
 
-// Nội dung/tiêu chí gọn ở đầu, bảng các lần nộp ở dưới, phân công và giờ công ở cột phụ.
-// Chỉ mở ngăn kéo và tải nội dung/tài liệu sau khi chọn Chi tiết một lần nộp.
 export function TaskDetailPage({ taskId }: { taskId: string }) {
   const dialog = useHashDialog();
   const [logPage, setLogPage] = useState(1);
@@ -60,7 +58,7 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
   };
   const inspector = (
     <aside aria-label="Thông tin công việc" className="grid gap-5">
-      <Panel title="Phân công và thời hạn" compact>
+      <Panel title="Phân công và thời hạn" compact subtle>
         <KeyValueList compact>
           <KeyValue label="Người thực hiện">
             {task.assignee ? (
@@ -116,6 +114,7 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
       <Panel
         title="Giờ công"
         compact
+        subtle
         actions={
           <PanelLink onClick={() => dialog.open("time-logs")}>
             Nhật ký
@@ -153,6 +152,7 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
       <Panel
         title="Hoạt động gần đây"
         compact
+        subtle
         actions={
           <PanelLink onClick={() => dialog.open("history")}>Lịch sử</PanelLink>
         }
@@ -164,7 +164,7 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
         ) : history.data.items.length === 0 ? (
           <p className="m-0 text-sm text-fg-subtle">Chưa có hoạt động nào.</p>
         ) : (
-          <ol className="m-0 grid list-none gap-3 p-0">
+          <ol className="m-0 grid list-none gap-2 p-0">
             {history.data.items.slice(0, 3).map((item) => (
               <li key={item.id} className="grid text-sm">
                 <span className="font-medium text-fg">
@@ -187,7 +187,7 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
           aria-label="Nội dung và tiêu chí"
           className="@container/task-content"
         >
-          <div className="grid divide-y divide-line rounded-lg bg-sunken/60 @min-[600px]/task-content:grid-cols-2 @min-[600px]/task-content:divide-x @min-[600px]/task-content:divide-y-0">
+          <div className="grid divide-y divide-line rounded-lg bg-sunken/60 @min-[37.5rem]/task-content:grid-cols-2 @min-[37.5rem]/task-content:divide-x @min-[37.5rem]/task-content:divide-y-0">
             <section className="min-w-0 p-4">
               <h2 className="m-0 mb-2 text-sm font-semibold text-fg">
                 Nội dung công việc

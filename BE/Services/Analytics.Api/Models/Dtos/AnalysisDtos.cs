@@ -10,7 +10,7 @@ public record ContextItemDto(string Key, string Label, string? Value, string Val
 
 public record SeriesPointDto(DateOnly Date, decimal? Value);
 
-public record SeriesDto(string Id, string Label, List<SeriesPointDto> Points);
+public record SeriesDto(string Id, string Label, string? Unit, List<SeriesPointDto> Points); // TASK|COUNT|PERCENT|MINUTE|HOUR
 
 /// <summary>Target: TASK_DETAIL | TASK_PLAN | TASK_ASSIGNMENT | SUBMISSION_REVIEW | REVIEW_QUEUE | REPORT_DETAIL.</summary>
 public record DomainActionDto(string Target, string? TaskId, string? SubmissionId, string? ReportId);
@@ -50,9 +50,11 @@ public record AnalysisSnapshotDto(
     List<MeasureDto> Metrics,
     List<ContextItemDto> Context,
     List<SeriesDto> Series,
-    List<EvidenceDto> Evidence);
+    List<EvidenceDto> Evidence,
+    DateTime? ExpiresAt = null);
 
-public record JobErrorDto(string Message, bool Retryable, int? RetryAfterSeconds);
+/// <summary>Code: LLM_NOT_CONFIGURED | PROVIDER_TIMEOUT | PROVIDER_RATE_LIMIT | PROVIDER_UNAVAILABLE | OUTPUT_INVALID | REFUSED | INSUFFICIENT_DATA | ACCESS_REVOKED | SNAPSHOT_EXPIRED; null với lỗi lưu trước khi có mã.</summary>
+public record JobErrorDto(string? Code, string Message, bool Retryable, int? RetryAfterSeconds);
 
 public record FindingDto(string Id, string Title, string Text, List<string> MetricIds, List<string> EvidenceIds);
 
@@ -66,18 +68,25 @@ public record ExplanationDto(
     string Summary,
     List<FindingDto> Findings,
     List<RecommendationDto> Recommendations,
-    List<string> Limitations);
+    List<string> Limitations,
+    string PromptVersion = "template-v1");
 
 /// <summary>Status: NOT_REQUESTED | QUEUED | RUNNING | READY | FAILED | UNAVAILABLE.</summary>
 public record ExplanationStateDto(string Status, ExplanationDto? LastSuccess, string? ActiveJobId, JobErrorDto? Error);
 
 public record FreshnessDto(string Status, string? LatestAnalysisId); // CURRENT | OUTDATED
 
-public record GenerationPolicyDto(bool Allowed);
+/// <summary>BlockedReason: SNAPSHOT_OUTDATED | INSUFFICIENT_DATA | LLM_NOT_CONFIGURED | ACTIVE_JOB | RATE_LIMITED.</summary>
+public record GenerationPolicyDto(bool Allowed, string? BlockedReason, int? RetryAfterSeconds);
 
 public record FeedbackDto(string Verdict, string Comment, PersonRefDto Actor, DateTime CreatedAt);
 
 public record FeedbackStateDto(FeedbackDto? Latest, bool CanSubmit);
+
+/// <summary>Đánh giá của chính người xem cho lời diễn giải AI hiện có; CanSubmit khi đã có lời diễn giải.</summary>
+public record ExplanationRatingStateDto(bool? Mine, bool CanSubmit);
+
+public record ExplanationRatingDto(bool Helpful, DateTime RatedAt);
 
 public record AnalysisDetailDto(
     AnalysisSnapshotDto Snapshot,
@@ -85,9 +94,11 @@ public record AnalysisDetailDto(
     ExplanationStateDto Explanation,
     GenerationPolicyDto Generation,
     string SystemSummary,
-    FeedbackStateDto Feedback);
+    FeedbackStateDto Feedback,
+    ExplanationRatingStateDto ExplanationRating);
 
-public record AnalysisJobDto(string Id, string AnalysisId, string Status, DateTime CreatedAt, DateTime? CompletedAt, int PollAfterMs, JobErrorDto? Error);
+public record AnalysisJobDto(string Id, string AnalysisId, string Status, DateTime CreatedAt, DateTime? CompletedAt, int PollAfterMs, JobErrorDto? Error,
+    string? Model, string? PromptVersion);
 
 public record SummaryMetricDto(string Label, decimal? Value, string Unit, string Formula);
 
@@ -110,6 +121,12 @@ public record CreateAnalysisJobRequest
 
     [RegularExpression("^vi-VN$", ErrorMessage = "Ngôn ngữ chưa được hỗ trợ.")]
     public string? Locale { get; init; }
+}
+
+public record RateExplanationRequest
+{
+    [Required(ErrorMessage = "Vui lòng chọn đánh giá.")]
+    public bool? Helpful { get; init; }
 }
 
 public record CreateAnalysisFeedbackRequest

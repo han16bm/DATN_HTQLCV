@@ -40,7 +40,6 @@ const statusLabels: Record<string, string> = {
   FAILED: "Lỗi",
   RUNNING: "Đang chạy",
 };
-// Số liệu tổng hợp của GenerateAsync (ADMIN_MODULES 3.2).
 const summaryLabels: Record<string, string> = {
   created: "Tạo mới",
   updated: "Cập nhật",

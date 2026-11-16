@@ -14,8 +14,6 @@ import { useUrlFilters } from "@/lib/query/use-url-filters";
 import Link from "next/link";
 import { useListTimeLogsQuery } from "../hooks/use-time-logs-queries";
 
-// Bảng nhật ký giờ công của một việc; trang và ngăn kéo ở trang Chi tiết dùng chung.
-// `onEdit` chạy khi bấm liên kết sửa để nơi chứa (ngăn kéo) đóng lại.
 export function TimeLogsTable({
   taskId,
   page,

@@ -15,11 +15,8 @@ import {
 import type { AnalysisDto } from "../types/analytics.types";
 import { DomainActionLink } from "./analysis-links";
 
-// Mốc neo nhảy tới từ căn cứ của AI; chừa chỗ cho header cố định.
 const anchorClass = "scroll-mt-[calc(var(--topbar-h)+16px)]";
 
-// Số liệu đã ghi nhận làm căn cứ: tách khỏi phần nhận định của AI để người đọc
-// phân biệt dữ liệu thực tế với diễn giải.
 export function AnalysisSources({
   snapshot,
 }: {
@@ -71,9 +68,16 @@ export function AnalysisSources({
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={series.points}>
                 <CartesianGrid vertical={false} stroke="#dde2ea" />
-                <XAxis dataKey="date" fontSize={12} />
-                <YAxis fontSize={12} />
-                <Tooltip />
+                <XAxis dataKey="date" fontSize="0.75rem" />
+                <YAxis fontSize="0.75rem" width="auto" />
+                <Tooltip
+                  formatter={(value) => [
+                    series.unit && typeof value === "number"
+                      ? metricValue(value, series.unit)
+                      : value,
+                    series.label,
+                  ]}
+                />
                 <Line
                   dataKey="value"
                   stroke="var(--color-action)"

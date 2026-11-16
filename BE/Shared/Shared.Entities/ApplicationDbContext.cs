@@ -36,6 +36,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<AnalysisSnapshot> AnalysisSnapshots => Set<AnalysisSnapshot>();
     public DbSet<AnalysisJob> AnalysisJobs => Set<AnalysisJob>();
     public DbSet<AnalysisFeedback> AnalysisFeedback => Set<AnalysisFeedback>();
+    public DbSet<AnalysisExplanationRating> AnalysisExplanationRatings => Set<AnalysisExplanationRating>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -195,6 +196,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.Status).HasMaxLength(20);
+            e.Property(x => x.Provider).HasMaxLength(20);
+            e.Property(x => x.Model).HasMaxLength(120);
+            e.Property(x => x.PromptVersion).HasMaxLength(100);
             e.HasIndex(x => x.AnalysisId);
         });
         modelBuilder.Entity<AnalysisFeedback>(e =>
@@ -203,6 +207,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.Property(x => x.Verdict).HasMaxLength(20);
             e.Property(x => x.Comment).HasMaxLength(2000);
             e.HasIndex(x => new { x.AnalysisId, x.CreatedAt });
+        });
+        modelBuilder.Entity<AnalysisExplanationRating>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasMaxLength(100);
+            e.Property(x => x.AnalysisId).HasMaxLength(100);
+            e.Property(x => x.AnalysisType).HasMaxLength(20);
+            e.Property(x => x.ModelDisplayName).HasMaxLength(255);
+            e.Property(x => x.PromptVersion).HasMaxLength(100);
+            e.Property(x => x.ActorId).HasMaxLength(100);
+            e.HasIndex(x => new { x.AnalysisId, x.ActorId, x.ExplanationGeneratedAt }).IsUnique();
+            e.HasIndex(x => new { x.ModelDisplayName, x.PromptVersion });
         });
 
         modelBuilder.Entity<Alert>(e =>

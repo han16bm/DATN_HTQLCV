@@ -42,7 +42,6 @@ export function ProjectTile({
   id: string;
   small?: boolean;
 }) {
-  // Biểu tượng trang trí ổn định theo ID, không cần thêm trường vào response.
   const tone = toneOf(id);
   const Icon = icons[tone];
   return (

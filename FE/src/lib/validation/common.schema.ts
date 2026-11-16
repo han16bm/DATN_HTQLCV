@@ -1,7 +1,6 @@
 import { checkAction } from "@/lib/validation/contract-refinements";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
-// Hành động được phép; phạm vi (hệ thống hoặc từng dự án) do session quyết định.
 export const permissionSchema = z.enum([
   "USERS_MANAGE",
   "ORGANIZATION_MANAGE",
@@ -52,12 +51,10 @@ export const entityLabelSchema = z.object({
   id: idSchema,
   name: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
 });
-// Tham chiếu hiển thị dùng chung của các API quản trị ({id, label}).
 export const refSchema = z.object({
   id: idSchema,
   label: z.string(),
 });
-// Dấu vết tạo/sửa (ADMIN_MODULES 8.3): SYSTEM trả {id:"SYSTEM", label:"Hệ thống"}.
 export const stampShape = {
   createdBy: refSchema.nullable(),
   updatedBy: refSchema.nullable(),

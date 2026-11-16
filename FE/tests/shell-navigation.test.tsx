@@ -116,7 +116,6 @@ it.each(["lan", "minh", "admin"])(
       expect(within(management!).queryByText("Tổng quan")).toBeNull();
       expect(within(management!).queryByText("Công việc")).toBeNull();
     } else if (username === "admin") {
-      // Admin chỉ xem: có Phân tích (quyền xem toàn hệ thống), không có Nghiệm thu.
       expect(
         within(management!).getByRole("button", { name: "Phân tích" }),
       ).toBeTruthy();
@@ -126,7 +125,6 @@ it.each(["lan", "minh", "admin"])(
     } else expect(management).toBeNull();
     const user = userEvent.setup();
     await user.click(within(main).getByRole("button", { name: "Công việc" }));
-    // Lối tắt "Việc của tôi" chỉ có khi tài khoản thấy được việc của người khác.
     expect(Boolean(screen.queryByRole("link", { name: "Việc của tôi" }))).toBe(
       seesOthersTasks(session),
     );
@@ -303,7 +301,6 @@ it("names the project and task in the breadcrumb and goes back to the remembered
   expect(
     within(crumbs).getByRole("link", { name: "Dự án" }).getAttribute("href"),
   ).toBe("/projects");
-  // Mục hiện tại không phải liên kết.
   expect(
     within(crumbs).queryByRole("link", { name: "Thiết kế luồng giao việc" }),
   ).toBeNull();
@@ -423,7 +420,6 @@ it("puts the project switcher where the logo was, next to the account menu and w
     </WorkspaceShell>,
     await login("minh"),
   );
-  // Không có logo, ô tìm kiếm chung hay lối tắt lập báo cáo trên thanh trên.
   expect(screen.queryByRole("link", { name: "Cổng công việc" })).toBeNull();
   expect(screen.queryByRole("searchbox")).toBeNull();
   expect(screen.queryByRole("button", { name: "Tạo" })).toBeNull();

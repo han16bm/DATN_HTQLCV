@@ -71,7 +71,6 @@ apiClient.interceptors.request.use((config: HttpConfig) => {
     "Authorization",
     accessToken ? `Bearer ${accessToken}` : undefined,
   );
-  // Let the runtime generate the multipart boundary in both browser and Node.
   if (config.data instanceof FormData) config.headers.setContentType(false);
   if (config.version !== undefined)
     config.headers.set("If-Match", `"${config.version}"`);

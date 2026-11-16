@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { buttonClass } from "./button";
 
-// Trang thông báo hệ thống (không tìm thấy, lỗi): ngắn, có lối về nơi làm việc.
 export function SystemMessage({
   code,
   title,

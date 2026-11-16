@@ -19,6 +19,10 @@ export const contextItemSchema = z.object({
 const analysisSeriesSchema = z.object({
   id: idSchema,
   label: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
+  unit: z
+    .enum(["TASK", "COUNT", "PERCENT", "MINUTE", "HOUR"])
+    .nullable()
+    .default(null),
   points: z.array(
     z.object({
       date: z.iso.date(),
@@ -33,6 +37,7 @@ export const analysisSnapshotSchema = z.object({
   title: z.string().min(1, "Vui lòng nhập thông tin bắt buộc").max(255),
   scope: analyticsQuerySchema.pick({ from: true, to: true }).strip(),
   dataAsOf: z.iso.datetime(),
+  expiresAt: z.iso.datetime(),
   quality: qualitySchema,
   metrics: z.array(measureSchema),
   context: z.array(contextItemSchema),

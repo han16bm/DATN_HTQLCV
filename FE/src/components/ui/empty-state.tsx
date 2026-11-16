@@ -1,7 +1,6 @@
 import { cn } from "@/lib/cn";
 import type { ReactNode } from "react";
 
-// Trạng thái rỗng: nói rõ vì sao trống và, nếu có, hành động tiếp theo.
 export function EmptyState({
   title = "Chưa có dữ liệu",
   message,

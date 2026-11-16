@@ -10,7 +10,6 @@ import { useListProjectMembersQuery } from "../hooks/use-project-members-queries
 import { ProjectMembersPage } from "./project-members-page";
 
 export function ProjectMembersSummary({ projectId }: { projectId: string }) {
-  // Dùng chung cache với bộ lọc người thực hiện của danh sách công việc.
   const query = useListProjectMembersQuery(projectId, { pageSize: 100 });
   const dialog = useHashDialog();
   const open = ["members", "add-member", "member-role", "end-member"].includes(
@@ -18,16 +17,16 @@ export function ProjectMembersSummary({ projectId }: { projectId: string }) {
   );
   return (
     <section id="members" aria-label="Thành viên dự án" className="min-w-0">
-      <header className="mb-3 flex min-h-8 items-center justify-between gap-2">
-        <h2 className="m-0 text-heading-sm font-semibold text-fg">
+      <header className="mb-2 flex min-h-8 items-center justify-between gap-2">
+        <h2 className="m-0 text-sm font-semibold text-fg">
           Thành viên dự án
         </h2>
-        <Button variant="subtle" onClick={() => dialog.open("members")}>
+        <Button size="sm" variant="subtle" onClick={() => dialog.open("members")}>
           Chi tiết
         </Button>
       </header>
       <div
-        className="rounded-lg border border-line bg-surface p-3"
+        className="rounded-lg border border-line/60 bg-sunken/60 p-2.5"
         aria-busy={query.isFetching || undefined}
       >
         {query.isError ? (
@@ -46,7 +45,7 @@ export function ProjectMembersSummary({ projectId }: { projectId: string }) {
             ))}
           </div>
         ) : query.data.items.length ? (
-          <ul className="m-0 grid list-none gap-3 p-0">
+          <ul className="m-0 grid list-none gap-2 p-0">
             {query.data.items.slice(0, 5).map((member) => (
               <li key={member.id}>
                 <UserBadge

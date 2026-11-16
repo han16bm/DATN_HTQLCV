@@ -4,7 +4,6 @@ import type { FeatureDto } from "../types/permissions.types";
 
 export type FeatureNode = { feature: FeatureDto; depth: number };
 
-// BE trả danh mục phẳng; dựng cây theo parentCode, cùng cấp sắp theo sortOrder.
 export function featureTree(features: FeatureDto[]): FeatureNode[] {
   const sorted = features.toSorted((a, b) => a.sortOrder - b.sortOrder);
   const walk = (parent: string | null, depth: number): FeatureNode[] =>
@@ -17,7 +16,6 @@ export function featureTree(features: FeatureDto[]): FeatureNode[] {
   return walk(null, 0);
 }
 
-// Mã quyền (node lá) nằm dưới một node nhóm, kể cả các cấp sâu hơn.
 function leaves(features: FeatureDto[], code: string): string[] {
   return features
     .filter((f) => f.parentCode === code)
@@ -46,7 +44,6 @@ export function FeatureName({ feature }: { feature: FeatureDto }) {
   );
 }
 
-// Cây checkbox: tick node nhóm chọn/bỏ toàn bộ mã con, chọn một phần thì nửa chọn.
 export function FeatureChecklist({
   features,
   value,

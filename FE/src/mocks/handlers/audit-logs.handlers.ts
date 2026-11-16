@@ -10,7 +10,6 @@ import { z } from "zod";
 import { auditLogsDb } from "../db";
 import { authenticatedUser, mockHandler, mockJson, parseQuery } from "./http";
 
-// entity-types đăng ký trước :auditLogId để không bị hiểu là một ID.
 export const auditLogHandlers = [
   http.get(
     "*/api/audit-logs",

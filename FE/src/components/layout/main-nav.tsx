@@ -24,7 +24,6 @@ const itemClass = cn(
   "aria-[current=page]:bg-selected-bg aria-[current=page]:font-semibold aria-[current=page]:text-selected-fg motion-reduce:transition-none",
 );
 
-// Mục con của một mục chính, chỉ giữ những trang người dùng được phép mở.
 function childrenOf(
   item: NavItem,
   session: SessionDto,
@@ -46,7 +45,6 @@ function useNavContext(session: SessionDto): NavContext {
   };
 }
 
-// Menu con dùng chung cho header và sidebar ở chế độ chỉ có biểu tượng.
 function NavDropdown({
   item,
   items,
@@ -108,8 +106,6 @@ function NavDropdown({
   );
 }
 
-// Chỉ mục quản lý bổ sung của khu làm việc ở header; các mục quản trị nằm ở sidebar.
-// Cùng nguồn khai báo với sidebar/mobile, quyền mở từng mục vẫn do canVisit quyết định.
 export function MainNav({
   area,
   session,
@@ -154,8 +150,6 @@ export function MainNav({
   );
 }
 
-// Chức năng chung trong sidebar của mọi role; drawer mobile có cả mục quản lý.
-// Khi thu gọn dùng lại dropdown của header; khi mở rộng hiện mục con bên dưới.
 export function MainList({
   area,
   session,
@@ -182,7 +176,6 @@ export function MainList({
   return (
     <nav aria-label={name(area)} className="grid gap-0.5">
       {items.map((item, index) => {
-        // Tiêu đề nhóm (khu quản trị) đặt trước mục đầu tiên của nhóm khi sidebar mở rộng.
         const groupTitle = !collapsed &&
           item.group &&
           item.group !== items[index - 1]?.group && (

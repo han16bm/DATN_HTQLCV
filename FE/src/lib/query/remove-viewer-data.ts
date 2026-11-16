@@ -7,7 +7,6 @@ export async function removeViewerData(
   viewerId: string,
   feature?: string,
 ) {
-  // Tên thực thể trong breadcrumb cũng là dữ liệu không còn được phép xem.
   useUI.getState().clearLabels();
   const filter = {
     predicate: (q: { queryKey: readonly unknown[] }) =>
@@ -18,7 +17,6 @@ export async function removeViewerData(
   for (const query of client.getQueryCache().findAll(filter)) {
     const error = query.state.error;
     if (error instanceof ApiError && [403, 410].includes(error.status)) {
-      // Keep the error entry, without old data, so mounted observers do not refetch forever.
       query.setState({ data: undefined, dataUpdatedAt: 0 });
     } else client.removeQueries({ queryKey: query.queryKey, exact: true });
   }

@@ -1,7 +1,6 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
 
-// Namespace tách bộ lọc của các danh sách cùng trang (công việc, thành viên, lịch sử).
 export function useUrlFilters(prefix = "") {
   const search = useSearchParams();
   const router = useRouter();

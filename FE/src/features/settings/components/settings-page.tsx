@@ -62,7 +62,6 @@ export function SettingsPage() {
     group: filter.get("group") || undefined,
     q: filter.get("q") || undefined,
   });
-  // Danh sách đầy đủ để dựng lựa chọn nhóm và tìm dòng đang mở trong dialog.
   const all = useListSettingsQuery();
   const groups = [...new Set(all.data?.map((s) => s.group))].sort();
   const reload =
@@ -292,11 +291,9 @@ export function SettingsPage() {
   );
 }
 
-// Form chung cho Thêm/Xem/Sửa; ở chế độ Sửa key, service và kiểu dữ liệu bị khóa.
 const formSchema = createSettingSchema.extend({
   reason: z.string().trim().max(2000).optional(),
 });
-// Trường bị khóa (disabled) không có trong giá trị gửi của RHF nên không bắt buộc.
 const editSchema = formSchema
   .partial({ key: true, serviceType: true, group: true, dataType: true })
   .extend({ reason: updateSettingSchema.shape.reason });
@@ -401,7 +398,6 @@ function SettingForm({
             toast.success("Đã lưu cấu hình.");
             onSaved(base.id);
           } else {
-            // Nhánh tạo đã qua formSchema đầy đủ; parse lại để có kiểu payload tạo.
             const created = await create.mutateAsync(
               createSettingSchema.parse({
                 ...values,

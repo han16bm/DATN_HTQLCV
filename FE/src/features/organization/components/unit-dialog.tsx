@@ -14,7 +14,6 @@ import {
 } from "../hooks/use-organization-queries";
 import { UnitForm } from "./unit-form";
 
-// Dialog Thêm/Xem/Sửa đơn vị theo ?dialog=…&id=… (ADMIN_MODULES 9).
 export function UnitDialog() {
   const dialog = useEntityDialog();
   if (!dialog.mode) return null;

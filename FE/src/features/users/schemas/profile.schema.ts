@@ -11,6 +11,5 @@ export const profileSchema = z
   })
   .extend({
     unit: userSchema.shape.unit.shape.name,
-    // Tên các nhóm quyền đang hoạt động.
     groups: z.array(z.string()),
   });

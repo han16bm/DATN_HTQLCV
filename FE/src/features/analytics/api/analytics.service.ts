@@ -7,6 +7,7 @@ import {
 import { analysisSchema } from "../schemas/analysis-detail.schema";
 import { feedbackSchema } from "../schemas/analysis-feedback.schema";
 import { jobSchema } from "../schemas/analysis-job.schema";
+import { explanationRatingSchema } from "../schemas/analysis-rating.schema";
 import { bottlenecksSchema } from "../schemas/bottlenecks.schema";
 import { dashboardSchema } from "../schemas/dashboard.schema";
 import { risksSchema } from "../schemas/risks.schema";
@@ -18,6 +19,8 @@ import type {
   BottlenecksDto,
   CreateJobInput,
   DashboardDto,
+  ExplanationRatingDto,
+  ExplanationRatingInput,
   FeedbackDto,
   FeedbackInput,
   FilterList,
@@ -28,7 +31,6 @@ import type {
   WorkloadDto,
 } from "../types/analytics.types";
 
-// Tổng hợp/phân tích chạy nhiều truy vấn gộp (DB ở xa) nên cho phép lâu hơn mặc định 15 giây.
 const slow = 45000;
 
 export const analyticsService = {
@@ -117,6 +119,19 @@ export const analyticsService = {
       `/analytics/details/${encodeURIComponent(analysisId)}/feedback`,
       payload,
       { ...options, timeout: slow, schema: feedbackSchema },
+    );
+    return response.data;
+  },
+
+  async rateAnalysisExplanation(
+    analysisId: string,
+    payload: ExplanationRatingInput,
+    options: MutationOptions,
+  ) {
+    const response = await apiClient.put<ExplanationRatingDto>(
+      `/analytics/details/${encodeURIComponent(analysisId)}/explanation-rating`,
+      payload,
+      { ...options, schema: explanationRatingSchema },
     );
     return response.data;
   },

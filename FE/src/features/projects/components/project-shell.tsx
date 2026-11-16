@@ -4,7 +4,7 @@ import { IconButton } from "@/components/ui/icon-button";
 import { MenuContent, MenuItem } from "@/components/ui/menu";
 import { PageSkeleton } from "@/components/ui/loading";
 import { ProjectTile } from "@/components/ui/project-tile";
-import { StatusField } from "@/components/ui/page";
+import { PageHeader, StatusField } from "@/components/ui/page";
 import { HeaderTarget } from "@/components/ui/header-actions";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { hasPermission } from "@/lib/auth/access";
@@ -20,7 +20,6 @@ import { useActivateProjectMutation } from "../hooks/use-projects-mutations";
 import { useGetProjectQuery } from "../hooks/use-projects-queries";
 import { ProjectCloseDialog } from "./project-close-dialog";
 
-// Header nhận diện dự án và các thao tác; thông tin nằm trong một trang chi tiết.
 export function ProjectShell({
   projectId,
   children,
@@ -43,61 +42,57 @@ export function ProjectShell({
   const editable = ["PLANNED", "ACTIVE"].includes(project.status);
   return (
     <HeaderTarget value={target}>
-      <header className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <ProjectTile id={project.id} />
-        <div className="min-w-0 flex-1 basis-60">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <h1 className="m-0 text-heading-lg font-semibold text-fg">
-              {project.name}
-            </h1>
-            <StatusField value={project.status} />
-          </div>
-          <p className="m-0 text-sm text-fg-subtle">
-            {project.code} · {project.unit.name}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="contents" ref={setTarget} />
-          {manage && editable && project.status === "PLANNED" && (
-            <ActionButton
-              primary
-              onAction={async () => {
-                await activate.mutateAsync({
-                  projectId,
-                  version: project.version,
-                });
-                toast.success("Đã triển khai dự án.");
-              }}
-            >
-              Triển khai dự án
-            </ActionButton>
-          )}
-          {manage && editable && (
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger asChild>
-                <IconButton
-                  label="Cài đặt dự án"
-                  className="border border-line-input"
-                >
-                  <Ellipsis className="size-[18px]" aria-hidden="true" />
-                </IconButton>
-              </DropdownMenu.Trigger>
-              <MenuContent>
-                <MenuItem asChild>
-                  <Link href={`${root}/edit`}>
-                    <Settings className="size-4" aria-hidden="true" />
-                    Chỉnh sửa kế hoạch
-                  </Link>
-                </MenuItem>
-                <MenuItem onSelect={() => dialog.open("close")}>
-                  <SquareCheckBig className="size-4" aria-hidden="true" />
-                  Kết thúc / hủy dự án
-                </MenuItem>
-              </MenuContent>
-            </DropdownMenu.Root>
-          )}
-        </div>
-      </header>
+      <PageHeader
+        compact
+        title={project.name}
+        icon={<ProjectTile id={project.id} small />}
+        description={`${project.code} · ${project.unit.name}`}
+        status={<StatusField value={project.status} />}
+        actions={
+          <>
+            <div className="contents" ref={setTarget} />
+            {manage && editable && project.status === "PLANNED" && (
+              <ActionButton
+                primary
+                size="sm"
+                onAction={async () => {
+                  await activate.mutateAsync({
+                    projectId,
+                    version: project.version,
+                  });
+                  toast.success("Đã triển khai dự án.");
+                }}
+              >
+                Triển khai dự án
+              </ActionButton>
+            )}
+            {manage && editable && (
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  <IconButton
+                    label="Cài đặt dự án"
+                    className="border border-line-input"
+                  >
+                    <Ellipsis className="size-[18px]" aria-hidden="true" />
+                  </IconButton>
+                </DropdownMenu.Trigger>
+                <MenuContent>
+                  <MenuItem asChild>
+                    <Link href={`${root}/edit`}>
+                      <Settings className="size-4" aria-hidden="true" />
+                      Chỉnh sửa kế hoạch
+                    </Link>
+                  </MenuItem>
+                  <MenuItem onSelect={() => dialog.open("close")}>
+                    <SquareCheckBig className="size-4" aria-hidden="true" />
+                    Kết thúc / hủy dự án
+                  </MenuItem>
+                </MenuContent>
+              </DropdownMenu.Root>
+            )}
+          </>
+        }
+      />
       {children}
       {manage && editable && (
         <ProjectCloseDialog project={project} reload={query.refetch} />

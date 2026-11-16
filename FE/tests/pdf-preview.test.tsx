@@ -89,7 +89,6 @@ beforeEach(async () => {
   created.urls.length = 0;
   created.revoked.length = 0;
   resetMockState();
-  // jsdom Blob không có stream(); phản hồi giả lập cần Blob của Node.
   for (const [id, blob] of db.files)
     db.files.set(
       id,
@@ -200,7 +199,6 @@ it("lists submissions first and loads their content and PDF only when the manage
         .getByRole("link", { name: /Mở tab mới/ })
         .getAttribute("href"),
     ).toBe(frame.getAttribute("src"));
-    // Thu gọn thì bỏ khung và thu hồi địa chỉ tạm.
     await userEvent
       .setup()
       .click(within(panel).getByRole("button", { name: "Thu gọn" }));

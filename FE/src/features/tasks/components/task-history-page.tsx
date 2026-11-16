@@ -6,7 +6,6 @@ import { QueryErrorState } from "@/components/ui/query-error-state";
 import { useUrlFilters } from "@/lib/query/use-url-filters";
 import { useListTaskHistoryQuery } from "../hooks/use-tasks-queries";
 
-// Bảng lịch sử của một việc; trang và ngăn kéo ở trang Chi tiết dùng chung.
 export function TaskHistoryTable({
   taskId,
   page,

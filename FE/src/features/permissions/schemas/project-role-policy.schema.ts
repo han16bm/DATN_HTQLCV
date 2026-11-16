@@ -1,7 +1,6 @@
 import { reasonSchema, refSchema } from "@/lib/validation/common.schema";
 import { z } from "zod";
 
-// Mã quyền theo dự án (ProjectAccess.ProjectCodes), đúng thứ tự hiển thị.
 export const projectPermissionCodes = [
   "PROJECT_MANAGE",
   "MEMBERS_MANAGE",

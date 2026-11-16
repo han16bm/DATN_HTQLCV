@@ -14,7 +14,6 @@ import {
 } from "../hooks/use-organization-queries";
 import { TeamForm } from "./team-form";
 
-// Dialog Thêm/Xem/Sửa nhóm theo ?dialog=…&id=… (ADMIN_MODULES 9).
 export function TeamDialog() {
   const dialog = useEntityDialog();
   if (!dialog.mode) return null;

@@ -56,7 +56,6 @@ function valueText(value: Value | undefined, field: string): string {
     }).format(new Date(value));
   return label(value);
 }
-// Chỉ các trường thực sự đổi, mỗi trường một khối "Trước / Sau" để so sánh nhanh.
 export function AuditChanges({
   before,
   after,

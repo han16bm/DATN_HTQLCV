@@ -7,8 +7,6 @@ import type { ReactNode } from "react";
 import { detailClass } from "./page";
 import { ModalHeader, overlayClass } from "./overlay";
 
-// Khung dialog Thêm/Xem/Sửa của khu quản trị (ADMIN_MODULES 9): header (tiêu đề,
-// trạng thái, dấu vết) và footer dính, thân cuộn. Không tải dữ liệu.
 export function EntityDialog({
   open,
   title,
@@ -45,8 +43,8 @@ export function EntityDialog({
             "rounded-xl border border-line bg-surface shadow-overlay outline-none",
             "motion-reduce:animate-none data-[state=open]:animate-[modal-in_160ms_ease-out]",
             size === "lg"
-              ? "w-[min(960px,calc(100vw-32px))]"
-              : "w-[min(680px,calc(100vw-32px))]",
+              ? "w-[min(60rem,calc(100vw-2rem))]"
+              : "w-[min(42.5rem,calc(100vw-2rem))]",
           )}
           aria-describedby={undefined}
         >
@@ -68,7 +66,6 @@ export function EntityDialog({
   );
 }
 
-// Footer dính của chế độ Xem: [Đóng] + các nút như [Chỉnh sửa].
 export function DialogFooter({ children }: { children: ReactNode }) {
   return (
     <div className="sticky -bottom-4 -mx-5 -mb-4 flex flex-wrap items-center justify-end gap-2.5 border-t border-line bg-surface px-5 py-3 md:-mx-6 md:px-6">
@@ -77,7 +74,6 @@ export function DialogFooter({ children }: { children: ReactNode }) {
   );
 }
 
-// Tab trong dialog (Thông tin / Phân quyền …); trạng thái tab là của dialog.
 export function DialogTabs<T extends string>({
   label,
   value,
@@ -116,7 +112,6 @@ export function DialogTabs<T extends string>({
   );
 }
 
-// Cột Hành động của danh sách: [Xem] [Sửa] mở dialog qua URL.
 export function RowDialogLinks({
   name,
   view,

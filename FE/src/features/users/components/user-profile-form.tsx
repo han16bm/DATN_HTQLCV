@@ -30,7 +30,6 @@ import {
 } from "../schemas/user-form.schema";
 import { type UserDto } from "../types/users.types";
 
-// Một form cho Thêm/Xem/Sửa tài khoản; chế độ Xem disable mọi trường.
 export function UserProfileForm({
   mode,
   user,
@@ -43,7 +42,6 @@ export function UserProfileForm({
   mode: DialogMode;
   user?: UserDto;
   units: FormOption[];
-  // Nhóm quyền chọn khi cấp tài khoản; không truyền khi thiếu quyền xem nhóm.
   groups?: FormOption[];
   reload: () => Promise<{ data?: UserDto }>;
   onSaved: (id: string) => void;

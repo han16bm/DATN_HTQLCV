@@ -3,7 +3,6 @@ import { cn } from "@/lib/cn";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import type { ComponentProps } from "react";
 
-// Menu thả xuống dùng chung: lớp nổi (overlay) có viền và bóng, mục cao 32px.
 export function MenuContent({
   className,
   ...props
@@ -15,7 +14,7 @@ export function MenuContent({
         sideOffset={4}
         collisionPadding={12}
         className={cn(
-          "z-70 w-max min-w-48 max-w-[min(320px,calc(100vw-24px))] rounded-lg border border-line bg-surface p-1 shadow-overlay",
+          "z-70 w-max min-w-[min(12rem,calc(100vw-1.5rem))] max-w-[min(20rem,calc(100vw-1.5rem))] rounded-lg border border-line bg-surface p-1 shadow-overlay",
           className,
         )}
         {...props}
@@ -32,7 +31,7 @@ export function MenuItem({
   return (
     <DropdownMenu.Item
       className={cn(
-        "flex min-h-8 cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1 text-sm outline-none select-none",
+        "flex min-h-8 min-w-0 cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1 text-sm break-words outline-none select-none",
         "data-highlighted:bg-hover data-disabled:cursor-not-allowed data-disabled:opacity-50",
         tone === "danger" ? "text-danger-fg" : "text-fg",
         className,

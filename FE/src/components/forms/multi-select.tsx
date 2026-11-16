@@ -14,7 +14,6 @@ type Props = Omit<ComponentPropsWithRef<"button">, "value" | "onChange"> & {
   onChange: (value: string[]) => void;
 };
 
-// Chọn nhiều mục trong danh sách có ô tìm kiếm; nút hiện tối đa hai mục đã chọn.
 export function MultiSelect({
   label,
   options,

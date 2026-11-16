@@ -12,7 +12,6 @@ import {
 } from "../hooks/use-users-queries";
 import type { UserDto, UserProjectDto } from "../types/users.types";
 
-// Khóa thường yêu cầu bàn giao trước (BE 409 HANDOVER_REQUIRED): liệt kê dự án đang làm chủ và bàn giao ngay tại đây.
 export function UserHandoverPanel({ user }: { user: UserDto }) {
   const projects = useListUserProjectsQuery(user.id);
   const owned = (projects.data ?? []).filter(

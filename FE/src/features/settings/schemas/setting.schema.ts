@@ -2,7 +2,6 @@ import { reasonSchema, refSchema } from "@/lib/validation/common.schema";
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 
-// Cấu hình tập trung (SystemConfigs, ADMIN_MODULES 4): một cột giá trị duy nhất.
 export const serviceTypeSchema = z.enum([
   "Global",
   "Gateway",
@@ -35,7 +34,6 @@ export const settingSchema = z.object({
   dataType: configDataTypeSchema,
   value: z.string(),
   isActive: z.boolean(),
-  // Tính từ ConfigCatalog của BE, không phải cột DB.
   known: z.boolean(),
   requiresRestart: z.boolean(),
   minValue: z.number().nullable(),
@@ -45,7 +43,6 @@ export const settingSchema = z.object({
   updatedAt: z.iso.datetime(),
   updatedBy: refSchema.nullable(),
   createdBy: refSchema.nullable(),
-  // Cấu hình bí mật (ví dụ Cloudinary API secret): BE lưu mã hoá, value luôn rỗng, secretSet = đã nhập.
   secret: z.boolean().optional(),
   secretSet: z.boolean().optional(),
 });

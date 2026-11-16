@@ -12,6 +12,10 @@ import type {
 } from "../schemas/analysis-job.schema";
 import type { analysisMetaSchema } from "../schemas/analysis-meta.schema";
 import type {
+  explanationRatingInputSchema,
+  explanationRatingSchema,
+} from "../schemas/analysis-rating.schema";
+import type {
   contextItemSchema,
   measureSchema,
 } from "../schemas/analysis-snapshot.schema";
@@ -46,6 +50,14 @@ export type FeedbackInput = z.input<typeof feedbackInputSchema>;
 export type FeedbackArgs = {
   analysisId: string;
   payload: FeedbackInput;
+};
+export type ExplanationRatingDto = z.output<typeof explanationRatingSchema>;
+export type ExplanationRatingInput = z.input<
+  typeof explanationRatingInputSchema
+>;
+export type ExplanationRatingArgs = {
+  analysisId: string;
+  payload: ExplanationRatingInput;
 };
 export type FilterOptionsQuery = z.input<typeof filterOptionsQuerySchema>;
 export type FilterList = Page<EntityLabelDto>;

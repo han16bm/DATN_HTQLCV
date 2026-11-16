@@ -1,9 +1,6 @@
 import { cn } from "@/lib/cn";
 import type { ReactNode } from "react";
 
-// Vùng chính (rộng) và cột phụ (hẹp): nội dung chính luôn nổi nhất, thông tin phụ
-// gọn bên cạnh. Xếp dọc khi vùng nội dung hẹp hơn 900px, bất kể chiều rộng màn hình.
-// Cột phụ tự khai báo <aside aria-label> khi nó là thông tin bổ trợ có tên riêng.
 export function SplitLayout({
   aside,
   children,
@@ -16,7 +13,7 @@ export function SplitLayout({
   return (
     <div
       className={cn(
-        "grid items-start gap-5 @min-[900px]/page:grid-cols-[minmax(0,1fr)_300px]",
+        "grid items-start gap-5 @min-[56.25rem]/page:grid-cols-[minmax(0,1fr)_18.75rem]",
         className,
       )}
     >

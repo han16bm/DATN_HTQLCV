@@ -2,7 +2,6 @@ import { cn } from "@/lib/cn";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-// Dải số liệu chính ở đầu trang: vài ô nhỏ cạnh nhau, số lớn hơn nhãn.
 export function MetricStrip({
   children,
   className,
@@ -16,7 +15,7 @@ export function MetricStrip({
     <section
       aria-label={label}
       className={cn(
-        "mb-5 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-px overflow-hidden rounded-lg border border-line bg-line",
+        "mb-5 grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,9.375rem),1fr))] gap-px overflow-hidden rounded-lg border border-line bg-line",
         className,
       )}
     >
@@ -47,7 +46,7 @@ export function Metric({
       <div className="mb-1 text-xs font-medium text-fg-subtle">{label}</div>
       <div
         className={cn(
-          "text-metric font-semibold tabular-nums",
+          "text-metric font-semibold break-words tabular-nums",
           tone === "danger" && "text-danger-fg",
           tone === "warning" && "text-warning-fg",
         )}

@@ -31,7 +31,6 @@ export function UsersPage() {
     unitId: filter.get("unitId") || undefined,
   });
   const units = useListUnitsQuery({ pageSize: 100 });
-  // GET /permission-groups mở cho USERS_MANAGE để lọc theo nhóm (ADMIN_MODULES 7.1).
   const groups = useListPermissionGroupsQuery({ pageSize: 100 });
   return (
     <>

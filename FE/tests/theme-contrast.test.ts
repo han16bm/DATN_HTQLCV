@@ -1,9 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 
-// Mọi bộ màu chủ đạo trong tokens.css chỉ khai hai màu gốc (nav, action); các màu hover,
-// chọn... suy ra bằng color-mix. Test này tính lại đúng các phép trộn đó để chắc chữ
-// vẫn đạt WCAG AA ở cả ba chế độ khi thêm hoặc chỉnh một bộ màu.
 const css = readFileSync("src/styles/tokens.css", "utf8");
 
 type Rgb = [number, number, number];
@@ -65,7 +62,6 @@ it("declares every theme the settings panel offers", () => {
 it.each(themes)(
   "$name keeps text readable in default, light and dark modes",
   ({ nav, action }) => {
-    // Mặc định: chữ trắng trên thanh điều hướng; nút (chữ nền sáng) và liên kết trên trang.
     expect(contrast(WHITE, nav)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(SURFACE, action)).toBeGreaterThanOrEqual(4.5);
     for (const page of PAGES)
@@ -73,7 +69,6 @@ it.each(themes)(
     const selectedBg = mix(action, 0.1, WHITE);
     const selectedFg = mix(action, 0.9, BLACK);
     expect(contrast(selectedFg, selectedBg)).toBeGreaterThanOrEqual(4.5);
-    // Tối: màu hành động sáng lên làm chữ/liên kết, chữ nút là bề mặt tối.
     const states = [0.5, 0.42, 0.6].map((share) => mix(action, share, WHITE));
     for (const state of states)
       expect(contrast(DARK_SURFACE, state)).toBeGreaterThanOrEqual(4.5);

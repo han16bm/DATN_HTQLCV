@@ -60,7 +60,7 @@ describe("Feature organization and HTTP boundaries", () => {
     const actual = handlers
       .map((h) => `${h.info.method} ${String(h.info.path).replace(/^\*/, "")}`)
       .sort();
-    expect(actual).toHaveLength(120);
+    expect(actual).toHaveLength(121);
     expect(actual).toEqual(expected);
     const services = readdirSync("src/features")
       .flatMap((feature) => {
@@ -81,7 +81,6 @@ describe("Feature organization and HTTP boundaries", () => {
         });
       })
       .sort();
-    // Avatar images are loaded by the browser through their response URL.
     expect([...services, "GET /api/avatars/:avatarId"].sort()).toEqual(
       expected,
     );

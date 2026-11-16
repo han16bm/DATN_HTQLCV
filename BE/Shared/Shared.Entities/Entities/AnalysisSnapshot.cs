@@ -34,10 +34,32 @@ public class AnalysisJob
     public string Id { get; set; } = null!;
     public string AnalysisId { get; set; } = null!;
     public string Status { get; set; } = null!; // QUEUED | RUNNING | SUCCEEDED | FAILED
+    /// <summary>Provider/model/prompt cố định lúc tạo job; null với job tạo trước khi có cột này.</summary>
+    public string? Provider { get; set; }
+    public string? Model { get; set; }
+    public string? PromptVersion { get; set; }
     public string CreatedBy { get; set; } = null!;
     public DateTime CreatedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
     public string? ErrorJson { get; set; }
+}
+
+/// <summary>
+/// Đánh giá hữu ích/không hữu ích của một người cho đúng một lời diễn giải AI (theo ExplanationGeneratedAt).
+/// Không xóa cùng bản chụp: giữ lâu dài để so sánh chất lượng theo model/promptVersion/loại phân tích.
+/// </summary>
+public class AnalysisExplanationRating
+{
+    public string Id { get; set; } = null!;
+    public string AnalysisId { get; set; } = null!;
+    public string AnalysisType { get; set; } = null!;
+    public DateTime ExplanationGeneratedAt { get; set; }
+    public string ModelDisplayName { get; set; } = null!;
+    public string PromptVersion { get; set; } = null!;
+    public string ActorId { get; set; } = null!;
+    public bool Helpful { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
 }
 
 public class AnalysisFeedback

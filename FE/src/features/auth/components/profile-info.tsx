@@ -24,7 +24,6 @@ export function ProfileInfo({
 }) {
   const query = useProfileQuery();
   const { session } = useSession();
-  // Vị trí suy từ quyền hiện tại: sysadmin → Admin, Leader/PM (PROJECT_CREATE) → Leader, còn lại nhân viên.
   const position = user.isSysAdmin
     ? "Admin"
     : hasPermission(session, "PROJECT_CREATE")
@@ -33,7 +32,7 @@ export function ProfileInfo({
   const [editing, setEditing] = useState(false);
   const profile = query.data;
   return (
-    <div className="grid min-w-0 items-start gap-5 @min-[1000px]/page:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid min-w-0 items-start gap-5 @min-[62.5rem]/page:grid-cols-[minmax(0,1fr)_20rem]">
       <section
         aria-label="Thông tin cá nhân"
         className="min-w-0 overflow-hidden rounded-lg border border-line bg-surface"

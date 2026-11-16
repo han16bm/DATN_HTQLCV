@@ -90,6 +90,59 @@ namespace Shared.Entities.Migrations
                     b.ToTable("Alerts");
                 });
 
+            modelBuilder.Entity("Shared.Entities.Entities.AnalysisExplanationRating", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("AnalysisId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("AnalysisType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExplanationGeneratedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Helpful")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ModelDisplayName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("PromptVersion")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ModelDisplayName", "PromptVersion");
+
+                    b.HasIndex("AnalysisId", "ActorId", "ExplanationGeneratedAt")
+                        .IsUnique();
+
+                    b.ToTable("AnalysisExplanationRatings");
+                });
+
             modelBuilder.Entity("Shared.Entities.Entities.AnalysisFeedback", b =>
                 {
                     b.Property<string>("Id")
@@ -144,6 +197,18 @@ namespace Shared.Entities.Migrations
 
                     b.Property<string>("ErrorJson")
                         .HasColumnType("text");
+
+                    b.Property<string>("Model")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("PromptVersion")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Provider")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -1347,6 +1412,36 @@ namespace Shared.Entities.Migrations
                             ServiceType = "Global",
                             UpdatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
                             Value = "datn",
+                            Version = 1
+                        },
+                        new
+                        {
+                            Id = "cfg-014",
+                            CreatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "STRING",
+                            Description = "Khóa API Claude. Lưu mã hóa trong SystemConfigs và không bao giờ trả giá trị thật về giao diện.",
+                            Group = "AI",
+                            IsActive = true,
+                            Key = "Analytics:Anthropic:ApiKey",
+                            Name = "Anthropic - API key",
+                            ServiceType = "Analytics.Api",
+                            UpdatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "",
+                            Version = 1
+                        },
+                        new
+                        {
+                            Id = "cfg-015",
+                            CreatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "STRING",
+                            Description = "Model ID được gọi bởi Analytics.Api. Chỉ thay đổi nếu model có quyền truy cập trên tài khoản Anthropic.",
+                            Group = "AI",
+                            IsActive = true,
+                            Key = "Analytics:Anthropic:Model",
+                            Name = "Anthropic - mô hình Claude",
+                            ServiceType = "Analytics.Api",
+                            UpdatedAt = new DateTime(2026, 11, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "claude-opus-5-5",
                             Version = 1
                         });
                 });

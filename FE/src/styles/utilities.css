@@ -1,4 +1,3 @@
-/* Theme cục bộ cho header/sidebar. Các menu trong Portal vẫn dùng theme sáng. */
 @utility nav-surface {
   background-color: var(--color-nav);
   color: var(--color-nav-fg);
@@ -13,25 +12,21 @@
   --color-selected-fg: var(--color-nav-fg);
   --color-action: var(--color-nav-fg);
   --color-focus: var(--color-nav-fg);
-  /* Chỉ chế độ Sáng đặt --nav-outline (viền mảnh); các chế độ khác không có viền. */
   box-shadow: var(--nav-outline, none);
 }
 
-/*
- * Ảnh bìa của thẻ người dùng ở sidebar, chữ trắng đặt lên trên. Ảnh phải tối (điểm sáng
- * nhất ≲ 110/255 để chữ trắng ≥ 4,5:1), lớp phủ đen 20% là biên an toàn khi thay ảnh.
- * Không phụ thuộc bộ màu hay chế độ giao diện. Ảnh là WebP 480px nên chỉ vài KB.
- */
+@utility compact-filters {
+  --control-h: 2rem;
+  --text-sm: 0.75rem;
+  --text-sm--line-height: 1rem;
+}
+
 @utility profile-cover {
   background:
     linear-gradient(rgb(0 0 0 / 0.2), rgb(0 0 0 / 0.2)),
     url("/images/profile-cover.webp") center / cover;
 }
 
-/*
- * Bóng báo còn nội dung bị cuộn khuất ở hai mép (bảng cuộn ngang). Lớp phủ màu nền
- * cuộn theo nội dung (local) che bóng khi đã tới mép, nên không cần JS.
- */
 @utility scroll-shadow-x {
   background:
     linear-gradient(to right, var(--color-surface) 30%, transparent) left

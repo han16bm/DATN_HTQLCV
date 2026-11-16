@@ -38,7 +38,6 @@ const roleHint: Record<ProjectRolePolicyDto["role"], string> = {
   MEMBER: "Áp dụng cho mọi thành viên của dự án, không cần quyền Leader/PM.",
 };
 
-// Ma trận quyền theo vai trò dự án (ADMIN_MODULES §11): một người giữ vai trò khác nhau ở từng dự án.
 export function ProjectRolesPage() {
   const query = useListProjectRolePoliciesQuery();
   const dialog = useEntityDialog();

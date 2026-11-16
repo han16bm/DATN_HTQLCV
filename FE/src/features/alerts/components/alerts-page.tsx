@@ -23,7 +23,6 @@ export function AlertsPage() {
   const f = useUrlFilters();
   const status = alertStatusSchema.safeParse(f.get("status"));
   const level = alertSeveritySchema.safeParse(f.get("severity"));
-  // Cảnh báo mở cho mọi nhân viên: chỉ người có quyền phân tích mới dùng danh mục dự án của Phân tích
   const analyst = hasAnyPermission(useSession().session, "ANALYTICS_VIEW");
   const analyticsProjects = useListAnalyticsFilterOptionsQuery(
     { kind: "PROJECT", pageSize: 100 },

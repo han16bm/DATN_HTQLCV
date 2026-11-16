@@ -3898,6 +3898,39 @@ Analytics.AnalysisFeedbackDTO; BE cấp id, analysisId, snapshotId, actorId/acto
 
 Refetch đúng ['analytics', viewerId, 'detail', analysisId] để lấy feedback.latest. Không invalidate các số liệu nghiệp vụ hoặc tạo job AI.
 
+## rateAnalysisExplanation
+
+`PUT /api/analytics/details/:analysisId/explanation-rating` → HTTP 200
+
+- Feature `analytics` · Màn S43 (mọi loại phân tích) · Bổ sung 12/11/2026 để đo chất lượng lời diễn giải AI theo model/promptVersion; không thuộc UC gốc.
+- Phiên bắt buộc; cần ANALYTICS_VIEW trên toàn phạm vi bản phân tích (như getAnalysisDetail).
+- Idempotency-Key gửi kèm như các mutation khác; PUT ghi đè nên gửi lại cùng giá trị cho cùng kết quả. Không yêu cầu If-Match.
+- useMutation; hook `useRateAnalysisExplanationMutation`; retry=false.
+
+### Params DTO
+
+| Trường | Kiểu | Bắt buộc | Ý nghĩa |
+|---|---|---|---|
+| `analysisId` | ID | Có | Bản phân tích đang xem. |
+
+### Body DTO và whitelist
+
+Chỉ `helpful: boolean`. Zod strict từ chối mọi trường khác (model, promptVersion, actorId do BE tự lấy).
+
+### Response DTO
+
+`{ helpful: boolean, ratedAt: UTC }`. Chi tiết trả thêm `explanationRating: { mine: boolean | null, canSubmit: boolean }`; `mine` là đánh giá của chính người xem cho **lời diễn giải hiện tại** (khóa theo `lastSuccess.generatedAt`), tạo lại lời diễn giải thì `mine` về null.
+
+### Điều kiện và lỗi
+
+- 409 `RATING_NOT_ALLOWED` khi chưa có `lastSuccess`; 403/404/410 như getAnalysisDetail; 422 khi thiếu `helpful`.
+- Mỗi người một bản ghi cho mỗi lời diễn giải; gửi lại thì đổi ý. BE lưu kèm loại phân tích, model, promptVersion; bản ghi không bị xóa khi bản chụp hết hạn.
+- Không gọi LLM, không đổi số liệu, nhận định hay phản hồi điểm nghẽn.
+
+### Cache sau thao tác
+
+Refetch đúng ['analytics', viewerId, 'detail', analysisId].
+
 ## listAnalyticsFilterOptions
 
 `GET /api/analytics/filter-options` → HTTP 200

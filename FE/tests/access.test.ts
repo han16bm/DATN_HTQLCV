@@ -51,7 +51,6 @@ describe("effective permissions by scope", () => {
     const manager = session(["PROJECT_CREATE"], [leader("p-1")]);
     expect(hasPermission(manager, "TASKS_REVIEW", "p-1")).toBe(true);
     expect(hasPermission(manager, "TASKS_REVIEW", "p-2")).toBe(false);
-    // Không có projectId nghĩa là phạm vi hệ thống, không nhìn vào dự án.
     expect(hasPermission(manager, "TASKS_REVIEW")).toBe(false);
     expect(hasAnyPermission(manager, "TASKS_REVIEW")).toBe(true);
     expect(hasPermission(manager, "PROJECT_CREATE")).toBe(true);
@@ -76,7 +75,6 @@ describe("effective permissions by scope", () => {
   it("applies only read-only system analytics to every project", () => {
     const viewer = session(["ANALYTICS_VIEW", "TASKS_REVIEW"]);
     expect(hasPermission(viewer, "ANALYTICS_VIEW", "p-9")).toBe(true);
-    // Quyền ghi/nghiệm thu cấp ở hệ thống không tự áp cho từng dự án.
     expect(hasPermission(viewer, "TASKS_REVIEW", "p-9")).toBe(false);
   });
 
@@ -121,7 +119,6 @@ describe("route access", () => {
     ] as const;
     for (const [permission, paths] of cases) {
       const only = session([permission]);
-      // Mọi mã trong nhóm ADMIN đều mở được khu quản trị và trang tổng quan.
       expect(canAdminister(only), permission).toBe(true);
       expect(canVisit(only, "/admin"), permission).toBe(true);
       expect(canVisit(only, "/admin/users"), permission).toBe(false);
@@ -141,7 +138,6 @@ describe("route access", () => {
       expect(canVisit(member, path)).toBe(false);
       expect(canVisit(admin, path)).toBe(false);
     }
-    // Cảnh báo là thông báo cá nhân: ai đăng nhập cũng mở được, BE lọc theo người nhận
     expect(canVisit(member, "/alerts/a-1")).toBe(true);
     expect(canVisit(leaderSession, "/reviews")).toBe(true);
     expect(canVisit(member, "/reviews")).toBe(false);

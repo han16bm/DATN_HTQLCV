@@ -22,7 +22,6 @@ import {
   useListProjectHistoryQuery,
 } from "../hooks/use-projects-queries";
 
-// `dot` là chấm ở danh sách, `arc` là cung tương ứng trên biểu đồ vòng.
 const segments = [
   {
     key: "done",
@@ -63,15 +62,12 @@ const bucket = (task: TaskRow) =>
           ? "cancelled"
           : "todo";
 
-// Tình hình công việc của dự án: biểu đồ vòng (tỉ lệ hoàn thành ở giữa) bên trái, danh
-// sách số việc theo trạng thái bên phải. Phạm vi này luôn là toàn dự án, độc lập bộ lọc.
 function Health({ tasks, total }: { tasks: TaskRow[]; total: number }) {
   const titleId = useId();
   const counts = { done: 0, review: 0, doing: 0, todo: 0, cancelled: 0 };
   for (const task of tasks) counts[bucket(task)]++;
   const active = tasks.length - counts.cancelled;
   const percent = active ? Math.round((counts.done / active) * 100) : 0;
-  // Mỗi cung bắt đầu ở nơi cung trước kết thúc, tính từ đỉnh vòng.
   const arcs = segments.map((s, index) => ({
     ...s,
     count: counts[s.key],
@@ -82,7 +78,7 @@ function Health({ tasks, total }: { tasks: TaskRow[]; total: number }) {
   return (
     <section
       aria-labelledby={titleId}
-      className="min-w-0 border-t border-line pt-4 @min-[900px]/page:border-t-0 @min-[900px]/page:border-l @min-[900px]/page:pt-0 @min-[900px]/page:pl-5"
+      className="min-w-0 border-t border-line pt-4 @min-[56.25rem]/page:border-t-0 @min-[56.25rem]/page:border-l @min-[56.25rem]/page:pt-0 @min-[56.25rem]/page:pl-5"
     >
       <h2 id={titleId} className="m-0 mb-3 text-sm font-semibold text-fg">
         Tiến độ công việc
@@ -162,8 +158,6 @@ function Health({ tasks, total }: { tasks: TaskRow[]; total: number }) {
   );
 }
 
-// Một trang: mục tiêu/kế hoạch/tiến độ, toàn bộ công việc và thành viên.
-// Lịch sử tải khi mở ngăn kéo, không thay trang hoặc bộ lọc đang xem.
 export function ProjectDetailPage({ projectId }: { projectId: string }) {
   const dialog = useHashDialog();
   const project = useGetProjectQuery(projectId);
@@ -176,7 +170,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
     <>
       <section
         aria-label="Tổng quan dự án"
-        className="mb-5 grid gap-5 rounded-lg bg-sunken/60 p-4 @min-[900px]/page:grid-cols-[minmax(0,1fr)_300px]"
+        className="mb-5 grid gap-5 rounded-lg bg-sunken/60 p-4 @min-[56.25rem]/page:grid-cols-[minmax(0,1fr)_18.75rem]"
       >
         <div className="grid min-w-0 content-start gap-4">
           <section>
@@ -187,7 +181,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
               {p.objective}
             </p>
           </section>
-          <dl className="m-0 grid gap-4 @min-[600px]/page:grid-cols-3">
+          <dl className="m-0 grid gap-4 @min-[37.5rem]/page:grid-cols-3">
             <div className="grid content-start gap-1">
               <dt className="text-xs text-fg-subtle">Người phụ trách</dt>
               <dd className="m-0 min-w-0 text-sm">
@@ -232,7 +226,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
           />
         )}
       </section>
-      <div className="grid items-start gap-5 @min-[1100px]/page:grid-cols-[minmax(0,1fr)_240px]">
+      <div className="grid items-start gap-5 @min-[68.75rem]/page:grid-cols-[minmax(0,1fr)_15rem]">
         <section id="tasks" aria-label="Công việc dự án" className="min-w-0">
           <h2 className="m-0 mb-3 flex min-h-8 items-center text-heading-sm font-semibold text-fg">
             Công việc dự án
@@ -242,7 +236,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
         <ProjectMembersSummary projectId={projectId} />
       </div>
       <HeaderActions>
-        <Button onClick={() => dialog.open("history")}>Lịch sử dự án</Button>
+        <Button size="sm" onClick={() => dialog.open("history")}>Lịch sử dự án</Button>
       </HeaderActions>
       <SlidePanel
         size="lg"

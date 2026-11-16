@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Analytics.Api.Constants;
 using Analytics.Api.Models.Dtos;
 using Analytics.Api.Models.Queries;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +21,8 @@ public sealed record AnalysisDraft(
     string Summary,
     IReadOnlyCollection<string> ProjectIds,
     List<SeriesDto>? Series = null,
-    string? QualityStatus = null);
+    string? QualityStatus = null,
+    IReadOnlyCollection<string>? MissingFields = null);
 
 /// <summary>Phần nội dung lưu trong AnalysisSnapshot.PayloadJson.</summary>
 public sealed record SnapshotPayload(
@@ -84,12 +86,17 @@ public class AnalysisSnapshotStore(ApplicationDbContext context, IHttpContextAcc
         var quality = draft.QualityStatus
             ?? (draft.Metrics.Count > 0 && draft.Metrics.All(m => m.Value is null) ? "INSUFFICIENT"
                 : draft.Metrics.Any(m => m.Value is null) ? "PARTIAL" : "SUFFICIENT");
+        var missingFields = draft.Metrics.Where(m => m.Value is null).Select(m => m.Label)
+            .Concat(draft.MissingFields ?? []).Distinct().ToList();
         var context = new List<ContextItemDto>
         {
             new("from", "Từ ngày", scope.From.ToString("yyyy-MM-dd"), "DATE"),
             new("to", "Đến ngày", scope.To.ToString("yyyy-MM-dd"), "DATE")
         };
-        var payload = new SnapshotPayload(draft.Subject, new QualityDto(quality), draft.Metrics, context,
+        var rule = RuleBasis(draft.Type);
+        if (rule is not null)
+            context.Add(new ContextItemDto("rule", "Quy tắc đánh giá", rule, "TEXT"));
+        var payload = new SnapshotPayload(draft.Subject, new QualityDto(quality) { MissingFields = missingFields }, draft.Metrics, context,
             draft.Series ?? [], draft.Evidence, Truncate(draft.Summary, 4000));
         var payloadJson = JsonSerializer.Serialize(payload, Json);
         var projectIds = draft.ProjectIds.Distinct().Order(StringComparer.Ordinal).ToList();
@@ -167,6 +174,26 @@ public class AnalysisSnapshotStore(ApplicationDbContext context, IHttpContextAcc
         await context.AnalysisJobs.Where(j => expired.Contains(j.AnalysisId)).ExecuteDeleteAsync();
         await context.AnalysisFeedback.Where(f => expired.Contains(f.AnalysisId)).ExecuteDeleteAsync();
         await context.AnalysisSnapshots.Where(s => s.ExpiresAt < now).ExecuteDeleteAsync();
+    }
+
+    // Mô tả đúng điều kiện AnalyticsService dùng để xếp loại, để người xem và LLM biết căn cứ phân loại.
+    private static string? RuleBasis(string type)
+    {
+        return type switch
+        {
+            "RISK" =>
+                "Chưa đủ dữ liệu: công việc chưa phân công người thực hiện. "
+                + "Quá hạn: đã qua hạn hoàn thành mà chưa được nghiệm thu (kể cả đang chờ nghiệm thu). "
+                + $"Có nguy cơ: còn không quá {Thresholds.AtRiskDays} ngày đến hạn.",
+            "BOTTLENECK" =>
+                $"Điểm nghẽn khi chờ nghiệm thu từ {Thresholds.PendingReviewBottleneckHours} giờ, "
+                + $"đang thực hiện từ {Thresholds.InProgressBottleneckDays} ngày ở trạng thái hiện tại, "
+                + $"hoặc bị yêu cầu chỉnh sửa từ {Thresholds.RevisionBottleneckCount} lần.",
+            "WORKLOAD" =>
+                "Đang xử lý gồm việc chưa bắt đầu và đang thực hiện; việc chờ nghiệm thu tính riêng. "
+                + "Chưa có lịch làm việc nên chưa xác định được mức quá tải.",
+            _ => null
+        };
     }
 
     private static string LatestKey(string type, AnalysisSubjectDto subject) => $"{type}|{subject.Kind}|{subject.Key}";

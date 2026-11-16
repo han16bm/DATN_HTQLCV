@@ -40,7 +40,6 @@ export function useRunJobMutation() {
   const handleError = useAccessErrorHandler();
   return useMutation({
     mutationKey: [...jobsKeys.viewer(viewerId), "runJob"],
-    // Mỗi lần bấm là một lần chạy mới nên không giữ khóa gửi lặp giữa các lần.
     mutationFn: (code: string) =>
       jobsService.runJob(code, { key: crypto.randomUUID() }),
     onError: handleError,

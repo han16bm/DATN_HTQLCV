@@ -30,8 +30,8 @@ export function ProfileHeader({
       )}
     >
       <Avatar name={name} src={avatarUrl} size="lg" />
-      <div className="grid min-w-0 gap-2">
-        <h2 className="m-0 text-heading-md font-semibold text-fg">{name}</h2>
+      <div className="grid min-w-0 max-w-full gap-2">
+        <h2 className="m-0 text-heading-md font-semibold break-words text-fg">{name}</h2>
         <p className="m-0 text-sm text-fg-subtle">{unit}</p>
         {role && (
           <div>

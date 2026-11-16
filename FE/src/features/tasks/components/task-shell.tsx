@@ -65,102 +65,104 @@ export function TaskShell({
       path === `${root}/submissions/${task.latestSubmissionId}`);
   return (
     <>
-      <div className="pt-2">
-        <PageHeader
-          title={task.title}
-          status={
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <StatusField value={task.status} />
-              <StatusField label="Ưu tiên" value={task.priority} />
-              {task.isOverdue && (
-                <StatusField label="Tiến độ" value="OVERDUE" />
-              )}
-            </div>
-          }
-          actions={
-            <>
-              {review && (
-                <Button variant="primary" onClick={() => dialog.open("review")}>
-                  Quyết định nghiệm thu
+      <PageHeader
+        compact
+        title={task.title}
+        status={
+          <>
+            <StatusField value={task.status} />
+            <StatusField label="Ưu tiên" value={task.priority} />
+            {task.isOverdue && (
+              <StatusField label="Tiến độ" value="OVERDUE" />
+            )}
+          </>
+        }
+        actions={
+          <>
+            {review && (
+              <Button size="sm" variant="primary" onClick={() => dialog.open("review")}>
+                Quyết định nghiệm thu
+              </Button>
+            )}
+            {working && (
+              <>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => dialog.open("submit")}
+                >
+                  Nộp kết quả
                 </Button>
-              )}
-              {working && (
-                <>
-                  <Button
-                    variant="primary"
-                    onClick={() => dialog.open("submit")}
+                <Button size="sm" onClick={() => dialog.open("time-log")}>
+                  Ghi giờ công
+                </Button>
+              </>
+            )}
+            {start && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => dialog.open("execution")}
+              >
+                Bắt đầu
+              </Button>
+            )}
+            {assign && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => dialog.open("assignment")}
+              >
+                Giao việc
+              </Button>
+            )}
+            {(working || change || stop) && (
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  <IconButton
+                    label="Thao tác công việc"
+                    className="border border-line-input"
                   >
-                    Nộp kết quả
-                  </Button>
-                  <Button onClick={() => dialog.open("time-log")}>
-                    Ghi giờ công
-                  </Button>
-                </>
-              )}
-              {start && (
-                <Button
-                  variant="primary"
-                  onClick={() => dialog.open("execution")}
-                >
-                  Bắt đầu
-                </Button>
-              )}
-              {assign && (
-                <Button
-                  variant="primary"
-                  onClick={() => dialog.open("assignment")}
-                >
-                  Giao việc
-                </Button>
-              )}
-              {(working || change || stop) && (
-                <DropdownMenu.Root>
-                  <DropdownMenu.Trigger asChild>
-                    <IconButton
-                      label="Thao tác công việc"
-                      className="border border-line-input"
-                    >
-                      <Ellipsis className="size-[18px]" aria-hidden="true" />
-                    </IconButton>
-                  </DropdownMenu.Trigger>
-                  <MenuContent>
-                    {working && (
-                      <MenuItem onSelect={() => dialog.open("attachment")}>
-                        Tải minh chứng
-                      </MenuItem>
-                    )}
-                    {change && (
-                      <>
-                        {path !== `${root}/edit` && (
-                          <MenuItem asChild>
-                            <Link href={`${root}/edit`}>Điều chỉnh</Link>
-                          </MenuItem>
-                        )}
-                        {!assign && (
-                          <MenuItem onSelect={() => dialog.open("assignment")}>
-                            Bàn giao
-                          </MenuItem>
-                        )}
-                      </>
-                    )}
-                    {stop && (
-                      <>
-                        {(working || change) && <MenuSeparator />}
-                        <MenuItem
-                          tone="danger"
-                          onSelect={() => dialog.open("execution")}
-                        >
-                          {working ? "Tạm dừng / hủy" : "Hủy công việc"}
+                    <Ellipsis className="size-[18px]" aria-hidden="true" />
+                  </IconButton>
+                </DropdownMenu.Trigger>
+                <MenuContent>
+                  {working && (
+                    <MenuItem onSelect={() => dialog.open("attachment")}>
+                      Tải minh chứng
+                    </MenuItem>
+                  )}
+                  {change && (
+                    <>
+                      {path !== `${root}/edit` && (
+                        <MenuItem asChild>
+                          <Link href={`${root}/edit`}>Điều chỉnh</Link>
                         </MenuItem>
-                      </>
-                    )}
-                  </MenuContent>
-                </DropdownMenu.Root>
-              )}
-            </>
-          }
-        />
-      </div>
+                      )}
+                      {!assign && (
+                        <MenuItem onSelect={() => dialog.open("assignment")}>
+                          Bàn giao
+                        </MenuItem>
+                      )}
+                    </>
+                  )}
+                  {stop && (
+                    <>
+                      {(working || change) && <MenuSeparator />}
+                      <MenuItem
+                        tone="danger"
+                        onSelect={() => dialog.open("execution")}
+                      >
+                        {working ? "Tạm dừng / hủy" : "Hủy công việc"}
+                      </MenuItem>
+                    </>
+                  )}
+                </MenuContent>
+              </DropdownMenu.Root>
+            )}
+          </>
+        }
+      />
 
       {project.isError && (
         <QueryErrorState error={project.error} retry={project.refetch} />

@@ -6,7 +6,6 @@ import {
 import { idSchema } from "@/lib/validation/request.schema";
 import { z } from "zod";
 
-// IPv4/IPv6 đơn lẻ hoặc dải CIDR, ví dụ 10.0.0.0/24, ::1/128, 203.113.1.5.
 export const cidrSchema = z
   .string()
   .trim()
@@ -29,7 +28,6 @@ export const ipWhitelistEntrySchema = z.object({
 });
 export const ipWhitelistSchema = z.object({
   enabled: z.boolean(),
-  // Bật/tắt = PATCH /settings/{settingId} với If-Match settingVersion.
   settingId: idSchema,
   settingVersion: z.number().int().safe().positive(),
   currentIp: z.string(),
@@ -48,7 +46,6 @@ export const updateIpWhitelistEntrySchema = z
   })
   .strict();
 
-// Nhật ký IP bị chặn (BE IpAccessLogs): gom theo IP + phạm vi, quản trị cho phép (thêm vào whitelist) hoặc bỏ qua.
 export const ipAccessLogStatusSchema = z.enum([
   "PENDING",
   "ALLOWED",

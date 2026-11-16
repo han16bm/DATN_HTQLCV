@@ -6,8 +6,6 @@ import { dateTime, label } from "@/lib/format";
 import Link from "next/link";
 import { useListUserProjectsQuery } from "../hooks/use-users-queries";
 
-// Tab Dự án của dialog người dùng: một người giữ vai trò khác nhau ở nhiều dự án,
-// quyền tính theo từng dự án (ADMIN_MODULES §11). Chỉ đọc; vai trò đổi ở trang dự án.
 export function UserProjectsPanel({ userId }: { userId: string }) {
   const query = useListUserProjectsQuery(userId);
   const rows = query.data ?? [];

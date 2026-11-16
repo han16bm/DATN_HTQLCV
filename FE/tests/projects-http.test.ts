@@ -218,7 +218,6 @@ describe("S08–S14 projects and memberships", () => {
       { version: user.version, key: key() },
     );
     await signInMember();
-    // PROJECT_CREATE alone never grants management of every project.
     await expect(
       tasksService.createTask("p-main", task, { key: key() }),
     ).rejects.toMatchObject({ status: 403 });
@@ -344,7 +343,6 @@ describe("created/updated stamps on project, membership, task and alert", () => 
     const owner = (
       await projectMembersService.listProjectMembers(project.id, {})
     ).items[0];
-    // Tư cách OWNER sinh khi admin tạo dự án nên người thêm là admin.
     expect(owner).toMatchObject({ projectRole: "OWNER", createdBy: admin });
     expect(owner.createdAt).toBeTruthy();
     const seededMembers = await projectMembersService.listProjectMembers(
@@ -364,7 +362,6 @@ describe("created/updated stamps on project, membership, task and alert", () => 
       key: key(),
     });
     expect(task).toMatchObject({ createdBy: minh, updatedBy: lan });
-    // Việc đã bắt đầu trong seed: người sửa cuối là người nhận.
     expect(await tasksService.getTask("t-3")).toMatchObject({
       updatedBy: lan,
     });

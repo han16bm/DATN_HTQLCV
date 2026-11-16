@@ -47,8 +47,6 @@ function Field({
   );
 }
 
-// Đăng nhập: một thẻ trắng ở giữa trên nền xanh của thanh điều hướng. Chỉ có tên sản
-// phẩm, hai ô nhập và một hành động chính; không có lời giới thiệu hay tranh minh họa.
 export function LoginPage() {
   const router = useRouter();
   const search = useSearchParams();
@@ -95,7 +93,6 @@ export function LoginPage() {
               await signIn(result);
               router.replace(next);
             } catch {
-              /* Mutation error remains visible; form values are preserved. */
             }
           })}
         >

@@ -2,7 +2,6 @@
 import { cn } from "@/lib/cn";
 import { Button } from "./button";
 
-// Chân bảng: tổng số kết quả và, khi có nhiều trang, nút Trước/Sau.
 export function Pagination({
   page = 1,
   total,
@@ -28,7 +27,7 @@ export function Pagination({
       {onPage && (total > pageSize || page > 1) && (
         <nav
           aria-label="Phân trang"
-          className="ml-auto flex items-center gap-2"
+          className="ml-auto flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2"
         >
           <Button
             className="h-7 px-2 text-xs"

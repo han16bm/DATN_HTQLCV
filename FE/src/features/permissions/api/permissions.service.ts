@@ -45,7 +45,6 @@ export const permissionsService = {
     return response.data;
   },
 
-  // Ma trận quyền theo vai trò dự án (ADMIN_MODULES §11): OWNER cố định, MANAGER/MEMBER chỉnh được.
   async listProjectRolePolicies(options: RequestOptions = {}) {
     const response = await apiClient.get<ProjectRolePolicyDto[]>(
       "/project-role-policies",

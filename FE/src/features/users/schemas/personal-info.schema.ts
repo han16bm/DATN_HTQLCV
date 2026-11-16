@@ -1,7 +1,6 @@
 import { entityLabelSchema } from "@/lib/validation/common.schema";
 import { z } from "zod";
 
-// Ô bỏ trống gửi qua multipart được lưu thành null, không thành chuỗi "null".
 const optional = <T extends z.ZodType>(schema: T) =>
   schema
     .or(z.literal(""))

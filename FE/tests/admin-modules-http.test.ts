@@ -74,7 +74,6 @@ describe("dynamic RBAC via HTTP/MSW", () => {
     expect((await login("lan")).permissions).toEqual(["AUDIT_VIEW"]);
     const pm = await login("minh");
     expect(pm.permissions).toEqual([]);
-    // Vai trò quản lý trong dự án cần PROJECT_CREATE hiệu lực.
     expect(
       pm.projectAccess.find((p) => p.projectId === "p-main")?.permissions,
     ).toEqual([]);
@@ -139,7 +138,6 @@ describe("dynamic RBAC via HTTP/MSW", () => {
         status: 403,
         code: "FORBIDDEN",
       });
-    // Mã chính người thao tác đang có thì được cấp.
     const granted = await setPermissions("u-lan", {
       grantedFeatures: ["PROJECT_CREATE"],
     });
@@ -378,7 +376,6 @@ describe("audit logs, jobs, settings and IP whitelist via HTTP/MSW", () => {
     let state = await ipWhitelistService.getIpWhitelist();
     expect(state).toMatchObject({ enabled: false, currentIp: "127.0.0.1" });
     const local = state.entries.find((e) => e.cidr === "127.0.0.1")!;
-    // Tắt dòng duy nhất khớp IP hiện tại rồi bật whitelist thì tự khóa.
     const disabled = await ipWhitelistService.updateIpWhitelistEntry(
       local.id,
       { isActive: false },
@@ -446,7 +443,6 @@ describe("audit logs, jobs, settings and IP whitelist via HTTP/MSW", () => {
       code: "IP_NOT_ALLOWED",
       details: { ip: "127.0.0.1" },
     });
-    // Hồ sơ công khai không thuộc khu quản trị.
     expect((await usersService.getProfile("u-lan")).groups).toEqual([]);
   });
 });
@@ -526,7 +522,6 @@ describe("created/updated stamps on administration records", () => {
     const [job] = await jobsService.listJobs();
     expect(job.updatedBy).toBeNull();
     await jobsService.runJob(job.code, { key: key() });
-    // Chạy job không đổi người sửa cấu hình job.
     expect((await jobsService.listJobs())[0].updatedBy).toBeNull();
     expect(
       await jobsService.updateJob(
@@ -549,13 +544,11 @@ describe("project roles of a person and session revocation (ADMIN_MODULES §11)"
   it("lists every project a leader holds with the role and effective permissions there", async () => {
     const projects = await usersService.listUserProjects("u-pm");
     const active = projects.filter((p) => !p.endedAt);
-    // Một Leader giữ vai trò ở nhiều dự án; quyền tính theo từng dự án.
     expect(active.length).toBeGreaterThan(1);
     expect(active.every((p) => p.projectRole !== "MEMBER")).toBe(true);
     expect(active[0].permissions).toContain("TASKS_MANAGE");
     const member = await usersService.listUserProjects("u-lan");
     expect(member.every((p) => p.permissions.length === 0)).toBe(true);
-    // Mất PROJECT_CREATE thì vai trò quản lý không còn quyền (fail-closed).
     await setPermissions("u-pm", { groupIds: [] });
     const demoted = await usersService.listUserProjects("u-pm");
     expect(demoted.every((p) => p.permissions.length === 0)).toBe(true);
@@ -577,7 +570,6 @@ describe("project roles of a person and session revocation (ADMIN_MODULES §11)"
     await expect(authService.getSession()).rejects.toMatchObject({
       status: 401,
     });
-    // Tài khoản vẫn hoạt động: đăng nhập lại được.
     await expect(login("minh")).resolves.toMatchObject({
       user: expect.objectContaining({ id: "u-pm" }),
     });

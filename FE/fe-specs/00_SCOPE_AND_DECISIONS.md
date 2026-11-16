@@ -23,7 +23,7 @@ Yêu cầu bổ sung đã chốt trong trao đổi: BE dùng Microservices; FE d
 | D07 | Refresh nháp trả projection tạm, không sửa nội dung hoặc chốt snapshot | Đề xuất hỗ trợ UI, cần BE đối chiếu |
 | D08 | Khóa khẩn cấp thu hồi phiên ngay; xử lý bàn giao/người phụ trách sau đó theo workflow kiểm soát | Nguồn có ngoại lệ khóa khẩn cấp; BE cần chốt ca người phụ trách duy nhất bị khóa |
 | D09 | Upload multipart qua Gateway; giới hạn mẫu 20 MiB/tệp, tối đa 10 tệp/lần nộp; PDF/PNG/JPEG/TXT/DOCX | Tham số mẫu, lấy lại từ upload policy của BE; BE kiểm tra MIME thực và nội dung |
-| D10 | Job chỉ tạo/reuse lời LLM cho snapshot; 200 khi reuse hoàn tất, 202 khi chờ/chạy; GET poll chỉ đọc | Đề xuất tích hợp LLM có sẵn |
+| D10 | Anthropic Claude là provider MVP; BE chỉ tạo/reuse lời diễn giải gắn snapshot, trả 200 khi reuse kết quả hoàn tất và 202 khi job đang chạy; GET job chỉ đọc | Đã triển khai adapter Claude trong Analytics.Api; API key/model nằm ở cấu hình tập trung, API key được mã hóa |
 | D11 | API remaining-estimate phục vụ dữ liệu tải công việc; không suy từ dự kiến trừ đã làm | API hỗ trợ đề xuất, cần BE xác nhận; chưa có workflow lịch làm việc trong phạm vi FE |
 | D12 | Quản lý tài khoản có API cấp lại mật khẩu tạm; không có đăng ký/reset-password công khai | Phương án hỗ trợ cho chức năng quản trị, BE cần chốt cách cấp mật khẩu và thu hồi phiên |
 | D13 | Các mốc sự kiện là UTC; workDate/kỳ báo cáo dùng Asia/Ho_Chi_Minh; deadline luôn có giờ | Theo quy tắc nghiệp vụ |

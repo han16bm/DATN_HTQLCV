@@ -1,7 +1,6 @@
 import { cn } from "@/lib/cn";
 import type { ComponentProps } from "react";
 
-// Nút chỉ có biểu tượng: bắt buộc có nhãn để trình đọc màn hình nói được tác dụng.
 export function IconButton({
   label,
   selected,

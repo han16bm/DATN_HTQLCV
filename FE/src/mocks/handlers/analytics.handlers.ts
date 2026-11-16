@@ -11,6 +11,10 @@ import {
   analyticsQuerySchema,
   filterOptionsQuerySchema,
 } from "@/features/analytics/schemas/analytics-query.schema";
+import {
+  explanationRatingInputSchema,
+  explanationRatingSchema,
+} from "@/features/analytics/schemas/analysis-rating.schema";
 import { bottlenecksSchema } from "@/features/analytics/schemas/bottlenecks.schema";
 import { dashboardSchema } from "@/features/analytics/schemas/dashboard.schema";
 import { risksSchema } from "@/features/analytics/schemas/risks.schema";
@@ -172,6 +176,33 @@ export const analyticsHandlers = [
             analyticsDb.createAnalysisFeedback(viewer, analysisId, payload),
             feedbackSchema,
             201,
+          );
+        },
+      );
+    }),
+  ),
+  http.put(
+    "*/api/analytics/details/:analysisId/explanation-rating",
+    mockHandler(async ({ request, params }) => {
+      const viewer = authenticatedUser(request);
+      const analysisId = idSchema.parse(params.analysisId);
+      const payload = explanationRatingInputSchema.parse(await request.json());
+      return mockCommand(
+        request,
+        {
+          operation: "rateAnalysisExplanation",
+          feature: "analytics",
+          viewer,
+          action: null,
+          params: { analysisId },
+          payload,
+        },
+        async () => {
+          return mockJson(
+            request,
+            analyticsDb.rateAnalysisExplanation(viewer, analysisId, payload),
+            explanationRatingSchema,
+            200,
           );
         },
       );

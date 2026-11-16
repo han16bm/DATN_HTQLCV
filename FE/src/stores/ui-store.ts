@@ -9,10 +9,7 @@ type UIState = {
   sidebarOpen: boolean;
   sidebarCollapsed: boolean;
   dirtyForms: string[];
-  // Ngữ cảnh điều hướng: tên thực thể cho breadcrumb, URL danh sách gần nhất
-  // (giữ bộ lọc/phân trang) và trang trước trong ứng dụng.
   labels: Record<string, { label: string; parentId?: string }>;
-  // Dự án/công việc vừa mở, mới nhất trước, cho mục Gần đây ở sidebar.
   recent: string[];
   listUrls: Record<string, string>;
   currentUrl: string | null;

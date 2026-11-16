@@ -8,7 +8,6 @@ const tones = {
   LOW: "text-fg-subtlest",
 };
 
-// Ưu tiên chỉ là chữ có màu (không biểu tượng); mức khẩn và cao đậm hơn.
 export function Priority({
   value,
 }: {

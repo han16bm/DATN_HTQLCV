@@ -2,8 +2,6 @@
 import { cn } from "@/lib/cn";
 import type { LucideIcon } from "lucide-react";
 
-// Chọn một trong vài chế độ xem (ví dụ Danh sách / Bảng trạng thái). Mỗi nút giữ
-// aria-pressed và tên truy cập; icon tiết kiệm chỗ, title giải thích khi rê chuột.
 export function SegmentedControl({
   label,
   value,

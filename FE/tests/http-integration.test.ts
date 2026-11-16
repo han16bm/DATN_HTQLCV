@@ -220,7 +220,6 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
       mimeType: "application/pdf",
     });
     const task = await apiClient.get<Record<string, unknown>>("/tasks/t-3");
-    // updatedAt là dấu vết cập nhật công khai (ADMIN_MODULES 8.4); mốc trạng thái vẫn ẩn.
     for (const field of ["statusChangedAt", "completedAt"]) {
       expect(task.data).not.toHaveProperty(field);
       expect(db.tasks.find((item) => item.id === "t-3")).toHaveProperty(field);
@@ -241,7 +240,7 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
     };
     const dashboard = await analyticsService.getDashboard(scope);
     const snapshot = await apiClient.get<{
-      snapshot: { scope: object };
+      snapshot: { scope: object; expiresAt: string };
     }>(`/analytics/details/${dashboard.overviewRef.analysisId}`);
     expect(Object.keys(snapshot.data.snapshot.scope).sort()).toEqual([
       "from",
@@ -256,10 +255,11 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
     expect(detail.snapshot.metrics.length).toBeGreaterThan(0);
     expect(detail.snapshot.metrics[0]).not.toHaveProperty("basis");
     expect(stored.snapshot.metrics[0]).toHaveProperty("basis");
-    for (const field of ["sourceRevision", "subject", "expiresAt"]) {
+    for (const field of ["sourceRevision", "subject"]) {
       expect(snapshot.data.snapshot).not.toHaveProperty(field);
       expect(stored.snapshot).toHaveProperty(field);
     }
+    expect(snapshot.data.snapshot.expiresAt).toBe(stored.snapshot.expiresAt);
   });
   it("projects current task hours and overdue state without storing duplicate counters", async () => {
     await signIn("lan");
@@ -506,7 +506,6 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
     await expect(tasksService.getTask("t-3")).rejects.toMatchObject({
       status: 403,
     });
-    // Bỏ thu hồi: ANALYTICS_VIEW của nhóm ADMINISTRATORS có hiệu lực trở lại.
     db.users.find((user) => user.id === "u-admin")!.revokedFeatures = [];
     await signIn("admin");
     const task = await tasksService.getTask("t-3");
@@ -540,7 +539,6 @@ describe("Feature service → Axios HTTP → MSW → mock database", () => {
         { version: project.version, key: "admin-denied-project" },
       ),
     ).rejects.toMatchObject({ status: 403, code: "FORBIDDEN" });
-    // Người ngoài dự án và không có quyền xem toàn hệ thống vẫn không đọc được.
     await signIn("lan");
     await expect(tasksService.getTask("t-other")).rejects.toMatchObject({
       status: 403,

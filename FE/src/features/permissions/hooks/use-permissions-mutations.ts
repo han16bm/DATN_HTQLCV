@@ -17,7 +17,6 @@ import type {
   UpdateProjectRolePolicyArgs,
 } from "../types/permissions.types";
 
-// Đổi nhóm/mã quyền làm đổi quyền hiệu lực: tải lại danh mục, người dùng và phiên.
 function useInvalidatePermissions() {
   const client = useQueryClient();
   const viewerId = useSession().session?.user.id;

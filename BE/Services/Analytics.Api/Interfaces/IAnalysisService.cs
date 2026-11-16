@@ -10,4 +10,5 @@ public interface IAnalysisService
     Task<(AnalysisJobDto Job, bool Finished)> CreateJobAsync(CreateAnalysisJobRequest request);
     Task<AnalysisJobDto> GetJobAsync(string jobId);
     Task<FeedbackDto> CreateFeedbackAsync(string analysisId, CreateAnalysisFeedbackRequest request);
+    Task<ExplanationRatingDto> RateExplanationAsync(string analysisId, RateExplanationRequest request);
 }

@@ -86,7 +86,6 @@ export function UserCommands({
       >
         Cấp lại mật khẩu
       </Button>
-      {/* Chính mình thì dùng Đăng xuất; BE cũng chặn (422). */}
       {!self && (
         <Button
           onClick={async () => {

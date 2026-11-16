@@ -28,7 +28,6 @@ import {
   parseQuery,
 } from "./http";
 
-// Cấu hình tập trung và IP whitelist cùng quyền SETTINGS_MANAGE.
 const command = { feature: "settings", action: "SETTINGS_MANAGE" as const };
 export const settingHandlers = [
   http.get(

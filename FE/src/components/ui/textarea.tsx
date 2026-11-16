@@ -2,7 +2,6 @@ import { cn } from "@/lib/cn";
 import type { ComponentProps } from "react";
 import { controlClass } from "./input";
 
-// Ô nhập nhiều dòng: cao tối thiểu 88px, kéo giãn dọc; FormTextarea tự co giãn theo nội dung.
 export function Textarea({ className, ...props }: ComponentProps<"textarea">) {
   return (
     <textarea

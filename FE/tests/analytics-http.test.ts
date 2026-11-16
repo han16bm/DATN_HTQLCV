@@ -21,12 +21,10 @@ beforeEach(() => {
 });
 const login = (username = "minh") =>
   authService.login({ username, password: "Mock@12345" });
-// ANALYTICS_VIEW ở phạm vi hệ thống do backend cấp qua nhóm quyền, không theo role.
 const grantSystemAnalytics = (userId: string) =>
   db.permissionGroups
     .find((group) => group.id === "pg-analytics")!
     .memberIds.push(userId);
-// Tài khoản chỉ quản trị: bỏ cờ sysadmin và thu hồi ANALYTICS_VIEW của nhóm ADMINISTRATORS.
 const accountAdminOnly = () =>
   Object.assign(
     db.users.find((user) => user.id === "u-admin")!,
@@ -139,7 +137,6 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
         { key: "admin-report-denied" },
       ),
     ).rejects.toMatchObject({ status: 403 });
-    // Chỉ có ANALYTICS_VIEW (không sysadmin, không phải người nhận) thì xem được nhưng không xử lý được cảnh báo
     const adminUser = db.users.find((user) => user.id === "u-admin")!;
     adminUser.isSysAdmin = false;
     await expect(
@@ -412,6 +409,48 @@ describe("analytics snapshots, jobs and alerts over HTTP", () => {
         },
       ),
     ).rejects.toMatchObject({ status: 409 });
+  });
+  it("rates only an existing explanation, keeps one changeable rating per viewer and resets it after regeneration", async () => {
+    await login();
+    const a = await analyticsService.getDashboard(scope);
+    const id = a.overviewRef.analysisId;
+    const before = await analyticsService.getAnalysisDetail(id);
+    expect(before.explanationRating).toEqual({ mine: null, canSubmit: false });
+    expect(Date.parse(before.snapshot.expiresAt)).toBeGreaterThan(
+      Date.parse(before.snapshot.dataAsOf),
+    );
+    await expect(
+      analyticsService.rateAnalysisExplanation(
+        id,
+        { helpful: true },
+        { key: "too-early" },
+      ),
+    ).rejects.toMatchObject({ status: 409 });
+    await analyticsService.createAnalysisJob(
+      { analysisId: id },
+      { key: "rate-job" },
+    );
+    await waitJob();
+    await analyticsService.rateAnalysisExplanation(
+      id,
+      { helpful: true },
+      { key: "rate-1" },
+    );
+    await analyticsService.rateAnalysisExplanation(
+      id,
+      { helpful: false },
+      { key: "rate-2" },
+    );
+    expect(db.ratings).toHaveLength(1);
+    expect(
+      (await analyticsService.getAnalysisDetail(id)).explanationRating,
+    ).toEqual({ mine: false, canSubmit: true });
+    expect(db.details.get(id)).not.toHaveProperty("explanationRating");
+    db.details.get(id)!.explanation.lastSuccess!.generatedAt =
+      "2026-10-24T00:00:00.000Z";
+    expect(
+      (await analyticsService.getAnalysisDetail(id)).explanationRating.mine,
+    ).toBeNull();
   });
   it("denies old analysis/job access after project role loss and expires snapshots", async () => {
     await login();

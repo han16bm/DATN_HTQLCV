@@ -22,9 +22,6 @@ import {
 
 type Option = { id: string; name: string; hint?: string };
 
-// Bộ chọn dự án thay logo ở góc trái header: hiện dự án đang xem, mở ra có tìm
-// kiếm và danh sách tải dần theo trang. Chọn dự án chỉ đi tới tổng quan dự án
-// đó; không ghi lựa chọn vào bộ lọc của các trang tổng hợp.
 export function ProjectSwitcher() {
   const pathname = usePathname();
   const router = useRouter();
@@ -49,7 +46,6 @@ export function ProjectSwitcher() {
     { enabled: open },
   );
 
-  // Alt+P mở bộ chọn từ bất kỳ đâu; nếu đang mở thì đưa con trỏ về ô tìm kiếm.
   useEffect(() => {
     const shortcut = (event: globalThis.KeyboardEvent) => {
       if (
@@ -194,7 +190,7 @@ export function ProjectSwitcher() {
           title="Chuyển dự án (Alt+P)"
           aria-label={`Dự án: ${shown}`}
           className={cn(
-            "inline-flex h-(--control-h) max-w-[min(320px,100%)] min-w-0 items-center gap-2 rounded-md bg-transparent px-2.5 transition-colors motion-reduce:transition-none",
+            "inline-flex h-(--control-h) max-w-[min(20rem,100%)] min-w-0 items-center gap-2 rounded-md bg-transparent px-2.5 transition-colors motion-reduce:transition-none",
             "text-sm font-medium text-fg hover:bg-hover active:bg-pressed aria-expanded:bg-selected-bg aria-expanded:text-selected-fg",
             "pointer-coarse:min-h-11",
           )}
@@ -216,7 +212,7 @@ export function ProjectSwitcher() {
           sideOffset={4}
           collisionPadding={12}
           aria-label="Chọn dự án"
-          className="z-70 w-[min(288px,calc(100vw-24px))] rounded-lg border border-line bg-surface shadow-overlay"
+          className="z-70 w-[min(18rem,calc(100vw-1.5rem))] rounded-lg border border-line bg-surface shadow-overlay"
         >
           <div className="border-b border-line p-2">
             <label htmlFor={`${listId}-search`} className="sr-only">

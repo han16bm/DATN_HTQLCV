@@ -50,6 +50,8 @@ public static class ConfigCatalog
     public const string CloudinaryApiKey = "Storage:Cloudinary:ApiKey";
     public const string CloudinaryApiSecret = "Storage:Cloudinary:ApiSecret";
     public const string CloudinaryFolder = "Storage:Cloudinary:Folder";
+    public const string AnthropicApiKey = "Analytics:Anthropic:ApiKey";
+    public const string AnthropicModel = "Analytics:Anthropic:Model";
 
     public const string IpScopeAdmin = "ADMIN";
     public const string IpScopeSystem = "SYSTEM";
@@ -100,7 +102,13 @@ public static class ConfigCatalog
             DataTypeString, "", Secret: true),
         new(CloudinaryFolder, Global, "STORAGE", "Cloudinary - Thư mục gốc",
             "Thư mục gốc trên Cloudinary, ví dụ datn → datn/avatars, datn/evidence.",
-            DataTypeString, "datn")
+            DataTypeString, "datn"),
+        new(AnthropicApiKey, AnalyticsApi, "AI", "Anthropic - API key",
+            "Khóa API Claude. Lưu mã hóa trong SystemConfigs và không bao giờ trả giá trị thật về giao diện.",
+            DataTypeString, "", Secret: true),
+        new(AnthropicModel, AnalyticsApi, "AI", "Anthropic - mô hình Claude",
+            "Model ID được gọi bởi Analytics.Api. Chỉ thay đổi nếu model có quyền truy cập trên tài khoản Anthropic.",
+            DataTypeString, "claude-opus-5-5")
     ];
 
     // Secret và cấu hình hạ tầng không bao giờ được nằm trong DB (khác UD_CAUHINH của DVCLT)

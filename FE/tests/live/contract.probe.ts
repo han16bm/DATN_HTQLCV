@@ -1,6 +1,3 @@
-// Kiểm hợp đồng FE ↔ BE thật: gọi các service GET của FE (đúng code path của trình duyệt) vào gateway đang chạy,
-// response phải parse được bằng schema Zod của FE. Chỉ đọc, không ghi dữ liệu.
-// Chạy: npm run test:live (BE ở http://localhost:5000, đổi bằng LIVE_API_BASE_URL). Mật khẩu seed: LIVE_PASSWORD.
 import { alertsService } from "@/features/alerts/api/alerts.service";
 import { analyticsService } from "@/features/analytics/api/analytics.service";
 import { attachmentsService } from "@/features/attachments/api/attachments.service";
@@ -27,7 +24,6 @@ type Row = { user: string; call: string; result: string; detail?: string };
 const rows: Row[] = [];
 let lastIssues: string | undefined;
 
-// Bắt chi tiết lỗi schema: interceptor gốc chỉ ném ContractError chung chung.
 const handler = (
   apiClient.interceptors.response as unknown as {
     handlers: { fulfilled: (response: AxiosResponse) => unknown }[];

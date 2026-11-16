@@ -4,9 +4,6 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { IconButton } from "./icon-button";
 
-// Lớp phủ và khung nổi dùng chung cho hộp thoại, hộp xác nhận và ngăn kéo.
-// Lớp nổi (overlay) có viền, bo 12px và bóng; mở/đóng bằng hiệu ứng ngắn, tắt khi
-// người dùng chọn giảm chuyển động.
 export const overlayClass = (
   layer: "dialog" | "confirm" = "dialog",
   light = false,
@@ -19,7 +16,7 @@ export const overlayClass = (
   );
 
 export const modalClass = (
-  size: "sm" | "md" = "md",
+  size: "sm" | "md" | "lg" = "md",
   layer: "dialog" | "confirm" = "dialog",
 ) =>
   cn(
@@ -27,35 +24,30 @@ export const modalClass = (
     "rounded-xl border border-line bg-surface p-5 shadow-overlay outline-none md:p-6",
     "motion-reduce:animate-none data-[state=open]:animate-[modal-in_160ms_ease-out]",
     size === "sm"
-      ? "w-[min(440px,calc(100vw-32px))]"
-      : "w-[min(640px,calc(100vw-32px))]",
+      ? "w-[min(27.5rem,calc(100vw-2rem))]"
+      : size === "md"
+        ? "w-[min(32.5rem,calc(100vw-2rem))]"
+        : "w-[min(40rem,calc(100vw-2rem))]",
     layer === "confirm" ? "z-91" : "z-61",
   );
 
-// Ngăn kéo bên phải, nằm dưới thanh trên để thanh trên luôn dùng được. Khung chung
-// không có chiều rộng và padding: class cùng thuộc tính không đè nhau theo thứ tự viết
-// nên mỗi biến thể tự khai báo.
 const drawerFrame = cn(
   "fixed top-(--topbar-h) right-0 bottom-0 z-65 overflow-hidden",
   "border-l border-line bg-surface shadow-overlay outline-none motion-reduce:animate-none",
   "data-[state=open]:animate-[slide-in-right_180ms_ease-out] data-[state=closed]:animate-[slide-out-right_140ms_ease-in]",
 );
-// Ngăn kéo của SlidePanel: tiêu đề cố định + thân cuộn nên không có khoảng đệm chung;
-// "sm" cho thay đổi, "lg" cho bảng nhiều cột và xem tài liệu.
 export const slideDrawerClass = (size: "sm" | "md" | "lg" = "md") =>
   cn(
     drawerFrame,
     "flex flex-col",
     size === "lg"
-      ? "w-[min(800px,100vw)]"
+      ? "w-[min(50rem,100vw)]"
       : size === "sm"
-        ? "w-[min(420px,100vw)]"
-        : "w-[min(480px,100vw)]",
+        ? "w-[min(26.25rem,100vw)]"
+        : "w-[min(30rem,100vw)]",
   );
-// Ngăn kéo hẹp cho bảng cài đặt: tiêu đề, nội dung và chân tự chia khoảng đệm.
-export const compactDrawerClass = cn(drawerFrame, "w-[min(256px,100vw)]");
+export const compactDrawerClass = cn(drawerFrame, "w-[min(16rem,100vw)]");
 
-// Tiêu đề (h2) kèm nút đóng; Radix gắn tên của hộp thoại vào tiêu đề này.
 export function ModalHeader({
   title,
   closeLabel,

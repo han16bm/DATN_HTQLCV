@@ -42,7 +42,6 @@ export function UserPermissionsPanel({
 }) {
   const query = useGetUserPermissionsQuery(userId);
   const features = useListFeaturesQuery();
-  // Giới hạn 100 nhóm cho ô chọn; nhóm hiện có của người dùng luôn được giữ.
   const groups = useListPermissionGroupsQuery({ pageSize: 100 });
   for (const item of [query, features, groups])
     if (item.isError)
@@ -109,7 +108,6 @@ function PermissionsForm({
       .filter((g) => !groups.some((item) => item.id === g.id))
       .map((g) => ({ value: g.id, label: g.label })),
   ];
-  // Xem trước theo công thức quyền hiệu lực (ADMIN_MODULES 1.2); BE vẫn tính lại.
   const fromGroups = new Set(
     groups
       .filter((g) => g.status === "ACTIVE" && draft.groupIds.includes(g.id))

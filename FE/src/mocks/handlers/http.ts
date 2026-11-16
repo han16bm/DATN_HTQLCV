@@ -15,7 +15,6 @@ import {
   type User,
 } from "../db";
 
-// Định dạng response.
 function toMockErrorResponse(error: unknown) {
   if (error instanceof z.ZodError) {
     return HttpResponse.json(
@@ -50,7 +49,6 @@ function toMockErrorResponse(error: unknown) {
   );
 }
 
-// Xử lý HTTP dùng chung.
 type Receipt = {
   fingerprint: string;
   data: JsonBodyType;
